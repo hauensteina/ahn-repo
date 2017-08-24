@@ -17,4 +17,10 @@ alias aws-start='aws ec2 start-instances --instance-ids $instanceId && aws ec2 w
 
 alias aws-stop='aws ec2 stop-instances --instance-ids $instanceId'
 
-alias aws-ssh='ssh -i ~/.ssh/aws-key.pem ec2-user@$instanceIp'
+alias aws-ssh='ssh -i ~/.ssh/aws-key.pem ubuntu@$instanceIp'
+
+aws-mount() {
+    sudo  cd ~ahauenst
+    sudo umount /aws
+    sudo sshfs -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ec2-user@$instanceIp:/home/ec2-user /aws
+}
