@@ -13,7 +13,11 @@ aws-ip() {
     export instanceIp=`aws ec2 describe-instances --filters "Name=instance-id,Values=$instanceId" --query "Reservations[0].Instances[0].PublicIpAddress" | sed 's/"//g'` && echo $instanceIp
 }
 
-alias aws-start='aws ec2 start-instances --instance-ids $instanceId && aws ec2 wait instance-running --instance-ids $instanceId && export instanceIp=`aws ec2 describe-instances --filters "Name=instance-id,Values=$instanceId" --query "Reservations[0].Instances[0].PublicIpAddress"` && echo $instanceIp'
+aws-start() {
+    aws ec2 start-instances --instance-ids $instanceId
+    aws ec2 wait instance-running --instance-ids $instanceId
+    aws-ip
+}
 
 alias aws-stop='aws ec2 stop-instances --instance-ids $instanceId'
 
@@ -24,6 +28,7 @@ t2mount() {
     sudo umount /aws-t2
     sudo sshfs  -o IdentityFile=/Users/ahauenst/.ssh/aws-key.pem -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ubuntu@34.208.16.115:/home/ubuntu /aws-t2
 }
+
 p2mount() {
     sudo  cd ~ahauenst
     sudo umount /aws-p2
