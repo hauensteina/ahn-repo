@@ -1,0 +1,66 @@
+export CLICOLOR=1
+export PROMPT_COMMAND='history -a'
+
+alias h=history
+alias fin='find . -iname'
+alias py="python -i -c 'import sys,os,re,math; import numpy as np; from math import *; from collections import defaultdict, deque' "
+alias S="git status"
+alias bashrc="source ~/.bashrc"
+alias filedb="sudo /opt/local/libexec/gnubin/updatedb --localpaths=/work"
+
+H() {
+  history | grep $1
+}
+
+grec() {
+  grep -i "$1" `find . -name \*.cpp`
+}
+
+greh() {
+  grep -i "$1" `find . -name \*.hpp`
+}
+
+kkill() {
+    kill -9 `ps -x | grep $1 | grep -v grep | awk '{print $1}'`
+}
+
+
+killpy() {
+    kill `ps | grep python | grep -v grep | awk '{print $1}'`
+}
+
+# Jeremy Howard Machine Learning
+####################################
+. ~/ahn-repo/howard_deep/scripts/aws-alias.sh
+t2mount() {
+    sudo  cd ~ahauenst
+    sudo umount /aws-t2
+    sudo sshfs  -o IdentityFile=/Users/ahauenst/.ssh/aws-key.pem -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ubuntu@34.208.16.115:/home/ubuntu /aws-t2
+}
+p2mount() {
+    sudo  cd ~ahauenst
+    sudo umount /aws-p2
+    sudo sshfs  -o IdentityFile=/Users/ahauenst/.ssh/aws-key.pem -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ubuntu@52.88.21.18:/home/ubuntu /aws-p2
+}
+alias how='cd ~/ahn-repo/howard_deep'
+
+# push to git
+gitpush() {
+   git commit -m "$1"
+   branch=`git status | grep 'On branch' | awk '{print $3}'`
+   git push origin $branch
+}
+
+# clone from hauensteina git
+githau() {
+  git clone https://github.com/hauensteina/$1
+  cd $1
+  git submodule update --init --recursive
+  cd ..
+}
+
+ahnclone() {
+  git clone https://github.com/hauensteina/$1
+  cd $1
+  cd ..
+}
