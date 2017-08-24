@@ -19,8 +19,13 @@ alias aws-stop='aws ec2 stop-instances --instance-ids $instanceId'
 
 alias aws-ssh='ssh -i ~/.ssh/aws-key.pem ubuntu@$instanceIp'
 
-aws-mount() {
+t2mount() {
     sudo  cd ~ahauenst
-    sudo umount /aws
-    sudo sshfs -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ec2-user@$instanceIp:/home/ec2-user /aws
+    sudo umount /aws-t2
+    sudo sshfs  -o IdentityFile=/Users/ahauenst/.ssh/aws-key.pem -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ubuntu@34.208.16.115:/home/ubuntu /aws-t2
+}
+p2mount() {
+    sudo  cd ~ahauenst
+    sudo umount /aws-p2
+    sudo sshfs  -o IdentityFile=/Users/ahauenst/.ssh/aws-key.pem -o cache_dir_timeout=10 -o reconnect -o allow_other,defer_permissions -o Compression=no ubuntu@52.88.21.18:/home/ubuntu /aws-p2
 }
