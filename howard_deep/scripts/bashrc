@@ -48,3 +48,9 @@ githau() {
   git submodule update --init --recursive
   cd ..
 }
+
+# Run on the p2 instance to see t2 files
+t2mount() {
+    sudo umount /aws-t2
+    sudo sshfs  -o IdentityFile=/home/ubuntu/.ssh/aws-key.pem -o cache_dir_timeout=10 -o reconnect -o allow_other -o Compression=no ubuntu@34.208.16.115:/home/ubuntu /aws-t2
+}
