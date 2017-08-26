@@ -1,4 +1,4 @@
-readme.txt for blobcount
+readme for blobcount
 ==========================
 AHN, Aug, 2017
 
