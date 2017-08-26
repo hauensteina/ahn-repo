@@ -32,6 +32,7 @@ killpy() {
 # Jeremy Howard Machine Learning
 ####################################
 alias how='cd ~/ahn-repo/howard_deep'
+export LD_LIBRARY_PATH=$HOME/anaconda3/lib:$LD_LIBRARY_PATH
 
 # push to git
 gitpush() {
