@@ -41,15 +41,30 @@ def usage(printmsg=False):
     else:
         return msg
 
-#-------------------
-def build_model(res):
-    inputs = kl.Input(shape=(res,res))
-    x = kl.Flatten()(inputs)
-    x = kl.Dense(64, activation='relu')(x)
-    x = kl.Dense(64, activation='relu')(x)
-    predictions = kl.Dense(10, activation='softmax')(x)
-    #print(inspect.getargspec(km.Model.__init__))
-    model = km.Model(input=inputs, output=predictions)
+# Models
+# Try to count up to ten blobs per image
+#==========================================
+
+# One dense layer, output one hot
+#----------------------------------
+class Dense1:
+    #------------------------
+    def __init__(self,res):
+        self.res = res
+        self.build_model()
+
+    #-----------------------
+    def build_model(self):
+        inputs = kl.Input(shape=(self.res,self.res))
+        x = kl.Flatten()(inputs)
+        x = kl.Dense(64, activation='relu')(x)
+        # x = kl.Dense(64, activation='relu')(x)
+        predictions = kl.Dense(10, activation='softmax')(x)
+        #print(inspect.getargspec(km.Model.__init__))
+        self.model = km.Model(input=inputs, output=predictions)
+        self.model.compile(optimizer='rmsprop',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
 
 #-----------
 def main():
@@ -60,7 +75,8 @@ def main():
     parser.add_argument( "--res", required=True, type=int)
     args = parser.parse_args()
     #np.random.seed(0) # Make things reproducible
-    model = build_model(args.res)
+    model = Dense1(args.res)
+
 
 
 if __name__ == '__main__':
