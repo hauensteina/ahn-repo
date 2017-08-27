@@ -44,13 +44,13 @@ def main():
     if len(sys.argv) == 1:
         usage(True)
 
-    parser=argparse.ArgumentParser(usage=usage())
+    parser = argparse.ArgumentParser(usage=usage())
     parser.add_argument( "--res",      required=True, type=int)
     parser.add_argument( "--minblobs", required=True, type=int)
     parser.add_argument( "--maxblobs", required=True, type=int)
     parser.add_argument( "--ntrain",   required=True, type=int)
     parser.add_argument( "--nval",     required=True, type=int)
-    args=parser.parse_args()
+    args = parser.parse_args()
     #np.random.seed(0) # Make things reproducible
     gen_images(args.ntrain, args.res, 1, 3, 'train')
     gen_images(args.nval, args.res, 1, 3, 'val')
