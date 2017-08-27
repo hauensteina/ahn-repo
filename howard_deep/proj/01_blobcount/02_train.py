@@ -22,6 +22,10 @@ import argparse
 import keras.layers as kl
 import keras.models as km
 
+# Look for modules in our pylib folder
+sys.path.append(re.sub(r'/proj/.*',r'/pylib', os.path.realpath(__file__)))
+import ahnutil as ut
+
 #---------------------------
 def usage(printmsg=False):
     name = os.path.basename(__file__)
@@ -76,8 +80,10 @@ def main():
     args = parser.parse_args()
     #np.random.seed(0) # Make things reproducible
     model = Dense1(args.res)
-
-
+    batch_size=4
+    batches = ut.get_batches('train', batch_size=batch_size)
+    BP()
+    tt=42
 
 if __name__ == '__main__':
     main()

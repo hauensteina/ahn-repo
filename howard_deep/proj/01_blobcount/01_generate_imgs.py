@@ -52,8 +52,12 @@ def main():
     parser.add_argument( "--nval",     required=True, type=int)
     args = parser.parse_args()
     #np.random.seed(0) # Make things reproducible
-    gen_images(args.ntrain, args.res, 1, 3, 'train')
-    gen_images(args.nval, args.res, 1, 3, 'val')
+    trainfolder = 'train/all_files'
+    valfolder   = 'val/all_files'
+    if not os.path.exists(trainfolder): os.makedirs(trainfolder)
+    if not os.path.exists(valfolder):   os.makedirs(valfolder)
+    gen_images(args.ntrain, args.res, args.minblobs, args.maxblobs, trainfolder)
+    gen_images(args.nval,   args.res, args.minblobs, args.maxblobs, valfolder)
 
 # Generate one image of resolution resxres with nblobs circles in it.
 # Image goes to folder/fname
