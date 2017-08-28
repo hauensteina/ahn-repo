@@ -53,7 +53,7 @@ def main():
     args = parser.parse_args()
     #np.random.seed(0) # Make things reproducible
     trainfolder = 'train/all_files'
-    valfolder   = 'val/all_files'
+    valfolder   = 'valid/all_files'
     if not os.path.exists(trainfolder): os.makedirs(trainfolder)
     if not os.path.exists(valfolder):   os.makedirs(valfolder)
     gen_images(args.ntrain, args.res, args.minblobs, args.maxblobs, trainfolder)
@@ -95,7 +95,7 @@ def gen_images(nb_imgs,res,minblobs,maxblobs,folder):
         plt.close('all')
         # Dump metadata
         #meta = { 'centers_x':x, 'centers_y':y, 'radii':r }
-        meta = { 'nblobs':nblobs[i] }
+        meta = { 'class':nblobs[i] }
         #BP()
         meta_json = json.dumps(meta) + '\n'
         with open(fjson,'w') as f: f.write(meta_json)
