@@ -39,7 +39,7 @@ def usage(printmsg=False):
     Description:
       Build a NN model with Keras, train on the data in the train subfolder.
     Example:
-      %s --resolution 128 --epochs 20
+      %s --resolution 16 --epochs 10
     ''' % (name,name,name)
     if printmsg:
         print(msg)
