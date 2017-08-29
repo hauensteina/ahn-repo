@@ -20,12 +20,6 @@ import keras.models as km
 import keras.optimizers as kopt
 
 X = np.array([[0,0,0,0],[0,255,0,0],[255,0,0,0],[255,255,0,0]])
-X2D = np.array([
-    [[[0,0],[0,0]]],
-    [[[0,255],[0,0]]],
-    [[[255,0],[0,0]]],
-    [[[255,255],[0,0]]]
-])
 # XOR on the first two elements
 y = np.array([[0],[1],[1],[0]])
 # Training will fail unless you normalize your input data

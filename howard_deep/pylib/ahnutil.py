@@ -51,6 +51,19 @@ def get_batches(path,
     res = {'train_batches':train_batches, 'valid_batches':valid_batches}
     return res
 
+# Get means and stds by channel(color) from array of imgs
+#----------------------------------------------------------
+def get_means_and_stds(images):
+    mean_per_channel = images.mean(axis=(0,2,3), keepdims=1)
+    std_per_channel  = images.std(axis=(0,2,3), keepdims=1)
+    return mean_per_channel, std_per_channel
+
+# Subtract supplied mean from each channel, divide by sigma
+#----------------------------------------------------------
+def normalize(images, mean_per_channel, std_per_channel):
+    images -= mean_per_channel
+    images /= std_per_channel
+
 # Get all images below a folder into one huge numpy array
 # WARNING: The images must be in *subfolders* of path/train and path/valid.
 #-----------------------------------------------------------
@@ -64,7 +77,7 @@ def get_data(path, target_size=(224,224), color_mode='grayscale'):
     )
     train_data =  np.concatenate([batches['train_batches'].next() for i in range(batches['train_batches'].nb_sample)])
     valid_data =  np.concatenate([batches['valid_batches'].next() for i in range(batches['valid_batches'].nb_sample)])
-    res = {'train_data':train_data, 'valid_data':valid_data}
+    res = {'train_data':train_data.astype(float), 'valid_data':valid_data.astype(float)}
     return res
 
 # Get arrays with meta info matching the order of the images
