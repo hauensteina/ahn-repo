@@ -31,7 +31,7 @@ def usage(printmsg=False):
       Generates jpegs in subfolders train and val, plus labels in json files.
       Each image has between minblobs and maxblobs black circles in it.
     Example:
-      %s --res 128 --minblobs 0 --maxblobs 2 --ntrain 10000 --nval 100
+      %s --res 128 --minblobs 0 --maxblobs 1 --ntrain 1000 --nval 100
     ''' % (name,name,name)
     if printmsg:
         print(msg)

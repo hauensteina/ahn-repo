@@ -21,11 +21,15 @@ import argparse
 #from matplotlib import pyplot as plt
 import keras.layers as kl
 import keras.models as km
+import keras.optimizers as kopt
 
 # Look for modules in our pylib folder
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
+
+
+BATCH_SIZE=1
 
 #---------------------------
 def usage(printmsg=False):
@@ -47,12 +51,12 @@ def usage(printmsg=False):
         return msg
 
 # Models
-# Try to count up to ten blobs per image
-#==========================================
+# Try to find out if there is a circle or not
+#================================================
 
-# One dense layer, output one hot
-#----------------------------------
-class Dense1:
+# My simplest little model
+#--------------------------
+class SimpleModel:
     #------------------------
     def __init__(self,resolution):
         self.resolution = resolution
@@ -60,16 +64,28 @@ class Dense1:
 
     #-----------------------
     def build_model(self):
-        inputs = kl.Input(shape=(3,self.resolution,self.resolution))
+        nb_colors=1
+        inputs = kl.Input(shape=(nb_colors,self.resolution,self.resolution))
         x = kl.Flatten()(inputs)
-        x = kl.Dense(64, activation='relu')(x)
-        x = kl.Dense(64, activation='relu')(x)
-        predictions = kl.Dense(4, activation='softmax', name='class')(x)
+        x = kl.Dense(8, activation='relu')(x)
+        #x = kl.Dense(64, activation='relu', name='dense_lower')(x)
+        #x = kl.Dropout(0.5)(x)
+        #x = kl.Dense(64, activation='relu', name='dense_upper')(x)
+        #x = kl.Dropout(0.5)(x)
+        #nb_classes=2
+        #outputs = kl.Dense(nb_classes, activation='softmax', name='output')(x)
+        output = kl.Dense(1, activation='sigmoid')(x)
         #print(inspect.getargspec(km.Model.__init__))
-        self.model = km.Model(input=inputs, output=predictions)
-        self.model.compile(optimizer='rmsprop',
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+        self.model = km.Model(input=inputs, output=output)
+        self.model.summary()
+        #self.model.compile(loss='binary_crossentropy', optimizer=kopt.Adam(), metrics=['accuracy'])
+        #self.model.compile(loss='binary_crossentropy', optimizer=kopt.SGD(lr=1.0), metrics=['accuracy'])
+        opt = kopt.SGD(lr=0.1)
+        #self.model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
+        self.model.compile(loss='binary_crossentropy', optimizer=opt)
+        # self.model.compile(optimizer=kopt.SGD(lr=0.001),
+        #           loss='categorical_crossentropy',
+        #           metrics=['accuracy'])
 
 #-----------
 def main():
@@ -80,17 +96,29 @@ def main():
     parser.add_argument( "--resolution", required=True, type=int)
     parser.add_argument( "--epochs", required=True, type=int)
     args = parser.parse_args()
-    model = Dense1(args.resolution)
-    batch_size=4
+    model = SimpleModel(args.resolution)
+    #BP()
     images = ut.get_data(SCRIPTPATH, (args.resolution,args.resolution))
     meta   = ut.get_meta(SCRIPTPATH)
     #BP()
-    model.model.fit(images['train_data'], meta['train_classes_hot'],
-                    batch_size=batch_size, nb_epoch=args.epochs,
-                    validation_data=(images['train_data'], meta['train_classes_hot']))
+    for i in range(1):
+        # print('>>>>>iter %d' % i)
+        # for idx,layer in enumerate(model.model.layers):
+        #     weights = layer.get_weights() # list of numpy arrays
+        #     print('Weights for layer %d:',idx)
+        #     print(weights)
+        #BP()
+        model.model.fit(images['train_data'], meta['train_classes'],
+                        batch_size=BATCH_SIZE, nb_epoch=args.epochs)
+        # model.model.fit(images['train_data'], meta['train_classes'],
+        #                 batch_size=BATCH_SIZE, nb_epoch=args.epochs,
+        #                 validation_data=(images['train_data'], meta['train_classes']))
                     #validation_data=(images['valid_data'], meta['valid_classes_hot']))
-    BP()
-    tt=42
+    #model.model.save('dump1.hd5')
+    preds = model.model.predict(images['train_data'], batch_size=BATCH_SIZE)
+    # ...and the probabilities of being a cat
+    #probs = model.model.predict_proba(images['train_data'], batch_size=BATCH_SIZE)[:,0]
+    print(preds)
 
 if __name__ == '__main__':
     main()
