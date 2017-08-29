@@ -26,7 +26,7 @@ sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
 
-BATCH_SIZE=1
+BATCH_SIZE=64
 
 #---------------------------
 def usage(printmsg=False):
@@ -68,7 +68,9 @@ class SimpleModel:
         output = kl.Dense(1, activation='sigmoid')(x)
         self.model = km.Model(input=inputs, output=output)
         self.model.summary()
-        opt = kopt.Adam(lr=0.001)
+        opt = kopt.Adam()
+        #opt = kopt.Adam(0.001)
+        #opt = kopt.SGD(lr=0.01)
         self.model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
 
 #-----------
