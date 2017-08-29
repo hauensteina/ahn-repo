@@ -64,7 +64,7 @@ class SimpleModel:
         nb_colors=1
         inputs = kl.Input(shape=(nb_colors,self.resolution,self.resolution))
         x = kl.Flatten()(inputs)
-        x = kl.Dense(8, activation='relu')(x)
+        x = kl.Dense(4, activation='relu')(x)
         output = kl.Dense(1, activation='sigmoid')(x)
         self.model = km.Model(input=inputs, output=output)
         self.model.summary()
