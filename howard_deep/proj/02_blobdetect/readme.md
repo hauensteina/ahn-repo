@@ -1,6 +1,6 @@
 Blobdetect
 ==========================
-AHN, Aug, 2017
+AHN, Aug 2017
 
 A simple starter project to detect whether there is a circle
 on an image or whether it is empty.

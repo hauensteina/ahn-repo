@@ -13,7 +13,7 @@ from pdb import set_trace as BP
 import os,sys,re,json
 import numpy as np
 import keras.preprocessing.image as kp
-from keras.utils.np_utils import to_categorical as onehot
+from keras.utils.np_utils import to_categorical
 
 
 # Return iterators to get batches of images from a folder.
@@ -50,6 +50,16 @@ def get_batches(path,
                                             color_mode=color_mode)
     res = {'train_batches':train_batches, 'valid_batches':valid_batches}
     return res
+
+# One-hot encode a list of integers
+# (1,3,2) ->
+# array([[ 0.,  1.,  0.,  0.],
+#        [ 0.,  0.,  0.,  1.],
+#        [ 0.,  0.,  1.,  0.]])
+#-------------------------------------
+def onehot(x):
+    return to_categorical(x)
+
 
 # Get means and stds by channel(color) from array of imgs
 #----------------------------------------------------------
