@@ -6,7 +6,7 @@
 # Creation Date: Aug 26, 2017
 # **********************************************************************/
 #
-# Build and train blobcount model
+# Build and train lin2hot model
 #
 
 from __future__ import division, print_function
@@ -26,20 +26,20 @@ sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
 
-BATCH_SIZE=64
+BATCH_SIZE=1000
 
 #---------------------------
 def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Build and train blobcount model
+      %s --  Build and train lin2hot model
     Synopsis:
-      %s --resolution <n> --epochs <n> --rate <learning_rate>
+      %s --maxint <n> --epochs <n> --ntrain <n> ---nval <n> --rate <learning_rate>
     Description:
-      Build a NN model with Keras, train on the data in the train subfolder.
+      Train a model to convert an integer to a one-hot vector
     Example:
-      %s --resolution 120 --epochs 10 --rate 0.01
+      %s --maxint 20 --epochs 1000 --ntrain 10000 --nval 1000 --rate 0.001
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -47,40 +47,43 @@ def usage(printmsg=False):
     else:
         return msg
 
+#-------------------------------------
+def generate_inp_outp(nsamp, maxint):
+    inp = np.random.randint(0,maxint+1,nsamp).reshape((nsamp,1))
+    outp = ut.onehot(inp)
+    return inp,outp
 
-# My simplest little model
-#--------------------------
-class CountModel:
-    #------------------------
-    def __init__(self,resolution,rate=0):
-        self.resolution = resolution
+class HotModel:
+    #---------------------------------
+    def __init__(self,maxint,rate=0):
+        self.maxint = maxint
         self.rate = rate
         self.build_model()
 
     #-----------------------
     def build_model(self):
-        nb_colors=1
-        nf=16
-        inputs = kl.Input(shape=(nb_colors,self.resolution,self.resolution))
-        x = kl.Convolution2D(nf,3,3, activation='relu', border_mode='same')(inputs)
-        x = kl.BatchNormalization(axis=1)(x)
-        #x = kl.MaxPooling2D()(x)
-        x = kl.Flatten()(x)
-        x = kl.Dense(8, activation='relu')(x)
+        inputs = kl.Input(shape=(1,))
+        x = kl.Dense(10, activation='relu', name='dense0')(inputs)
         x = kl.BatchNormalization()(x)
-        #x = kl.Dropout(0.2)(x)
-        #x = kl.Dense(25, activation='relu')(x)
-        #x = kl.BatchNormalization()(x)
-        #x = kl.Dropout(0.2)(x)
-        output = kl.Dense(26, activation='sigmoid')(x)
+        #x = kl.Dropout(0.5)(x)
+        x = kl.Dense(10, activation='relu', name='dense1')(x)
+        x = kl.BatchNormalization()(x)
+        #x = kl.Dropout(0.5)(x)
+        x = kl.Dense(10, activation='relu', name='dense2')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Dense(10, activation='relu', name='dense3')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Dense(10, activation='relu', name='dense4')(x)
+        x = kl.BatchNormalization()(x)
+        output = kl.Dense(self.maxint+1, activation='softmax', name='out' )(x)
         self.model = km.Model(input=inputs, output=output)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
+            #opt = kopt.SGD(self.rate)
         else:
             opt = kopt.Adam()
-        #opt = kopt.Adam(0.001)
-        #opt = kopt.SGD(lr=0.01)
+            #opt = kopt.SGD()
         self.model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
 
 #-----------
@@ -89,23 +92,27 @@ def main():
         usage(True)
 
     parser = argparse.ArgumentParser(usage=usage())
-    parser.add_argument("--resolution", required=True, type=int)
+    parser.add_argument("--maxint", required=True, type=int)
     parser.add_argument("--epochs", required=True, type=int)
-    parser.add_argument("--rate", required=False, default=0, type=float)
+    parser.add_argument("--ntrain", required=True, type=int)
+    parser.add_argument("--nval",   required=True, type=int)
+    parser.add_argument("--rate",   required=False, default=0, type=float)
     args = parser.parse_args()
-    model = CountModel(args.resolution, args.rate)
-    images = ut.get_data(SCRIPTPATH, (args.resolution,args.resolution))
-    meta   = ut.get_meta(SCRIPTPATH)
+    model = HotModel(args.maxint, args.rate)
+    traindata, trainout = generate_inp_outp(args.ntrain, args.maxint)
+    #BP()
+    valdata, valout     = generate_inp_outp(args.nval, args.maxint)
+    valdata_orig = valdata.copy()
     # Normalize training and validation data by train data mean and std
-    means,stds = ut.get_means_and_stds(images['train_data'])
-    ut.normalize(images['train_data'],means,stds)
-    ut.normalize(images['valid_data'],means,stds)
+    mean = traindata.mean()
+    std =  traindata.std()
+    traindata = (traindata - mean) / std
+    valdata = (valdata - mean) / std
 
-    # Load the model and train some more
     if os.path.exists('model.h5'): model.model.load_weights('model.h5')
-    model.model.fit(images['train_data'], meta['train_classes_hot'],
+    model.model.fit(traindata, trainout,
                     batch_size=BATCH_SIZE, nb_epoch=args.epochs,
-                    validation_data=(images['valid_data'], meta['valid_classes_hot']))
+                    validation_data=(valdata, valout))
     model.model.save_weights('model.h5')
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
@@ -115,8 +122,9 @@ def main():
     #model.model.fit(images['train_data'], meta['train_classes'],
     #                batch_size=BATCH_SIZE, nb_epoch=args.epochs)
     #model.model.save('dump1.hd5')
-    preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    #print(preds)
+    #preds = model.model.predict(valdata, batch_size=BATCH_SIZE)
+    #for x in zip(valdata_orig,preds):
+    #    print(x)
 
 if __name__ == '__main__':
     main()
