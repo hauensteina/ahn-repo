@@ -66,6 +66,8 @@ class HotModel:
         x = kl.Dense(10, activation='relu', name='dense0')(inputs)
         #x = kl.BatchNormalization()(x)
         x = kl.Dense(10, activation='relu', name='dense1')(x)
+        x = kl.Dense(10, activation='relu', name='dense2')(x)
+        x = kl.Dense(10, activation='relu', name='dense3')(x)
         #x = kl.BatchNormalization()(x)
         #x = kl.Dropout(0.5)(x)
         #x = kl.Dense(10, activation='relu', name='dense1')(x)
