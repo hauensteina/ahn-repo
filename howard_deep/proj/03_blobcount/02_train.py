@@ -63,17 +63,17 @@ class CountModel:
     #-----------------------
     def build_model(self):
         nb_colors=1
-        nf=16
+        nf=32
         inputs = kl.Input(shape=(nb_colors,self.resolution,self.resolution))
         x = kl.Convolution2D(nf,3,3, activation='relu', border_mode='same')(inputs)
         x = kl.BatchNormalization(axis=1)(x)
-        #x = kl.MaxPooling2D()(x)
+        x = kl.MaxPooling2D()(x)
         x = kl.Flatten()(x)
-        x = kl.Dense(8, activation='relu')(x)
+        x = kl.Dense(50, activation='relu')(x)
         x = kl.BatchNormalization()(x)
         #x = kl.Dropout(0.2)(x)
-        #x = kl.Dense(25, activation='relu')(x)
-        #x = kl.BatchNormalization()(x)
+        x = kl.Dense(50, activation='relu')(x)
+        x = kl.BatchNormalization()(x)
         #x = kl.Dropout(0.2)(x)
         output = kl.Dense(26, activation='sigmoid')(x)
         self.model = km.Model(input=inputs, output=output)
