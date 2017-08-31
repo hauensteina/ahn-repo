@@ -35,11 +35,11 @@ def usage(printmsg=False):
     Name:
       %s --  Build and train blobcount model
     Synopsis:
-      %s --resolution <n> --epochs <n>
+      %s --resolution <n> --epochs <n> --rate <learning_rate>
     Description:
       Build a NN model with Keras, train on the data in the train subfolder.
     Example:
-      %s --resolution 16 --epochs 10
+      %s --resolution 120 --epochs 10 --rate 0.01
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -55,8 +55,9 @@ def usage(printmsg=False):
 #--------------------------
 class CountModel:
     #------------------------
-    def __init__(self,resolution):
+    def __init__(self,resolution,rate=0):
         self.resolution = resolution
+        self.rate = rate
         self.build_model()
 
     #-----------------------
@@ -64,12 +65,19 @@ class CountModel:
         nb_colors=1
         inputs = kl.Input(shape=(nb_colors,self.resolution,self.resolution))
         x = kl.Flatten()(inputs)
-        x = kl.Dense(4, activation='relu')(x)
-        x = kl.Dense(4, activation='relu')(x)
-        output = kl.Dense(2, activation='sigmoid')(x)
+        x = kl.Dense(50, activation='relu')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Dropout(0.5)(x)
+        x = kl.Dense(50, activation='relu')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Dropout(0.5)(x)
+        output = kl.Dense(26, activation='sigmoid')(x)
         self.model = km.Model(input=inputs, output=output)
         self.model.summary()
-        opt = kopt.Adam()
+        if self.rate > 0:
+            opt = kopt.Adam(self.rate)
+        else:
+            opt = kopt.Adam()
         #opt = kopt.Adam(0.001)
         #opt = kopt.SGD(lr=0.01)
         self.model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
@@ -80,19 +88,24 @@ def main():
         usage(True)
 
     parser = argparse.ArgumentParser(usage=usage())
-    parser.add_argument( "--resolution", required=True, type=int)
-    parser.add_argument( "--epochs", required=True, type=int)
+    parser.add_argument("--resolution", required=True, type=int)
+    parser.add_argument("--epochs", required=True, type=int)
+    parser.add_argument("--rate", required=False, default=0, type=float)
     args = parser.parse_args()
-    model = CountModel(args.resolution)
+    model = CountModel(args.resolution, args.rate)
     images = ut.get_data(SCRIPTPATH, (args.resolution,args.resolution))
     meta   = ut.get_meta(SCRIPTPATH)
     # Normalize training and validation data by train data mean and std
     means,stds = ut.get_means_and_stds(images['train_data'])
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
+
+    # Load the model and train some more
+    if os.path.exists('model.h5'): model.model.load_weights('model.h5')
     model.model.fit(images['train_data'], meta['train_classes_hot'],
                     batch_size=BATCH_SIZE, nb_epoch=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
+    model.model.save_weights('model.h5')
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
     #     weights = layer.get_weights() # list of numpy arrays
@@ -102,7 +115,7 @@ def main():
     #                batch_size=BATCH_SIZE, nb_epoch=args.epochs)
     #model.model.save('dump1.hd5')
     preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    print(preds)
+    #print(preds)
 
 if __name__ == '__main__':
     main()

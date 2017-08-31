@@ -85,16 +85,11 @@ def gen_image(res,gridsize,nblobs,ofname):
     pairpos = [(x // gridsize, x % gridsize) for x in linpos]
     r = res // (2*gridsize)
     pairpos = [(p[1]*2*r + r, p[0]*2*r + r) for p in pairpos]
-    #BP()
 
     for i,p in enumerate(pairpos):
         circle = plt.Circle((p[0]/res, p[1]/res), 0.8*r/res, color='k')
-        #tt = (p[0]/res, p[1]/res)
-        #xx = r/res
-        #BP()
         ax.add_artist(circle)
     plt.savefig(ofname)
-    #return (list(centers_x), list(centers_y), list(r))
 
 # Generate nb_imgs images with minblobs to maxblobs circles.
 # Also generate a json file for each, giving the number of circles.
@@ -111,9 +106,7 @@ def gen_images(nb_imgs,resolution,gridsize,folder):
         gen_image(resolution, gridsize, nblobs[i], fjpg)
         plt.close('all')
         # Dump metadata
-        #meta = { 'centers_x':x, 'centers_y':y, 'radii':r }
         meta = { 'class':nblobs[i] }
-        #BP()
         meta_json = json.dumps(meta) + '\n'
         with open(fjson,'w') as f: f.write(meta_json)
 
