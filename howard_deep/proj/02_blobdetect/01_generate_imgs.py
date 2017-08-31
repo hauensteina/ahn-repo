@@ -6,7 +6,7 @@
 # Creation Date: Aug 26, 2017
 # **********************************************************************/
 #
-# Generate training and validation data for project blobcount
+# Generate training and validation data for project blobdetect
 #
 
 from __future__ import division, print_function
@@ -24,7 +24,7 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Generate training and validation data for project blobcount
+      %s --  Generate training and validation data for project blobdetect
     Synopsis:
       %s --res <n> --minblobs <n> --maxblobs <n> --ntrain <n> --nval <n>
     Description:

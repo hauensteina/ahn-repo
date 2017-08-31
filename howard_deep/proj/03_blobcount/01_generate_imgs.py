@@ -3,17 +3,17 @@
 # /********************************************************************
 # Filename: generate_images.py
 # Author: AHN
-# Creation Date: Aug 26, 2017
+# Creation Date: Aug 30, 2017
 # **********************************************************************/
 #
 # Generate training and validation data for project blobcount
 #
 
-from __future__ import division, print_function
+from __future__ import division,print_function
 from pdb import set_trace as BP
 import os,sys,re,json
 import numpy as np
-from numpy.random import random
+#from numpy.random import random
 import argparse
 import matplotlib as mpl
 mpl.use('Agg') # This makes matplotlib work without a display
@@ -31,12 +31,14 @@ def usage(printmsg=False):
     Name:
       %s --  Generate training and validation data for project blobcount
     Synopsis:
-      %s --res <n> --minblobs <n> --maxblobs <n> --ntrain <n> --nval <n>
+      %s --res <n> --gridsize <n> --ntrain <n> --nval <n>
     Description:
       Generates jpegs in subfolders train and val, plus labels in json files.
-      Each image has between minblobs and maxblobs black circles in it.
+      Each image has between 1 and gridsize*gridsize black circles in it.
+      The circles are aligned on an gridsize*gridsize grid.
+      Res must be a multiple of 2 * gridsize.
     Example:
-      %s --res 128 --minblobs 0 --maxblobs 1 --ntrain 1000 --nval 100
+      %s --res 120 --gridsize 5 --ntrain 1000 --nval 100
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -51,23 +53,24 @@ def main():
 
     parser = argparse.ArgumentParser(usage=usage())
     parser.add_argument( "--res",      required=True, type=int)
-    parser.add_argument( "--minblobs", required=True, type=int)
-    parser.add_argument( "--maxblobs", required=True, type=int)
+    parser.add_argument( "--gridsize", required=True, type=int)
     parser.add_argument( "--ntrain",   required=True, type=int)
     parser.add_argument( "--nval",     required=True, type=int)
     args = parser.parse_args()
+    if (args.res % (2*args.gridsize)): usage(True)
     #np.random.seed(0) # Make things reproducible
     trainfolder = 'train/all_files'
     valfolder   = 'valid/all_files'
     if not os.path.exists(trainfolder): os.makedirs(trainfolder)
     if not os.path.exists(valfolder):   os.makedirs(valfolder)
-    gen_images(args.ntrain, args.res, args.minblobs, args.maxblobs, trainfolder)
-    gen_images(args.nval,   args.res, args.minblobs, args.maxblobs, valfolder)
+    gen_images(args.ntrain, args.res, args.gridsize, trainfolder)
+    gen_images(args.nval,   args.res, args.gridsize, valfolder)
 
-# Generate one image of resolution resxres with nblobs circles in it.
-# Image goes to folder/fname
-#----------------------------------------
-def gen_image(res,nblobs,ofname):
+# Generate one image of resolution resxres with a random number
+# between 1 and gridsize*gridsize circles in it.
+# The circles are aligned with the grid.
+#------------------------------------------
+def gen_image(res,gridsize,nblobs,ofname):
     # Set up matplotlib
     dpi=100.0
     fig = plt.figure(figsize=(res/dpi,res/dpi),dpi=dpi)
@@ -75,28 +78,37 @@ def gen_image(res,nblobs,ofname):
     ax.set_axis_off()
     fig.add_axes(ax)
 
-    centers_x = np.random.uniform(0,1,nblobs)
-    centers_y = np.random.uniform(0,1,nblobs)
-    r = np.random.uniform(0.1,0.2,nblobs)
+    # Where should the circles be
+    pos = range(gridsize*gridsize)
+    np.random.shuffle(pos)
+    linpos = pos[:nblobs]
+    pairpos = [(x // gridsize, x % gridsize) for x in linpos]
+    r = res // (2*gridsize)
+    pairpos = [(p[1]*2*r + r, p[0]*2*r + r) for p in pairpos]
+    #BP()
 
-    for i in range(nblobs):
-        circle = plt.Circle((centers_x[i], centers_y[i]), r[i], color='k')
+    for i,p in enumerate(pairpos):
+        circle = plt.Circle((p[0]/res, p[1]/res), 0.8*r/res, color='k')
+        #tt = (p[0]/res, p[1]/res)
+        #xx = r/res
+        #BP()
         ax.add_artist(circle)
     plt.savefig(ofname)
-    return (list(centers_x), list(centers_y), list(r))
+    #return (list(centers_x), list(centers_y), list(r))
 
 # Generate nb_imgs images with minblobs to maxblobs circles.
 # Also generate a json file for each, giving the number of circles.
 #-------------------------------------------------------------------
-def gen_images(nb_imgs,res,minblobs,maxblobs,folder):
+def gen_images(nb_imgs,resolution,gridsize,folder):
     #BP()
-    nblobs = minblobs + np.random.randint(maxblobs-minblobs+1, size=nb_imgs)
+    nblobs = 1 + np.random.randint(gridsize*gridsize, size=nb_imgs)
     for i in range(nb_imgs):
         fname = '%07d' % i
         fjpg  = folder + '/' + fname + '.jpg'
         fjson = folder + '/' + fname + '.json'
         # Make jpeg
-        (x,y,r) = gen_image(res, nblobs[i], fjpg)
+        gen_image(resolution, gridsize, nblobs[i], fjpg)
+        gen_image(resolution, gridsize, nblobs[i], fjpg)
         plt.close('all')
         # Dump metadata
         #meta = { 'centers_x':x, 'centers_y':y, 'radii':r }
