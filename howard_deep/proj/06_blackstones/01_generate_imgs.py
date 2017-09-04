@@ -6,7 +6,7 @@
 # Creation Date: Aug 30, 2017
 # **********************************************************************/
 #
-# Generate training and validation data for project blobcount
+# Generate training and validation data for project blackstones
 #
 
 from __future__ import division,print_function
@@ -29,16 +29,15 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Generate training and validation data for project blobcount
+      %s --  Generate training and validation data for project blackstones
     Synopsis:
       %s --res <n> --gridsize <n> --ntrain <n> --nval <n>
     Description:
       Generates jpegs in subfolders train and val, plus labels in json files.
-      Each image has between 1 and gridsize*gridsize black circles in it.
-      The circles are aligned on an gridsize*gridsize grid.
-      Res must be a multiple of 2 * gridsize.
+      Each image has between 0 and gridsize*gridsize black circles in it.
+      The circles are aligned on a gridsize*gridsize grid.
     Example:
-      %s --res 120 --gridsize 5 --ntrain 1000 --nval 100
+      %s --res 80 --gridsize 5 --ntrain 1000 --nval 100
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -70,10 +69,10 @@ def main():
 # between 1 and gridsize*gridsize circles in it.
 # The circles are aligned with the grid.
 #------------------------------------------
-def gen_image(res,gridsize,nblobs,ofname):
+def gen_image(resolution,gridsize,nblobs,ofname):
     # Set up matplotlib
     dpi=100.0
-    fig = plt.figure(figsize=(res/dpi,res/dpi),dpi=dpi)
+    fig = plt.figure(figsize=(resolution/dpi,resolution/dpi),dpi=dpi)
     ax = plt.Axes(fig, [0., 0., 1., 1.])
     ax.set_axis_off()
     fig.add_axes(ax)
@@ -83,32 +82,37 @@ def gen_image(res,gridsize,nblobs,ofname):
     np.random.shuffle(pos)
     linpos = pos[:nblobs]
     pairpos = [(x // gridsize, x % gridsize) for x in linpos]
-    r = res // (2*gridsize)
+    r = resolution // (2*gridsize)
     pairpos = [(p[1]*2*r + r, p[0]*2*r + r) for p in pairpos]
 
     for i,p in enumerate(pairpos):
-        circle = plt.Circle((p[0]/res, p[1]/res), 0.8*r/res, color='k')
+        circle = plt.Circle((p[0]/resolution, p[1]/resolution), 0.8*r/resolution, color='k')
         ax.add_artist(circle)
     plt.savefig(ofname)
+    return linpos
 
 # Generate nb_imgs images with minblobs to maxblobs circles.
 # Also generate a json file for each, giving the number of circles.
 #-------------------------------------------------------------------
 def gen_images(nb_imgs,resolution,gridsize,folder):
     #BP()
-    nblobs = 1 + np.random.randint(gridsize*gridsize, size=nb_imgs)
+    nblobs = np.random.randint(gridsize*gridsize+1, size=nb_imgs)
     for i in range(nb_imgs):
         fname = '%07d' % i
         fjpg  = folder + '/' + fname + '.jpg'
         fjson = folder + '/' + fname + '.json'
-        # Make jpeg
-        gen_image(resolution, gridsize, nblobs[i], fjpg)
+        # Make jpeg and get the stone positions
+        stonepos = gen_image(resolution, gridsize, nblobs[i], fjpg)
+        # Gridsize * gridsize list of 0 or 1 for stone or not
+        stonelist = [0] * (gridsize*gridsize)
+        for i in range(gridsize*gridsize):
+            if i in stonepos:
+                stonelist[i] = 1
         plt.close('all')
         # Dump metadata
-        meta = { 'class':nblobs[i] }
+        meta = { 'stones':stonelist }
         meta_json = json.dumps(meta) + '\n'
         with open(fjson,'w') as f: f.write(meta_json)
-
 
 
 if __name__ == '__main__':
