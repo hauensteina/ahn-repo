@@ -31,13 +31,13 @@ def usage(printmsg=False):
     Name:
       %s --  Generate training and validation data for project blackstones
     Synopsis:
-      %s --res <n> --gridsize <n> --ntrain <n> --nval <n>
+      %s --resolution <n> --gridsize <n> --ntrain <n> --nval <n>
     Description:
       Generates jpegs in subfolders train and val, plus labels in json files.
       Each image has between 0 and gridsize*gridsize black circles in it.
       The circles are aligned on a gridsize*gridsize grid.
     Example:
-      %s --res 80 --gridsize 5 --ntrain 1000 --nval 100
+      %s --resolution 80 --gridsize 5 --ntrain 1000 --nval 100
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -51,24 +51,24 @@ def main():
         usage(True)
 
     parser = argparse.ArgumentParser(usage=usage())
-    parser.add_argument( "--res",      required=True, type=int)
+    parser.add_argument( "--resolution",      required=True, type=int)
     parser.add_argument( "--gridsize", required=True, type=int)
     parser.add_argument( "--ntrain",   required=True, type=int)
     parser.add_argument( "--nval",     required=True, type=int)
     args = parser.parse_args()
-    if (args.res % (2*args.gridsize)): usage(True)
+    if (args.resolution % (2*args.gridsize)): usage(True)
     #np.random.seed(0) # Make things reproducible
     trainfolder = 'train/all_files'
     valfolder   = 'valid/all_files'
     if not os.path.exists(trainfolder): os.makedirs(trainfolder)
     if not os.path.exists(valfolder):   os.makedirs(valfolder)
-    gen_images(args.ntrain, args.res, args.gridsize, trainfolder)
-    gen_images(args.nval,   args.res, args.gridsize, valfolder)
+    gen_images(args.ntrain, args.resolution, args.gridsize, trainfolder)
+    gen_images(args.nval,   args.resolution, args.gridsize, valfolder)
 
 # Generate one image of resolution resxres with a random number
 # between 1 and gridsize*gridsize circles in it.
 # The circles are aligned with the grid.
-#------------------------------------------
+#--------------------------------------------------
 def gen_image(resolution,gridsize,nblobs,ofname):
     # Set up matplotlib
     dpi=100.0

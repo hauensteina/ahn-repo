@@ -85,8 +85,8 @@ def get_data(path, target_size=(224,224), color_mode='grayscale'):
                           target_size=target_size,
                           color_mode=color_mode
     )
-    train_data =  np.concatenate([batches['train_batches'].next() for i in range(batches['train_batches'].nb_sample)])
-    valid_data =  np.concatenate([batches['valid_batches'].next() for i in range(batches['valid_batches'].nb_sample)])
+    train_data =  np.concatenate([batches['train_batches'].next() for i in range(batches['train_batches'].samples)])
+    valid_data =  np.concatenate([batches['valid_batches'].next() for i in range(batches['valid_batches'].samples)])
     res = {'train_data':train_data.astype(float), 'valid_data':valid_data.astype(float)}
     return res
 
@@ -96,7 +96,7 @@ def get_data(path, target_size=(224,224), color_mode='grayscale'):
 # Example:
 # images = get_data(....)
 # image = images['train'][42]
-# meta =  get_classes(...)
+# meta =  get_meta(...)
 # one_hot_class_for_image = meta['train_classes_hot'][42]
 #----------------------------------------------------------
 def get_meta(path):
@@ -115,7 +115,7 @@ def get_meta(path):
     for idx,fname in enumerate(valid_batches.filenames):
         jf =  path + '/valid/' + os.path.splitext(fname)[0]+'.json'
         j = json.load(open(jf, 'r'))
-        valid_classes.append(j['class'])
+        valid_classes.append(int(j['class']))
     valid_classes_hot = onehot(valid_classes)
 
     res = {
@@ -124,6 +124,40 @@ def get_meta(path):
         'train_filenames':train_batches.filenames,
         'valid_classes':valid_classes,
         'valid_classes_hot':valid_classes_hot,
+        'valid_filenames':valid_batches.filenames
+    }
+    return res
+
+# Get arrays with expected output matching the order of the images
+# returned by get_data().
+# Returns the value found for key in each json file.
+# Example:
+# images = get_data(....)
+# image = images['train'][42]
+# meta =  get_output_by_key(...)
+# meta_for_image = meta['train_output'][42]
+#----------------------------------------------------------
+def get_output_by_key(path,key):
+    batches = get_batches(path, shuffle=False, batch_size=1)
+    train_batches = batches['train_batches']
+    valid_batches = batches['valid_batches']
+
+    train_output=[]
+    for idx,fname in enumerate(train_batches.filenames):
+        jf = path + '/train/' + os.path.splitext(fname)[0]+'.json'
+        j  = json.load(open(jf, 'r'))
+        train_output.append(j[key])
+
+    valid_output=[]
+    for idx,fname in enumerate(valid_batches.filenames):
+        jf =  path + '/valid/' + os.path.splitext(fname)[0]+'.json'
+        j = json.load(open(jf, 'r'))
+        valid_output.append(j[key])
+
+    res = {
+        'train_output':train_output,
+        'train_filenames':train_batches.filenames,
+        'valid_output':valid_output,
         'valid_filenames':valid_batches.filenames
     }
     return res
