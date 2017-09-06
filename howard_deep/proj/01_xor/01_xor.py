@@ -28,7 +28,7 @@ X = X / np.std(X)
 # Make it look like four images with one channel two rows two cols
 X2D = np.reshape(X,(4,1,2,2))
 
-nb_epoch=100
+epochs=100
 try:
     mode=sys.argv[1]
 except:
@@ -39,10 +39,10 @@ if mode == 'func':
     inputs = kl.Input(shape=(4,))
     x = kl.Dense(8,activation='relu')(inputs)
     output = kl.Dense(1,activation='sigmoid')(x)
-    model = km.Model(input=inputs, output=output)
+    model = km.Model(inputs=inputs, outputs=output)
     sgd = kopt.SGD(lr=0.2)
     model.compile(loss='binary_crossentropy', optimizer=sgd)
-    model.fit(X, y, batch_size=1, nb_epoch=nb_epoch)
+    model.fit(X, y, batch_size=1, epochs=epochs)
     print(model.predict(X, batch_size=1))
 # How to handle grayscale images (2D, 1 channel)
 elif mode == 'func2d':
@@ -50,10 +50,10 @@ elif mode == 'func2d':
     x = kl.Flatten()(inputs)
     x = kl.Dense(8,activation='relu')(x)
     output = kl.Dense(1,activation='sigmoid')(x)
-    model = km.Model(input=inputs, output=output)
+    model = km.Model(inputs=inputs, outputs=output)
     sgd = kopt.SGD(lr=0.2)
     model.compile(loss='binary_crossentropy', optimizer=sgd)
-    model.fit(X2D, y, batch_size=1, nb_epoch=nb_epoch)
+    model.fit(X2D, y, batch_size=1, epochs=epochs)
     print(model.predict(X2D, batch_size=1))
 # Sequential interface
 elif mode == 'sequential':
@@ -64,7 +64,7 @@ elif mode == 'sequential':
     model.add(kl.Activation('sigmoid'))
     sgd = kopt.SGD(lr=0.2)
     model.compile(loss='binary_crossentropy', optimizer=sgd)
-    model.fit(X, y, batch_size=1, nb_epoch=nb_epoch)
+    model.fit(X, y, batch_size=1, epochs=epochs)
     print(model.predict_proba(X))
 else:
     print 'unknown mode'
