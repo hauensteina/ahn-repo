@@ -84,13 +84,13 @@ class StoneModel:
         x = kl.MaxPooling2D()(x)
         # Now try to get at stone or no stone with two channels only
         #x = kl.Convolution2D(2,3,3, activation='tanh', border_mode='same')(inputs)
-        x = kl.Conv2D(2,(3,3), activation=None, padding='same')(x)
+        x = kl.Conv2D(2,(3,3), padding='same')(x)
         x = kl.Flatten()(x)
         # softmax across the two channels, gives one 5x5 matrix
         # outputs = ka.softmax(x,axis=1)
         #outputs = kl.Activation('softmax',axis=1)(x)
         outputs = kl.Activation('sigmoid')(x)
-        self.model = km.Model(input=inputs, output=outputs)
+        self.model = km.Model(inputs=inputs, outputs=outputs)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -141,7 +141,7 @@ def main():
     #     print('Weights for layer %d:',idx)
     #     print(weights)
     #model.model.fit(images['train_data'], meta['train_classes'],
-    #                batch_size=BATCH_SIZE, nb_epoch=args.epochs)
+    #                batch_size=BATCH_SIZE, epochs=args.epochs)
     #model.model.save('dump1.hd5')
     preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     print(preds)
