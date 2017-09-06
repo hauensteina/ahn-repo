@@ -39,7 +39,7 @@ def usage(printmsg=False):
     Description:
       Train a model to count how many of the nbits input bits are set
     Example:
-      %s --maxint 20 --epochs 1000 --ntrain 10000 --nval 1000 --rate 0.001
+      %s --nbits 20 --epochs 1000 --ntrain 10000 --nval 1000 --rate 0.001
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -84,7 +84,7 @@ class CountModel:
         #x = kl.Dense(10, activation='relu', name='dense4')(x)
         #x = kl.BatchNormalization()(x)
         #output = kl.Dense(self.maxint+1, activation='softmax', name='out' )(x)
-        self.model = km.Model(input=inputs, output=output)
+        self.model = km.Model(inputs=inputs, outputs=output)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -119,7 +119,7 @@ def main():
 
     if os.path.exists('model.h5'): model.model.load_weights('model.h5')
     model.model.fit(traindata, trainout,
-                    batch_size=BATCH_SIZE, nb_epoch=args.epochs,
+                    batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(valdata, valout))
     model.model.save_weights('model.h5')
     # print('>>>>>iter %d' % i)
@@ -128,7 +128,7 @@ def main():
     #     print('Weights for layer %d:',idx)
     #     print(weights)
     #model.model.fit(images['train_data'], meta['train_classes'],
-    #                batch_size=BATCH_SIZE, nb_epoch=args.epochs)
+    #                batch_size=BATCH_SIZE, epochs=args.epochs)
     #model.model.save('dump1.hd5')
     preds = model.model.predict(valdata, batch_size=BATCH_SIZE)
     for x in zip(valdata_orig,preds):
