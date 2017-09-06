@@ -62,7 +62,8 @@ class CountModel:
         nb_colors=1
         nf=16
         inputs = kl.Input(shape=(nb_colors,self.resolution,self.resolution))
-        x = kl.Convolution2D(nf,3,3, activation='relu', border_mode='same')(inputs)
+        #x = kl.Convolution2D(nf,3,3, activation='relu', border_mode='same')(inputs)
+        x = kl.Conv2D(nf,(3,3), activation='relu', padding='same')(inputs)
         x = kl.BatchNormalization(axis=1)(x)
         #x = kl.MaxPooling2D()(x)
         x = kl.Flatten()(x)
@@ -73,7 +74,7 @@ class CountModel:
         #x = kl.BatchNormalization()(x)
         #x = kl.Dropout(0.2)(x)
         output = kl.Dense(26, activation='sigmoid')(x)
-        self.model = km.Model(input=inputs, output=output)
+        self.model = km.Model(inputs=inputs, outputs=output)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -104,7 +105,7 @@ def main():
     # Load the model and train some more
     if os.path.exists('model.h5'): model.model.load_weights('model.h5')
     model.model.fit(images['train_data'], meta['train_classes_hot'],
-                    batch_size=BATCH_SIZE, nb_epoch=args.epochs,
+                    batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
     model.model.save_weights('model.h5')
     # print('>>>>>iter %d' % i)
@@ -113,7 +114,7 @@ def main():
     #     print('Weights for layer %d:',idx)
     #     print(weights)
     #model.model.fit(images['train_data'], meta['train_classes'],
-    #                batch_size=BATCH_SIZE, nb_epoch=args.epochs)
+    #                batch_size=BATCH_SIZE, epochs=args.epochs)
     #model.model.save('dump1.hd5')
     preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     #print(preds)
