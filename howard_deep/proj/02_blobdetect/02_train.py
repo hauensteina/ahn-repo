@@ -67,7 +67,7 @@ class SimpleModel:
         x = kl.Dense(4, activation='relu')(x)
         x = kl.Dense(4, activation='relu')(x)
         output = kl.Dense(1, activation='sigmoid')(x)
-        self.model = km.Model(input=inputs, output=output)
+        self.model = km.Model(inputs=inputs, outputs=output)
         self.model.summary()
         opt = kopt.Adam()
         #opt = kopt.Adam(0.001)
@@ -91,7 +91,7 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
     model.model.fit(images['train_data'], meta['train_classes'],
-                    batch_size=BATCH_SIZE, nb_epoch=args.epochs,
+                    batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes']))
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
@@ -99,7 +99,7 @@ def main():
     #     print('Weights for layer %d:',idx)
     #     print(weights)
     #model.model.fit(images['train_data'], meta['train_classes'],
-    #                batch_size=BATCH_SIZE, nb_epoch=args.epochs)
+    #                batch_size=BATCH_SIZE, epochs=args.epochs)
     #model.model.save('dump1.hd5')
     preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     print(preds)
