@@ -2,4 +2,5 @@ StoneFeatures
 ===============
 AHN, Sep 2017
 
-Train convolutional feature maps for black and white stones
+Find black and white stone class and position with
+dense layers only.
