@@ -155,9 +155,9 @@ def get_output_by_key(path,key):
         valid_output.append(j[key])
 
     res = {
-        'train_output':train_output,
+        'train_output':np.array(train_output),
         'train_filenames':train_batches.filenames,
-        'valid_output':valid_output,
+        'valid_output':np.array(valid_output),
         'valid_filenames':valid_batches.filenames
     }
     return res
