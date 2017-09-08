@@ -50,7 +50,6 @@ def usage(printmsg=False):
         return msg
 
 
-# My simplest little model
 #--------------------------
 class MapModel:
     #----------------------------------------------
@@ -73,14 +72,17 @@ class MapModel:
         x_class  = kl.Dense(2,activation='softmax', name='class')(x)
         # center_x, center_y, r
         x_circle = kl.Dense(3, name='circle')(x)
-        self.model = km.Model(inputs=inputs, outputs=[x_class,x_circle])
+        # self.model = km.Model(inputs=inputs, outputs=[x_class,x_circle])
+        self.model = km.Model(inputs=inputs, outputs=x_circle)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
-        self.model.compile(loss=['categorical_crossentropy','mse'], optimizer=opt,
-                           metrics=['accuracy'], loss_weights=[1.,0.001])
+        # self.model.compile(loss=['categorical_crossentropy','mse'], optimizer=opt,
+        #                    metrics=['accuracy'], loss_weights=[1.,0.001])
+        self.model.compile(loss='mse', optimizer=opt,
+                           metrics=['accuracy'])
 
 #-----------
 def main():
@@ -110,9 +112,12 @@ def main():
     if os.path.exists('model.h5'): model.model.load_weights('model.h5')
     #BP()
     print("fitting model...")
-    model.model.fit(images['train_data'], [train_output_class, train_output_xyr],
+    # model.model.fit(images['train_data'], [train_output_class, train_output_xyr],
+    #                 batch_size=BATCH_SIZE, epochs=args.epochs,
+    #                 validation_data=(images['valid_data'], [valid_output_class, valid_output_xyr]))
+    model.model.fit(images['train_data'], train_output_xyr,
                     batch_size=BATCH_SIZE, epochs=args.epochs,
-                    validation_data=(images['valid_data'], [valid_output_class, valid_output_xyr]))
+                    validation_data=(images['valid_data'], valid_output_xyr))
     model.model.save_weights('model.h5')
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
@@ -125,10 +130,18 @@ def main():
     #preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     #print(preds)
     preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    tt = zip(valid_output_xyr,output_class['valid_output'],preds[1])
-    for x in tt:
-        print(x)
-
+    #tt = zip(valid_output_xyr,output_class['valid_output'],preds[1])
+    #for i,p in enumerate(preds):
+    #    preds[i] = p.copy().tolist()
+    #BP()
+    #tt = zip(valid_output_xyr,output_class['valid_output'],preds)
+    #for x in tt:
+    #    print(x)
+    for i,p in enumerate(preds):
+        tstr = '%s center: %.1f %.1f pred: %.1f %.1f' % ('b' if output_class['valid_output'][i] else 'w',
+                                                         valid_output_xyr[i][0], valid_output_xyr[i][1],
+                                                         preds[i][0], preds[i][1])
+        print(tstr)
 
 if __name__ == '__main__':
     main()
