@@ -64,7 +64,11 @@ class MapModel:
     def build_model(self):
         inputs = kl.Input(shape=(1,self.resolution,self.resolution))
         x = kl.Flatten()(inputs)
+        #x = kl.Dense(512, activation='softmax', name='dense_0')(x)
         x = kl.Dense(512, activation='softmax', name='dense_0')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Dense(512, activation='softmax', name='dense_1')(x)
+        x = kl.BatchNormalization()(x)
         # 1 or 0 for Black or White
         x_class  = kl.Dense(2,activation='softmax', name='class')(x)
         # center_x, center_y, r
@@ -75,8 +79,8 @@ class MapModel:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
-        self.model.compile(loss=['mse', 'categorical_crossentropy'], optimizer=opt,
-                           metrics=['accuracy'], loss_weights=[.001, 1.])
+        self.model.compile(loss=['categorical_crossentropy','mse'], optimizer=opt,
+                           metrics=['accuracy'], loss_weights=[1.,0.001])
 
 #-----------
 def main():
@@ -120,6 +124,11 @@ def main():
     #model.model.save('dump1.hd5')
     #preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     #print(preds)
+    preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
+    tt = zip(valid_output_xyr,output_class['valid_output'],preds[1])
+    for x in tt:
+        print(x)
+
 
 if __name__ == '__main__':
     main()
