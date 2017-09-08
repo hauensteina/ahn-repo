@@ -62,31 +62,31 @@ class MapModel:
     #-----------------------
     def build_model(self):
         inputs = kl.Input(shape=(1,self.resolution,self.resolution))
-        x = kl.Flatten()(inputs)
+        flatinp = kl.Flatten()(inputs)
         #x = kl.Dense(512, activation='softmax', name='dense_0')(x)
-        x = kl.Dense(4, activation='selu', name='dense_0')(x)
+        dense0 = kl.Dense(4, activation='selu', name='dense_0')(flatinp)
         #x = kl.BatchNormalization()(x)
-        x = kl.Dense(4, activation='selu', name='dense_1')(x)
+        dense1 = kl.Dense(4, activation='selu', name='dense_1')(dense0)
         #x = kl.BatchNormalization()(x)
-        x = kl.Dense(4, activation='selu', name='dense_2')(x)
+        x = kl.Dense(4, activation='selu', name='dense_2')(dense1)
         #x = kl.BatchNormalization()(x)
         x = kl.Dense(4, activation='softmax', name='dense_3')(x)
         #x = kl.BatchNormalization()(x)
         # 1 or 0 for Black or White
-        x_class  = kl.Dense(2,activation='softmax', name='class')(x)
+        x_class  = kl.Dense(2,activation='softmax', name='class')(dense0)
         # center_x, center_y, r
         x_circle = kl.Dense(3, name='circle')(x)
-        # self.model = km.Model(inputs=inputs, outputs=[x_class,x_circle])
-        self.model = km.Model(inputs=inputs, outputs=x_circle)
+        self.model = km.Model(inputs=inputs, outputs=[x_class,x_circle])
+        # self.model = km.Model(inputs=inputs, outputs=x_circle)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
-        # self.model.compile(loss=['categorical_crossentropy','mse'], optimizer=opt,
-        #                    metrics=['accuracy'], loss_weights=[1.,0.001])
-        self.model.compile(loss='mse', optimizer=opt,
-                           metrics=['accuracy'])
+        self.model.compile(loss=['categorical_crossentropy','mse'], optimizer=opt,
+                           metrics=['accuracy'], loss_weights=[1.,1.])
+        # self.model.compile(loss='mse', optimizer=opt,
+        #                    metrics=['accuracy'])
 
 #-----------
 def main():
@@ -110,41 +110,28 @@ def main():
     train_output_xyr   = output_xyr['train_output']
     valid_output_class = ut.onehot(output_class['valid_output'])
     valid_output_xyr   = output_xyr['valid_output']
-    #valid_output = zip(ut.onehot(output_class['valid_output']), output_xyr['valid_output'])
 
     # Load the model and train
     if os.path.exists('model.h5'): model.model.load_weights('model.h5')
     #BP()
     print("fitting model...")
-    # model.model.fit(images['train_data'], [train_output_class, train_output_xyr],
-    #                 batch_size=BATCH_SIZE, epochs=args.epochs,
-    #                 validation_data=(images['valid_data'], [valid_output_class, valid_output_xyr]))
-    model.model.fit(images['train_data'], train_output_xyr,
+    model.model.fit(images['train_data'], [train_output_class, train_output_xyr],
                     batch_size=BATCH_SIZE, epochs=args.epochs,
-                    validation_data=(images['valid_data'], valid_output_xyr))
+                    validation_data=(images['valid_data'], [valid_output_class, valid_output_xyr]))
+    # model.model.fit(images['train_data'], train_output_xyr,
+    #                 batch_size=BATCH_SIZE, epochs=args.epochs,
+    #                 validation_data=(images['valid_data'], valid_output_xyr))
     model.model.save_weights('model.h5')
-    # print('>>>>>iter %d' % i)
-    # for idx,layer in enumerate(model.model.layers):
-    #     weights = layer.get_weights() # list of numpy arrays
-    #     print('Weights for layer %d:',idx)
-    #     print(weights)
-    #model.model.fit(images['train_data'], meta['train_classes'],
-    #                batch_size=BATCH_SIZE, epochs=args.epochs)
-    #model.model.save('dump1.hd5')
-    #preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    #print(preds)
     preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    #tt = zip(valid_output_xyr,output_class['valid_output'],preds[1])
-    #for i,p in enumerate(preds):
-    #    preds[i] = p.copy().tolist()
-    #BP()
-    #tt = zip(valid_output_xyr,output_class['valid_output'],preds)
-    #for x in tt:
-    #    print(x)
-    for i,p in enumerate(preds):
-        tstr = '%s center: %.1f %.1f pred: %.1f %.1f' % ('b' if output_class['valid_output'][i] else 'w',
-                                                         valid_output_xyr[i][0], valid_output_xyr[i][1],
-                                                         preds[i][0], preds[i][1])
+    classpreds = preds[0]
+    pospreds = preds[1]
+    for i,cp in enumerate(classpreds):
+        pp = pospreds[i]
+        tstr = 'class: %s pred: %s center: %.1f %.1f pred: %.1f %.1f' \
+        %  ('b' if output_class['valid_output'][i] else 'w',
+            'b' if cp[1]>cp[0] else 'w',
+            valid_output_xyr[i][0], valid_output_xyr[i][1],
+            pp[0], pp[1])
         print(tstr)
 
 if __name__ == '__main__':
