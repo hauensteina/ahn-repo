@@ -61,20 +61,22 @@ class MapModel:
 
     #-----------------------
     def build_model(self):
+        # VGG style convolutional model
         inputs = kl.Input(shape=(1,self.resolution,self.resolution))
-        x = kl.Conv2D(32,(3,3), activation='relu')(inputs)
-        x = kl.Conv2D(32,(3,3), activation='relu')(x)
-        x_flat0 = kl.Flatten()(x)
+        x = kl.Conv2D(32,(3,3), activation='selu')(inputs)
+        x = kl.Conv2D(32,(3,3), activation='selu')(x)
+        #x_flat0 = kl.Flatten()(x)
         x = kl.MaxPooling2D()(x)
-        x = kl.Conv2D(64,(3,3), activation='relu')(x)
-        x = kl.Conv2D(64,(3,3), activation='relu')(x)
-        x = kl.MaxPooling2D()(x)
-        x_flat1 = kl.Flatten()(x)
-        #x = kl.Dense(512, activation='relu')(x)
-        x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
+        x_flat1  = kl.Flatten()(x)
         x_circle = kl.Dense(3, name='circle')(x_flat1)
+        x = kl.Conv2D(64,(3,3), activation='selu')(x)
+        x = kl.Conv2D(64,(3,3), activation='selu')(x)
+        x = kl.MaxPooling2D()(x)
+        x_class_conv = kl.Conv2D(2,(3,3))(x)
+        x_class_pool = kl.GlobalAveragePooling2D()(x_class_conv)
+        x_class = kl.Activation('softmax', name='class')(x_class_pool)
+        #x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
         self.model = km.Model(inputs=inputs, outputs=[x_class,x_circle])
-        # self.model = km.Model(inputs=inputs, outputs=x_circle)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -82,9 +84,6 @@ class MapModel:
             opt = kopt.Adam()
         self.model.compile(loss=['categorical_crossentropy','mse'], optimizer=opt,
                            metrics=['accuracy'], loss_weights=[1.,1.])
-        # self.model.compile(loss='mse', optimizer=opt,
-        #                    metrics=['accuracy'])
-        # kl.Conv2D(nf,(3,3), activation='relu', padding='same')(inputs)
 
     #------------------------------------------------------------------------------------------
     def train(self,train_input, train_output, valid_input, valid_output, batch_size, epochs):
