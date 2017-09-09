@@ -3,10 +3,10 @@
 # /********************************************************************
 # Filename: train.py
 # Author: AHN
-# Creation Date: Sep 7, 2017
+# Creation Date: Sep 9, 2017
 # **********************************************************************/
 #
-# Build and train stonefeature_dense model
+# Build and train stonefeatures_conv model
 #
 
 from __future__ import division, print_function
@@ -88,6 +88,29 @@ class MapModel:
         # self.model.compile(loss='mse', optimizer=opt,
         #                    metrics=['accuracy'])
 
+    #------------------------------------------------------------------------------------------
+    def train(self,train_input, train_output, valid_input, valid_output, batch_size, epochs):
+        print("fitting model...")
+        self.model.fit(train_input, train_output,
+                        validation_data=(valid_input, valid_output),
+                        batch_size=batch_size, epochs=epochs)
+
+    #---------------------
+    def print_results(self, valid_input, valid_output):
+        preds = self.model.predict(valid_input, batch_size=32)
+        classpreds = preds[0]
+        pospreds = preds[1]
+        valid_output_class = valid_output[0]
+        valid_output_xyr   = valid_output[1]
+        for i,cp in enumerate(classpreds):
+            pp = pospreds[i]
+            tstr = 'class: %s pred: %s center: %.1f %.1f pred: %.1f %.1f' \
+            %  ('b' if valid_output_class[i][1] else 'w',
+                'b' if cp[1]>cp[0] else 'w',
+                valid_output_xyr[i][0], valid_output_xyr[i][1],
+                pp[0], pp[1])
+            print(tstr)
+
 #-----------
 def main():
     if len(sys.argv) == 1:
@@ -114,25 +137,26 @@ def main():
     # Load the model and train
     if os.path.exists('model.h5'): model.model.load_weights('model.h5')
     #BP()
-    print("fitting model...")
-    model.model.fit(images['train_data'], [train_output_class, train_output_xyr],
-                    batch_size=BATCH_SIZE, epochs=args.epochs,
-                    validation_data=(images['valid_data'], [valid_output_class, valid_output_xyr]))
+    model.train(images['train_data'], [train_output_class, train_output_xyr],
+               images['valid_data'], [valid_output_class, valid_output_xyr],
+               BATCH_SIZE, args.epochs)
     # model.model.fit(images['train_data'], train_output_xyr,
     #                 batch_size=BATCH_SIZE, epochs=args.epochs,
     #                 validation_data=(images['valid_data'], valid_output_xyr))
     model.model.save_weights('model.h5')
-    preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    classpreds = preds[0]
-    pospreds = preds[1]
-    for i,cp in enumerate(classpreds):
-        pp = pospreds[i]
-        tstr = 'class: %s pred: %s center: %.1f %.1f pred: %.1f %.1f' \
-        %  ('b' if output_class['valid_output'][i] else 'w',
-            'b' if cp[1]>cp[0] else 'w',
-            valid_output_xyr[i][0], valid_output_xyr[i][1],
-            pp[0], pp[1])
-        print(tstr)
+    model.print_results(images['valid_data'], [valid_output_class, valid_output_xyr])
+
+    # preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
+    # classpreds = preds[0]
+    # pospreds = preds[1]
+    # for i,cp in enumerate(classpreds):
+    #     pp = pospreds[i]
+    #     tstr = 'class: %s pred: %s center: %.1f %.1f pred: %.1f %.1f' \
+    #     %  ('b' if output_class['valid_output'][i] else 'w',
+    #         'b' if cp[1]>cp[0] else 'w',
+    #         valid_output_xyr[i][0], valid_output_xyr[i][1],
+    #         pp[0], pp[1])
+    #     print(tstr)
 
 if __name__ == '__main__':
     main()
