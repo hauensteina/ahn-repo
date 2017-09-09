@@ -62,20 +62,17 @@ class MapModel:
     #-----------------------
     def build_model(self):
         inputs = kl.Input(shape=(1,self.resolution,self.resolution))
-        flatinp = kl.Flatten()(inputs)
-        #x = kl.Dense(512, activation='softmax', name='dense_0')(x)
-        dense0 = kl.Dense(4, activation='selu', name='dense_0')(flatinp)
-        #x = kl.BatchNormalization()(x)
-        dense1 = kl.Dense(4, activation='selu', name='dense_1')(dense0)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Dense(4, activation='selu', name='dense_2')(dense1)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Dense(4, activation='softmax', name='dense_3')(x)
-        #x = kl.BatchNormalization()(x)
-        # 1 or 0 for Black or White
-        x_class  = kl.Dense(2,activation='softmax', name='class')(dense0)
-        # center_x, center_y, r
-        x_circle = kl.Dense(3, name='circle')(x)
+        x = kl.Conv2D(32,(3,3), activation='relu')(inputs)
+        x = kl.Conv2D(32,(3,3), activation='relu')(x)
+        x_flat0 = kl.Flatten()(x)
+        x = kl.MaxPooling2D()(x)
+        x = kl.Conv2D(64,(3,3), activation='relu')(x)
+        x = kl.Conv2D(64,(3,3), activation='relu')(x)
+        x = kl.MaxPooling2D()(x)
+        x_flat1 = kl.Flatten()(x)
+        #x = kl.Dense(512, activation='relu')(x)
+        x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
+        x_circle = kl.Dense(3, name='circle')(x_flat1)
         self.model = km.Model(inputs=inputs, outputs=[x_class,x_circle])
         # self.model = km.Model(inputs=inputs, outputs=x_circle)
         self.model.summary()
@@ -87,6 +84,7 @@ class MapModel:
                            metrics=['accuracy'], loss_weights=[1.,1.])
         # self.model.compile(loss='mse', optimizer=opt,
         #                    metrics=['accuracy'])
+        # kl.Conv2D(nf,(3,3), activation='relu', padding='same')(inputs)
 
     #------------------------------------------------------------------------------------------
     def train(self,train_input, train_output, valid_input, valid_output, batch_size, epochs):
