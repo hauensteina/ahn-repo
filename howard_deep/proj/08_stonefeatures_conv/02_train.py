@@ -26,9 +26,10 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=256
+BATCH_SIZE=32
 GRIDSIZE=5
 RESOLUTION=80
+MODELFILE='model.h5'
 
 #---------------------------
 def usage(printmsg=False):
@@ -38,11 +39,13 @@ def usage(printmsg=False):
       %s --  Build and train stonefeatures model
     Synopsis:
       %s --epochs <n> --rate <learning_rate>
+      or
+      %s --visualize
     Description:
-      Try to train and visualize a feature map for blak and white stones.
+      Try to train and visualize a feature map for black and white stones.
     Example:
       %s --epochs 10 --rate 0.001
-    ''' % (name,name,name)
+    ''' % (name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -50,7 +53,7 @@ def usage(printmsg=False):
         return msg
 
 
-#--------------------------
+#-----------------
 class MapModel:
     #----------------------------------------------
     def __init__(self,resolution,gridsize,rate=0):
@@ -68,11 +71,13 @@ class MapModel:
         #x_flat0 = kl.Flatten()(x)
         x = kl.MaxPooling2D()(x)
         x_flat1  = kl.Flatten()(x)
+        # Dense layer used for localization
         x_circle = kl.Dense(3, name='circle')(x_flat1)
         x = kl.Conv2D(64,(3,3), activation='selu')(x)
         x = kl.Conv2D(64,(3,3), activation='selu')(x)
         x = kl.MaxPooling2D()(x)
-        x_class_conv = kl.Conv2D(2,(3,3))(x)
+        # Conv layer used for classification
+        x_class_conv = kl.Conv2D(2,(3,3),name='classconv')(x)
         x_class_pool = kl.GlobalAveragePooling2D()(x_class_conv)
         x_class = kl.Activation('softmax', name='class')(x_class_pool)
         #x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
@@ -92,7 +97,7 @@ class MapModel:
                         validation_data=(valid_input, valid_output),
                         batch_size=batch_size, epochs=epochs)
 
-    #---------------------
+    #---------------------------------------------------
     def print_results(self, valid_input, valid_output):
         preds = self.model.predict(valid_input, batch_size=32)
         classpreds = preds[0]
@@ -108,16 +113,34 @@ class MapModel:
                 pp[0], pp[1])
             print(tstr)
 
+# Init model, load weights from file, dump layer vizualizations to viz_*.jpg
+#-----------------------------------------------------------------------------
+def visualize(model, layer_name, data):
+    intermediate_layer_model = Model(inputs=model.model.input,
+                                     outputs=model.model.get_layer(layer_name).output)
+    intermediate_output = intermediate_layer_model.predict(data)
+    BP()
+    tt=42
+
+
 #-----------
 def main():
     if len(sys.argv) == 1:
         usage(True)
 
     parser = argparse.ArgumentParser(usage=usage())
-    parser.add_argument("--epochs", required=True, type=int)
+    parser.add_argument("--epochs", required=False, default=10, type=int)
     parser.add_argument("--rate", required=False, default=0, type=float)
+    parser.add_argument("--visualize", required=False, action='store_true')
     args = parser.parse_args()
     model = MapModel(RESOLUTION, GRIDSIZE, args.rate)
+    if os.path.exists(MODELFILE):
+        print('Loading model from file %s' % MODELFILE)
+        #model.model.load_weights('model.h5')
+        model.model = km.load_model(MODELFILE)
+        if args.rate:
+            model.optimizer.lr.set_value(args.rate)
+
     images = ut.get_data(SCRIPTPATH, (RESOLUTION,RESOLUTION))
     output_class = ut.get_output_by_key(SCRIPTPATH,'class')
     output_xyr   = ut.get_output_by_key(SCRIPTPATH,'xyr')
@@ -131,29 +154,17 @@ def main():
     valid_output_class = ut.onehot(output_class['valid_output'])
     valid_output_xyr   = output_xyr['valid_output']
 
-    # Load the model and train
-    if os.path.exists('model.h5'): model.model.load_weights('model.h5')
-    #BP()
+    if args.visualize:
+        visualize(model, 'classconv', images('train_data'))
+        exit(0)
+
+    # Train
     model.train(images['train_data'], [train_output_class, train_output_xyr],
                images['valid_data'], [valid_output_class, valid_output_xyr],
                BATCH_SIZE, args.epochs)
-    # model.model.fit(images['train_data'], train_output_xyr,
-    #                 batch_size=BATCH_SIZE, epochs=args.epochs,
-    #                 validation_data=(images['valid_data'], valid_output_xyr))
-    model.model.save_weights('model.h5')
+    #model.model.save_weights('model.h5')
+    model.model.save(MODELFILE)
     model.print_results(images['valid_data'], [valid_output_class, valid_output_xyr])
-
-    # preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    # classpreds = preds[0]
-    # pospreds = preds[1]
-    # for i,cp in enumerate(classpreds):
-    #     pp = pospreds[i]
-    #     tstr = 'class: %s pred: %s center: %.1f %.1f pred: %.1f %.1f' \
-    #     %  ('b' if output_class['valid_output'][i] else 'w',
-    #         'b' if cp[1]>cp[0] else 'w',
-    #         valid_output_xyr[i][0], valid_output_xyr[i][1],
-    #         pp[0], pp[1])
-    #     print(tstr)
 
 if __name__ == '__main__':
     main()
