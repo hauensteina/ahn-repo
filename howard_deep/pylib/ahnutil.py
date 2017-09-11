@@ -14,7 +14,7 @@ import os,sys,re,json
 import numpy as np
 import keras.preprocessing.image as kp
 from keras.utils.np_utils import to_categorical
-
+import keras
 
 # Return iterators to get batches of images from a folder.
 # Example:
@@ -161,3 +161,12 @@ def get_output_by_key(path,key):
         'valid_filenames':valid_batches.filenames
     }
     return res
+
+# Convert keras NN input into something you can feed to
+# plt.imshow()
+#------------------
+def to_plot(img):
+    if keras.backend.image_data_format() != 'channels_first':
+        return np.rollaxis(img, 0, 1).astype(np.uint8)
+    else:
+        return np.rollaxis(img, 0, 3).astype(np.uint8)

@@ -12,10 +12,14 @@
 from __future__ import division, print_function
 from pdb import set_trace as BP
 import inspect
-import os,sys,re,json
+import os,sys,re,json,shutil
 import numpy as np
+import scipy
 from numpy.random import random
 import argparse
+import matplotlib as mpl
+mpl.use('Agg') # This makes matplotlib work without a display
+from matplotlib import pyplot as plt
 import keras.layers as kl
 import keras.models as km
 import keras.optimizers as kopt
@@ -113,14 +117,31 @@ class MapModel:
                 pp[0], pp[1])
             print(tstr)
 
-# Init model, load weights from file, dump layer vizualizations to viz_*.jpg
-#-----------------------------------------------------------------------------
-def visualize(model, layer_name, data):
-    intermediate_layer_model = Model(inputs=model.model.input,
-                                     outputs=model.model.get_layer(layer_name).output)
+# Dump the conv results for b and white to viz_b.jpg and viz_w.jpg
+# The imput image goes to viz_img.jpg
+#---------------------------------------------------------------------
+def visualize(model, layer_name, data, filenames):
+    img_num=0
+    BLACK=1
+    WHITE=0
+    intermediate_layer_model = km.Model(inputs=model.model.input,
+                                        outputs=model.model.get_layer(layer_name).output)
     intermediate_output = intermediate_layer_model.predict(data)
-    BP()
-    tt=42
+    conv_w = intermediate_output[img_num][WHITE]
+    img_w = scipy.misc.imresize(conv_w, (80,80), interp='nearest')
+
+    #BP()
+    plt.figure()
+    tt = data[img_num][0]
+    plt.imshow(tt)
+    #plt.imshow(img_w, cmap="cool", alpha=0.5)
+    plt.savefig('viz_w.jpg')
+    # conv_b = intermediate_output[img_num][BLACK]
+    # img_b = scipy.misc.imresize(conv_b, (80,80), interp='nearest')
+    # plt.imshow(img_b, cmap="cool")
+    # plt.savefig('viz_b.jpg')
+    # Copy orig img
+    shutil.copyfile(filenames[img_num], 'viz_img.jpg')
 
 
 #-----------
@@ -135,13 +156,15 @@ def main():
     args = parser.parse_args()
     model = MapModel(RESOLUTION, GRIDSIZE, args.rate)
     if os.path.exists(MODELFILE):
-        print('Loading model from file %s' % MODELFILE)
+        print('Loading model from file %s...' % MODELFILE)
         #model.model.load_weights('model.h5')
         model.model = km.load_model(MODELFILE)
         if args.rate:
             model.optimizer.lr.set_value(args.rate)
 
+    print('Reading data...')
     images = ut.get_data(SCRIPTPATH, (RESOLUTION,RESOLUTION))
+    meta = ut.get_meta(SCRIPTPATH)
     output_class = ut.get_output_by_key(SCRIPTPATH,'class')
     output_xyr   = ut.get_output_by_key(SCRIPTPATH,'xyr')
     # Normalize training and validation data by train data mean and std
@@ -155,10 +178,12 @@ def main():
     valid_output_xyr   = output_xyr['valid_output']
 
     if args.visualize:
-        visualize(model, 'classconv', images('train_data'))
+        print('Dumping conv layer images to jpg')
+        visualize(model, 'classconv', images['train_data'], ['train/' + x for x in meta['train_filenames']])
         exit(0)
 
     # Train
+    print('Start training...')
     model.train(images['train_data'], [train_output_class, train_output_xyr],
                images['valid_data'], [valid_output_class, valid_output_xyr],
                BATCH_SIZE, args.epochs)
