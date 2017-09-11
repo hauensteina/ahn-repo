@@ -34,6 +34,7 @@ BATCH_SIZE=32
 GRIDSIZE=5
 RESOLUTION=80
 MODELFILE='model.h5'
+WEIGHTSFILE='weights.h5'
 
 #---------------------------
 def usage(printmsg=False):
@@ -132,8 +133,8 @@ def visualize(model, layer_name, data, filenames):
 
     #BP()
     plt.figure()
-    tt = data[img_num][0]
-    plt.imshow(tt)
+    tt = data[img_num][0].astype(np.uint8)
+    plt.imshow(tt,cmap='Greys')
     #plt.imshow(img_w, cmap="cool", alpha=0.5)
     plt.savefig('viz_w.jpg')
     # conv_b = intermediate_output[img_num][BLACK]
@@ -155,12 +156,16 @@ def main():
     parser.add_argument("--visualize", required=False, action='store_true')
     args = parser.parse_args()
     model = MapModel(RESOLUTION, GRIDSIZE, args.rate)
-    if os.path.exists(MODELFILE):
-        print('Loading model from file %s...' % MODELFILE)
-        #model.model.load_weights('model.h5')
-        model.model = km.load_model(MODELFILE)
-        if args.rate:
-            model.optimizer.lr.set_value(args.rate)
+    if args.visualize:
+        if os.path.exists(WEIGHTSFILE):
+            print('Loading weights from file %s...' % WEIGHTSFILE)
+            model.model.load_weights(WEIGHTSFILE)
+    else:
+        if os.path.exists(MODELFILE):
+            print('Loading model from file %s...' % MODELFILE)
+            model.model = km.load_model(MODELFILE)
+            if args.rate:
+                model.model.optimizer.lr.set_value(args.rate)
 
     print('Reading data...')
     images = ut.get_data(SCRIPTPATH, (RESOLUTION,RESOLUTION))
@@ -187,7 +192,7 @@ def main():
     model.train(images['train_data'], [train_output_class, train_output_xyr],
                images['valid_data'], [valid_output_class, valid_output_xyr],
                BATCH_SIZE, args.epochs)
-    #model.model.save_weights('model.h5')
+    model.model.save_weights(WEIGHTSFILE)
     model.model.save(MODELFILE)
     model.print_results(images['valid_data'], [valid_output_class, valid_output_xyr])
 
