@@ -118,31 +118,39 @@ class MapModel:
                 pp[0], pp[1])
             print(tstr)
 
-# Dump the conv results for b and white to viz_b.jpg and viz_w.jpg
-# The imput image goes to viz_img.jpg
+# Dump the top conv layer results for black and white to viz_<n>.jpg
+# for the the first couple images in data
 #---------------------------------------------------------------------
 def visualize(model, layer_name, data, filenames):
-    img_num=0
     BLACK=1
     WHITE=0
     intermediate_layer_model = km.Model(inputs=model.model.input,
                                         outputs=model.model.get_layer(layer_name).output)
     intermediate_output = intermediate_layer_model.predict(data)
-    conv_w = intermediate_output[img_num][WHITE]
-    img_w = scipy.misc.imresize(conv_w, (80,80), interp='nearest')
 
-    #BP()
-    plt.figure()
-    tt = data[img_num][0].astype(np.uint8)
-    plt.imshow(tt,cmap='Greys')
-    #plt.imshow(img_w, cmap="cool", alpha=0.5)
-    plt.savefig('viz_w.jpg')
-    # conv_b = intermediate_output[img_num][BLACK]
-    # img_b = scipy.misc.imresize(conv_b, (80,80), interp='nearest')
-    # plt.imshow(img_b, cmap="cool")
-    # plt.savefig('viz_b.jpg')
-    # Copy orig img
-    shutil.copyfile(filenames[img_num], 'viz_img.jpg')
+    for img_num in range(5):
+        conv_w = intermediate_output[img_num][WHITE]
+        img_w = scipy.misc.imresize(conv_w, (80,80), interp='nearest')
+        conv_b = intermediate_output[img_num][BLACK]
+        img_b = scipy.misc.imresize(conv_b, (80,80), interp='nearest')
+
+        plt.figure()
+        plt.subplot(141)
+        orig = data[img_num][0].astype(np.uint8)
+        # Input image
+        plt.imshow(orig,cmap='Greys')
+        plt.subplot(142)
+        # White convolution layer
+        plt.imshow(img_w, cmap='Greys', alpha=1.0)
+        plt.subplot(143)
+        # Black convolution layer
+        plt.imshow(img_b, cmap='Greys', alpha=1.0)
+        plt.subplot(144)
+        # Overlay black conv layer on original
+        plt.imshow(orig, cmap='Greys', alpha=1.0)
+        plt.imshow(img_b, cmap='cool', alpha=0.5)
+        # Save
+        plt.savefig('viz_%d.jpg' % img_num)
 
 
 #-----------
