@@ -97,7 +97,9 @@ class LambdaModel:
         # Get down to three channels e,b,w
         x_class_conv = kl.Conv2D(3,(1,1), activation='selu', padding='same')(x)
         channels_0_0 = kl.Lambda(lambda x: x[:,:,0,0], (x_class_conv._keras_shape[1],)) (x_class_conv)
-        out = kl.Activation('softmax')(channels_0_0)
+        channels_0_1 = kl.Lambda(lambda x: x[:,:,0,1], (x_class_conv._keras_shape[1],)) (x_class_conv)
+        out_0_0 = kl.Activation('softmax')(channels_0_0)
+        out_0_1 = kl.Activation('softmax')(channels_0_1)
         #out = channels_at_xy(0,0,x_class_conv.shape)(x_class_conv)
 
 
@@ -109,7 +111,7 @@ class LambdaModel:
         #x_class_pool = kl.GlobalAveragePooling2D()(x_class_conv)
         #x_class = kl.Activation('softmax', name='class')(x_class_pool)
         #x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
-        self.model = km.Model(inputs=inputs, outputs=out)
+        self.model = km.Model(inputs=inputs, outputs=[out_0_0,out_0_1])
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -126,11 +128,14 @@ class LambdaModel:
                         batch_size=batch_size, epochs=epochs)
 
     #---------------------------------------------------
-    def print_results(self, valid_input, valid_output):
+    def print_results(self, valid_input, valid_output_0, valid_output_1):
+        np.set_printoptions(precision=2)
+        np.set_printoptions(suppress=True)
         preds = self.model.predict(valid_input, batch_size=32)
-        for i,pred in enumerate(preds):
-            tstr = 'color: %s pred: %s ' \
-            %  (str(valid_output[i]), str(pred))
+        for i in range(len(preds[0])):
+            tstr = 'color0: %s pred: %s || color1: %s pred: %s ' \
+            %  (str(valid_output_0[i]), str(preds[0][i]),
+                str(valid_output_1[i]), str(preds[1][i]))
             print(tstr)
 
 # Dump the top conv layer results for black and white to viz_<n>.jpg
@@ -179,7 +184,7 @@ def main():
     parser.add_argument("--visualize", required=False, action='store_true')
     args = parser.parse_args()
     model = LambdaModel(RESOLUTION, GRIDSIZE, args.rate)
-    if args.visualize:
+    if args.visualize or not args.epochs:
         if os.path.exists(WEIGHTSFILE):
             print('Loading weights from file %s...' % WEIGHTSFILE)
             model.model.load_weights(WEIGHTSFILE)
@@ -193,8 +198,13 @@ def main():
     print('Reading data...')
     images = ut.get_data(SCRIPTPATH, (RESOLUTION,RESOLUTION))
     output = ut.get_output_by_key(SCRIPTPATH,'stones')
-    valid_output = ut.onehot( output['valid_output'][:,0])
-    train_output = ut.onehot( output['train_output'][:,0])
+
+    #-------------------------------------------------------
+    valid_output_0 = ut.onehot( output['valid_output'][:,0])
+    train_output_0 = ut.onehot( output['train_output'][:,0])
+    valid_output_1 = ut.onehot( output['valid_output'][:,1])
+    train_output_1 = ut.onehot( output['train_output'][:,1])
+
     means,stds = ut.get_means_and_stds(images['train_data'])
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
@@ -205,13 +215,14 @@ def main():
         exit(0)
 
     # Train
-    print('Start training...')
-    model.train(images['train_data'], train_output,
-               images['valid_data'],  valid_output,
-               BATCH_SIZE, args.epochs)
-    model.model.save_weights(WEIGHTSFILE)
-    model.model.save(MODELFILE)
-    model.print_results(images['valid_data'], valid_output)
+    if args.epochs:
+        print('Start training...')
+        model.train(images['train_data'], [train_output_0,train_output_1],
+                   images['valid_data'],  [valid_output_0,valid_output_1],
+                   BATCH_SIZE, args.epochs)
+        model.model.save_weights(WEIGHTSFILE)
+        model.model.save(MODELFILE)
+    model.print_results(images['valid_data'], valid_output_0, valid_output_1)
 
 if __name__ == '__main__':
     main()
