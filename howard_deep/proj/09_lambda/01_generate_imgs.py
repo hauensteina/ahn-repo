@@ -116,7 +116,7 @@ def gen_images(nb_imgs,resolution,gridsize,folder):
         fjpg  = folder + '/' + fname + '.jpg'
         fjson = folder + '/' + fname + '.json'
         stones = gen_image(resolution, gridsize, fjpg)
-        stones = ut.onehot(stones).tolist()
+        #stones = ut.onehot(stones).tolist()
         plt.close('all')
         # Dump metadata
 
