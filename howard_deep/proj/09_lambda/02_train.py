@@ -30,7 +30,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=1
+BATCH_SIZE=8
 GRIDSIZE=2
 RESOLUTION = GRIDSIZE * 2 * 2 * 2
 MODELFILE='model.h5'
@@ -211,6 +211,7 @@ def main():
     parser.add_argument("--visualize", required=False, action='store_true')
     args = parser.parse_args()
     GRIDSIZE = args.gridsize
+    RESOLUTION = GRIDSIZE * 2 * 2 * 2
     model = LambdaModel(RESOLUTION, GRIDSIZE, args.rate)
     if args.visualize or not args.epochs:
         if os.path.exists(WEIGHTSFILE):
@@ -246,10 +247,13 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
 
-    # fname = output['train_filenames'][0]
-    # tt = get_output_of_layer(model.model, 'lastconv', images['train_data'][:1])
-    # xx = get_output_of_layer(model.model, 'out', images['train_data'][:1])
-    # BP()
+    fname = output['train_filenames'][0]
+    #tt = get_output_of_layer(model.model, 'lastconv', images['train_data'][:1])
+    idx=0
+    xx = get_output_of_layer(model.model, 'out', images['train_data'][idx:idx+1])
+    print(xx)
+    print(train_output[idx:idx+1])
+    BP()
 
     if args.visualize:
         print('Dumping conv layer images to jpg')
