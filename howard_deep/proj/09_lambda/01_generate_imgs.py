@@ -40,7 +40,7 @@ def usage(printmsg=False):
       Generates jpegs in subfolders train and val, plus labels in json files.
       Each image has a random number of B,W, and empty intersections.
     Example:
-      %s --resolution 80 --gridsize 3 --ntrain 1000 --nval 100
+      %s --resolution 80 --gridsize 5 --ntrain 1000 --nval 100
     ''' % (name,name,name)
     if printmsg:
         print(msg)

@@ -16,6 +16,23 @@ import keras.preprocessing.image as kp
 from keras.utils.np_utils import to_categorical
 import keras
 
+#from keras.layers.core import *
+from keras import backend as K
+
+#------------------------------------
+def call_f(inp, method, input_data):
+  f = K.function([inp], [method])
+  return f([input_data])[0]
+
+# Print the output of a layer
+#----------------------------------------------
+def print_out(layer, input_data, train=True):
+  if hasattr(layer, 'previous'):
+    print (call_f(layer.previous.input,
+                 layer.get_output(train=train), input_data))
+  else:
+    print (call_f(layer.input, layer.get_output(train=train), input_data))
+
 # Return iterators to get batches of images from a folder.
 # Example:
 '''

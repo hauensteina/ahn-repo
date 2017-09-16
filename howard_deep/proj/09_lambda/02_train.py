@@ -31,7 +31,7 @@ sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
 BATCH_SIZE=32
-GRIDSIZE=3
+GRIDSIZE=5
 RESOLUTION = GRIDSIZE * 2 * 2 * 2
 MODELFILE='model.h5'
 WEIGHTSFILE='weights.h5'
@@ -71,6 +71,14 @@ def channels_at_xy(x,y,shape):
     BP()
     return kl.Lambda(func, output_shape=(1,) + shape[1])
 
+# Softmax along axis 1 (channels)
+#--------------------
+def softMaxAxis1(x):
+    return ka.softmax(x,axis=1)
+
+# Make sure we can save and load a model with custom activation
+ka.softMaxAxis1 = softMaxAxis1
+
 #-----------------
 class LambdaModel:
     #----------------------------------------------
@@ -93,13 +101,15 @@ class LambdaModel:
         x = kl.Conv2D(128,(3,3), activation='selu', padding='same')(x)
         x = kl.Conv2D(128,(3,3), activation='selu', padding='same')(x)
         # Get down to GRIDSIZE x GRIDSIZE (e.g. 3x3)
-        x = kl.MaxPooling2D()(x)
-        # Get down to three channels e,b,w
-        x_class_conv = kl.Conv2D(3,(1,1), activation='selu', padding='same')(x)
-        channels_0_0 = kl.Lambda(lambda x: x[:,:,0,0], (x_class_conv._keras_shape[1],)) (x_class_conv)
-        channels_0_1 = kl.Lambda(lambda x: x[:,:,0,1], (x_class_conv._keras_shape[1],)) (x_class_conv)
-        out_0_0 = kl.Activation('softmax')(channels_0_0)
-        out_0_1 = kl.Activation('softmax')(channels_0_1)
+        x = kl.MaxPooling2D(name='3x3')(x)
+        # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
+        x_class_conv = kl.Conv2D(3,(1,1), activation=softMaxAxis1, padding='same',name='lastconv')(x)
+        # flatten into chan0,chan0,..,chan0,chan1,chan1,...,chan1,chan2,chan2,...chan2
+        x_out = kl.Flatten(name='out')(x_class_conv)
+        #channels_0_0 = kl.Lambda(lambda x: x[:,:,0,0], (x_class_conv._keras_shape[1],)) (x_class_conv)
+        #channels_0_1 = kl.Lambda(lambda x: x[:,:,0,1], (x_class_conv._keras_shape[1],)) (x_class_conv)
+        #out_0_0 = kl.Activation('softmax')(channels_0_0)
+        #out_0_1 = kl.Activation('softmax')(channels_0_1)
         #out = channels_at_xy(0,0,x_class_conv.shape)(x_class_conv)
 
 
@@ -111,7 +121,7 @@ class LambdaModel:
         #x_class_pool = kl.GlobalAveragePooling2D()(x_class_conv)
         #x_class = kl.Activation('softmax', name='class')(x_class_pool)
         #x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
-        self.model = km.Model(inputs=inputs, outputs=[out_0_0,out_0_1])
+        self.model = km.Model(inputs=inputs, outputs=x_out)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -120,9 +130,10 @@ class LambdaModel:
         self.model.compile(loss='categorical_crossentropy', optimizer=opt,
                            metrics=['accuracy'])
 
+
     #------------------------------------------------------------------------------------------
     def train(self,train_input, train_output, valid_input, valid_output, batch_size, epochs):
-        print("fitting model...")
+        print("Fitting model...")
         self.model.fit(train_input, train_output,
                         validation_data=(valid_input, valid_output),
                         batch_size=batch_size, epochs=epochs)
@@ -131,6 +142,8 @@ class LambdaModel:
     def print_results(self, valid_input, valid_output_0, valid_output_1):
         np.set_printoptions(precision=2)
         np.set_printoptions(suppress=True)
+        testpred = self.model.predict(valid_input[:1])
+        BP()
         preds = self.model.predict(valid_input, batch_size=32)
         for i in range(len(preds[0])):
             tstr = 'color0: %s pred: %s || color1: %s pred: %s ' \
@@ -199,11 +212,20 @@ def main():
     images = ut.get_data(SCRIPTPATH, (RESOLUTION,RESOLUTION))
     output = ut.get_output_by_key(SCRIPTPATH,'stones')
 
-    #-------------------------------------------------------
-    valid_output_0 = ut.onehot( output['valid_output'][:,0])
-    train_output_0 = ut.onehot( output['train_output'][:,0])
-    valid_output_1 = ut.onehot( output['valid_output'][:,1])
-    train_output_1 = ut.onehot( output['train_output'][:,1])
+    # Debug
+    #----------------------------------------------------
+    #last_conv_model = km.Model(inputs=model.model.input,
+    #                        outputs=model.model.get_layer('lastconv').output)
+    #tt = last_conv_model.predict(images['valid_data'][:1])
+    #xx = model.model.predict(images['valid_data'][:1])
+    #BP()
+
+    #-----------------------------------------------------------
+    # Reshape targets to look like the flattened network output
+    tt = output['valid_output']
+    valid_output = np.array([np.transpose(ut.onehot(x)).reshape((GRIDSIZE*GRIDSIZE*3)) for x in tt])
+    tt = output['train_output']
+    train_output = np.array([np.transpose(ut.onehot(x)).reshape((GRIDSIZE*GRIDSIZE*3)) for x in tt])
 
     means,stds = ut.get_means_and_stds(images['train_data'])
     ut.normalize(images['train_data'],means,stds)
@@ -217,8 +239,8 @@ def main():
     # Train
     if args.epochs:
         print('Start training...')
-        model.train(images['train_data'], [train_output_0,train_output_1],
-                   images['valid_data'],  [valid_output_0,valid_output_1],
+        model.train(images['train_data'], train_output,
+                   images['valid_data'],  valid_output,
                    BATCH_SIZE, args.epochs)
         model.model.save_weights(WEIGHTSFILE)
         model.model.save(MODELFILE)
