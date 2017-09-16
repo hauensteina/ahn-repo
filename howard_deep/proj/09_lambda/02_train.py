@@ -137,8 +137,8 @@ class LambdaModel:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
-        self.model.compile(loss='categorical_crossentropy', optimizer=opt,
-                           metrics=['accuracy'])
+        self.model.compile(loss='mean_squared_error', optimizer=opt,
+                           metrics=['mae'])
 
 
     #------------------------------------------------------------------------------------------
@@ -246,10 +246,10 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
 
-    fname = output['train_filenames'][0]
-    tt = get_output_of_layer(model.model, 'lastconv', images['train_data'][:1])
-    xx = get_output_of_layer(model.model, 'out', images['train_data'][:1])
-    BP()
+    # fname = output['train_filenames'][0]
+    # tt = get_output_of_layer(model.model, 'lastconv', images['train_data'][:1])
+    # xx = get_output_of_layer(model.model, 'out', images['train_data'][:1])
+    # BP()
 
     if args.visualize:
         print('Dumping conv layer images to jpg')
