@@ -30,14 +30,15 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=32
-GRIDSIZE=5
+BATCH_SIZE=1
+GRIDSIZE=2
 RESOLUTION = GRIDSIZE * 2 * 2 * 2
 MODELFILE='model.h5'
 WEIGHTSFILE='weights.h5'
 EMPTY=0
 WHITE=1
 BLACK=2
+NCOLORS=3
 
 #---------------------------
 def usage(printmsg=False):
@@ -78,6 +79,15 @@ def softMaxAxis1(x):
 
 # Make sure we can save and load a model with custom activation
 ka.softMaxAxis1 = softMaxAxis1
+
+# Feed one input to a model and look at the result after some intermediate level
+#----------------------------------------------------------------------------------
+def get_output_of_layer(model, layer_name, input_data):
+    intermediate_model = km.Model(inputs=model.input,
+                                  outputs=model.get_layer(layer_name).output)
+    res = intermediate_model.predict(input_data)
+    return res
+
 
 #-----------------
 class LambdaModel:
@@ -191,11 +201,16 @@ def main():
     if len(sys.argv) == 1:
         usage(True)
 
+    global GRIDSIZE, RESOLUTION
+    RESOLUTION = GRIDSIZE * 2 * 2 * 2
+
     parser = argparse.ArgumentParser(usage=usage())
+    parser.add_argument( "--gridsize", required=True, type=int)
     parser.add_argument("--epochs", required=False, default=10, type=int)
     parser.add_argument("--rate", required=False, default=0, type=float)
     parser.add_argument("--visualize", required=False, action='store_true')
     args = parser.parse_args()
+    GRIDSIZE = args.gridsize
     model = LambdaModel(RESOLUTION, GRIDSIZE, args.rate)
     if args.visualize or not args.epochs:
         if os.path.exists(WEIGHTSFILE):
@@ -223,13 +238,18 @@ def main():
     #-----------------------------------------------------------
     # Reshape targets to look like the flattened network output
     tt = output['valid_output']
-    valid_output = np.array([np.transpose(ut.onehot(x)).reshape((GRIDSIZE*GRIDSIZE*3)) for x in tt])
+    valid_output = np.array([np.transpose(ut.onehot(x,NCOLORS)).reshape(GRIDSIZE*GRIDSIZE*3) for x in tt])
     tt = output['train_output']
-    train_output = np.array([np.transpose(ut.onehot(x)).reshape((GRIDSIZE*GRIDSIZE*3)) for x in tt])
+    train_output = np.array([np.transpose(ut.onehot(x,NCOLORS)).reshape(GRIDSIZE*GRIDSIZE*3) for x in tt])
 
     means,stds = ut.get_means_and_stds(images['train_data'])
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
+
+    fname = output['train_filenames'][0]
+    tt = get_output_of_layer(model.model, 'lastconv', images['train_data'][:1])
+    xx = get_output_of_layer(model.model, 'out', images['train_data'][:1])
+    BP()
 
     if args.visualize:
         print('Dumping conv layer images to jpg')
@@ -244,7 +264,7 @@ def main():
                    BATCH_SIZE, args.epochs)
         model.model.save_weights(WEIGHTSFILE)
         model.model.save(MODELFILE)
-    model.print_results(images['valid_data'], valid_output_0, valid_output_1)
+    # model.print_results(images['valid_data'], valid_output_0, valid_output_1)
 
 if __name__ == '__main__':
     main()

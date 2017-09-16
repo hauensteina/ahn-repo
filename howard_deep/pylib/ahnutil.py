@@ -74,8 +74,8 @@ def get_batches(path,
 #        [ 0.,  0.,  0.,  1.],
 #        [ 0.,  0.,  1.,  0.]])
 #-------------------------------------
-def onehot(x):
-    return to_categorical(x)
+def onehot(x,num_classes=None):
+    return to_categorical(x,num_classes)
 
 
 # Get means and stds by channel(color) from array of imgs
