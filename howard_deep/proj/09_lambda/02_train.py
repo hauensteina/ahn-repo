@@ -249,11 +249,12 @@ def main():
 
     fname = output['train_filenames'][0]
     #tt = get_output_of_layer(model.model, 'lastconv', images['train_data'][:1])
-    idx=0
-    xx = get_output_of_layer(model.model, 'out', images['train_data'][idx:idx+1])
-    print(xx)
-    print(train_output[idx:idx+1])
-    BP()
+    if not args.epochs:
+        idx=0
+        xx = get_output_of_layer(model.model, 'out', images['train_data'][idx:idx+1])
+        print(xx)
+        print(train_output[idx:idx+1])
+        BP()
 
     if args.visualize:
         print('Dumping conv layer images to jpg')
