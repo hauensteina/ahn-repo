@@ -8,4 +8,8 @@ Use a purely convolutional network. Tha last layer has
 We split the 3x3x3 output into 9 groups of 3, where each
 group contains the three channels for one intersection.
 Then use softmax on each of the nine intersections to classify.
-The splitting is done using Keras.Lambda().
+The splitting was done using Keras.Lambda() before I found out how
+to specify the axis on softmax().
+
+This works only up to a 3x3 grid. Try a different network
+architecture next time.
