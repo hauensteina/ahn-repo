@@ -13,11 +13,29 @@ from pdb import set_trace as BP
 import os,sys,re,json
 import numpy as np
 import keras.preprocessing.image as kp
+import keras.activations as ka
+import keras.metrics as km
 from keras.utils.np_utils import to_categorical
 import keras
 
-#from keras.layers.core import *
 from keras import backend as K
+
+# Custom Softmax along axis 1 (channels).
+# Use as an activation
+#-----------------------------------------
+def softMaxAxis1(x):
+    return ka.softmax(x,axis=1)
+# Make sure we can save and load a model with custom activation
+ka.softMaxAxis1 = softMaxAxis1
+
+# Custom metric returns 1.0 if all rounded elements
+# in y_pred match y_true, else 0.0 .
+#---------------------------------------------------------
+def bool_match(y_true, y_pred):
+    return K.switch(K.any(y_true-y_pred.round()), K.variable(0), K.variable(1))
+# Make sure we can save and load a model with custom metric
+km.bool_match = bool_match
+
 
 # Feed one input to a model and return the result after some intermediate level
 #----------------------------------------------------------------------------------

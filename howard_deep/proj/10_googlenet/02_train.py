@@ -24,6 +24,7 @@ import keras.layers as kl
 import keras.models as km
 import keras.optimizers as kopt
 import keras.activations as ka
+import keras.backend as K
 
 # Look for modules in our pylib folder
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
@@ -72,15 +73,20 @@ def channels_at_xy(x,y,shape):
     BP()
     return kl.Lambda(func, output_shape=(1,) + shape[1])
 
-# Softmax along axis 1 (channels)
-#--------------------
-def softMaxAxis1(x):
-    return ka.softmax(x,axis=1)
+# # Custom Softmax along axis 1 (channels).
+# # Use as an activation
+# #-----------------------------------------
+# def softMaxAxis1(x):
+#     return ka.softmax(x,axis=1)
 
-# Make sure we can save and load a model with custom activation
-ka.softMaxAxis1 = softMaxAxis1
+# # Make sure we can save and load a model with custom activation
+# ka.softMaxAxis1 = softMaxAxis1
 
-
+# # Custom metric returns 1.0 if all rounded elements
+# # in y_pred match y_true, else 0.0 .
+# #---------------------------------------------------------
+# def bool_match(y_true, y_pred):
+#     return K.switch(K.any(y_true-y_pred.round()), K.variable(0), K.variable(1))
 
 #-----------------
 class GoogleModel:
@@ -118,7 +124,7 @@ class GoogleModel:
         x = kl.BatchNormalization(axis=1)(x)
         x = kl.MaxPooling2D()(x)
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
-        x_class_conv = kl.Conv2D(3,(1,1), activation=softMaxAxis1, padding='same',name='lastconv')(x)
+        x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
         # flatten into chan0,chan0,..,chan0,chan1,chan1,...,chan1,chan2,chan2,...chan2
         x_out = kl.Flatten(name='out')(x_class_conv)
         #channels_0_0 = kl.Lambda(lambda x: x[:,:,0,0], (x_class_conv._keras_shape[1],)) (x_class_conv)
@@ -143,7 +149,7 @@ class GoogleModel:
         else:
             opt = kopt.Adam()
         self.model.compile(loss='mean_squared_error', optimizer=opt,
-                           metrics=['mae'])
+                           metrics=[ut.bool_match])
 
 
     #------------------------------------------------------------------------------------------
