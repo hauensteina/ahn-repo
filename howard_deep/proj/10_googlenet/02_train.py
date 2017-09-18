@@ -149,7 +149,7 @@ class GoogleModel:
         else:
             opt = kopt.Adam()
         self.model.compile(loss='mean_squared_error', optimizer=opt,
-                           metrics=[ut.bool_match])
+                           metrics=[ut.bool_match,ut.bitwise_match])
 
 
     #------------------------------------------------------------------------------------------

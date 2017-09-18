@@ -36,6 +36,14 @@ def bool_match(y_true, y_pred):
 # Make sure we can save and load a model with custom metric
 km.bool_match = bool_match
 
+# Custom metric returns the fraction of correctly set bits
+# in y_pred vs y_true
+#---------------------------------------------------------
+def bitwise_match(y_true, y_pred):
+    return 1.0 - K.mean(K.abs(y_true-y_pred.round()))
+# Make sure we can save and load a model with custom metric
+km.bitwise_match = bitwise_match
+
 
 # Feed one input to a model and return the result after some intermediate level
 #----------------------------------------------------------------------------------
