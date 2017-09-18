@@ -19,19 +19,13 @@ import keras
 #from keras.layers.core import *
 from keras import backend as K
 
-#------------------------------------
-def call_f(inp, method, input_data):
-  f = K.function([inp], [method])
-  return f([input_data])[0]
-
-# Print the output of a layer
-#----------------------------------------------
-def print_out(layer, input_data, train=True):
-  if hasattr(layer, 'previous'):
-    print (call_f(layer.previous.input,
-                 layer.get_output(train=train), input_data))
-  else:
-    print (call_f(layer.input, layer.get_output(train=train), input_data))
+# Feed one input to a model and return the result after some intermediate level
+#----------------------------------------------------------------------------------
+def get_output_of_layer(model, layer_name, input_data):
+    intermediate_model = km.Model(inputs=model.input,
+                                  outputs=model.get_layer(layer_name).output)
+    res = intermediate_model.predict(input_data)
+    return res
 
 # Return iterators to get batches of images from a folder.
 # Example:
