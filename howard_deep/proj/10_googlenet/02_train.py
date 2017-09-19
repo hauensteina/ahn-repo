@@ -86,26 +86,26 @@ class GoogleModel:
     def build_model(self):
         # VGG style convolutional model
         inputs = kl.Input(shape=(1,self.resolution,self.resolution))
-        x = kl.Conv2D(32,(3,3), activation='relu', padding='same', name='first')(inputs)
+        x = kl.Conv2D(32,(3,3), activation='relu', padding='same', name='one_a')(inputs)
         x = kl.BatchNormalization(axis=1)(x)
         x = kl.MaxPooling2D()(x)
-        x = kl.Conv2D(64,(3,3), activation='relu', padding='same')(x)
-        x = kl.BatchNormalization(axis=1)(x)
-        x = kl.MaxPooling2D()(x)
-
-        x = kl.Conv2D(128,(3,3), activation='relu', padding='same')(x)
-        x = kl.BatchNormalization(axis=1)(x)
-        x = kl.Conv2D(64,(1,1), activation='relu', padding='same')(x)
-        x = kl.BatchNormalization(axis=1)(x)
-        x = kl.Conv2D(128,(3,3), activation='relu', padding='same')(x)
+        x = kl.Conv2D(64,(3,3), activation='relu', padding='same', name='one_b')(x)
         x = kl.BatchNormalization(axis=1)(x)
         x = kl.MaxPooling2D()(x)
 
-        x = kl.Conv2D(256,(3,3), activation='relu', padding='same')(x)
+        x = kl.Conv2D(128,(3,3), activation='relu', padding='same', name='two_a')(x)
         x = kl.BatchNormalization(axis=1)(x)
-        x = kl.Conv2D(128,(1,1), activation='relu', padding='same')(x)
+        x = kl.Conv2D(64,(1,1), activation='relu', padding='same', name='two_b')(x)
         x = kl.BatchNormalization(axis=1)(x)
-        x = kl.Conv2D(256,(3,3), activation='relu', padding='same')(x)
+        x = kl.Conv2D(128,(3,3), activation='relu', padding='same', name='two_c')(x)
+        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.MaxPooling2D()(x)
+
+        x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_a')(x)
+        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.Conv2D(128,(1,1), activation='relu', padding='same', name='three_b')(x)
+        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_c')(x)
         x = kl.BatchNormalization(axis=1)(x)
         x = kl.MaxPooling2D()(x)
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
@@ -181,12 +181,12 @@ def visualize_channels(model, layer_name, channels, data, fname):
 
     for idx,channel in enumerate(channels):
         data = channel_data[channel]
-        img  = scipy.misc.imresize(data, (80,80), interp='nearest')
+        img  = scipy.misc.imresize(data, (RESOLUTION,RESOLUTION), interp='nearest')
         plt.subplot(nrows,ncols,idx+2)
         ax = plt.gca()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        plt.imshow(img, cmap='Greys', alpha=1.0)
+        plt.imshow(img, cmap='cool', alpha=1.0)
     plt.savefig(fname)
 
 #-----------
@@ -234,7 +234,7 @@ def main():
 
     if args.visualize:
         print('Dumping conv layer images to jpg')
-        visualize_channels(model.model, 'first', range(32), images['train_data'][0:1], 'first_all.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][0:1], 'lastconv.jpg')
         exit(0)
 
     # If no epochs, just print output and what it should have been

@@ -104,7 +104,13 @@ def gen_image(resolution,gridsize,ofname):
             circle.set_facecolor('none' if col == WHITE else 'k')
             ax.add_artist(circle)
     plt.savefig(ofname)
-    return lin
+    # Now matrix rows go from top to bottom, image coordinates go
+    # from bottom to top. Therefore we need to reverse the rows.
+    # Otherwise, our poor convolutions will have to learn how to turn
+    # the image upside down.
+    lin = np.array(lin)
+    res = np.flipud(lin.reshape(gridsize,gridsize)).reshape(len(lin))
+    return list(res)
 
 # Generate nb_imgs images with one massive or hollow circle.
 # Also generate a json file for each, giving the bounding box and class.
