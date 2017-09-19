@@ -14,7 +14,8 @@ import os,sys,re,json
 import numpy as np
 import keras.preprocessing.image as kp
 import keras.activations as ka
-import keras.metrics as km
+import keras.metrics as kmet
+import keras.models as kmod
 import keras.losses as klo
 from keras.utils.np_utils import to_categorical
 import keras
@@ -35,7 +36,7 @@ ka.softMaxAxis1 = softMaxAxis1
 def bool_match(y_true, y_pred):
     return K.switch(K.any(y_true-y_pred.round()), K.variable(0), K.variable(1))
 # Make sure we can save and load a model with custom metric
-km.bool_match = bool_match
+kmet.bool_match = bool_match
 
 # Custom metric returns the fraction of correctly set bits
 # in y_pred vs y_true
@@ -43,7 +44,7 @@ km.bool_match = bool_match
 def bitwise_match(y_true, y_pred):
     return 1.0 - K.mean(K.abs(y_true-y_pred.round()))
 # Make sure we can save and load a model with custom metric
-km.bitwise_match = bitwise_match
+kmet.bitwise_match = bitwise_match
 
 # A simple crossentropy without checking anything.
 # This works even if several prob vectors where flattened into one,
@@ -57,7 +58,7 @@ klo.plogq = plogq
 # Feed one input to a model and return the result after some intermediate level
 #----------------------------------------------------------------------------------
 def get_output_of_layer(model, layer_name, input_data):
-    intermediate_model = km.Model(inputs=model.input,
+    intermediate_model = kmod.Model(inputs=model.input,
                                   outputs=model.get_layer(layer_name).output)
     res = intermediate_model.predict(input_data)
     return res
