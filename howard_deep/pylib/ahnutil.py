@@ -15,6 +15,7 @@ import numpy as np
 import keras.preprocessing.image as kp
 import keras.activations as ka
 import keras.metrics as km
+import keras.losses as klo
 from keras.utils.np_utils import to_categorical
 import keras
 
@@ -44,6 +45,14 @@ def bitwise_match(y_true, y_pred):
 # Make sure we can save and load a model with custom metric
 km.bitwise_match = bitwise_match
 
+# A simple crossentropy without checking anything.
+# This works even if several prob vectors where flattened into one,
+# like [[1,0],[1,0]] -> [1,0,1,0]
+#--------------------------------------------------
+def plogq(y_true, y_pred):
+    res = -K.sum(y_true * K.log(K.clip(y_pred, K.epsilon(), 1.0 - K.epsilon() )))
+    return res
+klo.plogq = plogq
 
 # Feed one input to a model and return the result after some intermediate level
 #----------------------------------------------------------------------------------

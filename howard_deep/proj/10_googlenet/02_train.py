@@ -31,7 +31,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=8
+BATCH_SIZE=64
 GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
@@ -148,8 +148,10 @@ class GoogleModel:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
-        self.model.compile(loss='mean_squared_error', optimizer=opt,
+        self.model.compile(loss=ut.plogq, optimizer=opt,
                            metrics=[ut.bool_match,ut.bitwise_match])
+        # self.model.compile(loss='mean_squared_error', optimizer=opt,
+        #                    metrics=[ut.bool_match,ut.bitwise_match])
 
 
     #------------------------------------------------------------------------------------------
