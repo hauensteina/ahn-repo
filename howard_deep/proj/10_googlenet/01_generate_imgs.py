@@ -118,6 +118,7 @@ def gen_image(resolution,gridsize,ofname):
 def gen_images(nb_imgs,resolution,gridsize,folder):
     #BP()
     for i in range(nb_imgs):
+        if i and not i%100: print(i)
         fname = '%07d' % i
         fjpg  = folder + '/' + fname + '.jpg'
         fjson = folder + '/' + fname + '.json'

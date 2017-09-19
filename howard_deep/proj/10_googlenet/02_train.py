@@ -232,9 +232,11 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
 
+    # Visualization
+    #-----------------
     if args.visualize:
         print('Dumping conv layer images to jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][0:1], 'lastconv.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][42:43], 'lastconv.jpg')
         exit(0)
 
     # If no epochs, just print output and what it should have been
