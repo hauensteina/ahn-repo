@@ -43,9 +43,24 @@ kmet.bool_match = bool_match
 #---------------------------------------------------------
 def bitwise_match(y_true, y_pred):
     return 1.0 - K.mean(K.abs(y_true-y_pred.round()))
-# Make sure we can save and load a model with custom metric
 kmet.bitwise_match = bitwise_match
 
+# Custom metric returns the fraction of correctly set elements
+# in y_pred vs y_true
+#-------------------------------------------------------------
+def element_match(y_true, y_pred):
+    return 1.0 - K.mean(K.abs(K.sign(y_true-K.round(y_pred))))
+kmet.element_match = element_match
+
+
+# Custom loss function to optimize element_match metric
+# For some reason this is a bad idea and mse works better
+#-------------------------------------------------------------
+def element_loss(y_true, y_pred):
+    return K.mean(K.abs(K.sign(y_true-K.round(y_pred))))
+klo.element_loss = element_loss
+
+# Custom loss.
 # A simple crossentropy without checking anything.
 # This works even if several prob vectors where flattened into one,
 # like [[1,0],[1,0]] -> [1,0,1,0]

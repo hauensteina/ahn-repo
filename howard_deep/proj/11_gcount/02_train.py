@@ -25,13 +25,14 @@ import keras.models as km
 import keras.optimizers as kopt
 import keras.activations as ka
 import keras.backend as K
+import theano as th
 
 # Look for modules in our pylib folder
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=8
+BATCH_SIZE=32
 GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
@@ -46,7 +47,7 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Build and train lambda model
+      %s --  Build and train gcount model
     Synopsis:
       %s --epochs <n> --rate <learning_rate>
       or
@@ -61,17 +62,6 @@ def usage(printmsg=False):
         exit(1)
     else:
         return msg
-
-
-# Return a Lambda layer which gives me the channels at position x,y as a vector
-#---------------------------------------------------------------------------------
-def channels_at_xy(x,y,shape):
-    def func(tens):
-        res = tens[:,:,x,y]
-        #BP()
-        return res
-    BP()
-    return kl.Lambda(func, output_shape=(1,) + shape[1])
 
 #-----------------
 class GCountModel:
@@ -110,9 +100,24 @@ class GCountModel:
         x = kl.MaxPooling2D()(x)
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
+
+        # Split into channels, have a dense layer based on each
+        channel0 = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(1,GRIDSIZE,GRIDSIZE) )(x_class_conv)
+        channel0_flat = kl.Flatten()(channel0)
+        channel0_dense = kl.Dense(1, name='empty_count')(channel0_flat)
+
+        channel1 = kl.Lambda(lambda x: x[:,1,:,:], output_shape=(1,GRIDSIZE,GRIDSIZE) )(x_class_conv)
+        channel1_flat = kl.Flatten()(channel1)
+        channel1_dense = kl.Dense(1, name='white_count')(channel1_flat)
+
+        channel2 = kl.Lambda(lambda x: x[:,2,:,:], output_shape=(1,GRIDSIZE,GRIDSIZE) )(x_class_conv)
+        channel2_flat = kl.Flatten()(channel2)
+        channel2_dense = kl.Dense(1, name='black_count')(channel2_flat)
+
         # flatten into chan0,chan0,..,chan0,chan1,chan1,...,chan1,chan2,chan2,...chan2
-        x_flat = kl.Flatten(name='out')(x_class_conv)
-        x_out = kl.Dense(3, name='ewb_count')(x_flat)
+        #x_flat = kl.Flatten(name='out')(x_class_conv)
+        #x_out = kl.Dense(3, name='ewb_count')(x_flat)
+        x_out = kl.concatenate([channel0_dense, channel1_dense, channel2_dense])
 
         # #x_conv_empty = kl.Conv2D(1,(1,1), activation=ut.softMaxAxis1, padding='same',name='x_conv_empty')(x)
         # x_conv_empty = kl.Conv2D(1,(1,1), padding='same',name='x_conv_empty')(x)
@@ -227,7 +232,7 @@ def main():
     else:
         if os.path.exists(MODELFILE):
             print('Loading model from file %s...' % MODELFILE)
-            model.model = km.load_model(MODELFILE)
+            model.model = km.load_model(MODELFILE, custom_objects={"th": th})
             if args.rate:
                 model.model.optimizer.lr.set_value(args.rate)
 
