@@ -182,10 +182,11 @@ class GCountModel:
 # Dump jpegs of model conv layer channels to file
 #---------------------------------------------------------------------
 def visualize_channels(model, layer_name, channels, data, fname):
+    # Run model up tp requested layer
     channel_data = ut.get_output_of_layer(model, layer_name, data)[0]
 
     plt.figure()
-    nplots = len(channels) + 1
+    nplots = len(channels) + 2
     ncols = 8
     nrows = nplots // ncols
     if nplots % ncols: nrows += 1
@@ -198,6 +199,7 @@ def visualize_channels(model, layer_name, channels, data, fname):
     ax.get_yaxis().set_visible(False)
     plt.imshow(orig,cmap='Greys')
 
+    # Show channels individually
     for idx,channel in enumerate(channels):
         data = channel_data[channel]
         img  = scipy.misc.imresize(data, (RESOLUTION,RESOLUTION), interp='nearest')
@@ -205,7 +207,21 @@ def visualize_channels(model, layer_name, channels, data, fname):
         ax = plt.gca()
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        plt.imshow(img, cmap='cool', alpha=1.0)
+        #plt.imshow(img, cmap='cool', alpha=1.0)
+        plt.imshow(img, cmap='Greys', alpha=1.0)
+    # Show winning channel
+    rows = channel_data[0].shape[0]
+    cols = channel_data[0].shape[1]
+    mychans_flat = [np.reshape(channel_data[c],(rows*cols,)) for c in channels]
+    winner = np.argmax(mychans_flat,axis=0).reshape(rows,cols)
+    img  = scipy.misc.imresize(winner, (RESOLUTION,RESOLUTION), interp='nearest')
+    plt.subplot(nrows,ncols,nplots)
+    ax = plt.gca()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+    #plt.imshow(img, cmap='cool', alpha=1.0)
+    plt.imshow(img, cmap='Greys', alpha=1.0)
+
     plt.savefig(fname)
 
 #-----------
@@ -255,7 +271,7 @@ def main():
     #-----------------
     if args.visualize:
         print('Dumping conv layer images to jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][42:43], 'lastconv.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][0:1], 'lastconv.jpg')
         exit(0)
 
     # If no epochs, just print output and what it should have been
