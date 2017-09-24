@@ -21,6 +21,7 @@ import matplotlib as mpl
 mpl.use('Agg') # This makes matplotlib work without a display
 from matplotlib import pyplot as plt
 import keras.layers as kl
+import keras.layers.merge as klm
 import keras.models as km
 import keras.optimizers as kopt
 import keras.activations as ka
@@ -32,7 +33,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=32
+BATCH_SIZE=1
 GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
@@ -101,23 +102,22 @@ class GCountModel:
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
 
-        # Split into channels, have a dense layer based on each
-        channel0 = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(1,GRIDSIZE,GRIDSIZE) )(x_class_conv)
-        channel0_flat = kl.Flatten()(channel0)
-        channel0_dense = kl.Dense(1, name='empty_count')(channel0_flat)
+        chan_e  = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(3,3)) (x_class_conv)
+        chan_e_flat = kl.Flatten(name='chan_e_flat')(chan_e)
+        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=(3,3)) (x_class_conv)
+        chan_w_flat = kl.Flatten(name='chan_w_flat')(chan_w)
+        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=(3,3)) (x_class_conv)
+        chan_b_flat = kl.Flatten(name='chan_b_flat')(chan_b)
 
-        channel1 = kl.Lambda(lambda x: x[:,1,:,:], output_shape=(1,GRIDSIZE,GRIDSIZE) )(x_class_conv)
-        channel1_flat = kl.Flatten()(channel1)
-        channel1_dense = kl.Dense(1, name='white_count')(channel1_flat)
+        count_e = kl.Lambda(lambda x: K.dot(x,K.ones(9)).reshape((1,1)), output_shape=((1,)), name='count_e') (chan_e_flat)
+        count_w = kl.Lambda(lambda x: K.dot(x,K.ones(9)).reshape((1,1)), output_shape=((1,)), name='count_w') (chan_w_flat)
+        count_b = kl.Lambda(lambda x: K.dot(x,K.ones(9)).reshape((1,1)), output_shape=((1,)), name='count_b') (chan_b_flat)
 
-        channel2 = kl.Lambda(lambda x: x[:,2,:,:], output_shape=(1,GRIDSIZE,GRIDSIZE) )(x_class_conv)
-        channel2_flat = kl.Flatten()(channel2)
-        channel2_dense = kl.Dense(1, name='black_count')(channel2_flat)
-
-        # flatten into chan0,chan0,..,chan0,chan1,chan1,...,chan1,chan2,chan2,...chan2
-        #x_flat = kl.Flatten(name='out')(x_class_conv)
-        #x_out = kl.Dense(3, name='ewb_count')(x_flat)
-        x_out = kl.concatenate([channel0_dense, channel1_dense, channel2_dense])
+        x_out = kl.concatenate([count_e,count_w,count_b])
+        #x_out = kl.merge.Concatenate()([x_count0,x_count1,x_count2])
+        #x_out = kl.concatenate([x_count0, x_count1, x_count2])
+        self.model = km.Model(inputs=inputs, outputs=x_out)
+        self.model.summary()
 
         # #x_conv_empty = kl.Conv2D(1,(1,1), activation=ut.softMaxAxis1, padding='same',name='x_conv_empty')(x)
         # x_conv_empty = kl.Conv2D(1,(1,1), padding='same',name='x_conv_empty')(x)
@@ -149,8 +149,6 @@ class GCountModel:
         #x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
 
 
-        self.model = km.Model(inputs=inputs, outputs=x_out)
-        self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
         else:
@@ -267,6 +265,8 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
 
+
+
     # Visualization
     #-----------------
     if args.visualize:
@@ -277,8 +277,25 @@ def main():
     # If no epochs, just print output and what it should have been
     if not args.epochs:
         idx=0
-        xx = ut.get_output_of_layer(model.model, 'out', images['train_data'][idx:idx+1])
+        print ('lastconv')
+        xx = ut.get_output_of_layer(model.model, 'lastconv', images['train_data'][idx:idx+1])
         print(xx)
+        print ('argmax')
+        xx = ut.get_output_of_layer(model.model, 'argmax', images['train_data'][idx:idx+1])
+        print(xx)
+        print ('count0')
+        xx = ut.get_output_of_layer(model.model, 'count0', images['train_data'][idx:idx+1])
+        print(xx)
+        print ('count1')
+        xx = ut.get_output_of_layer(model.model, 'count1', images['train_data'][idx:idx+1])
+        print(xx)
+        print ('count2')
+        xx = ut.get_output_of_layer(model.model, 'count2', images['train_data'][idx:idx+1])
+        print(xx)
+        print ('out')
+        xx = model.model.predict(images['train_data'][idx:idx+1],batch_size=1)
+        print(xx)
+        print ('target')
         print(train_output[idx:idx+1])
         BP()
 
