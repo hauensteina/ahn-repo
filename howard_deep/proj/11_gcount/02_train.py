@@ -33,7 +33,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=32
+BATCH_SIZE=8
 GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
