@@ -110,14 +110,17 @@ class GCountModel:
         chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=(self.gridsize,self.gridsize), name='channel_b') (x_class_conv)
         chan_b_flat = kl.Flatten(name='chan_b_flat')(chan_b)
 
-        # count_e = kl.Lambda(lambda x: K.sum(x,axis=1), output_shape=((1,)), name='count_e') (chan_e_flat)
-        # count_w = kl.Lambda(lambda x: K.sum(x,axis=1), output_shape=((1,)), name='count_w') (chan_w_flat)
-        # count_b = kl.Lambda(lambda x: K.sum(x,axis=1), output_shape=((1,)), name='count_b') (chan_b_flat)
         # x.shape[0] is the batch size
         # K.int_shape(x)[1] == GRIDSIZE * GRIDSIZE
-        count_e = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)), output_shape=((1,)), name='count_e') (chan_e_flat)
-        count_w = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)), output_shape=((1,)), name='count_w') (chan_w_flat)
-        count_b = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)), output_shape=((1,)), name='count_b') (chan_b_flat)
+        count_e = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)),
+                            output_shape=((1,)),
+                            name='count_e') (chan_e_flat)
+        count_w = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)),
+                            output_shape=((1,)),
+                            name='count_w') (chan_w_flat)
+        count_b = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)),
+                            output_shape=((1,)),
+                            name='count_b') (chan_b_flat)
 
         x_out = kl.concatenate([count_e,count_w,count_b])
         self.model = km.Model(inputs=inputs, outputs=x_out)
