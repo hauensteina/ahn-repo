@@ -33,7 +33,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=1
+BATCH_SIZE=32
 GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
@@ -67,9 +67,10 @@ def usage(printmsg=False):
 #-----------------
 class GCountModel:
     #----------------------------------------------
-    def __init__(self,resolution,gridsize,rate=0):
+    def __init__(self,resolution,gridsize,batch_size,rate=0):
         self.resolution = resolution
         self.gridsize = gridsize
+        self.batch_size = batch_size
         self.rate = rate
         self.build_model()
 
@@ -102,52 +103,25 @@ class GCountModel:
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
 
-        chan_e  = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(3,3)) (x_class_conv)
+        chan_e  = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(self.gridsize,self.gridsize), name='channel_e') (x_class_conv)
         chan_e_flat = kl.Flatten(name='chan_e_flat')(chan_e)
-        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=(3,3)) (x_class_conv)
+        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=(self.gridsize,self.gridsize), name='channel_w') (x_class_conv)
         chan_w_flat = kl.Flatten(name='chan_w_flat')(chan_w)
-        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=(3,3)) (x_class_conv)
+        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=(self.gridsize,self.gridsize), name='channel_b') (x_class_conv)
         chan_b_flat = kl.Flatten(name='chan_b_flat')(chan_b)
 
-        count_e = kl.Lambda(lambda x: K.dot(x,K.ones(9)).reshape((1,1)), output_shape=((1,)), name='count_e') (chan_e_flat)
-        count_w = kl.Lambda(lambda x: K.dot(x,K.ones(9)).reshape((1,1)), output_shape=((1,)), name='count_w') (chan_w_flat)
-        count_b = kl.Lambda(lambda x: K.dot(x,K.ones(9)).reshape((1,1)), output_shape=((1,)), name='count_b') (chan_b_flat)
+        # count_e = kl.Lambda(lambda x: K.sum(x,axis=1), output_shape=((1,)), name='count_e') (chan_e_flat)
+        # count_w = kl.Lambda(lambda x: K.sum(x,axis=1), output_shape=((1,)), name='count_w') (chan_w_flat)
+        # count_b = kl.Lambda(lambda x: K.sum(x,axis=1), output_shape=((1,)), name='count_b') (chan_b_flat)
+        # x.shape[0] is the batch size
+        # K.int_shape(x)[1] == GRIDSIZE * GRIDSIZE
+        count_e = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)), output_shape=((1,)), name='count_e') (chan_e_flat)
+        count_w = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)), output_shape=((1,)), name='count_w') (chan_w_flat)
+        count_b = kl.Lambda(lambda x: K.dot(x,K.ones(K.int_shape(x)[1])).reshape((x.shape[0],1)), output_shape=((1,)), name='count_b') (chan_b_flat)
 
         x_out = kl.concatenate([count_e,count_w,count_b])
-        #x_out = kl.merge.Concatenate()([x_count0,x_count1,x_count2])
-        #x_out = kl.concatenate([x_count0, x_count1, x_count2])
         self.model = km.Model(inputs=inputs, outputs=x_out)
         self.model.summary()
-
-        # #x_conv_empty = kl.Conv2D(1,(1,1), activation=ut.softMaxAxis1, padding='same',name='x_conv_empty')(x)
-        # x_conv_empty = kl.Conv2D(1,(1,1), padding='same',name='x_conv_empty')(x)
-        # x_conv_white = kl.Conv2D(1,(1,1), padding='same',name='x_conv_white')(x)
-        # x_conv_black = kl.Conv2D(1,(1,1), padding='same',name='x_conv_black')(x)
-        # #x_count_e  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
-        # x_flat_conv_empty = kl.Flatten()(x_conv_empty)
-        # x_flat_conv_white = kl.Flatten()(x_conv_white)
-        # x_flat_conv_black = kl.Flatten()(x_conv_black)
-        # x_out = kl.concatenate([x_flat_conv_empty, x_flat_conv_white, x_flat_conv_black])
-
-        # flatten into chan0,chan0,..,chan0,chan1,chan1,...,chan1,chan2,chan2,...chan2
-        # x_out = kl.Flatten(name='out')(x_class_conv)
-
-
-        # Various templates
-        #--------------------
-        #channels_0_0 = kl.Lambda(lambda x: x[:,:,0,0], (x_class_conv._keras_shape[1],)) (x_class_conv)
-        #channels_0_1 = kl.Lambda(lambda x: x[:,:,0,1], (x_class_conv._keras_shape[1],)) (x_class_conv)
-        #out_0_0 = kl.Activation('softmax')(channels_0_0)
-        #out_0_1 = kl.Activation('softmax')(channels_0_1)
-        #out = channels_at_xy(0,0,x_class_conv.shape)(x_class_conv)
-        #x_class_conv = kl.MaxPooling2D()(x)
-        # Split into GRIDSIZE x GRIDSIZE groups of three
-        # Conv layer used for classification
-        #x_class_conv = kl.Conv2D(3,(3,3),name='classconv')(x)
-        #x_class_pool = kl.GlobalAveragePooling2D()(x_class_conv)
-        #x_class = kl.Activation('softmax', name='class')(x_class_pool)
-        #x_class  = kl.Dense(2,activation='softmax', name='class')(x_flat0)
-
 
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
@@ -228,7 +202,6 @@ def main():
         usage(True)
 
     global GRIDSIZE, RESOLUTION
-    RESOLUTION = GRIDSIZE * 2 * 2 * 2
 
     parser = argparse.ArgumentParser(usage=usage())
     parser.add_argument("--gridsize", required=True, type=int)
@@ -238,7 +211,7 @@ def main():
     args = parser.parse_args()
     GRIDSIZE = args.gridsize
     RESOLUTION = GRIDSIZE * 2*2*2*2
-    model = GCountModel(RESOLUTION, GRIDSIZE, args.rate)
+    model = GCountModel(RESOLUTION, GRIDSIZE, BATCH_SIZE, args.rate)
     if args.visualize or not args.epochs:
         if os.path.exists(WEIGHTSFILE):
             print('Loading weights from file %s...' % WEIGHTSFILE)
@@ -280,17 +253,14 @@ def main():
         print ('lastconv')
         xx = ut.get_output_of_layer(model.model, 'lastconv', images['train_data'][idx:idx+1])
         print(xx)
-        print ('argmax')
-        xx = ut.get_output_of_layer(model.model, 'argmax', images['train_data'][idx:idx+1])
+        print ('count_e')
+        xx = ut.get_output_of_layer(model.model, 'count_e', images['train_data'][idx:idx+1])
         print(xx)
-        print ('count0')
-        xx = ut.get_output_of_layer(model.model, 'count0', images['train_data'][idx:idx+1])
+        print ('count_w')
+        xx = ut.get_output_of_layer(model.model, 'count_w', images['train_data'][idx:idx+1])
         print(xx)
-        print ('count1')
-        xx = ut.get_output_of_layer(model.model, 'count1', images['train_data'][idx:idx+1])
-        print(xx)
-        print ('count2')
-        xx = ut.get_output_of_layer(model.model, 'count2', images['train_data'][idx:idx+1])
+        print ('count_b')
+        xx = ut.get_output_of_layer(model.model, 'count_b', images['train_data'][idx:idx+1])
         print(xx)
         print ('out')
         xx = model.model.predict(images['train_data'][idx:idx+1],batch_size=1)
