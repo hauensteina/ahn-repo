@@ -33,7 +33,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=8
+BATCH_SIZE=4
 GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
@@ -94,11 +94,11 @@ class GCountModel:
         x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_a')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        #x = kl.BatchNormalization(axis=1)(x)
         x = kl.Conv2D(128,(1,1), activation='relu', padding='same', name='three_b')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        #x = kl.BatchNormalization(axis=1)(x)
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_c')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        #x = kl.BatchNormalization(axis=1)(x)
         x = kl.MaxPooling2D()(x)
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
@@ -241,13 +241,15 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
 
-
-
     # Visualization
     #-----------------
     if args.visualize:
         print('Dumping conv layer images to jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][0:1], 'lastconv.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][700:701], 'lastconv0.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][500:501], 'lastconv1.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][400:401], 'lastconv2.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][300:301], 'lastconv3.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][200:201], 'lastconv4.jpg')
         exit(0)
 
     # If no epochs, just print output and what it should have been
