@@ -78,28 +78,28 @@ class GCountModel:
     def build_model(self):
         # VGG style convolutional model
         inputs = kl.Input(shape=(1,self.resolution,self.resolution))
-        x = kl.Conv2D(32,(3,3), activation='relu', padding='same', name='one_a')(inputs)
+        x = kl.Conv2D(32,(3,3), activation='relu', strides=(2,2), padding='same', name='one_a')(inputs)
         x = kl.BatchNormalization(axis=1)(x)
-        x = kl.MaxPooling2D()(x)
-        x = kl.Conv2D(64,(3,3), activation='relu', padding='same', name='one_b')(x)
+        #x = kl.MaxPooling2D()(x)
+        x = kl.Conv2D(64,(3,3), activation='relu', strides=(2,2), padding='same', name='one_b')(x)
         x = kl.BatchNormalization(axis=1)(x)
-        x = kl.MaxPooling2D()(x)
+        #x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D(128,(3,3), activation='relu', padding='same', name='two_a')(x)
         x = kl.BatchNormalization(axis=1)(x)
         x = kl.Conv2D(64,(1,1), activation='relu', padding='same', name='two_b')(x)
         x = kl.BatchNormalization(axis=1)(x)
-        x = kl.Conv2D(128,(3,3), activation='relu', padding='same', name='two_c')(x)
+        x = kl.Conv2D(128,(3,3), activation='relu', strides=(2,2), padding='same', name='two_c')(x)
         x = kl.BatchNormalization(axis=1)(x)
-        x = kl.MaxPooling2D()(x)
+        #x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_a')(x)
         #x = kl.BatchNormalization(axis=1)(x)
         x = kl.Conv2D(128,(1,1), activation='relu', padding='same', name='three_b')(x)
         #x = kl.BatchNormalization(axis=1)(x)
-        x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_c')(x)
+        x = kl.Conv2D(256,(3,3), activation='relu', strides=(2,2), padding='same', name='three_c')(x)
         #x = kl.BatchNormalization(axis=1)(x)
-        x = kl.MaxPooling2D()(x)
+        #x = kl.MaxPooling2D()(x)
         # Get down to three channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
 
