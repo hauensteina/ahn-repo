@@ -38,6 +38,8 @@ GRIDSIZE=0
 RESOLUTION=0
 MODELFILE='model.h5'
 WEIGHTSFILE='weights.h5'
+CONV_WEIGHTSFILE='conv_weights.h5' # Save weights for just the convolutional layers
+INIT_WEIGHTSFILE='init_weights.h5' # Init weights for just the convolutional layers
 EMPTY=0
 WHITE=1
 BLACK=2
@@ -80,20 +82,20 @@ class CopyConvModel:
         inputs = kl.Input(shape=(1,None,None))
         #x = kl.Conv2D(32,(3,3), activation='relu', strides=(2,2), padding='same', name='one_a')(inputs)
         x = kl.Conv2D(32,(3,3), activation='relu', padding='same', name='one_a')(inputs)
-        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.BatchNormalization(axis=1, name='batch_one_a')(x)
         x = kl.MaxPooling2D()(x)
         #x = kl.Conv2D(64,(3,3), activation='relu', strides=(2,2), padding='same', name='one_b')(x)
         x = kl.Conv2D(64,(3,3), activation='relu', padding='same', name='one_b')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.BatchNormalization(axis=1, name='batch_one_b')(x)
         x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D(128,(3,3), activation='relu', padding='same', name='two_a')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.BatchNormalization(axis=1, name='batch_two_a')(x)
         x = kl.Conv2D(64,(1,1), activation='relu', padding='same', name='two_b')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.BatchNormalization(axis=1, name='batch_two_b')(x)
         #x = kl.Conv2D(128,(3,3), activation='relu', strides=(2,2), padding='same', name='two_c')(x)
         x = kl.Conv2D(128,(3,3), activation='relu', padding='same', name='two_c')(x)
-        x = kl.BatchNormalization(axis=1)(x)
+        x = kl.BatchNormalization(axis=1, name='batch_two_c')(x)
         x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_a')(x)
@@ -130,12 +132,52 @@ class CopyConvModel:
         self.model = km.Model(inputs=inputs, outputs=x_out)
         self.model.summary()
 
+        self.compile()
+
+    #---------------------------
+    def compile(self):
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
         self.model.compile(loss='mse', optimizer=opt,
                            metrics=[ut.element_match])
+
+    # Get names of convolutional layers
+    #------------------------------------
+    def get_conv_layers(self):
+        res = []
+        conv_over = False
+        for layer in self.model.layers:
+            if not conv_over: res.append(layer.name)
+            if layer.name == 'lastconv':
+                conv_over = True
+        return res
+
+    # Save weights for convolutional layers only.
+    # Do this by renaming the top layers, which we do not want to reload.
+    #-----------------------------------------------------------------------
+    def save_conv_weights(self,fname):
+        conv_layers = self.get_conv_layers()
+        for layer in self.model.layers:
+            if not layer.name in conv_layers:
+                layer.name = 'x_' + layer.name
+        self.model.save_weights(fname)
+
+    # Load weights for layers with matching name.
+    # This allows us to extract convolutional layers from a smaller reolution model
+    #---------------------------------------------------------------------------------
+    def load_weights_by_name(self,fname,freeze=False):
+        if not os.path.exists(fname):
+            return
+        print('load_weights_by_name(%s)' % fname)
+        self.model.load_weights(fname, by_name=True)
+        if freeze:
+            conv_layers = self.get_conv_layers()
+            for layer in self.model.layers:
+                if layer.name in conv_layers:
+                    layer.trainable = False
+            self.compile()
 
     #------------------------------------------------------------------------------------------
     def train(self,train_input, train_output, valid_input, valid_output, batch_size, epochs):
@@ -218,7 +260,6 @@ def main():
     args = parser.parse_args()
     GRIDSIZE = args.gridsize
     RESOLUTION = GRIDSIZE * 2*2*2*2
-    #----------------------
     # Build Model
     model = CopyConvModel(RESOLUTION, GRIDSIZE, BATCH_SIZE, args.rate)
     if args.visualize or not args.epochs:
@@ -226,9 +267,13 @@ def main():
             print('Loading weights from file %s...' % WEIGHTSFILE)
             model.model.load_weights(WEIGHTSFILE)
     else:
+        # weight initialization for conv layers
+        #model.load_weights_by_name(INIT_WEIGHTSFILE,True) # freeze conv weights
+        model.load_weights_by_name(INIT_WEIGHTSFILE)
         if os.path.exists(MODELFILE):
             print('Loading model from file %s...' % MODELFILE)
-            model.model = km.load_model(MODELFILE, custom_objects={"th": th})
+            #model.model = km.load_model(MODELFILE, custom_objects={"th": th})
+            model.model = km.load_model(MODELFILE)
             if args.rate:
                 model.model.optimizer.lr.set_value(args.rate)
 
@@ -288,6 +333,7 @@ def main():
                    BATCH_SIZE, args.epochs)
         model.model.save_weights(WEIGHTSFILE)
         model.model.save(MODELFILE)
+        model.save_conv_weights(CONV_WEIGHTSFILE)
 
 if __name__ == '__main__':
     main()
