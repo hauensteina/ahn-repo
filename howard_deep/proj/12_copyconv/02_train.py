@@ -3,10 +3,10 @@
 # /********************************************************************
 # Filename: train.py
 # Author: AHN
-# Creation Date: Sep 21, 2017
+# Creation Date: Sep 29, 2017
 # **********************************************************************/
 #
-# Build and train gcount model
+# Build and train copyconv model
 #
 
 from __future__ import division, print_function
@@ -48,13 +48,14 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Build and train gcount model
+      %s --  Build and train copyconv model
     Synopsis:
       %s --epochs <n> --rate <learning_rate>
       or
       %s --visualize
     Description:
-      Train a model to classify gridpoints as Empty, Black, White
+      Train a model to classify gridpoints as Empty, Black, White .
+      Load initial convolutional params from init_weights.h5
     Example:
       %s --epochs 10 --rate 0.001
     ''' % (name,name,name,name)
@@ -65,7 +66,7 @@ def usage(printmsg=False):
         return msg
 
 #-----------------
-class GCountModel:
+class CopyConvModel:
     #----------------------------------------------
     def __init__(self,resolution,gridsize,batch_size,rate=0):
         self.resolution = resolution
@@ -76,7 +77,7 @@ class GCountModel:
 
     #-----------------------
     def build_model(self):
-        inputs = kl.Input(shape=(1,self.resolution,self.resolution))
+        inputs = kl.Input(shape=(1,None,None))
         #x = kl.Conv2D(32,(3,3), activation='relu', strides=(2,2), padding='same', name='one_a')(inputs)
         x = kl.Conv2D(32,(3,3), activation='relu', padding='same', name='one_a')(inputs)
         x = kl.BatchNormalization(axis=1)(x)
@@ -217,7 +218,9 @@ def main():
     args = parser.parse_args()
     GRIDSIZE = args.gridsize
     RESOLUTION = GRIDSIZE * 2*2*2*2
-    model = GCountModel(RESOLUTION, GRIDSIZE, BATCH_SIZE, args.rate)
+    #----------------------
+    # Build Model
+    model = CopyConvModel(RESOLUTION, GRIDSIZE, BATCH_SIZE, args.rate)
     if args.visualize or not args.epochs:
         if os.path.exists(WEIGHTSFILE):
             print('Loading weights from file %s...' % WEIGHTSFILE)
@@ -244,8 +247,8 @@ def main():
     ut.normalize(images['train_data'],means,stds)
     ut.normalize(images['valid_data'],means,stds)
 
-    # Visualization
     #-----------------
+    # Visualization
     if args.visualize:
         print('Dumping conv layer images to jpg')
         visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][700:701], 'lastconv0.jpg')
