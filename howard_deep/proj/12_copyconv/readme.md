@@ -1,4 +1,4 @@
-ConpyConv
+CopyConv
 ===========
 AHN, Sep 2017
 
