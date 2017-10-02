@@ -66,11 +66,6 @@ def usage(printmsg=False):
     else:
         return msg
 
-
-#-----------------------------------
-def outshape_of_lambda(input_shape):
-    return (input_shape[0], 1, input_shape[2], input_shape[3])
-
 #-----------------
 class MaxLambdaModel:
     #----------------------------------------------
@@ -81,6 +76,10 @@ class MaxLambdaModel:
         self.rate = rate
         self.build_model()
 
+    @staticmethod
+    #-----------------------------------
+    def outshape_of_lambda(input_shape):
+        return (input_shape[0], 1, input_shape[2], input_shape[3])
 
     #-----------------------
     def build_model(self):
@@ -110,9 +109,9 @@ class MaxLambdaModel:
 
         #chan_e  = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(self.gridsize,self.gridsize), name='channel_e') (x_class_conv)
         #chan_e_flat = kl.Flatten(name='chan_e_flat')(chan_e)
-        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=outshape_of_lambda, name='channel_w') (x_class_conv)
+        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=MaxLambdaModel.outshape_of_lambda, name='channel_w') (x_class_conv)
         chan_w_flat = kl.Flatten(name='chan_w_flat')(chan_w)
-        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=outshape_of_lambda, name='channel_b') (x_class_conv)
+        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=MaxLambdaModel.outshape_of_lambda, name='channel_b') (x_class_conv)
         chan_b_flat = kl.Flatten(name='chan_b_flat')(chan_b)
 
         # x.shape[0] is the batch size
