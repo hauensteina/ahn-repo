@@ -96,6 +96,6 @@ Result: Stick to the baseline
 Last Try: 100 Epochs baseline on 15x15
 =======================================
 $ 02_train.py --gridsize 15 --epochs 100 --rate 0.0001
-
+=> Converges after 25 epochs without overfitting, on training size set 10000
 
 === The End ===
