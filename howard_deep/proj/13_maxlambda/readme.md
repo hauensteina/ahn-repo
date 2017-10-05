@@ -11,5 +11,8 @@ Instead of maxpooling, replace each element with its softmax in the 3x3
 neighborhood. An attempt to have the benefits of maxpooling without losing
 positinal info.
 
+Result:
+Abandoned. Maxpooling without reducing resolution just makes no sense.
+
 
 === The End ===

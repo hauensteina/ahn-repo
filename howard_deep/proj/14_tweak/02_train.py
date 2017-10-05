@@ -6,7 +6,7 @@
 # Creation Date: Sep 29, 2017
 # **********************************************************************/
 #
-# Build and train maxlambda model
+# Build and train tweaked model
 #
 
 from __future__ import division, print_function
@@ -50,13 +50,13 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Build and train maxlambda model
+      %s --  Build and train tweaked model
     Synopsis:
       %s --epochs <n> --rate <learning_rate>
       or
       %s --visualize
     Description:
-      Train a model to count Black and White stones without maxpooling.
+      Tweak until I can count stones on 19x19
     Example:
       %s --epochs 10 --rate 0.001
     ''' % (name,name,name,name)
@@ -66,13 +66,9 @@ def usage(printmsg=False):
     else:
         return msg
 
-# Replace center of each 3x3 neighborhood with its softmax
-#-----------------------------------------------------------
-def softmax_conv(x):
-
 
 #-----------------
-class MaxLambdaModel:
+class TweakModel:
     #----------------------------------------------
     def __init__(self,resolution,gridsize,batch_size,rate=0):
         self.resolution = resolution
@@ -104,21 +100,23 @@ class MaxLambdaModel:
         x = kl.BatchNormalization(axis=1, name='batch_two_c')(x)
         x = kl.MaxPooling2D()(x)
 
+
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_a')(x)
         x = kl.Conv2D(128,(1,1), activation='relu', padding='same', name='three_b')(x)
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_c')(x)
-        #x = kl.MaxPooling2D()(x)
+        x = kl.MaxPooling2D()(x)
 
-        # Get down to two channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
+
+        # Get down to thee channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
 
         # Get the indvidual channels
         #-------------------------------
         #chan_e  = kl.Lambda(lambda x: x[:,0,:,:], output_shape=(self.gridsize,self.gridsize), name='channel_e') (x_class_conv)
         #chan_e_flat = kl.Flatten(name='chan_e_flat')(chan_e)
-        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=MaxLambdaModel.outshape_of_lambda, name='channel_w') (x_class_conv)
+        chan_w  = kl.Lambda(lambda x: x[:,1,:,:], output_shape=TweakModel.outshape_of_lambda, name='channel_w') (x_class_conv)
         chan_w_flat = kl.Flatten(name='chan_w_flat')(chan_w)
-        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=MaxLambdaModel.outshape_of_lambda, name='channel_b') (x_class_conv)
+        chan_b  = kl.Lambda(lambda x: x[:,2,:,:], output_shape=TweakModel.outshape_of_lambda, name='channel_b') (x_class_conv)
         chan_b_flat = kl.Flatten(name='chan_b_flat')(chan_b)
 
         # Sum all values for each channel layer
@@ -215,7 +213,7 @@ def visualize_channels(model, layer_name, channels, data, fname):
 
     plt.figure()
     nplots = len(channels) + 2
-    ncols = 8
+    ncols = 2
     nrows = nplots // ncols
     if nplots % ncols: nrows += 1
 
@@ -249,8 +247,7 @@ def visualize_channels(model, layer_name, channels, data, fname):
     ax.get_yaxis().set_visible(False)
     #plt.imshow(img, cmap='cool', alpha=1.0)
     plt.imshow(img, cmap='Greys', alpha=1.0)
-
-    plt.savefig(fname)
+    plt.savefig(fname,bbox_inches='tight')
 
 #-----------
 def main():
@@ -268,7 +265,7 @@ def main():
     GRIDSIZE = args.gridsize
     RESOLUTION = GRIDSIZE * 2*2*2*2
     # Build Model
-    model = MaxLambdaModel(RESOLUTION, GRIDSIZE, BATCH_SIZE, args.rate)
+    model = TweakModel(RESOLUTION, GRIDSIZE, BATCH_SIZE, args.rate)
     if args.visualize or not args.epochs:
         if os.path.exists(WEIGHTSFILE):
             print('Loading weights from file %s...' % WEIGHTSFILE)
@@ -291,8 +288,10 @@ def main():
     #-----------------------------------------------------------
     # Reshape targets to look like the flattened network output
     tt = output['valid_output']
+    #valid_output = np.array([ [x.tolist().count(EMPTY), x.tolist().count(WHITE), x.tolist().count(BLACK)] for x in tt])
     valid_output = np.array([ [x.tolist().count(WHITE), x.tolist().count(BLACK)] for x in tt])
     tt = output['train_output']
+    #train_output = np.array([ [x.tolist().count(EMPTY), x.tolist().count(WHITE), x.tolist().count(BLACK)] for x in tt])
     train_output = np.array([ [x.tolist().count(WHITE), x.tolist().count(BLACK)] for x in tt])
 
     means,stds = ut.get_means_and_stds(images['train_data'])
@@ -303,11 +302,12 @@ def main():
     # Visualization
     if args.visualize:
         print('Dumping conv layer images to jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][700:701], 'lastconv0.jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][500:501], 'lastconv1.jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][400:401], 'lastconv2.jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][300:301], 'lastconv3.jpg')
-        visualize_channels(model.model, 'lastconv', range(0,3), images['train_data'][200:201], 'lastconv4.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][70:71], 'lastconv0.jpg')
+        #plt.figure(); plt.imshow(images['valid_data'][700][0].astype(np.float32),cmap='Greys');  plt.savefig('tt.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][50:51], 'lastconv1.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][40:41], 'lastconv2.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][30:31], 'lastconv3.jpg')
+        visualize_channels(model.model, 'lastconv', range(0,3), images['valid_data'][20:21], 'lastconv4.jpg')
         exit(0)
 
     # If no epochs, just print output and what it should have been
