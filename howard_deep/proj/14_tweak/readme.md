@@ -64,6 +64,38 @@ Experiments to determine number of filters
 (1) Baseline  (rl BN rl BN rl boil sum) with (32 MP 64 MP (128 64 128) MP (256 128 256) MP)
 => converges in 18 epochs without overfitting
 
-(2) (32 MP 64 MP (128 64 128) MP (128 64 126) MP)
+(2) (32 MP 64 MP (128 64 128) MP (128 64 128) MP)
+=> does not converge in 25 epochs
+
+(3) (32 MP 64 MP (64 32 64) MP (128 64 128) MP)
+=> converges after 25 epochs without overfitting
+
+(4) (32 MP 64 MP (64 16 64) MP (128 64 128) MP)
+=> does not converge in 25 epochs
+
+(5) (32 MP 64 MP (32 16 32) MP (64 32 64) MP)
+=> does not converge in 25 epochs
+
+(6) (32 MP 64 MP (64 32 64) MP (128 64 128) MP (128 64 128) )
+=> does not converge in 25 epochs
+
+(7) (32 MP 64 MP (64 32 64) MP (128 64 128) MP (128 64 128) MP )
+=> does not converge in 25 epochs
+
+(8) (16 MP 32 MP (64 32 64) MP (128 64 128) MP)
+=> getting close after 25. Converges after 30 without overfitting.
+
+(9) (16 MP 32 MP (64 32 64) MP (128 64 128) MP (256 128 256) MP)
+=> does not converge in 30 epochs
+
+(10) Add BatchNorm to layer three in (9)
+=> learns the trining set in 17 epochs. Needs exactly 30 to also get validation right.
+
+Result: Stick to the baseline
+
+Last Try: 100 Epochs baseline on 15x15
+=======================================
+$ 02_train.py --gridsize 15 --epochs 100 --rate 0.0001
+
 
 === The End ===

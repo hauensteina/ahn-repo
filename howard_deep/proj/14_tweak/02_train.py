@@ -100,12 +100,15 @@ class TweakModel:
         x = kl.BatchNormalization(axis=1, name='batch_two_c')(x)
         x = kl.MaxPooling2D()(x)
 
-
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_a')(x)
         x = kl.Conv2D(128,(1,1), activation='relu', padding='same', name='three_b')(x)
         x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='three_c')(x)
         x = kl.MaxPooling2D()(x)
 
+        # x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='four_a')(x)
+        # x = kl.Conv2D(128,(1,1), activation='relu', padding='same', name='four_b')(x)
+        # x = kl.Conv2D(256,(3,3), activation='relu', padding='same', name='four_c')(x)
+        # x = kl.MaxPooling2D()(x)
 
         # Get down to thee channels e,b,w. Softmax across channels such that c0+c1+c2 = 1.
         x_class_conv = kl.Conv2D(3,(1,1), activation=ut.softMaxAxis1, padding='same',name='lastconv')(x)
