@@ -46,9 +46,12 @@ def usage(printmsg=False):
     Name:
       %s --  Find Go boards in jpeg images
     Synopsis:
-      %s
+      %s --run --img <n> [--squares]
     Description:
-      Find Go boards in jpeg images
+      Find Go boards in jpeg images.
+      --run:     Must be given to get around the usage
+      --img:     Which photo to use from the images folder
+      --squares: Show the individual squares on the board. Else show the whole board.
     Example:
       %s
     ''' % (name,name,name)
@@ -72,6 +75,44 @@ def auto_canny(image, sigma=0.33):
     # return the edged image
     return edged
 
+# Mark points on an image
+#----------------------------
+def plot_points(img, points, color=(255,0,0)):
+    for p in points:
+        cv2.circle(img, (p[0],p[1]), 5, color, thickness=-1) #, lineType=8, shift=0)
+
+# Draw lines on an image
+#----------------------------
+def plot_lines(img, lines, color=(255,0,0)):
+    for  p1,p2 in lines:
+        #BP()
+        cv2.line(img, tuple(p1), tuple(p2), color, thickness=2) #, lineType=8, shift=0)
+
+# Intersection of two lines
+#-------------------------------
+def intersection(line1, line2):
+    def line(p1, p2):
+        A = (p1[1] - p2[1])
+        B = (p2[0] - p1[0])
+        C = (p1[0]*p2[1] - p2[0]*p1[1])
+        return A, B, -C
+    L1 = line(line1[0], line1[1])
+    L2 = line(line2[0], line2[1])
+    D  = L1[0] * L2[1] - L1[1] * L2[0]
+    Dx = L1[2] * L2[1] - L1[1] * L2[2]
+    Dy = L1[0] * L2[2] - L1[2] * L2[0]
+    if D != 0:
+        x = Dx / D
+        y = Dy / D
+        return x,y
+    else:
+        return False
+
+#----------------------
+def linelen(line):
+    p1 = line[0]; p2 = line[1]
+    return np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+
 #---------------------
 def main():
     if len(sys.argv) == 1:
@@ -93,99 +134,81 @@ def main():
     # convert the frame to grayscale, blur it, and detect edges
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     #blurred = cv2.bilateralFilter(gray, 11, 17, 17)
-    #blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    #blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     blurred = gray
     edges = auto_canny(blurred)
 
+    plt.subplot(1,1,1); plt.imshow(edges); plt.show()
+
     # find contours in the edge map
-    im2, cnts, hierarchy  = cv2.findContours(edges.copy(), cv2.RETR_TREE,
+    im2, cnts, hierarchy  = cv2.findContours(edges.copy(), cv2.RETR_LIST,
                                                  cv2.CHAIN_APPROX_SIMPLE)
 
     #BP()
     #(cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
+    fcp = frame.copy()
+    cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
+    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
+
     squares = []
     for i,c in enumerate(cnts):
-        #if cv2.contourArea(c) > 1000: continue
-        #if cv2.contourArea(c) < 10: continue
-        # Slanted enclosing rect
-        rect = cv2.minAreaRect(c)
-        # Corners of rect
-        box  = cv2.boxPoints(rect)
-        if cv2.contourArea(np.int0(box)) > 1000: continue
-        if cv2.contourArea(np.int0(box)) < 50: continue
-        len0 =  np.linalg.norm(box[1]-box[0])
-        len1 =  np.linalg.norm(box[2]-box[1])
-        sides = sorted([len0,len1])
-        ratio = sides[1] / sides[0]
-        if ratio > 1.5: continue
-        squares.append(box)
-        #print ('%d %f %f %f' % (i, cv2.contourArea(c), cv2.contourArea(np.int0(box)), ratio))
-
-    # Find center of board
-    sq = np.stack(squares)
-    points = sq.reshape(sq.shape[0]*sq.shape[1],sq.shape[2])
-    cX = np.median([x[0] for x in points])
-    cY = np.median([x[1] for x in points])
-    #M = cv2.moments(edges)
-    #cX = int(M["m10"] / M["m00"])
-    #cY = int(M["m01"] / M["m00"])
-
-    points1 = sorted(points, key = lambda p: (p[0]-cX)**2 + (p[1]-cY)**2, reverse=True)
-
-    # Remove outliers
-    if len(points1) > 50:
-        points1 = points1[40:]
-    # Try again
-    board = cv2.boxPoints(cv2.minAreaRect(np.stack(points1)))
-
-
-    #print('=============')
-    #print(board)
-
-    if args.squares:
-        # Display squares
-        fcp = frame.copy()
-        for sq in squares:
-            sq = np.int0(sq)
-            cv2.drawContours(fcp, [sq], 0, (0,255,0), 3)
-        cv2.circle(fcp, (cX,cY), 10, (0,0,255), thickness=1, lineType=8, shift=0)
-        plt.subplot(1,1,1)
-        plt.imshow(fcp)
-    else:
-        # Display board rectangle
-        fcp = frame.copy()
-        board = np.int0(board)
-        cv2.drawContours(fcp, [board], 0, (0,255,0), 3)
-        plt.subplot(1,1,1)
-        plt.imshow(fcp)
-
-
-    # for i,box in enumerate(squares[25:]):
-    #     if i >= 25: break
-    #     fcp = frame.copy()
-    #     box = np.int0(box)
-    #     cv2.drawContours(fcp, [box], 0, (0,255,0), 3)
-    #     plt.subplot(5,5,i+1)
-    #     plt.imshow(fcp)
-
+        area = cv2.contourArea(c)
+        if area > 1000: continue
+        if area < 10: continue
+        peri = cv2.arcLength(c, closed=True)
+        hullArea = cv2.contourArea(cv2.convexHull(c))
+        solidity = area / float(hullArea)
+        approx = cv2.approxPolyDP(c, 0.01 * peri, closed=True)
+        if len(approx) < 4: continue
+        (x, y, w, h) = cv2.boundingRect(approx)
+        aspectRatio = w / float(h)
+        arlim = 0.4
+        if aspectRatio < arlim: continue
+        if aspectRatio > 1.0 / arlim: continue
+        if solidity < 0.45: continue
+        squares.append(approx)
 
     #BP()
+    fcp = frame.copy()
+    cv2.drawContours(fcp, np.array(squares), -1, (0,255,0), 2)
+    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
 
-    # plt.subplot(221),plt.imshow(blurred, cmap = 'gray')
-    # plt.title('Blurred'), plt.xticks([]), plt.yticks([])
-    # plt.subplot(222),plt.imshow(edges, cmap = 'gray')
-    # plt.title('Edges'), plt.xticks([]), plt.yticks([])
-    # for line in lines:
-    #     for x1,y1,x2,y2 in line:
-    #         cv2.line(frame,(x1,y1),(x2,y2),(0,255,0),2)
-    #plt.subplot(111),plt.imshow(edges, cmap = 'gray')
-    #plt.subplot(111),plt.imshow(im2, cmap = 'gray')
-    #plt.subplot(111),plt.imshow(frame, cmap = 'gray')
-    #plt.title('Lines'), plt.xticks([]), plt.yticks([])
+    # Get square centers
+    centers = []
+    for s in squares:
+        M = cv2.moments(s)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+        centers.append((cX,cY))
 
+    # Find center of board
+    board_center_x = int(np.median([x[0] for x in centers]))
+    board_center_y = int(np.median([x[1] for x in centers]))
+    plot_points(fcp,[(board_center_x,board_center_y)])
+    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
 
-    plt.show()
+    # Store distance from center for each contour
+    sqdists=[]
+    for idx,sq in enumerate(squares):
+        sqdists.append({'cnt':sq, 'dist':linelen((centers[idx],(board_center_x, board_center_y)))})
+    distsorted = sorted( sqdists, key = lambda x: x['dist'])
+
+    lastidx = len(distsorted)
+    for idx,c in enumerate(distsorted):
+        if not idx: continue
+        delta = c['dist'] - distsorted[idx-1]['dist']
+        print ('dist:%f delta: %f' % (c['dist'],delta))
+        if delta > 10.0:
+            lastidx = idx
+            print( 'over')
+            break
+
+    squares1 = [x['cnt'] for x in distsorted[:lastidx]]
+    fcp = frame.copy()
+    cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
+    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
+
 
 
 
