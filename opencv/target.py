@@ -113,6 +113,14 @@ def linelen(line):
     p1 = line[0]; p2 = line[1]
     return np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
+# Display an image
+#-------------------------
+def showim(img,cmap=None):
+    plt.figure(figsize=(12, 10))
+    plt.subplot(1,1,1);
+    plt.imshow(img,cmap=cmap);
+    plt.show()
+
 #---------------------
 def main():
     if len(sys.argv) == 1:
@@ -138,7 +146,8 @@ def main():
     blurred = gray
     edges = auto_canny(blurred)
 
-    plt.subplot(1,1,1); plt.imshow(edges); plt.show()
+    showim(blurred,cmap='gray')
+    showim(edges)
 
     # find contours in the edge map
     im2, cnts, hierarchy  = cv2.findContours(edges.copy(), cv2.RETR_LIST,
@@ -149,7 +158,7 @@ def main():
     cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
     fcp = frame.copy()
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
-    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
+    showim(fcp)
 
     squares = []
     for i,c in enumerate(cnts):
@@ -172,7 +181,7 @@ def main():
     #BP()
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares), -1, (0,255,0), 2)
-    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
+    showim(fcp)
 
     # Get square centers
     centers = []
@@ -186,7 +195,7 @@ def main():
     board_center_x = int(np.median([x[0] for x in centers]))
     board_center_y = int(np.median([x[1] for x in centers]))
     plot_points(fcp,[(board_center_x,board_center_y)])
-    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
+    showim(fcp)
 
     # Store distance from center for each contour
     sqdists=[]
@@ -199,7 +208,7 @@ def main():
         if not idx: continue
         delta = c['dist'] - distsorted[idx-1]['dist']
         print ('dist:%f delta: %f' % (c['dist'],delta))
-        if delta > 10.0:
+        if delta > 20.0:
             lastidx = idx
             print( 'over')
             break
@@ -207,7 +216,7 @@ def main():
     squares1 = [x['cnt'] for x in distsorted[:lastidx]]
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
-    plt.subplot(1,1,1); plt.imshow(fcp); plt.show()
+    showim(fcp)
 
 
 
