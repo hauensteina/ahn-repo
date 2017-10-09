@@ -88,6 +88,26 @@ def plot_lines(img, lines, color=(255,0,0)):
         #BP()
         cv2.line(img, tuple(p1), tuple(p2), color, thickness=2) #, lineType=8, shift=0)
 
+# Get unit vector of vector
+#----------------------------
+def unit_vector(vector):
+    return vector / np.linalg.norm(vector)
+
+#-----------------------------
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
 # Intersection of two lines
 #-------------------------------
 def intersection(line1, line2):
@@ -108,10 +128,36 @@ def intersection(line1, line2):
     else:
         return False
 
-#----------------------
-def linelen(line):
-    p1 = line[0]; p2 = line[1]
-    return np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
+# Find x where f(x) = target where f is an increasing func.
+#------------------------------------------------------------
+def bisect( f, lower, upper, target, maxiter=10):
+    n=0
+    while True and n < maxiter:
+        n += 1
+        res = (upper + lower) / 2.0
+        val = f(res)
+        if val > target:
+            upper = res
+        elif val < target:
+            lower = res
+        else:
+            break
+    return res
+
+# Enclose a contour with an n edge polygon
+#-------------------------------------------
+def approx_poly( cnt, n):
+    hull = cv2.convexHull( cnt)
+    peri = cv2.arcLength( hull, closed=True)
+    epsilon = bisect( lambda x: -len(cv2.approxPolyDP(hull, x * peri, closed=True)),
+                      0.0, 1.0, -n)
+    res  = cv2.approxPolyDP(hull, epsilon*peri, closed=True)
+    return res
+
+# Return the area lost if a point is removed from a contour
+#--------------------------------------------------------------
+def arealoss( cnt, areidx):
+    cnt1 = np.delete( cnt, idx)
 
 # Display an image
 #-------------------------
@@ -143,22 +189,20 @@ def main():
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     #blurred = cv2.bilateralFilter(gray, 11, 17, 17)
     #blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    blurred = gray
-    edges = auto_canny(blurred)
+    #blurred = gray
+    edges = auto_canny(gray)
 
-    showim(blurred,cmap='gray')
-    showim(edges)
+    #showim(blurred,cmap='gray')
+    #showim(edges)
 
     # find contours in the edge map
     im2, cnts, hierarchy  = cv2.findContours(edges.copy(), cv2.RETR_LIST,
                                                  cv2.CHAIN_APPROX_SIMPLE)
 
-    #BP()
-    #(cnts, _) = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
     fcp = frame.copy()
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
-    showim(fcp)
+    #showim(fcp)
 
     squares = []
     for i,c in enumerate(cnts):
@@ -178,39 +222,34 @@ def main():
         if solidity < 0.45: continue
         squares.append(approx)
 
-    #BP()
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares), -1, (0,255,0), 2)
-    showim(fcp)
+    #showim(fcp)
 
     # Get square centers
-    centers = []
-    for s in squares:
-        M = cv2.moments(s)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-        centers.append((cX,cY))
+    centers = [ (int(M["m10"] / M["m00"]),
+                 int(M["m01"] / M["m00"]))
+                for M in [cv2.moments(s) for s in squares]]
 
     # Find center of board
-    board_center_x = int(np.median([x[0] for x in centers]))
-    board_center_y = int(np.median([x[1] for x in centers]))
-    plot_points(fcp,[(board_center_x,board_center_y)])
-    showim(fcp)
+    board_center = np.array (( int(np.median([x[0] for x in centers])),
+                               int(np.median([x[1] for x in centers])) ))
+    plot_points(fcp,[board_center])
+    #showim(fcp)
 
     # Store distance from center for each contour
-    sqdists=[]
-    for idx,sq in enumerate(squares):
-        sqdists.append({'cnt':sq, 'dist':linelen((centers[idx],(board_center_x, board_center_y)))})
+    sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
+                for idx,sq in enumerate(squares) ]
     distsorted = sorted( sqdists, key = lambda x: x['dist'])
 
+    # Remove contours if there is a jump in distance from center
     lastidx = len(distsorted)
     for idx,c in enumerate(distsorted):
         if not idx: continue
         delta = c['dist'] - distsorted[idx-1]['dist']
-        print ('dist:%f delta: %f' % (c['dist'],delta))
+        #print ('dist:%f delta: %f' % (c['dist'],delta))
         if delta > 20.0:
             lastidx = idx
-            print( 'over')
             break
 
     squares1 = [x['cnt'] for x in distsorted[:lastidx]]
@@ -218,7 +257,13 @@ def main():
     cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
     showim(fcp)
 
+    # Find enclosing 4-polygon
+    points = np.array([p for s in squares1 for p in s])
+    board = approx_poly( points, 4)
 
+    fcp = frame.copy()
+    cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
+    showim(fcp)
 
 
 if __name__ == '__main__':
