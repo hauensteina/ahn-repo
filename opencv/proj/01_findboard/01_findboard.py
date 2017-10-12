@@ -17,7 +17,7 @@ from pdb import set_trace as BP
 import inspect
 import os,sys,re,json,shutil,glob
 import numpy as np
-import scipy
+import scipy.signal
 from numpy.random import random
 import argparse
 import cv2
@@ -37,7 +37,8 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 #import ahnutil as ut
 
-IMG_FOLDER = 'images/9x9_empty'
+#IMG_FOLDER = 'images/9x9_empty'
+IMG_FOLDER = 'images/9x9_stones'
 
 #---------------------------
 def usage(printmsg=False):
@@ -331,18 +332,18 @@ def main():
             break
 
     squares1 = [x['cnt'] for x in distsorted[:lastidx]]
-    fcp = frame.copy()
-    cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
-    showim(fcp)
+    #fcp = frame.copy()
+    #cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
+    #showim(fcp)
 
     # Find enclosing 4-polygon
     points = np.array([p for s in squares1 for p in s])
     board = approx_poly( points, 4).reshape(4,2)
     #BP()
 
-    fcp = frame.copy()
-    cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
-    showim(fcp)
+    #fcp = frame.copy()
+    #cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
+    #showim(fcp)
 
     # Make the board a little larger
     factor = 1.1
@@ -353,11 +354,84 @@ def main():
     #BP()
     fcp = frame.copy()
     cv2.drawContours(fcp, [board_stretched], -1, (0,255,0), 1)
-    showim(fcp)
+    #showim(fcp)
 
     # Zoom in on the board
-    zoomed = four_point_transform( frame, board_stretched)
+    zoomed = four_point_transform( gray, board_stretched)
     showim(zoomed)
+
+    # DFT on original
+    dft = cv2.dft(gray.astype('float32'), flags = cv2.DFT_COMPLEX_OUTPUT)
+    dft_shifted = np.fft.fftshift(dft)
+    magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shifted[:,:,0],dft_shifted[:,:,1]))
+    #showim(magnitude_spectrum)
+
+    # DFT on zoomed
+    dft = cv2.dft(zoomed.astype('float32'), flags = cv2.DFT_COMPLEX_OUTPUT)
+    dft_shifted = np.fft.fftshift(dft)
+    magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shifted[:,:,0],dft_shifted[:,:,1]))
+    #showim(magnitude_spectrum)
+
+    # Get three rows from the image
+    height = zoomed.shape[0]
+    width = zoomed.shape[1]
+    r_middle = height // 2
+    r_lower  = height // 4
+    r_upper  = r_middle + r_lower
+
+    # Get the spectrum for each
+    CLIP = 1000
+
+    row = zoomed[r_middle,:]
+    fft = np.fft.fft(row)
+    fft_shifted = np.fft.fftshift(fft)
+    magspec_m = np.clip(np.abs(fft_shifted),0,CLIP)
+
+    row = zoomed[r_lower,:]
+    fft = np.fft.fft(row)
+    fft_shifted = np.fft.fftshift(fft)
+    magspec_l = np.clip(np.abs(fft_shifted),0,CLIP)
+
+    row = zoomed[r_upper,:]
+    fft = np.fft.fft(row)
+    fft_shifted = np.fft.fftshift(fft)
+    magspec_u = np.clip(np.abs(fft_shifted),0,CLIP)
+
+    magspec_log  = np.log(np.average( np.abs( np.fft.fftshift( np.fft.fft( zoomed))), axis=0))
+    magspec_clip = np.clip(np.average( np.abs( np.fft.fftshift( np.fft.fft( zoomed))), axis=0), 0, CLIP)
+
+    #BP()
+    #plt.subplot(121)
+    #plt.plot(range( -width // 2, width // 2 ), magspec_log)
+    plt.subplot(121)
+    plt.plot(range( -width // 2, width // 2 ), magspec_clip)
+    smooth_magspec = np.convolve(magspec_clip, np.bartlett(5), 'same')
+    plt.subplot(122)
+    plt.plot(range( -width // 2, width // 2 ), smooth_magspec)
+    # First peak with frequencey > 6 gives the horizontal line distance, d_h = width / f
+    highf = smooth_magspec[width // 2 + 6:]
+    maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + 6.0
+    #BP()
+
+    # plt.subplot(131)
+    # plt.plot(range( -width // 2, width // 2 ), magspec_m)
+    # plt.subplot(132)
+    # plt.plot(range( -width // 2, width // 2 ), magspec_l)
+    # plt.subplot(133)
+    # plt.plot(range( -width // 2, width // 2 ), magspec_u)
+    plt.show()
+
+    # # Get Cepstrum for each
+    # magceps_m = np.abs(np.fft.fft(magspec_m))
+    # plt.subplot(111)
+    # plt.plot(magceps_m)
+    # magceps_l = np.abs(np.fft.fft(magspec_l))
+    # plt.subplot(111)
+    # plt.plot(magceps_l)
+    # magceps_u = np.abs(np.fft.fft(magspec_u))
+    # plt.subplot(111)
+    # plt.plot(magceps_u)
+    # plt.show()
 
 
 
