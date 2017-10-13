@@ -38,7 +38,8 @@ sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 #import ahnutil as ut
 
 #IMG_FOLDER = 'images/9x9_empty'
-IMG_FOLDER = 'images/9x9_stones'
+#IMG_FOLDER = 'images/9x9_stones'
+IMG_FOLDER = 'images/19x19_stones'
 
 #---------------------------
 def usage(printmsg=False):
@@ -281,7 +282,7 @@ def main():
     cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
     fcp = frame.copy()
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
-    #showim(fcp)
+    showim(fcp)
 
     squares = []
     for i,c in enumerate(cnts):
@@ -314,7 +315,7 @@ def main():
     board_center = np.array (( int(np.median([x[0] for x in centers])),
                                int(np.median([x[1] for x in centers])) ))
     plot_points(fcp,[board_center])
-    #showim(fcp)
+    showim(fcp)
 
     # Store distance from center for each contour
     sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
@@ -332,9 +333,9 @@ def main():
             break
 
     squares1 = [x['cnt'] for x in distsorted[:lastidx]]
-    #fcp = frame.copy()
-    #cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
-    #showim(fcp)
+    fcp = frame.copy()
+    cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
+    showim(fcp)
 
     # Find enclosing 4-polygon
     points = np.array([p for s in squares1 for p in s])
