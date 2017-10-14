@@ -25,10 +25,6 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahn_opencv_util as ut
 
-#IMG_FOLDER = 'images/9x9_empty'
-#IMG_FOLDER = 'images/9x9_stones'
-#IMG_FOLDER = 'images/19x19_stones'
-
 #---------------------------
 def usage(printmsg=False):
     name = os.path.basename(__file__)
@@ -66,8 +62,9 @@ def main():
     images += glob.glob(args.folder + '/*.JPG')
     frame = cv2.imread(images[args.img])
     #frame = cv2.resize(frame, None, fx=0.1, fy=0.1, interpolation = cv2.INTER_AREA)
-    width  = frame.shape[1]
-    height = frame.shape[0]
+    #width  = frame.shape[1]
+    #height = frame.shape[0]
+    frame = ut.resize( frame, 500)
 
     #----------------------------
     #gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
@@ -123,21 +120,34 @@ def main():
 def get_contours(img):
     # convert the frame to grayscale, blur it, and detect edges
     #blurred = cv2.bilateralFilter(img, 11, 17, 17)
-    blurred = cv2.GaussianBlur(img, (5, 5), 0)
-    #edges = ut.auto_canny(blurred)
+    #blurred = cv2.GaussianBlur(img, (5, 5), 0)
     edges = ut.auto_canny(img)
     ut.showim( edges)
 
-    # kernel = np.ones((10,10),np.uint8)
-    # dilated = cv2.dilate(edges,kernel,iterations = 1)
-    # ut.showim( dilated)
+    kernel = np.ones((3,3),np.uint8)
+    #outp = cv2.dilate(edges,kernel,iterations = 1)
+    outp = edges
+    outp = cv2.dilate(outp,kernel,iterations = 1)
+    ut.showim( outp)
+    outp = cv2.dilate(outp,kernel,iterations = 1)
+    ut.showim( outp)
+    outp = cv2.dilate(outp,kernel,iterations = 1)
+    ut.showim( outp)
+    outp = cv2.erode(outp,kernel,iterations = 1)
+    ut.showim( outp)
+    outp = cv2.erode(outp,kernel,iterations = 1)
+    ut.showim( outp)
+    outp = cv2.erode(outp,kernel,iterations = 1)
+    ut.showim( outp)
+    #ut.showim( outp)
+    exit(1)
 
 
     #ut.showim(blurred,cmap='gray')
     #ut.showim(edges)
 
     # find contours in the edge map
-    im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_LIST,
+    im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_EXTERNAL, # cv2.RETR_LIST,
                                              cv2.CHAIN_APPROX_SIMPLE)
     return cnts
 
@@ -169,7 +179,7 @@ def filter_squares(cnts, width, height):
         #arlim = 0.4
         #if aspectRatio < arlim: continue
         #if aspectRatio > 1.0 / arlim: continue
-        #if solidity < 0.45: continue
+        if solidity < 0.45: continue
         #if solidity < 0.07: continue
         squares.append(c)
     return squares
