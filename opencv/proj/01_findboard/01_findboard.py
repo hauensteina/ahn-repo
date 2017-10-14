@@ -66,20 +66,22 @@ def main():
     images += glob.glob(args.folder + '/*.JPG')
     frame = cv2.imread(images[args.img])
     #frame = cv2.resize(frame, None, fx=0.1, fy=0.1, interpolation = cv2.INTER_AREA)
+    width  = frame.shape[1]
+    height = frame.shape[0]
 
     #----------------------------
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+    ut.showim( gray)
     cnts = get_contours(gray)
     #cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
     fcp = frame.copy()
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
     ut.showim(fcp)
-
     #--------------------------------
-    squares = filter_squares(cnts)
+    squares = filter_squares(cnts, width, height)
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares), -1, (0,255,0), 2)
-    #ut.showim(fcp)
+    ut.showim(fcp)
 
     #--------------------------------------------
     centers, board_center = get_board_center(squares)
@@ -87,7 +89,7 @@ def main():
     ut.showim(fcp)
 
     #----------------------------------------------------
-    squares1 = cleanup_squares( centers, squares, board_center)
+    squares1 = cleanup_squares( centers, squares, board_center, width, height)
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
     ut.showim(fcp)
@@ -96,12 +98,15 @@ def main():
     #-----------------------------------------------------
     points = np.array([p for s in squares1 for p in s])
     board = ut.approx_poly( points, 4).reshape(4,2)
+    fcp = frame.copy()
+    cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
+    ut.showim(fcp)
 
     #---------------------------------------
     board_stretched = enlarge_board(board)
-    #fcp = frame.copy()
-    #cv2.drawContours(fcp, [board_stretched], -1, (0,255,0), 1)
-    #ut.showim(fcp)
+    fcp = frame.copy()
+    cv2.drawContours(fcp, [board_stretched], -1, (0,255,0), 1)
+    ut.showim(fcp)
 
     # Zoom in on the board
     #----------------------
@@ -116,9 +121,15 @@ def main():
 #-----------------------
 def get_contours(img):
     # convert the frame to grayscale, blur it, and detect edges
-    #blurred = cv2.bilateralFilter(gray, 11, 17, 17)
-    #blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    edges = ut.auto_canny(img)
+    #blurred = cv2.bilateralFilter(img, 11, 17, 17)
+    blurred = cv2.GaussianBlur(img, (5, 5), 0)
+    edges = ut.auto_canny(blurred)
+    ut.showim( edges)
+
+    kernel = np.ones((10,10),np.uint8)
+    dilated = cv2.dilate(edges,kernel,iterations = 1)
+    ut.showim( dilated)
+
 
     #ut.showim(blurred,cmap='gray')
     #ut.showim(edges)
@@ -131,24 +142,34 @@ def get_contours(img):
 
 # Try to eliminate all contours except those on the board
 #----------------------------------------------------------
-def filter_squares(cnts):
+def filter_squares(cnts, width, height):
     squares = []
     for i,c in enumerate(cnts):
         area = cv2.contourArea(c)
-        if area > 1000: continue
-        if area < 10: continue
+        if area > width*height / 10.0: continue
+        if area < width*height / 4000.0 : continue
         peri = cv2.arcLength(c, closed=True)
-        hullArea = cv2.contourArea(cv2.convexHull(c))
-        solidity = area / float(hullArea)
+        #hullArea = cv2.contourArea(cv2.convexHull(c))
+        #if hullArea < 0.001: continue
+        #solidity = area / float(hullArea)
         approx = cv2.approxPolyDP(c, 0.01 * peri, closed=True)
-        if len(approx) < 4: continue
-        (x, y, w, h) = cv2.boundingRect(approx)
-        aspectRatio = w / float(h)
-        arlim = 0.4
-        if aspectRatio < arlim: continue
-        if aspectRatio > 1.0 / arlim: continue
-        if solidity < 0.45: continue
-        squares.append(approx)
+        if len(approx) < 4: continue  # Not a square
+        # not a circle
+        if len(approx) > 6:
+            center,rad = cv2.minEnclosingCircle(c)
+            circularity = area / (rad * rad * np.pi)
+            if circularity < 0.50: continue
+        #print (circularity)
+
+        #if len(approx) > 14: continue
+        #(x, y, w, h) = cv2.boundingRect(approx)
+        #aspectRatio = w / float(h)
+        #arlim = 0.4
+        #if aspectRatio < arlim: continue
+        #if aspectRatio > 1.0 / arlim: continue
+        #if solidity < 0.45: continue
+        #if solidity < 0.07: continue
+        squares.append(c)
     return squares
 
 #-----------------------------------
@@ -165,7 +186,7 @@ def get_board_center(square_cnts):
 
 # Remove spurious contours outside the board
 #--------------------------------------------------
-def cleanup_squares(centers, square_cnts, board_center):
+def cleanup_squares(centers, square_cnts, board_center, width, height):
     # Store distance from center for each contour
     sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
                 for idx,sq in enumerate(square_cnts) ]
@@ -177,7 +198,8 @@ def cleanup_squares(centers, square_cnts, board_center):
         if not idx: continue
         delta = c['dist'] - distsorted[idx-1]['dist']
         #print ('dist:%f delta: %f' % (c['dist'],delta))
-        if delta > 20.0:
+        #if delta > width / 5.0:
+        if delta > width / 10.0:
             lastidx = idx
             break
 
@@ -186,7 +208,7 @@ def cleanup_squares(centers, square_cnts, board_center):
 
 #---------------------------
 def enlarge_board(board):
-    factor = 1.1
+    factor = 1.2
     board = ut.order_points(board)
     diag1_stretched = ut.stretch_line( (board[0],board[2]), factor)
     diag2_stretched = ut.stretch_line( (board[1],board[3]), factor)
