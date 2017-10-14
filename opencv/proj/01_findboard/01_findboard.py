@@ -70,8 +70,9 @@ def main():
     height = frame.shape[0]
 
     #----------------------------
-    gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
-    ut.showim( gray)
+    #gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
     cnts = get_contours(gray)
     #cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
     fcp = frame.copy()
@@ -123,12 +124,13 @@ def get_contours(img):
     # convert the frame to grayscale, blur it, and detect edges
     #blurred = cv2.bilateralFilter(img, 11, 17, 17)
     blurred = cv2.GaussianBlur(img, (5, 5), 0)
-    edges = ut.auto_canny(blurred)
+    #edges = ut.auto_canny(blurred)
+    edges = ut.auto_canny(img)
     ut.showim( edges)
 
-    kernel = np.ones((10,10),np.uint8)
-    dilated = cv2.dilate(edges,kernel,iterations = 1)
-    ut.showim( dilated)
+    # kernel = np.ones((10,10),np.uint8)
+    # dilated = cv2.dilate(edges,kernel,iterations = 1)
+    # ut.showim( dilated)
 
 
     #ut.showim(blurred,cmap='gray')
@@ -149,16 +151,16 @@ def filter_squares(cnts, width, height):
         if area > width*height / 10.0: continue
         if area < width*height / 4000.0 : continue
         peri = cv2.arcLength(c, closed=True)
-        #hullArea = cv2.contourArea(cv2.convexHull(c))
-        #if hullArea < 0.001: continue
-        #solidity = area / float(hullArea)
+        hullArea = cv2.contourArea(cv2.convexHull(c))
+        if hullArea < 0.001: continue
+        solidity = area / float(hullArea)
         approx = cv2.approxPolyDP(c, 0.01 * peri, closed=True)
         if len(approx) < 4: continue  # Not a square
         # not a circle
-        if len(approx) > 6:
-            center,rad = cv2.minEnclosingCircle(c)
-            circularity = area / (rad * rad * np.pi)
-            if circularity < 0.50: continue
+        #if len(approx) > 6:
+        #center,rad = cv2.minEnclosingCircle(c)
+        #circularity = area / (rad * rad * np.pi)
+        #if circularity < 0.50: continue
         #print (circularity)
 
         #if len(approx) > 14: continue
@@ -198,8 +200,8 @@ def cleanup_squares(centers, square_cnts, board_center, width, height):
         if not idx: continue
         delta = c['dist'] - distsorted[idx-1]['dist']
         #print ('dist:%f delta: %f' % (c['dist'],delta))
-        #if delta > width / 5.0:
-        if delta > width / 10.0:
+        #if delta > width / 10.0:
+        if delta > width / 5.0:
             lastidx = idx
             break
 
@@ -225,7 +227,9 @@ def get_boardsize_by_fft(zoomed_img):
     smooth_magspec = np.convolve(magspec_clip, np.bartlett(5), 'same')
     # The first frequency peak above 6 should be close to the board size.
     plt.subplot(111)
-    plt.plot(range( -width // 2, 1 + width // 2 ), smooth_magspec)
+    #plt.plot(range( -width // 2, 1 + width // 2 ), smooth_magspec)
+    half = len(smooth_magspec) // 2
+    plt.plot(range( -half, half+1 ), smooth_magspec)
     plt.show()
     highf = smooth_magspec[width // 2 + 6:]
     maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + 6.0
