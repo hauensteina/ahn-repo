@@ -70,6 +70,12 @@ def bisect( f, lower, upper, target, maxiter=10):
             break
     return res
 
+# Max dist of any point in the contour from the point
+#--------------------------------------------------------
+def contour_maxdist( cnt, point):
+    res = np.max([ np.linalg.norm(p-point)  for p in cnt ])
+    return res
+
 # Zoom into an image area where pts are the four corners.
 # From pyimagesearch by Adrian Rosebrock
 #-----------------------------------------

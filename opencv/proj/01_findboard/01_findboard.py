@@ -24,6 +24,7 @@ from matplotlib import pyplot as plt
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahn_opencv_util as ut
+g_frame=''
 
 #---------------------------
 def usage(printmsg=False):
@@ -65,6 +66,8 @@ def main():
     #width  = frame.shape[1]
     #height = frame.shape[0]
     frame = ut.resize( frame, 500)
+    global g_frame
+    g_frame = frame
 
     #----------------------------
     #gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
@@ -75,6 +78,7 @@ def main():
     fcp = frame.copy()
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
     ut.showim(fcp)
+
     #--------------------------------
     squares = filter_squares(cnts, frame.shape[1], frame.shape[0])
     fcp = frame.copy()
@@ -179,18 +183,24 @@ def get_board_center(square_cnts):
 #--------------------------------------------------
 def cleanup_squares(centers, square_cnts, board_center, width, height):
     # Store distance from center for each contour
-    sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
-                for idx,sq in enumerate(square_cnts) ]
+    # sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
+    #             for idx,sq in enumerate(square_cnts) ]
+    # distsorted = sorted( sqdists, key = lambda x: x['dist'])
+
+    #ut.show_contours( g_frame, square_cnts)
+    sqdists = [ {'cnt':sq, 'dist':ut.contour_maxdist( sq, board_center)}
+                 for sq in square_cnts ]
     distsorted = sorted( sqdists, key = lambda x: x['dist'])
 
-    # Remove contours if there is a jump in distance from center
+    # Remove contours if there is a jump in distance
     lastidx = len(distsorted)
     for idx,c in enumerate(distsorted):
         if not idx: continue
         delta = c['dist'] - distsorted[idx-1]['dist']
+        print(c['dist'], delta)
+        #ut.show_contours( g_frame, [c['cnt']])
         #print ('dist:%f delta: %f' % (c['dist'],delta))
-        #if delta > width / 10.0:
-        if delta > min(width,height) / 5.0:
+        if delta > min(width,height) / 10.0:
             lastidx = idx
             break
 
