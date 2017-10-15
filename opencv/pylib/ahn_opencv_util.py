@@ -166,6 +166,18 @@ def resize(img, M):
     res = cv2.resize(img,(int(width*scale),int(height*scale)))
     return res
 
+# Display contour for debugging
+#--------------------------------
+def show_contours(img, cnts):
+    for c in cnts:
+        peri = cv2.arcLength(c, closed=True)
+        area = cv2.contourArea(c)
+        hullArea = cv2.contourArea(cv2.convexHull(c))
+        print ('area,efficiency,straightness: %d %f %f' % (area, np.sqrt(area)/max(1,peri), peri / len(c)))
+        fcp = img.copy()
+        cv2.drawContours(fcp, [c], -1, (0,255,0), 2)
+        showim(fcp)
+
 # Display an image
 #-------------------------
 def showim(img,cmap=None):

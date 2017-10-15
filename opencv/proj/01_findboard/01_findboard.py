@@ -76,7 +76,7 @@ def main():
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
     ut.showim(fcp)
     #--------------------------------
-    squares = filter_squares(cnts, width, height)
+    squares = filter_squares(cnts, frame.shape[1], frame.shape[0])
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares), -1, (0,255,0), 2)
     ut.showim(fcp)
@@ -87,7 +87,7 @@ def main():
     ut.showim(fcp)
 
     #----------------------------------------------------
-    squares1 = cleanup_squares( centers, squares, board_center, width, height)
+    squares1 = cleanup_squares( centers, squares, board_center, frame.shape[1], frame.shape[0])
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
     ut.showim(fcp)
@@ -118,37 +118,16 @@ def main():
 
 #-----------------------
 def get_contours(img):
-    # convert the frame to grayscale, blur it, and detect edges
-    #blurred = cv2.bilateralFilter(img, 11, 17, 17)
-    #blurred = cv2.GaussianBlur(img, (5, 5), 0)
     edges = ut.auto_canny(img)
-    ut.showim( edges)
-
-    kernel = np.ones((3,3),np.uint8)
-    #outp = cv2.dilate(edges,kernel,iterations = 1)
-    outp = edges
-    outp = cv2.dilate(outp,kernel,iterations = 1)
-    ut.showim( outp)
-    outp = cv2.dilate(outp,kernel,iterations = 1)
-    ut.showim( outp)
-    outp = cv2.dilate(outp,kernel,iterations = 1)
-    ut.showim( outp)
-    outp = cv2.erode(outp,kernel,iterations = 1)
-    ut.showim( outp)
-    outp = cv2.erode(outp,kernel,iterations = 1)
-    ut.showim( outp)
-    outp = cv2.erode(outp,kernel,iterations = 1)
-    ut.showim( outp)
-    #ut.showim( outp)
-    exit(1)
-
-
-    #ut.showim(blurred,cmap='gray')
-    #ut.showim(edges)
-
     # find contours in the edge map
-    im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_EXTERNAL, # cv2.RETR_LIST,
+    im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_LIST,
                                              cv2.CHAIN_APPROX_SIMPLE)
+
+    # Keep if larger than 0.1% of image
+    img_area = img.shape[0] * img.shape[1]
+    cnts = [ c for c in cnts if  cv2.contourArea(c) / img_area > 0.001 ]
+    # Keep if reasonably not-wiggly
+    cnts = [ c for c in cnts if   cv2.arcLength(c, closed=True) / len(c) > 2.0 ]
     return cnts
 
 
@@ -158,14 +137,14 @@ def filter_squares(cnts, width, height):
     squares = []
     for i,c in enumerate(cnts):
         area = cv2.contourArea(c)
-        if area > width*height / 10.0: continue
+        #if area > width*height / 2.5: continue
         if area < width*height / 4000.0 : continue
         peri = cv2.arcLength(c, closed=True)
         hullArea = cv2.contourArea(cv2.convexHull(c))
         if hullArea < 0.001: continue
         solidity = area / float(hullArea)
         approx = cv2.approxPolyDP(c, 0.01 * peri, closed=True)
-        if len(approx) < 4: continue  # Not a square
+        #if len(approx) < 4: continue  # Not a square
         # not a circle
         #if len(approx) > 6:
         #center,rad = cv2.minEnclosingCircle(c)
@@ -179,7 +158,7 @@ def filter_squares(cnts, width, height):
         #arlim = 0.4
         #if aspectRatio < arlim: continue
         #if aspectRatio > 1.0 / arlim: continue
-        if solidity < 0.45: continue
+        #if solidity < 0.45: continue
         #if solidity < 0.07: continue
         squares.append(c)
     return squares
@@ -211,7 +190,7 @@ def cleanup_squares(centers, square_cnts, board_center, width, height):
         delta = c['dist'] - distsorted[idx-1]['dist']
         #print ('dist:%f delta: %f' % (c['dist'],delta))
         #if delta > width / 10.0:
-        if delta > width / 5.0:
+        if delta > min(width,height) / 5.0:
             lastidx = idx
             break
 
@@ -235,6 +214,8 @@ def get_boardsize_by_fft(zoomed_img):
     magspec_clip = np.clip(np.average( np.abs( np.fft.fftshift( np.fft.fft( zoomed_img))), axis=0), 0, CLIP)
     # Smooth it
     smooth_magspec = np.convolve(magspec_clip, np.bartlett(5), 'same')
+    if not len(smooth_magspec) % 2:
+        smooth_magspec = np.append( smooth_magspec, 0.0)
     # The first frequency peak above 6 should be close to the board size.
     plt.subplot(111)
     #plt.plot(range( -width // 2, 1 + width // 2 ), smooth_magspec)
@@ -245,7 +226,6 @@ def get_boardsize_by_fft(zoomed_img):
     maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + 6.0
     res = maxes[0] if len(maxes) else 0
     return res
-
 
 if __name__ == '__main__':
     main()
