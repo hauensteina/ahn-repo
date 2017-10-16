@@ -72,30 +72,30 @@ def main():
     #----------------------------
     #gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    ut.showim(gray,'gray')
+    #ut.showim(gray,'gray')
 
     cnts = get_contours(gray)
     #cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
     fcp = frame.copy()
     cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
-    ut.showim(fcp)
+    #ut.showim(fcp)
 
     #--------------------------------
     squares = filter_squares(cnts, frame.shape[1], frame.shape[0])
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares), -1, (0,255,0), 2)
-    ut.showim(fcp)
+    #ut.showim(fcp)
 
     #--------------------------------------------
     centers, board_center = get_board_center(squares)
     ut.plot_points(fcp,[board_center])
-    ut.showim(fcp)
+    #ut.showim(fcp)
 
     #----------------------------------------------------
     squares1 = cleanup_squares( centers, squares, board_center, frame.shape[1], frame.shape[0])
     fcp = frame.copy()
     cv2.drawContours(fcp, np.array(squares1), -1, (0,255,0), 2)
-    ut.showim(fcp)
+    #ut.showim(fcp)
 
     # Find enclosing 4-polygon. That's the board.
     #-----------------------------------------------------
@@ -103,22 +103,50 @@ def main():
     board = ut.approx_poly( points, 4).reshape(4,2)
     fcp = frame.copy()
     cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
-    ut.showim(fcp)
+    #ut.showim(fcp)
 
     #---------------------------------------
     board_stretched = enlarge_board(board)
     fcp = frame.copy()
     cv2.drawContours(fcp, [board_stretched], -1, (0,255,0), 1)
-    ut.showim(fcp)
+    #ut.showim(fcp)
 
     # Zoom in on the board
     #----------------------
     zoomed = ut.four_point_transform( gray, board_stretched)
-    ut.showim(zoomed)
+    ut.showim(zoomed,'gray')
 
     #---------------------------------------
     #boardsize = get_boardsize_by_fft(zoomed)
     #print( "Board size: %d" % boardsize)
+
+    # Find intersections and stones @@@
+    #--------------------------------
+    edges = ut.auto_canny(zoomed)
+    # im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_LIST,
+    #                                          cv2.CHAIN_APPROX_SIMPLE)
+    # fcp = zoomed.copy()
+    # cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
+    ut.showim(edges,'gray')
+    blurred = cv2.GaussianBlur( edges, (7, 7), 0)
+    ut.showim(blurred,'gray')
+    ret,thresh = cv2.threshold( blurred, 50, 255, cv2.THRESH_BINARY)
+    ut.showim(thresh,'gray')
+    crossKernel = np.array([[0,0,0,1,1,1,0,0,0],
+                            [0,0,0,1,1,1,0,0,0],
+                            [0,0,0,1,1,1,0,0,0],
+                            [1,1,1,1,1,1,1,1,1],
+                            [1,1,1,1,1,1,1,1,1],
+                            [1,1,1,1,1,1,1,1,1],
+                            [0,0,0,1,1,1,0,0,0],
+                            [0,0,0,1,1,1,0,0,0],
+                            [0,0,0,1,1,1,0,0,0]])
+    crossKernel = crossKernel / np.sum(np.abs(crossKernel))
+    crosses = cv2.filter2D(thresh, -1, crossKernel)
+    ut.showim(crosses,'cool')
+    ret, thresh1 = cv2.threshold( crosses, 220, 255, cv2.THRESH_BINARY)
+    ut.showim(thresh1,'gray')
+
 
 
 #-----------------------
