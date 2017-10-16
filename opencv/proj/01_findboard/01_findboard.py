@@ -72,6 +72,7 @@ def main():
     #----------------------------
     #gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    ut.showim(gray,'gray')
 
     cnts = get_contours(gray)
     #cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
@@ -116,22 +117,30 @@ def main():
     ut.showim(zoomed)
 
     #---------------------------------------
-    boardsize = get_boardsize_by_fft(zoomed)
-    print( "Board size: %d" % boardsize)
+    #boardsize = get_boardsize_by_fft(zoomed)
+    #print( "Board size: %d" % boardsize)
 
 
 #-----------------------
 def get_contours(img):
+    #img   = cv2.GaussianBlur( img, (7, 7), 0)
+    #img   = cv2.medianBlur( img, 7)
+    #img = cv2.bilateralFilter(img, 11, 17, 17)
+    #edges = cv2.Canny(img, 60, 200)
     edges = ut.auto_canny(img)
     # find contours in the edge map
     im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_LIST,
                                              cv2.CHAIN_APPROX_SIMPLE)
+    #cnts = sorted( cnts, key=cv2.contourArea, reverse=True)
+    #ut.show_contours( img, cnts)
 
     # Keep if larger than 0.1% of image
     img_area = img.shape[0] * img.shape[1]
     cnts = [ c for c in cnts if  cv2.contourArea(c) / img_area > 0.001 ]
     # Keep if reasonably not-wiggly
-    cnts = [ c for c in cnts if   cv2.arcLength(c, closed=True) / len(c) > 2.0 ]
+    #cnts = [ c for c in cnts if   cv2.arcLength(c, closed=True) / len(c) > 2.0 ]
+    cnts = [ c for c in cnts if   len(c) < 100 or cv2.arcLength(c, closed=True) / len(c) > 2.0 ]
+
     return cnts
 
 
@@ -197,7 +206,7 @@ def cleanup_squares(centers, square_cnts, board_center, width, height):
     for idx,c in enumerate(distsorted):
         if not idx: continue
         delta = c['dist'] - distsorted[idx-1]['dist']
-        print(c['dist'], delta)
+        #print(c['dist'], delta)
         #ut.show_contours( g_frame, [c['cnt']])
         #print ('dist:%f delta: %f' % (c['dist'],delta))
         if delta > min(width,height) / 10.0:
