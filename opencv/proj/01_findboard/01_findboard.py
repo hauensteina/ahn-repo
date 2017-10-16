@@ -116,22 +116,95 @@ def main():
     zoomed = ut.four_point_transform( gray, board_stretched)
     ut.showim(zoomed,'gray')
 
-    #---------------------------------------
-    #boardsize = get_boardsize_by_fft(zoomed)
-    #print( "Board size: %d" % boardsize)
+    # Postprocess to get contours and board outline
+    #------------------------------------------------
+    zoomed_cnts = get_contours(zoomed)
+    fcp = zoomed.copy()
+    cv2.drawContours(fcp, zoomed_cnts, -1, (0,255,0), 1)
+    ut.showim(fcp)
+    zoomed_cnts = filter_squares(zoomed_cnts, zoomed.shape[1], zoomed.shape[0])
+    fcp = zoomed.copy()
+    cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
+    ut.showim(fcp)
+    centers, board_center = get_board_center(zoomed_cnts)
+    ut.plot_points(fcp,[board_center])
+    ut.showim(fcp)
+    zoomed_cnts = cleanup_squares( centers, zoomed_cnts, board_center, zoomed.shape[1], zoomed.shape[0])
+    fcp = zoomed.copy()
+    cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
+    ut.showim(fcp)
+    # Find enclosing 4-polygon. That's the board.
+    #-----------------------------------------------------
+    points = np.array([p for s in zoomed_cnts for p in s])
+    board = ut.approx_poly( points, 4).reshape(4,2)
+    fcp = zoomed.copy()
+    cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
+    ut.showim(fcp)
 
-    # Find intersections and stones @@@
-    #--------------------------------
-    edges = ut.auto_canny(zoomed)
-    # im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_LIST,
-    #                                          cv2.CHAIN_APPROX_SIMPLE)
+    # #ut.showim(fcp)
+    # # Find enclosing rectangle. That's the board.
+    # #-----------------------------------------------------
+    # points = np.array([p for s in zoomed_cnts for p in s])
+    # x,y,w,h = cv2.boundingRect(points)
     # fcp = zoomed.copy()
-    # cv2.drawContours(fcp, cnts, -1, (0,255,0), 1)
-    ut.showim(edges,'gray')
+    # cv2.rectangle( fcp, (x,y), (x+w,y+h), (0,255,0), 2)
+    # ut.showim(fcp)
+
+
+
+    # # Intersections
+    # #---------------------------------------
+    # intersect_image = segment_intersections_by_convolution( zoomed)
+    # #ut.showim(intersect_image,'gray')
+
+    # # Blobs
+    # #-----------
+    # blobs = find_blobs(zoomed)
+    # # DRAW_MATCHES .. means circles same size as blobs
+    # fcp = zoomed.copy()
+    # fcp = cv2.drawKeypoints(fcp, blobs, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    # ut.showim(fcp)
+
+#--------------------------
+def find_blobs(zoomed):
+    edges = ut.auto_canny(zoomed)
+    ut.showim(edges)
+    inp = edges
+    params = cv2.SimpleBlobDetector_Params()
+
+    params.minDistBetweenBlobs = 5
+
+    # Change thresholds
+    params.minThreshold = 10
+    params.maxThreshold = 255
+
+    params.filterByArea = False
+    params.minArea = 1500
+
+    params.filterByCircularity = True
+    params.minCircularity = 0.1
+
+    params.filterByConvexity = False
+    params.minConvexity = 0.87
+
+    params.filterByInertia = False
+    params.minInertiaRatio = 0.01
+
+    detector = cv2.SimpleBlobDetector_create(params)
+    res = detector.detect(inp)
+    return res
+
+
+# Filter image to return a binary img where it is easy to see
+# board intersections.
+#----------------------------------------------
+def segment_intersections_by_convolution( zoomed):
+    edges = ut.auto_canny(zoomed)
+    #ut.showim(edges,'gray')
     blurred = cv2.GaussianBlur( edges, (7, 7), 0)
-    ut.showim(blurred,'gray')
+    #ut.showim(blurred,'gray')
     ret,thresh = cv2.threshold( blurred, 50, 255, cv2.THRESH_BINARY)
-    ut.showim(thresh,'gray')
+    #ut.showim(thresh,'gray')
     crossKernel = np.array([[0,0,0,1,1,1,0,0,0],
                             [0,0,0,1,1,1,0,0,0],
                             [0,0,0,1,1,1,0,0,0],
@@ -143,10 +216,9 @@ def main():
                             [0,0,0,1,1,1,0,0,0]])
     crossKernel = crossKernel / np.sum(np.abs(crossKernel))
     crosses = cv2.filter2D(thresh, -1, crossKernel)
-    ut.showim(crosses,'cool')
+    #ut.showim(crosses,'cool')
     ret, thresh1 = cv2.threshold( crosses, 220, 255, cv2.THRESH_BINARY)
-    ut.showim(thresh1,'gray')
-
+    return thresh1
 
 
 #-----------------------
