@@ -116,30 +116,73 @@ def main():
     zoomed = ut.four_point_transform( gray, board_stretched)
     ut.showim(zoomed,'gray')
 
+    # Get board size (9, 13, 19)
+    #-----------------------------
+    boardsize = get_boardsize_by_fft( zoomed)
+    print('Board size: %dx%d' % (boardsize,boardsize))
+
     # Postprocess to get contours and board outline
     #------------------------------------------------
     zoomed_cnts = get_contours(zoomed)
     fcp = zoomed.copy()
     cv2.drawContours(fcp, zoomed_cnts, -1, (0,255,0), 1)
-    ut.showim(fcp)
+    #ut.showim(fcp)
     zoomed_cnts = filter_squares(zoomed_cnts, zoomed.shape[1], zoomed.shape[0])
     fcp = zoomed.copy()
     cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
-    ut.showim(fcp)
+    #ut.showim(fcp)
     centers, board_center = get_board_center(zoomed_cnts)
     ut.plot_points(fcp,[board_center])
-    ut.showim(fcp)
+    #ut.showim(fcp)
     zoomed_cnts = cleanup_squares( centers, zoomed_cnts, board_center, zoomed.shape[1], zoomed.shape[0])
     fcp = zoomed.copy()
     cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
-    ut.showim(fcp)
+    #ut.showim(fcp)
+
     # Find enclosing 4-polygon. That's the board.
     #-----------------------------------------------------
     points = np.array([p for s in zoomed_cnts for p in s])
     board = ut.approx_poly( points, 4).reshape(4,2)
+    board = ut.order_points(board).astype('int')
     fcp = zoomed.copy()
     cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
     ut.showim(fcp)
+
+    # Compute lines on the board
+    #-----------------------------
+    tl,tr,br,bl = board
+
+    left_x   = np.linspace( tl[0], bl[0], boardsize)
+    left_y   = np.linspace( tl[1], bl[1], boardsize)
+    right_x  = np.linspace( tr[0], br[0], boardsize)
+    right_y  = np.linspace( tr[1], br[1], boardsize)
+    left_points =  np.array(zip(left_x, left_y)).astype('int')
+    right_points = np.array(zip(right_x, right_y)).astype('int')
+    h_lines = zip(left_points, right_points)
+    # fcp = zoomed.copy()
+    # ut.plot_lines( fcp, h_lines)
+    # ut.showim(fcp)
+
+    top_x   = np.linspace( tl[0], tr[0], boardsize)
+    top_y   = np.linspace( tl[1], tr[1], boardsize)
+    bottom_x  = np.linspace( bl[0], br[0], boardsize)
+    bottom_y  = np.linspace( bl[1], br[1], boardsize)
+    top_points =  np.array(zip(top_x, top_y)).astype('int')
+    bottom_points = np.array(zip(bottom_x, bottom_y)).astype('int')
+    v_lines = zip(top_points, bottom_points)
+    # fcp = zoomed.copy()
+    # ut.plot_lines( fcp, v_lines)
+    # ut.showim(fcp)
+
+    # Compute intersections of the lines
+    #-------------------------------------
+    intersections = np.array([ ut.intersection( hl, vl) for hl in h_lines for vl in v_lines]).astype('int')
+    fcp = zoomed.copy()
+    ut.plot_points( fcp, intersections)
+    ut.showim(fcp)
+
+
+    #BP()
 
     # #ut.showim(fcp)
     # # Find enclosing rectangle. That's the board.
@@ -164,36 +207,6 @@ def main():
     # fcp = zoomed.copy()
     # fcp = cv2.drawKeypoints(fcp, blobs, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # ut.showim(fcp)
-
-#--------------------------
-def find_blobs(zoomed):
-    edges = ut.auto_canny(zoomed)
-    ut.showim(edges)
-    inp = edges
-    params = cv2.SimpleBlobDetector_Params()
-
-    params.minDistBetweenBlobs = 5
-
-    # Change thresholds
-    params.minThreshold = 10
-    params.maxThreshold = 255
-
-    params.filterByArea = False
-    params.minArea = 1500
-
-    params.filterByCircularity = True
-    params.minCircularity = 0.1
-
-    params.filterByConvexity = False
-    params.minConvexity = 0.87
-
-    params.filterByInertia = False
-    params.minInertiaRatio = 0.01
-
-    detector = cv2.SimpleBlobDetector_create(params)
-    res = detector.detect(inp)
-    return res
-
 
 # Filter image to return a binary img where it is easy to see
 # board intersections.
@@ -335,16 +348,18 @@ def get_boardsize_by_fft(zoomed_img):
     smooth_magspec = np.convolve(magspec_clip, np.bartlett(7), 'same')
     if not len(smooth_magspec) % 2:
         smooth_magspec = np.append( smooth_magspec, 0.0)
-    # The first frequency peak above 6 should be close to the board size.
-    plt.subplot(111)
-    #plt.plot(range( -width // 2, 1 + width // 2 ), smooth_magspec)
+    # The first frequency peak above 9 should be close to the board size.
     half = len(smooth_magspec) // 2
-    plt.plot(range( -half, half+1 ), smooth_magspec)
-    plt.show()
+    #plt.subplot(111)
+    #plt.plot(range( -half, half+1 ), smooth_magspec)
+    #plt.show()
     MINSZ = 9
     highf = smooth_magspec[width // 2 + MINSZ:]
     maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + MINSZ
     res = maxes[0] if len(maxes) else 0
+    if res > 19: res = 19
+    elif res > 13: res = 13
+    else: res = 9
     return res
 
 if __name__ == '__main__':
