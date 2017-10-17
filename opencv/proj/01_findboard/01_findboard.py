@@ -72,7 +72,7 @@ def main():
     #----------------------------
     #gray = cv2.equalizeHist( cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    #ut.showim(gray,'gray')
+    ut.showim(gray,'gray')
 
     cnts = get_contours(gray)
     #cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
@@ -113,44 +113,51 @@ def main():
 
     # Zoom in on the board
     #----------------------
-    zoomed = ut.four_point_transform( gray, board_stretched)
+    zoomed,M = ut.four_point_transform( gray, board_stretched)
     ut.showim(zoomed,'gray')
+
+    # Coordinates of board corners after the transform
+    #----------------------------------------------------
+    # This needs a stupid empty dimension added
+    board_zoomed = cv2.perspectiveTransform(board.reshape(1,4,2).astype('float32'),M)
+    # And now get rid of the extra dim and back to int
+    board_zoomed = board_zoomed.reshape(4,2).astype('int')
 
     # Get board size (9, 13, 19)
     #-----------------------------
     boardsize = get_boardsize_by_fft( zoomed)
     print('Board size: %dx%d' % (boardsize,boardsize))
 
-    # Postprocess to get contours and board outline
-    #------------------------------------------------
-    zoomed_cnts = get_contours(zoomed)
-    fcp = zoomed.copy()
-    cv2.drawContours(fcp, zoomed_cnts, -1, (0,255,0), 1)
-    #ut.showim(fcp)
-    zoomed_cnts = filter_squares(zoomed_cnts, zoomed.shape[1], zoomed.shape[0])
-    fcp = zoomed.copy()
-    cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
-    #ut.showim(fcp)
-    centers, board_center = get_board_center(zoomed_cnts)
-    ut.plot_points(fcp,[board_center])
-    #ut.showim(fcp)
-    zoomed_cnts = cleanup_squares( centers, zoomed_cnts, board_center, zoomed.shape[1], zoomed.shape[0])
-    fcp = zoomed.copy()
-    cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
-    #ut.showim(fcp)
+    # # Postprocess to get contours and board outline
+    # #------------------------------------------------
+    # zoomed_cnts = get_contours(zoomed)
+    # fcp = zoomed.copy()
+    # cv2.drawContours(fcp, zoomed_cnts, -1, (0,255,0), 1)
+    # #ut.showim(fcp)
+    # zoomed_cnts = filter_squares(zoomed_cnts, zoomed.shape[1], zoomed.shape[0])
+    # fcp = zoomed.copy()
+    # cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
+    # #ut.showim(fcp)
+    # centers, board_center = get_board_center(zoomed_cnts)
+    # ut.plot_points(fcp,[board_center])
+    # #ut.showim(fcp)
+    # zoomed_cnts = cleanup_squares( centers, zoomed_cnts, board_center, zoomed.shape[1], zoomed.shape[0])
+    # fcp = zoomed.copy()
+    # cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
+    # #ut.showim(fcp)
 
-    # Find enclosing 4-polygon. That's the board.
-    #-----------------------------------------------------
-    points = np.array([p for s in zoomed_cnts for p in s])
-    board = ut.approx_poly( points, 4).reshape(4,2)
-    board = ut.order_points(board).astype('int')
-    fcp = zoomed.copy()
-    cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
-    ut.showim(fcp)
+    # # Find enclosing 4-polygon. That's the board.
+    # #-----------------------------------------------------
+    # points = np.array([p for s in zoomed_cnts for p in s])
+    # board = ut.approx_poly( points, 4).reshape(4,2)
+    # board = ut.order_points(board).astype('int')
+    # fcp = zoomed.copy()
+    # cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
+    # ut.showim(fcp)
 
     # Compute lines on the board
     #-----------------------------
-    tl,tr,br,bl = board
+    tl,tr,br,bl = board_zoomed
 
     left_x   = np.linspace( tl[0], bl[0], boardsize)
     left_y   = np.linspace( tl[1], bl[1], boardsize)
@@ -331,7 +338,7 @@ def cleanup_squares(centers, square_cnts, board_center, width, height):
 
 #---------------------------
 def enlarge_board(board):
-    factor = 1.2
+    factor = 1.1
     board = ut.order_points(board)
     diag1_stretched = ut.stretch_line( (board[0],board[2]), factor)
     diag2_stretched = ut.stretch_line( (board[1],board[3]), factor)
@@ -357,8 +364,9 @@ def get_boardsize_by_fft(zoomed_img):
     highf = smooth_magspec[width // 2 + MINSZ:]
     maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + MINSZ
     res = maxes[0] if len(maxes) else 0
+    print(res)
     if res > 19: res = 19
-    elif res > 13: res = 13
+    #elif res > 13: res = 13
     else: res = 9
     return res
 
