@@ -100,7 +100,7 @@ def main():
     # Find enclosing 4-polygon. That's the board.
     #-----------------------------------------------------
     points = np.array([p for s in squares1 for p in s])
-    board = ut.approx_poly( points, 4).reshape(4,2)
+    board = ut.order_points( ut.approx_poly( points, 4).reshape(4,2)).astype('int')
     fcp = frame.copy()
     cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
     #ut.showim(fcp)
@@ -128,32 +128,6 @@ def main():
     boardsize = get_boardsize_by_fft( zoomed)
     print('Board size: %dx%d' % (boardsize,boardsize))
 
-    # # Postprocess to get contours and board outline
-    # #------------------------------------------------
-    # zoomed_cnts = get_contours(zoomed)
-    # fcp = zoomed.copy()
-    # cv2.drawContours(fcp, zoomed_cnts, -1, (0,255,0), 1)
-    # #ut.showim(fcp)
-    # zoomed_cnts = filter_squares(zoomed_cnts, zoomed.shape[1], zoomed.shape[0])
-    # fcp = zoomed.copy()
-    # cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
-    # #ut.showim(fcp)
-    # centers, board_center = get_board_center(zoomed_cnts)
-    # ut.plot_points(fcp,[board_center])
-    # #ut.showim(fcp)
-    # zoomed_cnts = cleanup_squares( centers, zoomed_cnts, board_center, zoomed.shape[1], zoomed.shape[0])
-    # fcp = zoomed.copy()
-    # cv2.drawContours(fcp, np.array(zoomed_cnts), -1, (0,255,0), 2)
-    # #ut.showim(fcp)
-
-    # # Find enclosing 4-polygon. That's the board.
-    # #-----------------------------------------------------
-    # points = np.array([p for s in zoomed_cnts for p in s])
-    # board = ut.approx_poly( points, 4).reshape(4,2)
-    # board = ut.order_points(board).astype('int')
-    # fcp = zoomed.copy()
-    # cv2.drawContours(fcp, [board], -1, (0,255,0), 1)
-    # ut.showim(fcp)
 
     # Compute lines on the board
     #-----------------------------
@@ -188,7 +162,17 @@ def main():
     ut.plot_points( fcp, intersections)
     ut.showim(fcp)
 
+    # Cut out areas around the intersections
+    #------------------------------------------
+    delta_v = abs(int(np.round( 0.5 * (bottom_y[0] - top_y[0]) / (boardsize -1))))
+    delta_h = abs(int(np.round( 0.5 * (right_x[0] - left_x[0]) / (boardsize -1))))
+    brightness = np.empty(boardsize * boardsize)
+    for i,p in enumerate(intersections):
+        hood = zoomed[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
+        brightness[i] = np.mean(hood)
 
+    print(brightness)
+    ut.showim( zoomed)
     #BP()
 
     # #ut.showim(fcp)
