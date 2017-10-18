@@ -167,178 +167,62 @@ def main():
     delta_v = abs(int(np.round( 0.5 * (bottom_y[0] - top_y[0]) / (boardsize -1))))
     delta_h = abs(int(np.round( 0.5 * (right_x[0] - left_x[0]) / (boardsize -1))))
     brightness  = np.empty(boardsize * boardsize)
+    darkest  = np.empty(boardsize * boardsize)
+    brightest  = np.empty(boardsize * boardsize)
     crossness = np.empty(boardsize * boardsize)
-    blackness = np.empty(boardsize * boardsize)
     thresh = np.mean( sorted(zoomed.flatten(), reverse=True)[:10])
     for i,p in enumerate(intersections):
         hood = zoomed[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
-        #tt = ut.auto_canny(hood)
-        #ut.showim(tt)
-        brightness[i]  = np.mean(hood)
-        #crossness[i] = get_verticality(hood) + get_horizontality(hood)
-        #crossness[i] = get_crossness(hood)
-        #crossness[i] = get_variance(hood)
-        crossness[i] = get_mykernel(hood)
-        blackness[i] = get_blackness(hood, thresh)
+        brightness[i] = get_brightness(hood)
+        darkest[i] = get_darkest(hood)
+        brightest[i] = get_brightest(hood)
 
-    print(blackness.reshape((boardsize,boardsize)).astype('int'))
-    isblack = np.array([ 1 if x < 5 * min(blackness) else 0 for x in blackness ])
+    #print(brightness.reshape((boardsize,boardsize)).astype('int'))
+    #print(darkest.reshape((boardsize,boardsize)).astype('int'))
+    #print(brightest.reshape((boardsize,boardsize)).astype('int'))
+    isblack = np.array([ 1 if x < 5 * min(brightness) else 0 for x in brightness ])
+    #isblack1 = np.array([ 1 if x < 5 * min(darkest) else 0 for x in darkest ])
     print(isblack.reshape((boardsize,boardsize)))
+    #print(isblack1.reshape((boardsize,boardsize)))
     ut.showim( zoomed)
     #BP()
 
-    # #ut.showim(fcp)
-    # # Find enclosing rectangle. That's the board.
-    # #-----------------------------------------------------
-    # points = np.array([p for s in zoomed_cnts for p in s])
-    # x,y,w,h = cv2.boundingRect(points)
-    # fcp = zoomed.copy()
-    # cv2.rectangle( fcp, (x,y), (x+w,y+h), (0,255,0), 2)
-    # ut.showim(fcp)
-
-
-
-    # # Intersections
-    # #---------------------------------------
-    # intersect_image = segment_intersections_by_convolution( zoomed)
-    # #ut.showim(intersect_image,'gray')
-
-    # # Blobs
-    # #-----------
-    # blobs = find_blobs(zoomed)
-    # # DRAW_MATCHES .. means circles same size as blobs
-    # fcp = zoomed.copy()
-    # fcp = cv2.drawKeypoints(fcp, blobs, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-    # ut.showim(fcp)
-
-# Filter image to return a binary img where it is easy to see
-# board intersections.
-#----------------------------------------------
-def segment_intersections_by_convolution( zoomed):
-    edges = ut.auto_canny(zoomed)
-    #ut.showim(edges,'gray')
-    blurred = cv2.GaussianBlur( edges, (7, 7), 0)
-    #ut.showim(blurred,'gray')
-    ret,thresh = cv2.threshold( blurred, 50, 255, cv2.THRESH_BINARY)
-    #ut.showim(thresh,'gray')
-    crossKernel = np.array([[-1,-1,-1,1,1,1,-1,-1,-1],
-                            [-1,-1,-1,1,1,1,-1,-1,-1],
-                            [-1,-1,-1,1,1,1,-1,-1,-1],
-                            [1,1,1,1,1,1,1,1,1],
-                            [1,1,1,1,1,1,1,1,1],
-                            [1,1,1,1,1,1,1,1,1],
-                            [-1,-1,-1,1,1,1,-1,-1,-1],
-                            [-1,-1,-1,1,1,1,-1,-1,-1],
-                            [-1,-1,-1,1,1,1,-1,-1,-1]])
-    crossKernel = crossKernel / np.sum(np.abs(crossKernel))
-    crosses = cv2.filter2D(thresh, -1, crossKernel)
-    #ut.showim(crosses,'cool')
-    ret, thresh1 = cv2.threshold( crosses, 220, 255, cv2.THRESH_BINARY)
-    return thresh1
-
-# Get variance in the center
-#-------------------------------------------------
-def get_variance( img):
-    outp = img
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 10
-    dy = img.shape[1] // 10
-    res = np.std(outp[cx-dx:cx+dx, cy-dy:cy+dy])
-    #res = np.sum(outp)
-    return res
-
-# Apply sobelX and sum a little square in the center.
-# Should indicate a vertical near the center.
-#-------------------------------------------------
-def get_mykernel( img):
-    myKernel = np.array([[0,0,0,1,1,1,0,0,0],
-                         [0,0,0,1,1,1,0,0,0],
-                         [0,0,0,1,1,1,0,0,0],
-                         [1,1,1,1,1,1,1,1,1],
-                         [1,1,1,1,1,1,1,1,1],
-                         [1,1,1,1,1,1,1,1,1],
-                         [0,0,0,1,1,1,0,0,0],
-                         [0,0,0,1,1,1,0,0,0],
-                         [0,0,0,1,1,1,0,0,0]]).astype('int')
-    myKernel = myKernel / np.sum(np.abs(myKernel))
-
-    outp = cv2.filter2D(img, -1, myKernel)
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 10
-    dy = img.shape[1] // 10
-    #res = np.sum(outp[cx-dx:cx+dx, cy-dy:cy+dy])
-    res = np.sum(outp)
-    return res
-
-# Apply sobelX and sum a little square in the center.
-# Should indicate a vertical near the center.
-#-------------------------------------------------
-def get_verticality( img):
-    sobelX = np.array((
-	    [-1, 0, 1],
-	    [-2, 0, 2],
-	    [-1, 0, 1]), dtype="int")
-
-    outp = cv2.filter2D(img, -1, sobelX)
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 10
-    dy = img.shape[1] // 10
-    res = np.sum(outp[cx-dx:cx+dx, cy-dy:cy+dy])
-    #res = np.sum(outp)
-    return res
-
-# Apply sobelY and sum a little square in the center.
-# Should indicate a horizontal near the center.
-#-------------------------------------------------
-def get_horizontality( img):
-    sobelY = np.array((
-        [-1, -2, -1],
-        [0, 0, 0],
-        [1, 2, 1]), dtype="int")
-
-    outp = cv2.filter2D(img, -1, sobelY)
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 10
-    dy = img.shape[1] // 10
-    res = np.sum(outp[cx-dx:cx+dx, cy-dy:cy+dy])
-    #res = np.sum(outp)
-    return res
-
-# Laplacian convolution, sum near the center, normalize.
-# This is low if there is a stone, high if it is an intersection.
-#------------------------------------------------------------------
-def get_crossness( img):
-    laplacian = np.array((
-	    [0, 1, 0],
-	    [1, -4, 1],
-	    [0, 1, 0]), dtype="int")
-
-    blurred = cv2.GaussianBlur( img, (5, 5), 0)
-    outp = cv2.filter2D(blurred, -1, laplacian)
-    #outp = ut.auto_canny(img)
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 4
-    dy = img.shape[1] // 16
-    res = np.sum(outp[cx-dx:cx+dx, cy-dy:cy+dy])
-    #res = res / (dx * dy)
-    return res
-
-def get_blackness( img, thresh):
+# Sum brightness at the center, normalize
+#-------------------------------------------
+def get_brightness( img):
     outp = img
     cx = img.shape[0] // 2
     cy = img.shape[1] // 2
     dx = img.shape[0] // 4
     dy = img.shape[1] // 4
-    #ssum = np.sum( thresh - outp[cx-dx:cx+dx, cy-dy:cy+dy])
     ssum = np.sum( outp[cx-dx:cx+dx, cy-dy:cy+dy])
     return ssum / (dx*dy)
 
+# Find avg of darkest N pixels near the center
+#----------------------------------------------
+def get_darkest( img):
+    outp = img
+    cx = img.shape[0] // 2
+    cy = img.shape[1] // 2
+    dx = img.shape[0] // 4
+    dy = img.shape[1] // 4
+    center =  outp[cx-dx:cx+dx, cy-dy:cy+dy]
+    tt = sorted( center.flatten())[:5]
+    res = np.mean(tt)
+    return res
 
+# Find avg of brightest N pixels near the center
+#----------------------------------------------
+def get_brightest( img):
+    outp = img
+    cx = img.shape[0] // 2
+    cy = img.shape[1] // 2
+    dx = img.shape[0] // 4
+    dy = img.shape[1] // 4
+    center =  outp[cx-dx:cx+dx, cy-dy:cy+dy]
+    tt = sorted( center.flatten(), reverse=True)[:5]
+    res = np.mean(tt)
+    return res
 
 #-----------------------
 def get_contours(img):
