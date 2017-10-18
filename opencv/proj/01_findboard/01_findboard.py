@@ -177,13 +177,20 @@ def main():
         darkest[i] = get_darkest(hood)
         brightest[i] = get_brightest(hood)
 
-    #print(brightness.reshape((boardsize,boardsize)).astype('int'))
-    #print(darkest.reshape((boardsize,boardsize)).astype('int'))
-    #print(brightest.reshape((boardsize,boardsize)).astype('int'))
-    isblack = np.array([ 1 if x < 5 * min(brightness) else 0 for x in brightness ])
-    #isblack1 = np.array([ 1 if x < 5 * min(darkest) else 0 for x in darkest ])
+    # Black stones
+    print(darkest.reshape((boardsize,boardsize)).astype('int'))
+    thresh1, thresh2 = find_two_jumps(brightness)
+    isblack = np.array([ 1 if x < thresh1 else 0 for x in brightness ])
     print(isblack.reshape((boardsize,boardsize)))
-    #print(isblack1.reshape((boardsize,boardsize)))
+
+    # White stones
+    print()
+    tt = -1 * darkest
+    thresh1, thresh2 = find_two_jumps(tt)
+    iswhite = np.array([ 1 if x < thresh1 else 0 for x in tt ])
+    print(iswhite.reshape((boardsize,boardsize)))
+
+
     ut.showim( zoomed)
     #BP()
 
@@ -223,6 +230,29 @@ def get_brightest( img):
     tt = sorted( center.flatten(), reverse=True)[:5]
     res = np.mean(tt)
     return res
+
+# Find the two values just after the rate of change suddenly increased
+# th1, th2 = find_wo_jumps(arr); if v < th1 ... elif v < th2 ... else ...
+# Think of this as clustering an array into three pieces.
+#----------------------------------------------------------------------
+def find_two_jumps(values):
+    tt = sorted(values)
+    delta = np.zeros(len(tt))
+    for i,x in enumerate(tt):
+        if not i: continue
+        delta[i] = x - tt[i-1]
+    ddelta = np.zeros(len(tt))
+    for i,x in enumerate(delta):
+        if not i: continue
+        ddelta[i] = x - delta[i-1]
+
+    ddelta_idx = [{'val':x, 'idx':i} for i,x in enumerate(ddelta)]
+    ddelta_idx = sorted( ddelta_idx, key = lambda x: -x['val'])
+    two = ddelta_idx[:2]
+    two = sorted(two, key = lambda x: x['idx'])
+    thresh1 = tt[two[0]['idx']]
+    thresh2 = tt[two[1]['idx']]
+    return thresh1, thresh2
 
 #-----------------------
 def get_contours(img):
