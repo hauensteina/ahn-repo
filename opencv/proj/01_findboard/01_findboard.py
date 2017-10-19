@@ -26,6 +26,9 @@ sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahn_opencv_util as ut
 g_frame=''
 
+np.set_printoptions(linewidth=np.nan)
+
+
 #---------------------------
 def usage(printmsg=False):
     name = os.path.basename(__file__)
@@ -162,6 +165,13 @@ def main():
     ut.plot_points( fcp, intersections)
     ut.showim(fcp)
 
+    # Contour image of the zoomed board
+    #-------------------------------------
+    zoomed_edges = ut.auto_canny(zoomed)
+    zoomed_contours, cnts, hierarchy  = cv2.findContours(zoomed_edges, cv2.RETR_LIST,
+                                             cv2.CHAIN_APPROX_SIMPLE)
+    #ut.showim(zoomed_contours)
+
     # Cut out areas around the intersections
     #------------------------------------------
     delta_v = abs(int(np.round( 0.5 * (bottom_y[0] - top_y[0]) / (boardsize -1))))
@@ -173,86 +183,50 @@ def main():
     thresh = np.mean( sorted(zoomed.flatten(), reverse=True)[:10])
     for i,p in enumerate(intersections):
         hood = zoomed[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
+        contour_hood = zoomed_contours[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
         brightness[i] = get_brightness(hood)
-        darkest[i] = get_darkest(hood)
-        brightest[i] = get_brightest(hood)
+        crossness[i] = get_brightness(contour_hood,6)
 
     # Black stones
-    print(darkest.reshape((boardsize,boardsize)).astype('int'))
-    thresh1, thresh2 = find_two_jumps(brightness)
-    isblack = np.array([ 1 if x < thresh1 else 0 for x in brightness ])
-    print(isblack.reshape((boardsize,boardsize)))
+    print('brightness')
+    print(brightness.reshape((boardsize,boardsize)).astype('int'))
+    thresh = 4 * min(brightness)
+    isblack = np.array([ 1 if x < thresh else 0 for x in brightness ])
+
+    # Empty intersections
+    print('crossness')
+    print(crossness.reshape((boardsize,boardsize)).astype('int'))
+    isempty = np.array([ 1 if x > 5 else 0 for x in crossness ])
 
     # White stones
-    print()
-    tt = -1 * darkest
-    thresh1, thresh2 = find_two_jumps(tt)
-    iswhite = np.array([ 1 if x < thresh1 else 0 for x in tt ])
-    print(iswhite.reshape((boardsize,boardsize)))
+    iswhite = np.array([ 2 if not isempty[i] + isblack[i] else 0  for i,x in enumerate( isempty) ])
 
+    print('position')
+    position = iswhite + isblack
+    print(position.reshape((boardsize,boardsize)))
 
     ut.showim( zoomed)
     #BP()
 
+
+# Get a center crop of an image
+#-------------------------------
+def get_center_crop(img, frac=4):
+    cx = img.shape[0] // 2
+    cy = img.shape[1] // 2
+    dx = img.shape[0] // frac
+    dy = img.shape[1] // frac
+    res =  img[cx-dx:cx+dx, cy-dy:cy+dy]
+    area = res.shape[0] * res.shape[1]
+    return res, area
+
 # Sum brightness at the center, normalize
 #-------------------------------------------
-def get_brightness( img):
-    outp = img
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 4
-    dy = img.shape[1] // 4
-    ssum = np.sum( outp[cx-dx:cx+dx, cy-dy:cy+dy])
-    return ssum / (dx*dy)
+def get_brightness( img, frac=4):
+    crop, area =  get_center_crop(img, frac)
+    ssum = np.sum( crop)
+    return ssum / area
 
-# Find avg of darkest N pixels near the center
-#----------------------------------------------
-def get_darkest( img):
-    outp = img
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 4
-    dy = img.shape[1] // 4
-    center =  outp[cx-dx:cx+dx, cy-dy:cy+dy]
-    tt = sorted( center.flatten())[:5]
-    res = np.mean(tt)
-    return res
-
-# Find avg of brightest N pixels near the center
-#----------------------------------------------
-def get_brightest( img):
-    outp = img
-    cx = img.shape[0] // 2
-    cy = img.shape[1] // 2
-    dx = img.shape[0] // 4
-    dy = img.shape[1] // 4
-    center =  outp[cx-dx:cx+dx, cy-dy:cy+dy]
-    tt = sorted( center.flatten(), reverse=True)[:5]
-    res = np.mean(tt)
-    return res
-
-# Find the two values just after the rate of change suddenly increased
-# th1, th2 = find_wo_jumps(arr); if v < th1 ... elif v < th2 ... else ...
-# Think of this as clustering an array into three pieces.
-#----------------------------------------------------------------------
-def find_two_jumps(values):
-    tt = sorted(values)
-    delta = np.zeros(len(tt))
-    for i,x in enumerate(tt):
-        if not i: continue
-        delta[i] = x - tt[i-1]
-    ddelta = np.zeros(len(tt))
-    for i,x in enumerate(delta):
-        if not i: continue
-        ddelta[i] = x - delta[i-1]
-
-    ddelta_idx = [{'val':x, 'idx':i} for i,x in enumerate(ddelta)]
-    ddelta_idx = sorted( ddelta_idx, key = lambda x: -x['val'])
-    two = ddelta_idx[:2]
-    two = sorted(two, key = lambda x: x['idx'])
-    thresh1 = tt[two[0]['idx']]
-    thresh2 = tt[two[1]['idx']]
-    return thresh1, thresh2
 
 #-----------------------
 def get_contours(img):
