@@ -205,8 +205,17 @@ def main():
     position = iswhite + isblack
     print(position.reshape((boardsize,boardsize)))
 
-    ut.showim( zoomed)
-    #BP()
+    # Draw zoomed board with markers on detected stones
+    fcp = zoomed.copy()
+    black_points = []
+    white_points = []
+    for i,x in enumerate(isblack):
+        if x: black_points.append(intersections[i])
+    for i,x in enumerate(iswhite):
+        if x: white_points.append(intersections[i])
+    ut.plot_points( fcp, black_points, 255)
+    ut.plot_points( fcp, white_points, 0)
+    ut.showim(fcp,'gray')
 
 
 # Get a center crop of an image
