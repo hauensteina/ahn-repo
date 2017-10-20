@@ -1,0 +1,289 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AC628C181F9A7D3F0043FCEE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C171F9A7D3F0043FCEE /* main.m */; };
+		AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */; };
+		AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC628C221F9A7D3F0043FCEE /* Assets.xcassets */; };
+		AC628C341F9A80150043FCEE /* MainVC.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C331F9A80150043FCEE /* MainVC.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AC628C131F9A7D3F0043FCEE /* sgfgrabber.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sgfgrabber.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC628C171F9A7D3F0043FCEE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		AC628C191F9A7D3F0043FCEE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		AC628C221F9A7D3F0043FCEE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AC628C271F9A7D3F0043FCEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AC628C321F9A80150043FCEE /* MainVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainVC.h; sourceTree = "<group>"; };
+		AC628C331F9A80150043FCEE /* MainVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainVC.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AC628C101F9A7D3F0043FCEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AC628C0A1F9A7D3F0043FCEE = {
+			isa = PBXGroup;
+			children = (
+				AC628C151F9A7D3F0043FCEE /* sgfgrabber */,
+				AC628C141F9A7D3F0043FCEE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AC628C141F9A7D3F0043FCEE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC628C131F9A7D3F0043FCEE /* sgfgrabber.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC628C151F9A7D3F0043FCEE /* sgfgrabber */ = {
+			isa = PBXGroup;
+			children = (
+				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
+				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
+				AC628C321F9A80150043FCEE /* MainVC.h */,
+				AC628C331F9A80150043FCEE /* MainVC.m */,
+				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
+				AC628C271F9A7D3F0043FCEE /* Info.plist */,
+				AC628C161F9A7D3F0043FCEE /* Supporting Files */,
+			);
+			path = sgfgrabber;
+			sourceTree = "<group>";
+		};
+		AC628C161F9A7D3F0043FCEE /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				AC628C171F9A7D3F0043FCEE /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AC628C121F9A7D3F0043FCEE /* sgfgrabber */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AC628C2A1F9A7D3F0043FCEE /* Build configuration list for PBXNativeTarget "sgfgrabber" */;
+			buildPhases = (
+				AC628C0F1F9A7D3F0043FCEE /* Sources */,
+				AC628C101F9A7D3F0043FCEE /* Frameworks */,
+				AC628C111F9A7D3F0043FCEE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = sgfgrabber;
+			productName = sgfgrabber;
+			productReference = AC628C131F9A7D3F0043FCEE /* sgfgrabber.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AC628C0B1F9A7D3F0043FCEE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0800;
+				ORGANIZATIONNAME = AHN;
+				TargetAttributes = {
+					AC628C121F9A7D3F0043FCEE = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = AC628C0E1F9A7D3F0043FCEE /* Build configuration list for PBXProject "sgfgrabber" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AC628C0A1F9A7D3F0043FCEE;
+			productRefGroup = AC628C141F9A7D3F0043FCEE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AC628C121F9A7D3F0043FCEE /* sgfgrabber */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AC628C111F9A7D3F0043FCEE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AC628C0F1F9A7D3F0043FCEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
+				AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */,
+				AC628C181F9A7D3F0043FCEE /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AC628C281F9A7D3F0043FCEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AC628C291F9A7D3F0043FCEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AC628C2B1F9A7D3F0043FCEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_FILE = sgfgrabber/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahn.sgfgrabber;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		AC628C2C1F9A7D3F0043FCEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_FILE = sgfgrabber/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.ahn.sgfgrabber;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AC628C0E1F9A7D3F0043FCEE /* Build configuration list for PBXProject "sgfgrabber" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC628C281F9A7D3F0043FCEE /* Debug */,
+				AC628C291F9A7D3F0043FCEE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AC628C2A1F9A7D3F0043FCEE /* Build configuration list for PBXNativeTarget "sgfgrabber" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC628C2B1F9A7D3F0043FCEE /* Debug */,
+				AC628C2C1F9A7D3F0043FCEE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AC628C0B1F9A7D3F0043FCEE /* Project object */;
+}
