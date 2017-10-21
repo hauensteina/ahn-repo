@@ -6,12 +6,13 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-#import <opencv2/opencv.hpp>
 #import "MainVC.h"
+#import "GrabFuncs.h"
 
 //==========================
 @interface MainVC ()
 @property FrameExtractor *frameExtractor;
+@property GrabFuncs *grabFuncs;
 @property UIImageView *cameraView;
 @end
 
@@ -23,8 +24,9 @@
 {
     [super viewDidLoad];
     self.frameExtractor = [FrameExtractor new];
+    self.grabFuncs = [GrabFuncs new];
     self.frameExtractor.delegate = self;
-    NSString *tstr = [MainVC opencvVersion];
+    NSString *tstr = [GrabFuncs opencvVersion];
     int tt=42;
 }
 //----------------------------------
@@ -67,10 +69,5 @@
     [self.cameraView setImage:image];
 }
 
-//----------------------------
-+(NSString *) opencvVersion
-{
-    return [NSString stringWithFormat:@"OpenCV version: %s", CV_VERSION];
-}
 
 @end
