@@ -1,4 +1,4 @@
-sgfrabber_ios
+sgfgrabber_ios
 ===============
 
 Point the iphone camera at a Go board, turn the position into an sgf file.
