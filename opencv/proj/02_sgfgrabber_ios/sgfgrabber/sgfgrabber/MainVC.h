@@ -6,7 +6,7 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
+#import "Common.h"
 #import "FrameExtractor.h"
 
 @interface MainVC : UIViewController <FrameExtractorDelegate>

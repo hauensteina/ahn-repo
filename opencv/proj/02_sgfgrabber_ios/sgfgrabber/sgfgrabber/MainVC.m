@@ -11,6 +11,7 @@
 //==========================
 @interface MainVC ()
 @property FrameExtractor *frameExtractor;
+@property UIImageView *cameraView;
 @end
 
 //=========================
@@ -29,11 +30,38 @@
     [super didReceiveMemoryWarning];
 }
 
+#pragma mark - View Lifecycle
+// Allocate all UI elements.
+//----------------------------------------------------------------------
+- (void) loadView
+{
+    self.view = [UIView new];
+    UIView *v = self.view;
+    v.autoresizesSubviews = NO;
+    v.opaque = YES;
+    v.backgroundColor = RGB(0xF3DCA5);
+    
+    // Camera View
+    self.cameraView = [UIImageView new];
+    [v addSubview:self.cameraView];
+}
+
+//----------------------------------------------------------------------
+- (void) viewWillAppear:(BOOL) animated
+{
+    [super viewWillAppear: animated];
+    UIView *v = self.view;
+    self.cameraView.frame = v.bounds;
+    self.cameraView.hidden = NO;
+    [self.view bringSubviewToFront:self.cameraView];
+}
+
 #pragma mark - FrameExtractorDelegate protocol
 //---------------------------------
 - (void)captured:(UIImage *)image
 {
-    NSLog(@"Got a frame");
+    //self.cameraView.hidden = NO;
+    [self.cameraView setImage:image];
 }
 
 @end

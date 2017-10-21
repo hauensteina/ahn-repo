@@ -19,7 +19,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     self.mainVC = [MainVC new];
-    self.mainVC.view.backgroundColor = [UIColor redColor];
+    //self.mainVC.view.backgroundColor = [UIColor redColor];
     self.nav = [[UINavigationController alloc] initWithRootViewController: self.mainVC];
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
