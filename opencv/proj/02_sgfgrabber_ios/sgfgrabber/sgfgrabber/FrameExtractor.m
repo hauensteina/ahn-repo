@@ -16,6 +16,7 @@
 @property CIContext *context;
 @property bool permissionGranted;
 @property dispatch_queue_t sessionQ;
+@property dispatch_queue_t bufferQ;
 
 @end
 
@@ -33,6 +34,7 @@
         self.captureSession = [AVCaptureSession new];
         self.context = [CIContext new];
         self.sessionQ = dispatch_queue_create("com.ahaux.sessionQ", DISPATCH_QUEUE_SERIAL);
+        self.bufferQ  = dispatch_queue_create("com.ahaux.bufferQ",  DISPATCH_QUEUE_SERIAL);
         [self checkPermission];
         dispatch_async(self.sessionQ, ^{
             [self configureSession];
@@ -81,7 +83,7 @@
     }
     [self.captureSession addInput:captureDeviceInput];
     AVCaptureVideoDataOutput *videoOutput = [AVCaptureVideoDataOutput new];
-    [videoOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+    [videoOutput setSampleBufferDelegate:self queue:self.bufferQ];
     if (![self.captureSession canAddOutput:videoOutput]) {
         return;
     }
@@ -104,6 +106,7 @@
     CIImage *ciImage = [CIImage imageWithCVImageBuffer:imageBuffer];
     CGImageRef cgImage = [self.context createCGImage:ciImage fromRect:ciImage.extent];
     UIImage *res = [UIImage imageWithCGImage:cgImage];
+    CFRelease(cgImage);
     return res;
 }
 

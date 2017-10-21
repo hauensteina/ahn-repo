@@ -16,17 +16,21 @@
 //=========================
 @implementation MainVC
 
-- (void)viewDidLoad {
+//----------------------
+- (void)viewDidLoad
+{
     [super viewDidLoad];
     self.frameExtractor = [FrameExtractor new];
     self.frameExtractor.delegate = self;
 }
-
-- (void)didReceiveMemoryWarning {
+//----------------------------------
+- (void)didReceiveMemoryWarning
+{
     [super didReceiveMemoryWarning];
 }
 
 #pragma mark - FrameExtractorDelegate protocol
+//---------------------------------
 - (void)captured:(UIImage *)image
 {
     NSLog(@"Got a frame");
