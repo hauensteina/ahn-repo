@@ -6,6 +6,7 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+#import <opencv2/opencv.hpp>
 #import "MainVC.h"
 
 //==========================
@@ -23,6 +24,8 @@
     [super viewDidLoad];
     self.frameExtractor = [FrameExtractor new];
     self.frameExtractor.delegate = self;
+    NSString *tstr = [MainVC opencvVersion];
+    int tt=42;
 }
 //----------------------------------
 - (void)didReceiveMemoryWarning
@@ -62,6 +65,12 @@
 {
     //self.cameraView.hidden = NO;
     [self.cameraView setImage:image];
+}
+
+//----------------------------
++(NSString *) opencvVersion
+{
+    return [NSString stringWithFormat:@"OpenCV version: %s", CV_VERSION];
 }
 
 @end

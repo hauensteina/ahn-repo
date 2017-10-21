@@ -8,16 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */ = {isa = PBXBuildFile; fileRef = AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */; };
+		AC043D3D1F9BDE1D006CF7F0 /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC043D3C1F9BDE1D006CF7F0 /* opencv2.framework */; };
 		AC628C181F9A7D3F0043FCEE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C171F9A7D3F0043FCEE /* main.m */; };
 		AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */; };
 		AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC628C221F9A7D3F0043FCEE /* Assets.xcassets */; };
-		AC628C341F9A80150043FCEE /* MainVC.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C331F9A80150043FCEE /* MainVC.m */; };
+		AC628C341F9A80150043FCEE /* MainVC.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC628C331F9A80150043FCEE /* MainVC.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FrameExtractor.h; sourceTree = "<group>"; };
 		AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FrameExtractor.m; sourceTree = "<group>"; };
 		AC043D331F9BB9AB006CF7F0 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
+		AC043D3C1F9BDE1D006CF7F0 /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = SOURCE_ROOT; };
 		AC628C131F9A7D3F0043FCEE /* sgfgrabber.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sgfgrabber.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC628C171F9A7D3F0043FCEE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AC628C191F9A7D3F0043FCEE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -25,7 +27,7 @@
 		AC628C221F9A7D3F0043FCEE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AC628C271F9A7D3F0043FCEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AC628C321F9A80150043FCEE /* MainVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainVC.h; sourceTree = "<group>"; };
-		AC628C331F9A80150043FCEE /* MainVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainVC.m; sourceTree = "<group>"; };
+		AC628C331F9A80150043FCEE /* MainVC.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MainVC.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,6 +35,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC043D3D1F9BDE1D006CF7F0 /* opencv2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,11 +61,12 @@
 		AC628C151F9A7D3F0043FCEE /* sgfgrabber */ = {
 			isa = PBXGroup;
 			children = (
+				AC043D3C1F9BDE1D006CF7F0 /* opencv2.framework */,
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
 				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
 				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
-				AC628C331F9A80150043FCEE /* MainVC.m */,
+				AC628C331F9A80150043FCEE /* MainVC.mm */,
 				AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */,
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
@@ -150,7 +154,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
+				AC628C341F9A80150043FCEE /* MainVC.mm in Sources */,
 				AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */,
 				AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */,
 				AC628C181F9A7D3F0043FCEE /* main.m in Sources */,
@@ -174,7 +178,7 @@
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -201,6 +205,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -229,7 +234,7 @@
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -250,6 +255,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -269,6 +275,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = J26TJ8F6WP;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				INFOPLIST_FILE = sgfgrabber/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ahn.sgfgrabber;
@@ -281,6 +291,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = J26TJ8F6WP;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				INFOPLIST_FILE = sgfgrabber/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ahn.sgfgrabber;
