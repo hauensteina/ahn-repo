@@ -7,7 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "FrameExtractor.h"
 
-@interface MainVC : UIViewController
+@interface MainVC : UIViewController <FrameExtractorDelegate>
 
 @end

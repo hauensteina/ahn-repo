@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */ = {isa = PBXBuildFile; fileRef = AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */; };
 		AC628C181F9A7D3F0043FCEE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C171F9A7D3F0043FCEE /* main.m */; };
 		AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */; };
 		AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC628C221F9A7D3F0043FCEE /* Assets.xcassets */; };
@@ -14,6 +15,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FrameExtractor.h; sourceTree = "<group>"; };
+		AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FrameExtractor.m; sourceTree = "<group>"; };
 		AC628C131F9A7D3F0043FCEE /* sgfgrabber.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sgfgrabber.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC628C171F9A7D3F0043FCEE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AC628C191F9A7D3F0043FCEE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -58,6 +61,8 @@
 				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
 				AC628C331F9A80150043FCEE /* MainVC.m */,
+				AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */,
+				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
 				AC628C271F9A7D3F0043FCEE /* Info.plist */,
 				AC628C161F9A7D3F0043FCEE /* Supporting Files */,
@@ -145,6 +150,7 @@
 			files = (
 				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
 				AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */,
+				AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */,
 				AC628C181F9A7D3F0043FCEE /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
