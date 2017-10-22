@@ -20,4 +20,7 @@
 
 @property id<FrameExtractorDelegate> delegate;
 
+- (void) suspend; // Suspend capturing frames
+- (void) resume;  // Resume capturing frames
+
 @end

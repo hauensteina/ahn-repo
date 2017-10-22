@@ -14,7 +14,24 @@ green:((float)((rgbValue & 0xFF00) >> 8))/255.0 \
 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 
 #define SCREEN_BOUNDS [UIScreen mainScreen].bounds
+#define SCREEN_WIDTH  ([UIScreen mainScreen].bounds.size.width)
+#define SCREEN_HEIGHT ([UIScreen mainScreen].bounds.size.height)
 
+#define CLEAR  [UIColor clearColor]
+#define WHITE  [UIColor whiteColor]
+#define BLACK  [UIColor blackColor]
+#define YELLOW [UIColor yellowColor]
+#define RED    [UIColor redColor]
+#define BLUE   [UIColor blueColor]
+#define GREEN  [UIColor greenColor]
+#define GRAY   [UIColor grayColor]
+#define DARKRED    RGB(0xd00000)
+#define DARKGREEN  RGB(0x007000)
+#define DARKBLUE   RGB(0x4481A7)
+
+extern UIFont *g_fntBtn;
+
+void g_init(void); // Init globals. Called from Appdelegate.
 
 
 

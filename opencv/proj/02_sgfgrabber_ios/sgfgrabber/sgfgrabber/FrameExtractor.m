@@ -110,6 +110,20 @@
     return res;
 }
 
+// Stop capturing frames while we're busy
+//-------------------------------------------
+- (void) suspend
+{
+    dispatch_suspend( self.bufferQ);
+}
+
+// Resume capturing frames
+//--------------------------
+- (void) resume
+{
+    dispatch_resume( self.bufferQ);
+}
+
 #pragma mark - AVCaptureVideoDataOutputSampleBufferDelegate
 //------------------------------------------------------------
 - (void) captureOutput:(AVCaptureOutput * ) captureOutput

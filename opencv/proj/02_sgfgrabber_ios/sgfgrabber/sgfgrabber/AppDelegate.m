@@ -18,6 +18,7 @@
 //----------------------------------------------------------------------------------------------
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    g_init(); // Global enums, constants, etc
     self.mainVC = [MainVC new];
     //self.mainVC.view.backgroundColor = [UIColor redColor];
     self.nav = [[UINavigationController alloc] initWithRootViewController: self.mainVC];

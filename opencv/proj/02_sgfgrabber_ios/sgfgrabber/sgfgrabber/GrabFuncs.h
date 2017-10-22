@@ -10,6 +10,9 @@
 
 @interface GrabFuncs : NSObject
 //----------------------------
-+(NSString *) opencvVersion;
++ (NSString *) opencvVersion;
+- (UIImage *) drawRectOnImage:(UIImage *)img
+                            x:(int)x y:(int)y
+                        width:(int)width height:(int)height;
 
 @end
