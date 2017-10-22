@@ -1,5 +1,5 @@
 //
-//  Common.h
+//  Common.hpp
 //  sgfgrabber
 //
 //  Created by Andreas Hauenstein on 2017-10-21.
@@ -12,6 +12,13 @@
 colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 \
 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 \
 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
+
+#define GET_RGB(col,r,g,b) \
+do { \
+CGFloat rr,gg,bb,aa; \
+[col getRed: &rr green: &gg blue: &bb alpha: &aa];  \
+r = int(rr * 255); g = int(gg * 255); b = int(bb * 255); \
+} while(0)
 
 #define SCREEN_BOUNDS [UIScreen mainScreen].bounds
 #define SCREEN_WIDTH  ([UIScreen mainScreen].bounds.size.width)
@@ -32,6 +39,10 @@ blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
 extern UIFont *g_fntBtn;
 
 void g_init(void); // Init globals. Called from Appdelegate.
+
+
+
+
 
 
 

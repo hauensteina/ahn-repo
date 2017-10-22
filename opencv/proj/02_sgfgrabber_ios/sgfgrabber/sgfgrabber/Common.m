@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "Common.h"
 
 UIFont *g_fntBtn;
 
@@ -16,4 +17,5 @@ void g_init()
 {
     g_fntBtn = [UIFont fontWithName:@"HelveticaNeue" size: 20];
 }
+
 

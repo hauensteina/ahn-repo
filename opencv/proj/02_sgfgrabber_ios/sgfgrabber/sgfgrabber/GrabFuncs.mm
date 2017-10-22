@@ -8,6 +8,7 @@
 
 #import <opencv2/opencv.hpp>
 #import <opencv2/imgcodecs/ios.h>
+#import "Common.h"
 #import "GrabFuncs.h"
 
 @implementation GrabFuncs
@@ -21,6 +22,7 @@
 
 //---------------------------------------------------------------------
 - (UIImage *) drawRectOnImage:(UIImage *)img
+                        color:(UIColor *)color
                             x:(int)x y:(int)y
                         width:(int)width height:(int)height
 {
@@ -33,7 +35,9 @@
     cv::Point pt1( x, y);
     cv::Point pt2( x+width, y+height);
     //cv::Scalar col(0,0,255);
-    cv::rectangle( m, pt1, pt2, cv::Scalar(255,0,0,255)); // int thickness=1, int lineType=8, int shift=0)¶
+    int r,g,b;
+    GET_RGB( color, r,g,b);
+    cv::rectangle( m, pt1, pt2, cv::Scalar(r,g,b,255)); // int thickness=1, int lineType=8, int shift=0)¶
 
     // Convert back to UIImage
     UIImage *res = MatToUIImage( m);
