@@ -121,10 +121,18 @@
 //-------------------------------
 - (void) btnGo: (id) sender
 {
-    [self.frameExtractor suspend];
-    UIImage *img = [self.grabFuncs drawRectOnImage:self.img x:100 y:100 width:100 height:100];
-    [self.cameraView setImage:img];
-}
+    static BOOL running = YES;
+    if (running) {
+        [self.frameExtractor suspend];
+        UIImage *img = [self.grabFuncs drawRectOnImage:self.img x:100 y:100 width:100 height:100];
+        [self.cameraView setImage:img];
+        running = NO;
+    }
+    else {
+        [self.frameExtractor resume];
+        running = YES;
+    }
+} // btnGo()
 
 #pragma mark - FrameExtractorDelegate protocol
 //---------------------------------

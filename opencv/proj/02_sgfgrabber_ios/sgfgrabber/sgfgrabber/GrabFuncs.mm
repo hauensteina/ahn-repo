@@ -32,8 +32,8 @@
     // Draw on Mat
     cv::Point pt1( x, y);
     cv::Point pt2( x+width, y+height);
-    cv::Scalar col(0,0,255);
-    cv::rectangle( m, pt1, pt2, col); // int thickness=1, int lineType=8, int shift=0)¶
+    //cv::Scalar col(0,0,255);
+    cv::rectangle( m, pt1, pt2, cv::Scalar(255,0,0,255)); // int thickness=1, int lineType=8, int shift=0)¶
 
     // Convert back to UIImage
     UIImage *res = MatToUIImage( m);
