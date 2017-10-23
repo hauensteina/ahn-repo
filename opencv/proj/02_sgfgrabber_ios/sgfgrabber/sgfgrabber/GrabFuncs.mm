@@ -20,6 +20,10 @@ static cv::RNG rng(12345);
 @implementation GrabFuncs
 //=========================
 
+//=== General utility funcs ===
+//=============================
+
+#pragma mark - Utility funcs
 //----------------------------
 + (NSString *) opencvVersion
 {
@@ -31,8 +35,8 @@ static cv::RNG rng(12345);
 void resize(const cv::Mat &src, cv::Mat &dst, int sz)
 {
     //cv::Size s;
-    int width  = src.rows;
-    int height = src.cols;
+    int width  = src.cols;
+    int height = src.rows;
     float scale;
     if (width < height) scale = sz / (float) width;
     else scale = sz / (float) height;
@@ -40,36 +44,31 @@ void resize(const cv::Mat &src, cv::Mat &dst, int sz)
     //dst=src;
 }
 
-// calculates the median value of a single channel
-// based on https://github.com/arnaudgelas/OpenCVExamples/blob/master/cvMat/Statistics/Median/Median.cpp
-//----------------------------------
-double median( cv::Mat channel )
+// Calculates the median value of a single channel
+//--------------------------------
+int median( cv::Mat channel )
 {
-    double m = (channel.rows*channel.cols) / 2;
-    int bin = 0;
-    double med = -1.0;
-    
-    int histSize = 256;
-    float range[] = { 0, 256 };
-    const float* histRange = { range };
-    bool uniform = true;
-    bool accumulate = false;
-    cv::Mat hist;
-    cv::calcHist( &channel, 1, 0, cv::Mat(), hist, 1, &histSize, &histRange, uniform, accumulate );
-    
-    for ( int i = 0; i < histSize && med < 0.0; ++i )
+    cv::Mat flat = channel.reshape(1,1);
+    cv::Mat sorted;
+    cv::sort(flat, sorted, cv::SORT_ASCENDING);
+    double res = sorted.at<uchar>(sorted.size() / 2);
+    return res;
+}
+
+//-------------------------------------------------------
+void draw_contours( const Contours cont, cv::Mat &dst)
+{
+    // Draw contours
+    for( int i = 0; i< cont.size(); i++ )
     {
-        bin += cvRound( hist.at< float >( i ) );
-        if ( bin > m && med < 0.0 )
-            med = i;
+        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
+        drawContours( dst, cont, i, color, 2, 8);
     }
-    
-    return med;
-} // median()
+} // draw_contours()
 
 // Automatic edge detection without parameters
 //--------------------------------------------------------------------
-void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
+void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.5)
 {
     double v = median(src);
     int lower = int(fmax(0, (1.0 - sigma) * v));
@@ -77,35 +76,10 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
     cv::Canny( src, dst, lower, upper);
 }
 
-//#-----------------------
-//def get_contours(img):
-//#img   = cv2.GaussianBlur( img, (7, 7), 0)
-//#img   = cv2.medianBlur( img, 7)
-//#img = cv2.bilateralFilter(img, 11, 17, 17)
-//#edges = cv2.Canny(img, 60, 200)
-//edges = ut.auto_canny(img)
-//# find contours in the edge map
-//im2, cnts, hierarchy  = cv2.findContours(edges, cv2.RETR_LIST,
-//                                         cv2.CHAIN_APPROX_SIMPLE)
-//#cnts = sorted( cnts, key=cv2.contourArea, reverse=True)
-//#ut.show_contours( img, cnts)
-//
-//# Keep if larger than 0.1% of image
-//img_area = img.shape[0] * img.shape[1]
-//cnts = [ c for c in cnts if  cv2.contourArea(c) / img_area > 0.001 ]
-//# Keep if reasonably not-wiggly
-//#cnts = [ c for c in cnts if   cv2.arcLength(c, closed=True) / len(c) > 2.0 ]
-//cnts = [ c for c in cnts if   len(c) < 100 or cv2.arcLength(c, closed=True) / len(c) > 2.0 ]
-//
-//return cnts
+//=== Task specific helpers ===
+//=============================
 
-////---------------------------------------------------------------------
-//bool compVecByLenAsc( vector<cv::Point> &c1,  vector<cv::Point> &c2)
-//{
-//    bool res = c1.size() < c2.size();
-//    return res;
-//}
-
+#pragma mark - Task Specific Helpers
 //---------------------------------------------
 Contours get_contours( const cv::Mat &img)
 {
@@ -132,16 +106,49 @@ Contours get_contours( const cv::Mat &img)
     return conts;
 } // get_contours()
 
-//-------------------------------------------------------
-void draw_contours( const Contours cont, cv::Mat &dst)
+//# Try to eliminate all contours except those on the board
+//#----------------------------------------------------------
+//def filter_squares(cnts, width, height):
+//squares = []
+//for i,c in enumerate(cnts):
+//area = cv2.contourArea(c)
+//#if area > width*height / 2.5: continue
+//if area < width*height / 4000.0 : continue
+//peri = cv2.arcLength(c, closed=True)
+//hullArea = cv2.contourArea(cv2.convexHull(c))
+//if hullArea < 0.001: continue
+//solidity = area / float(hullArea)
+//approx = cv2.approxPolyDP(c, 0.01 * peri, closed=True)
+//#if len(approx) < 4: continue  # Not a square
+//# not a circle
+//#if len(approx) > 6:
+//#center,rad = cv2.minEnclosingCircle(c)
+//#circularity = area / (rad * rad * np.pi)
+//#if circularity < 0.50: continue
+//#print (circularity)
+//
+//#if len(approx) > 14: continue
+//#(x, y, w, h) = cv2.boundingRect(approx)
+//#aspectRatio = w / float(h)
+//#arlim = 0.4
+//#if aspectRatio < arlim: continue
+//#if aspectRatio > 1.0 / arlim: continue
+//#if solidity < 0.45: continue
+//#if solidity < 0.07: continue
+//squares.append(c)
+//return squares
+//
+
+// Try to eliminate all contours except those on the board
+//---------------------------------------------------------------------
+Contours filter_squares( const Contours conts, int width, int height)
 {
-    // Draw contours
-    for( int i = 0; i< cont.size(); i++ )
-    {
-        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
-        drawContours( dst, cont, i, color, 2, 8);
-    }
-} // draw_contours()
+    Contours large_conts;
+    float minArea = width * height / 4000.0;
+    std::copy_if( conts.begin(), conts.end(), std::back_inserter(large_conts),
+                 [minArea](Contour c){return cv::contourArea(c) > minArea;} );
+    return large_conts;
+}
 
 
 //-----------------------------------------
@@ -156,9 +163,10 @@ void draw_contours( const Contours cont, cv::Mat &dst)
     // Grayscale
     cv::cvtColor( m, m, cv::COLOR_BGR2GRAY);
     // Contours
-    Contours contours = get_contours(m);
     cv::Mat drawing = cv::Mat::zeros( m.size(), CV_8UC3 );
-    draw_contours( contours, drawing);
+    Contours contours = get_contours(m);
+    Contours onBoard = filter_squares( contours, m.cols, m.rows);
+    draw_contours( onBoard, drawing);
 
 //    // Draw on Mat
 //    cv::Point pt1( x, y);
