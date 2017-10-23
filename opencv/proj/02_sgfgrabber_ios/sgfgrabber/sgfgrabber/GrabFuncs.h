@@ -11,9 +11,6 @@
 @interface GrabFuncs : NSObject
 //----------------------------
 + (NSString *) opencvVersion;
-- (UIImage *) drawRectOnImage:(UIImage *)img
-                        color:(UIColor *)color
-                            x:(int)x y:(int)y
-                        width:(int)width height:(int)height;
+- (UIImage *)  findBoard:(UIImage *)img;
 
 @end
