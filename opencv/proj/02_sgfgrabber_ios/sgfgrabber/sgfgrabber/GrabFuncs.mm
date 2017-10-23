@@ -20,19 +20,7 @@
     return [NSString stringWithFormat:@"OpenCV version: %s", CV_VERSION];
 }
 
-//# Resize image such that min(width,height) = M
-//#------------------
-//def resize(img, M):
-//width  = img.shape[1]
-//height = img.shape[0]
-//if width < height:
-//scale = M/width
-//else:
-//scale = M/height
-//
-//res = cv2.resize(img,(int(width*scale),int(height*scale)), interpolation = cv2.INTER_AREA)
-//return res
-
+// Resize image such that min(width,height) = sz
 //---------------------------------------------------------
 void resize(const cv::Mat &src, cv::Mat &dst, int sz)
 {
@@ -46,20 +34,58 @@ void resize(const cv::Mat &src, cv::Mat &dst, int sz)
     //dst=src;
 }
 
+// calculates the median value of a single channel
+// based on https://github.com/arnaudgelas/OpenCVExamples/blob/master/cvMat/Statistics/Median/Median.cpp
+//----------------------------------
+double median( cv::Mat channel )
+{
+    double m = (channel.rows*channel.cols) / 2;
+    int bin = 0;
+    double med = -1.0;
+    
+    int histSize = 256;
+    float range[] = { 0, 256 };
+    const float* histRange = { range };
+    bool uniform = true;
+    bool accumulate = false;
+    cv::Mat hist;
+    cv::calcHist( &channel, 1, 0, cv::Mat(), hist, 1, &histSize, &histRange, uniform, accumulate );
+    
+    for ( int i = 0; i < histSize && med < 0.0; ++i )
+    {
+        bin += cvRound( hist.at< float >( i ) );
+        if ( bin > m && med < 0.0 )
+            med = i;
+    }
+    
+    return med;
+}
+
+// Automatic edge detection without parameters
+//--------------------------------------------------------------------
+void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
+{
+    double v = median(src);
+    int lower = int(fmax(0, (1.0 - sigma) * v));
+    int upper = int(fmin(255, (1.0 + sigma) * v));
+    cv::Canny( src, dst, lower, upper);
+}
 
 //---------------------------------------------------------------------
 - (UIImage *) findBoard:(UIImage *)img
 {
-    NSLog(@"drawrect");
     // Convert UIImage to Mat
     cv::Mat m;
     UIImageToMat( img, m);
     // Resize
-    cv::Mat small;
-    resize( m, small, 500);
+    //cv::Mat small;
+    resize( m, m, 500);
     // Grayscale
-    cv::Mat gray;
-    cv::cvtColor( m, gray, cv::COLOR_BGR2GRAY);
+    //cv::Mat gray;
+    cv::cvtColor( m, m, cv::COLOR_BGR2GRAY);
+    // Edges
+    cv::Mat edges;
+    auto_canny( m, m);
 
 //    // Draw on Mat
 //    cv::Point pt1( x, y);
@@ -70,7 +96,7 @@ void resize(const cv::Mat &src, cv::Mat &dst, int sz)
 //    cv::rectangle( m, pt1, pt2, cv::Scalar(r,g,b,255)); // int thickness=1, int lineType=8, int shift=0)¶
 //
     // Convert back to UIImage
-    UIImage *res = MatToUIImage( gray);
+    UIImage *res = MatToUIImage( m);
     return res;
 } // drawRectOnImage()
 

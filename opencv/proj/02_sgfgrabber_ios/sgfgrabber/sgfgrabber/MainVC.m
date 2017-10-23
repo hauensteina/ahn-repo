@@ -18,6 +18,8 @@
 @property UIImage *img; // The current image
 // Buttons
 @property UIButton *btnGo;
+// State
+@property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 
 @end
 
@@ -31,6 +33,7 @@
     self.frameExtractor = [FrameExtractor new];
     self.grabFuncs = [GrabFuncs new];
     self.frameExtractor.delegate = self;
+    self.frame_grabber_on = YES;
     //NSString *tstr = [GrabFuncs opencvVersion];
     //NSLog(tstr);
 }
@@ -121,16 +124,15 @@
 //-------------------------------
 - (void) btnGo: (id) sender
 {
-    static BOOL running = YES;
-    if (running) {
+    if (self.frame_grabber_on) {
+        self.frame_grabber_on = NO;
         [self.frameExtractor suspend];
         UIImage *img = [self.grabFuncs findBoard:self.img];
         [self.cameraView setImage:img];
-        running = NO;
     }
     else {
+        self.frame_grabber_on = YES;
         [self.frameExtractor resume];
-        running = YES;
     }
 } // btnGo()
 
@@ -139,8 +141,10 @@
 - (void)captured:(UIImage *)image
 {
     //self.cameraView.hidden = NO;
-    [self.cameraView setImage:image];
-    self.img = image;
+    if (self.frame_grabber_on) {
+        [self.cameraView setImage:image];
+        self.img = image;
+    }
 }
 
 
