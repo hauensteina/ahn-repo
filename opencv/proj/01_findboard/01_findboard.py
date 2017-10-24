@@ -353,9 +353,9 @@ def get_boardsize_by_fft(zoomed_img):
         smooth_magspec = np.append( smooth_magspec, 0.0)
     # The first frequency peak above 9 should be close to the board size.
     half = len(smooth_magspec) // 2
-    #plt.subplot(111)
-    #plt.plot(range( -half, half+1 ), smooth_magspec)
-    #plt.show()
+    plt.subplot(111)
+    plt.plot(range( -half, half+1 ), smooth_magspec)
+    plt.show()
     MINSZ = 9
     highf = smooth_magspec[width // 2 + MINSZ:]
     maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + MINSZ

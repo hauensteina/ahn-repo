@@ -144,6 +144,11 @@
             img = [self.grabFuncs f02_inside_contours];
             [self.cameraView setImage:img];
             break;
+        case 3:
+            state++;
+            img = [self.grabFuncs f03_find_board];
+            [self.cameraView setImage:img];
+            break;
         default:
             state=0;
             self.frame_grabber_on = YES;

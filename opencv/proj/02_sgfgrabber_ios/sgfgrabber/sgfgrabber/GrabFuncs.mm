@@ -17,8 +17,8 @@ typedef std::vector<cv::Point> Points;
 static cv::RNG rng(12345);
 
 
-//=======================
 @interface GrabFuncs()
+//=======================
 @property cv::Mat m; // Mat with image we are working on
 @property Contours cont; // Current set of contours
 @end
@@ -26,14 +26,116 @@ static cv::RNG rng(12345);
 @implementation GrabFuncs
 //=========================
 
-//=== General utility funcs ===
-//=============================
 
-#pragma mark - Utility funcs
+#pragma mark - General utility funcs
+//======================================
+
 //----------------------------
 + (NSString *) opencvVersion
 {
     return [NSString stringWithFormat:@"OpenCV version: %s", CV_VERSION];
+}
+
+// Flatten a vector of vectors into a vector
+// [[1,2,3],[4,5,6],...] -> [1,2,3,4,5,6,...]
+//--------------------------------------------
+template <typename T>
+std::vector<T> flatten(const std::vector<std::vector<T>>& v)
+{
+    std::size_t total_size = 0;
+    for (const auto& sub : v)
+        total_size += sub.size(); // I wish there was a transform_accumulate
+    std::vector<T> result;
+    result.reserve(total_size);
+    for (const auto& sub : v)
+        result.insert(result.end(), sub.begin(), sub.end());
+    return result;
+}
+
+//# Find x where f(x) = target where f is an increasing func.
+//#------------------------------------------------------------
+//def bisect( f, lower, upper, target, maxiter=10):
+//n=0
+//while True and n < maxiter:
+//n += 1
+//res = (upper + lower) / 2.0
+//val = f(res)
+//if val > target:
+//upper = res
+//elif val < target:
+//lower = res
+//else:
+//break
+//return res
+
+//# Find x where f(x) = target where f is an increasing func.
+//------------------------------------------------------------
+template<typename Func>
+float bisect( Func f, float lower, float upper, int target, int maxiter=10)
+{
+    int n=0;
+    float res=0.0;
+    while (n++ < maxiter) {
+        res = (upper + lower) / 2.0;
+        int val = int(f(res));
+        if (val > target) upper = res;
+        else if (val < target) lower = res;
+        else break;
+    } // while
+    return res;
+}
+
+//# Order four points clockwise
+//#------------------------------
+//def order_points(pts):
+//top_bottom = sorted( pts, key=lambda x: x[1])
+//top = top_bottom[:2]
+//bottom = top_bottom[2:]
+//res = sorted( top, key=lambda x: x[0]) + sorted( bottom, key=lambda x: -x[0])
+//return np.array(res).astype(np.float32)
+
+// Order four points clockwise
+//----------------------------------------
+Points order_points( Points &points)
+{
+    Points top_bottom = points;
+    std::sort( top_bottom.begin(), top_bottom.end(), [](cv::Point a, cv::Point b){ return a.y < b.y; });
+    Points top( top_bottom.begin(), top_bottom.begin()+2 );
+    Points bottom( top_bottom.end()-2, top_bottom.end());
+    std::sort( top.begin(), top.end(), [](cv::Point a, cv::Point b){ return a.x < b.x; });
+    std::sort( bottom.begin(), bottom.end(), [](cv::Point a, cv::Point b){ return b.x < a.x; });
+    Points res = top;
+    res.insert(res.end(), bottom.begin(), bottom.end());
+    return res;
+}
+
+//# Enclose a contour with an n edge polygon
+//#-------------------------------------------
+//def approx_poly( cnt, n):
+//hull = cv2.convexHull( cnt)
+//peri = cv2.arcLength( hull, closed=True)
+//epsilon = bisect( lambda x: -len(cv2.approxPolyDP(hull, x * peri, closed=True)),
+//                 0.0, 1.0, -n)
+//res  = cv2.approxPolyDP(hull, epsilon*peri, closed=True)
+//return res
+
+// Enclose a contour with an n edge polygon
+//--------------------------------------------
+Points approx_poly( Points cont, int n)
+{
+    Points hull;
+    cv::convexHull( cont, hull);
+    float peri = cv::arcLength( hull, true);
+    float epsilon = bisect(
+                           [hull,peri](float x) {
+                               Points approx;
+                               cv::approxPolyDP( hull, approx, x*peri, true);
+                               return -approx.size();
+                           },
+                           0.0, 1.0, -n);
+    Points res;
+    cv::approxPolyDP( hull, res, epsilon*peri, true);
+    return res;
 }
 
 // Resize image such that min(width,height) = sz
@@ -97,10 +199,10 @@ void draw_point( cv::Point p, cv::Mat &img)
     cv::circle( img, p, 10, cv::Scalar(255,0,0), -1);
 }
 
-//=== Task specific helpers ===
-//=============================
 
-#pragma mark - Task Specific Helpers
+#pragma mark - Pipeline Helpers
+//==================================
+
 //---------------------------------------------
 Contours get_contours( const cv::Mat &img)
 {
@@ -135,8 +237,9 @@ Contours filter_contours( const Contours conts, int width, int height)
 
 // Find the center of the board, which is the median of the contours on the board
 //----------------------------------------------------------------------------------
-cv::Point get_board_center( const Contours conts, Points &centers)
+cv::Point get_board_center( const Contours conts)
 {
+    Points centers;
     centers.resize( conts.size());
     int i = 0;
     std::generate( centers.begin(), centers.end(), [conts,&i] {
@@ -188,7 +291,7 @@ cv::Point get_board_center( const Contours conts, Points &centers)
 
 // Remove spurious contours outside the board
 //-------------------------------------------------------------------------------
-Contours filter_outside_contours( const Points &centers, const Contours &conts,
+Contours filter_outside_contours( const Contours &conts,
                                  cv::Point board_center,
                                  int width, int height)
 {
@@ -249,7 +352,10 @@ Contours filter_outside_contours( const Points &centers, const Contours &conts,
     //sz = res.size();
     return res;
 } // filter_outside_contours()
-    
+
+
+#pragma mark - Processing Pipeline
+//===================================
 
 //-----------------------------------------
 - (UIImage *) f00_contours:(UIImage *)img
@@ -287,17 +393,33 @@ Contours filter_outside_contours( const Points &centers, const Contours &conts,
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
     int width = self.m.cols; int height = self.m.rows;
     // Only contours on the board
-    Points centers;
-    cv::Point board_center = get_board_center( _cont, centers);
+    cv::Point board_center = get_board_center( _cont);
     draw_point( board_center, drawing);
-    Contours inside = filter_outside_contours( centers, _cont, board_center, width, height);
+    Contours inside = filter_outside_contours( _cont, board_center, width, height);
     draw_contours( inside, drawing);
 
     // Convert back to UIImage
     UIImage *res = MatToUIImage( drawing);
     _cont = inside;
     return res;
-} // drawRectOnImage()
+}
+
+//-----------------------------------
+- (UIImage *) f03_find_board
+{
+    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+    draw_contours( _cont, drawing);
+    //int width = self.m.cols; int height = self.m.rows;
+    Points board = approx_poly( flatten(_cont), 4);
+    board = order_points( board);
+    _cont = std::vector<Points>( 1, board);
+    cv::drawContours( drawing, _cont, -1, cv::Scalar(255,0,0));
+    // Convert back to UIImage
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+
 
 
 
