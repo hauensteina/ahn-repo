@@ -11,8 +11,12 @@
 @interface GrabFuncs : NSObject
 //----------------------------
 + (NSString *) opencvVersion;
+
+// Individual steps for debugging
 - (UIImage *) f00_contours:(UIImage *)img;
 - (UIImage *) f01_filtered_contours;
 - (UIImage *) f02_inside_contours;
 - (UIImage *) f03_find_board;
+// All in one for production
+- (UIImage *) findBoard:(UIImage *)img;
 @end

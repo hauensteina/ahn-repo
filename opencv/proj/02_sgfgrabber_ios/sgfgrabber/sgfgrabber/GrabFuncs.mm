@@ -336,7 +336,7 @@ Contours filter_outside_contours( const Contours &conts,
     for (dist_idx_t di: sqdists) {
         if (i) {
             float delta = di.dist - sqdists[i-1].dist;
-            NSLog(@"%.2f",delta);
+            //NSLog(@"%.2f",delta);
             assert(delta >= 0);
             if (delta > lim) {
                 lastidx = i;
@@ -354,8 +354,8 @@ Contours filter_outside_contours( const Contours &conts,
 } // filter_outside_contours()
 
 
-#pragma mark - Processing Pipeline
-//===================================
+#pragma mark - Processing Pipeline for debugging
+//=================================================
 
 //-----------------------------------------
 - (UIImage *) f00_contours:(UIImage *)img
@@ -419,8 +419,59 @@ Contours filter_outside_contours( const Contours &conts,
     return res;
 }
 
+#pragma mark - Release Methods
+//==============================
 
-
-
+// f00 to f03_find_board in one go
+//--------------------------------------------
+- (UIImage *) findBoard:(UIImage *) img
+{
+    UIImageToMat( img, _m);
+    cv::Mat small;
+    resize( _m, small, 500);
+    cv::cvtColor( small, _m, cv::COLOR_BGR2GRAY);
+    _cont = get_contours(_m);
+    int width = self.m.cols; int height = self.m.rows;
+    _cont = filter_contours( _cont, width, height);
+    if (_cont.size()) {
+        cv::Point board_center = get_board_center( _cont);
+        _cont = filter_outside_contours( _cont, board_center, width, height);
+        Points board = approx_poly( flatten(_cont), 4);
+        board = order_points( board);
+        _cont = std::vector<Points>( 1, board);
+        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
+    }
+    UIImage *res = MatToUIImage( small);
+    return res;
+}
 
 @end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

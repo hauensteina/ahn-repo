@@ -121,9 +121,12 @@
 } // addButtonWithTitle
 
 #pragma mark - Button callbacks
-//-------------------------------
+
+// Debugging helper, shows individual processing stages
+//------------------------------------------------------
 - (void) btnGo: (id) sender
 {
+#ifdef DDEBUG
     static int state = 0;
     UIImage *img;
     switch (state) {
@@ -154,7 +157,9 @@
             self.frame_grabber_on = YES;
             [self.frameExtractor resume];
     } // switch
+#endif
 } // btnGo()
+
 
 #pragma mark - FrameExtractorDelegate protocol
 //---------------------------------
@@ -162,8 +167,16 @@
 {
     //self.cameraView.hidden = NO;
     if (self.frame_grabber_on) {
+#ifdef DDEBUG
         [self.cameraView setImage:image];
         self.img = image;
+#else
+        self.frame_grabber_on = NO;
+        UIImage *processedImg = [self.grabFuncs findBoard:image];
+        self.img = processedImg;
+        [self.cameraView setImage:self.img];
+        self.frame_grabber_on = YES;
+#endif
     }
 }
 
