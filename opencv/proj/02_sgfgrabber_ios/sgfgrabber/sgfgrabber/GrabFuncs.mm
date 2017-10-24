@@ -190,6 +190,7 @@ Contours filter_outside_contours( const Points &centers, const Contours &conts,
         float dist;
     } dist_idx_t;
     
+    //size_t sz = conts.size();
     std::vector<dist_idx_t> sqdists( conts.size());
     int i=0;
     std::generate( sqdists.begin(), sqdists.end(), [conts,board_center,&i] {
@@ -205,23 +206,40 @@ Contours filter_outside_contours( const Points &centers, const Contours &conts,
         return res;
     });
     
+//    dist_idx_t di = sqdists[0];
+//    di = sqdists[1];
+//    di = sqdists[2];
+//    di = sqdists[3];
+//    di = sqdists[4];
+
     std::sort( sqdists.begin(), sqdists.end(), [](dist_idx_t a, dist_idx_t b) { return a.dist < b.dist; });
+
+//    di = sqdists[0];
+//    di = sqdists[1];
+//    di = sqdists[2];
+//    di = sqdists[3];
+//    di = sqdists[4];
+
     size_t lastidx = sqdists.size();
     i=0;
+    float lim = fmin( width, height) / 10.0;
     for (dist_idx_t di: sqdists) {
         if (i) {
             float delta = di.dist - sqdists[i-1].dist;
+            NSLog(@"%.2f",delta);
             assert(delta >= 0);
-            if (delta > fmin( width, height) / 10.0) {
+            if (delta > lim) {
                 lastidx = i;
                 break;
             }
         }
-    }
+        i++;
+    } // for
     Contours res( lastidx);
     for (i=0; i < lastidx; i++) {
         res[i] = conts[sqdists[i].idx];
     }
+    //sz = res.size();
     return res;
 } // filter_outside_contours()
     
