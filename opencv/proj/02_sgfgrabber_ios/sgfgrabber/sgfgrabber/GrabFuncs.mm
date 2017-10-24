@@ -1,5 +1,5 @@
 //
-//  GrabFuncs.m
+//  GrabFuncs.mm
 //  sgfgrabber
 //
 //  Created by Andreas Hauenstein on 2017-10-21.
@@ -11,8 +11,6 @@
 #import "Common.h"
 #import "GrabFuncs.h"
 
-//using namespace std;
-//typedef std::vector vector;
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
 static cv::RNG rng(12345);
@@ -31,7 +29,7 @@ static cv::RNG rng(12345);
 }
 
 // Resize image such that min(width,height) = sz
-//---------------------------------------------------------
+//------------------------------------------------------
 void resize(const cv::Mat &src, cv::Mat &dst, int sz)
 {
     //cv::Size s;
@@ -41,17 +39,25 @@ void resize(const cv::Mat &src, cv::Mat &dst, int sz)
     if (width < height) scale = sz / (float) width;
     else scale = sz / (float) height;
     cv::resize( src, dst, cv::Size(int(width*scale),int(height*scale)), 0, 0, cv::INTER_AREA);
-    //dst=src;
 }
 
 // Calculates the median value of a single channel
-//--------------------------------
-int median( cv::Mat channel )
+//-------------------------------------
+int channel_median( cv::Mat channel )
 {
     cv::Mat flat = channel.reshape(1,1);
     cv::Mat sorted;
     cv::sort(flat, sorted, cv::SORT_ASCENDING);
     double res = sorted.at<uchar>(sorted.size() / 2);
+    return res;
+}
+
+// Calculates the median value of a vector of int
+//-------------------------------------------------
+int int_median( std::vector<int> ints )
+{
+    std::sort( ints.begin(), ints.end(), [](int a, int b) { return a < b; });
+    int res = ints[ints.size() / 2];
     return res;
 }
 
@@ -68,9 +74,9 @@ void draw_contours( const Contours cont, cv::Mat &dst)
 
 // Automatic edge detection without parameters
 //--------------------------------------------------------------------
-void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.5)
+void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
 {
-    double v = median(src);
+    double v = channel_median(src);
     int lower = int(fmax(0, (1.0 - sigma) * v));
     int upper = int(fmin(255, (1.0 + sigma) * v));
     cv::Canny( src, dst, lower, upper);
@@ -87,69 +93,61 @@ Contours get_contours( const cv::Mat &img)
     std::vector<cv::Vec4i> hierarchy;
     // Edges
     cv::Mat m;
-    auto_canny( img, m);
+    auto_canny( img, m, 0.5);
     // Find contours
     findContours( m, conts, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
-
-    // Keep if larger than 0.1% of image
-//    float img_area = img.rows * img.cols;
-//    float lim = img_area * 0.001;
-//    Contours large_conts;
-//    std::copy_if( conts.begin(), conts.end(), std::back_inserter(large_conts),
-//                 [lim](Contour c){return cv::contourArea(c) > lim;} );
-
-    // Keep if reasonably not-wiggly
-//    Contours straight_conts;
-//    std::copy_if( conts.begin(), conts.end(), std::back_inserter(straight_conts),
-//                 [](Contour c){return (c.size() < 100) || (cv::arcLength(c, true) / (float)c.size() > 2.0);} );
-    
     return conts;
 } // get_contours()
 
-//# Try to eliminate all contours except those on the board
-//#----------------------------------------------------------
-//def filter_squares(cnts, width, height):
-//squares = []
-//for i,c in enumerate(cnts):
-//area = cv2.contourArea(c)
-//#if area > width*height / 2.5: continue
-//if area < width*height / 4000.0 : continue
-//peri = cv2.arcLength(c, closed=True)
-//hullArea = cv2.contourArea(cv2.convexHull(c))
-//if hullArea < 0.001: continue
-//solidity = area / float(hullArea)
-//approx = cv2.approxPolyDP(c, 0.01 * peri, closed=True)
-//#if len(approx) < 4: continue  # Not a square
-//# not a circle
-//#if len(approx) > 6:
-//#center,rad = cv2.minEnclosingCircle(c)
-//#circularity = area / (rad * rad * np.pi)
-//#if circularity < 0.50: continue
-//#print (circularity)
-//
-//#if len(approx) > 14: continue
-//#(x, y, w, h) = cv2.boundingRect(approx)
-//#aspectRatio = w / float(h)
-//#arlim = 0.4
-//#if aspectRatio < arlim: continue
-//#if aspectRatio > 1.0 / arlim: continue
-//#if solidity < 0.45: continue
-//#if solidity < 0.07: continue
-//squares.append(c)
-//return squares
-//
-
 // Try to eliminate all contours except those on the board
 //---------------------------------------------------------------------
-Contours filter_squares( const Contours conts, int width, int height)
+Contours filter_contours( const Contours conts, int width, int height)
 {
     Contours large_conts;
     float minArea = width * height / 4000.0;
     std::copy_if( conts.begin(), conts.end(), std::back_inserter(large_conts),
                  [minArea](Contour c){return cv::contourArea(c) > minArea;} );
-    return large_conts;
+    
+    Contours large_hullarea;
+    std::copy_if( large_conts.begin(), large_conts.end(), std::back_inserter(large_hullarea),
+                 [minArea](Contour c){
+                     Contour hull;
+                     cv::convexHull( c, hull);
+                     return cv::contourArea(hull) > 0.001; });
+
+    return large_hullarea;
 }
 
+// Find the center of the board, which is the median of the contours on the board
+//----------------------------------------------------------------------------------
+cv::Point get_board_center( const Contours conts, std::vector<cv::Point> &centers)
+{
+    centers.resize( conts.size());
+    int i = 0;
+    std::generate( centers.begin(), centers.end(), [conts,&i] {
+        Contour c = conts[i++];
+        cv::Moments M = cv::moments( c);
+        int cent_x = int(M.m10 / M.m00);
+        int cent_y = int(M.m01 / M.m00);
+        return cv::Point(cent_x, cent_y);
+    });
+    i=0;
+    std::vector<int> cent_x( conts.size());
+    std::generate( cent_x.begin(), cent_x.end(), [centers,&i] { return centers[i++].x; } );
+    i=0;
+    std::vector<int> cent_y( conts.size());
+    std::generate( cent_y.begin(), cent_y.end(), [centers,&i] { return centers[i++].y; } );
+    int x = int_median( cent_x);
+    int y = int_median( cent_y);
+    return cv::Point(x,y);
+}
+
+// Mark a point on an image
+//--------------------------------------
+void draw_point( cv::Point p, cv::Mat &img)
+{
+    cv::circle( img, p, 10, cv::Scalar(255,0,0), -1);
+}
 
 //-----------------------------------------
 - (UIImage *) findBoard:(UIImage *)img
@@ -158,15 +156,17 @@ Contours filter_squares( const Contours conts, int width, int height)
     cv::Mat m;
     UIImageToMat( img, m);
     // Resize
-    //cv::Mat small;
     resize( m, m, 500);
     // Grayscale
     cv::cvtColor( m, m, cv::COLOR_BGR2GRAY);
     // Contours
     cv::Mat drawing = cv::Mat::zeros( m.size(), CV_8UC3 );
     Contours contours = get_contours(m);
-    Contours onBoard = filter_squares( contours, m.cols, m.rows);
+    Contours onBoard = filter_contours( contours, m.cols, m.rows);
     draw_contours( onBoard, drawing);
+    std::vector<cv::Point> centers;
+    cv::Point board_center = get_board_center( onBoard, centers);
+    draw_point( board_center, drawing);
 
 //    // Draw on Mat
 //    cv::Point pt1( x, y);
