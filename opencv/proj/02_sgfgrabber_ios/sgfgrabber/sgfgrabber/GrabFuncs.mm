@@ -13,6 +13,7 @@
 
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
+typedef std::vector<cv::Point> Points;
 static cv::RNG rng(12345);
 
 @implementation GrabFuncs
@@ -82,6 +83,13 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
     cv::Canny( src, dst, lower, upper);
 }
 
+// Mark a point on an image
+//--------------------------------------
+void draw_point( cv::Point p, cv::Mat &img)
+{
+    cv::circle( img, p, 10, cv::Scalar(255,0,0), -1);
+}
+
 //=== Task specific helpers ===
 //=============================
 
@@ -99,7 +107,7 @@ Contours get_contours( const cv::Mat &img)
     return conts;
 } // get_contours()
 
-// Try to eliminate all contours except those on the board
+// Try to eliminate small and wiggly contours
 //---------------------------------------------------------------------
 Contours filter_contours( const Contours conts, int width, int height)
 {
@@ -120,7 +128,7 @@ Contours filter_contours( const Contours conts, int width, int height)
 
 // Find the center of the board, which is the median of the contours on the board
 //----------------------------------------------------------------------------------
-cv::Point get_board_center( const Contours conts, std::vector<cv::Point> &centers)
+cv::Point get_board_center( const Contours conts, Points &centers)
 {
     centers.resize( conts.size());
     int i = 0;
@@ -142,12 +150,82 @@ cv::Point get_board_center( const Contours conts, std::vector<cv::Point> &center
     return cv::Point(x,y);
 }
 
-// Mark a point on an image
-//--------------------------------------
-void draw_point( cv::Point p, cv::Mat &img)
+//# Remove spurious contours outside the board
+//#--------------------------------------------------
+//def cleanup_squares(centers, square_cnts, board_center, width, height):
+//# Store distance from center for each contour
+//# sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
+//#             for idx,sq in enumerate(square_cnts) ]
+//# distsorted = sorted( sqdists, key = lambda x: x['dist'])
+//
+//#ut.show_contours( g_frame, square_cnts)
+//sqdists = [ {'cnt':sq, 'dist':ut.contour_maxdist( sq, board_center)}
+//           for sq in square_cnts ]
+//distsorted = sorted( sqdists, key = lambda x: x['dist'])
+//
+//# Remove contours if there is a jump in distance
+//lastidx = len(distsorted)
+//for idx,c in enumerate(distsorted):
+//if not idx: continue
+//delta = c['dist'] - distsorted[idx-1]['dist']
+//#print(c['dist'], delta)
+//#ut.show_contours( g_frame, [c['cnt']])
+//#print ('dist:%f delta: %f' % (c['dist'],delta))
+//if delta > min(width,height) / 10.0:
+//lastidx = idx
+//break
+//
+//res = [x['cnt'] for x in distsorted[:lastidx]]
+//return res
+//
+
+// Remove spurious contours outside the board
+//-------------------------------------------------------------------------------
+Contours filter_outside_contours( const Points &centers, const Contours &conts,
+                                 cv::Point board_center,
+                                 int width, int height)
 {
-    cv::circle( img, p, 10, cv::Scalar(255,0,0), -1);
-}
+    typedef struct dist_idx {
+        int idx;
+        float dist;
+    } dist_idx_t;
+    
+    std::vector<dist_idx_t> sqdists( conts.size());
+    int i=0;
+    std::generate( sqdists.begin(), sqdists.end(), [conts,board_center,&i] {
+        Contour c = conts[i++];
+        float dist = 0; int idx = -1;
+        for (cv::Point p: c) {
+            float d =
+            (p.x - board_center.x)*(p.x - board_center.x) +
+            (p.y - board_center.y)*(p.y - board_center.y);
+            if (d > dist) { dist = d; idx = i-1; }
+        }
+        dist_idx_t res;
+        res.dist = dist; res.idx = idx;
+        return res;
+    });
+    
+    std::sort( sqdists.begin(), sqdists.end(), [](dist_idx_t a, dist_idx_t b) { return a.dist < b.dist; });
+    size_t lastidx = sqdists.size();
+    i=0;
+    for (dist_idx_t di: sqdists) {
+        if (i) {
+            float delta = di.dist - sqdists[i-1].dist;
+            assert(delta >= 0);
+            if (delta > fmin( width, height) / 10.0) {
+                lastidx = i;
+                break;
+            }
+        }
+    }
+    Contours res( lastidx);
+    for (i=0; i < lastidx; i++) {
+        res[i] = conts[sqdists[i].idx];
+    }
+    return res;
+} // filter_outside_contours()
+    
 
 //-----------------------------------------
 - (UIImage *) findBoard:(UIImage *)img
@@ -157,25 +235,24 @@ void draw_point( cv::Point p, cv::Mat &img)
     UIImageToMat( img, m);
     // Resize
     resize( m, m, 500);
+    int width = m.cols; int height = m.rows;
     // Grayscale
     cv::cvtColor( m, m, cv::COLOR_BGR2GRAY);
     // Contours
     cv::Mat drawing = cv::Mat::zeros( m.size(), CV_8UC3 );
     Contours contours = get_contours(m);
-    Contours onBoard = filter_contours( contours, m.cols, m.rows);
-    draw_contours( onBoard, drawing);
-    std::vector<cv::Point> centers;
-    cv::Point board_center = get_board_center( onBoard, centers);
+    // Straight large ones only
+    Contours filtered = filter_contours( contours, width, height);
+    draw_contours( filtered, drawing);
+    // Only contours on the board
+    Points centers;
+    cv::Point board_center = get_board_center( filtered, centers);
+    draw_point( board_center, drawing);
+    Contours inside = filter_outside_contours( centers, filtered, board_center, width, height);
+    drawing = cv::Mat::zeros( m.size(), CV_8UC3 );
+    draw_contours( inside, drawing);
     draw_point( board_center, drawing);
 
-//    // Draw on Mat
-//    cv::Point pt1( x, y);
-//    cv::Point pt2( x+width, y+height);
-//    //cv::Scalar col(0,0,255);
-//    int r,g,b;
-//    GET_RGB( color, r,g,b);
-//    cv::rectangle( m, pt1, pt2, cv::Scalar(r,g,b,255)); // int thickness=1, int lineType=8, int shift=0)¶
-//
     // Convert back to UIImage
     UIImage *res = MatToUIImage( drawing);
     return res;
