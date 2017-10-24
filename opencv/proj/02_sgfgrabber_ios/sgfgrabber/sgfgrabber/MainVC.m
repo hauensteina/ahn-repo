@@ -124,16 +124,31 @@
 //-------------------------------
 - (void) btnGo: (id) sender
 {
-    if (self.frame_grabber_on) {
-        self.frame_grabber_on = NO;
-        [self.frameExtractor suspend];
-        UIImage *img = [self.grabFuncs findBoard:self.img];
-        [self.cameraView setImage:img];
-    }
-    else {
-        self.frame_grabber_on = YES;
-        [self.frameExtractor resume];
-    }
+    static int state = 0;
+    UIImage *img;
+    switch (state) {
+        case 0:
+            state++;
+            self.frame_grabber_on = NO;
+            [self.frameExtractor suspend];
+            img = [self.grabFuncs f00_contours:self.img];
+            [self.cameraView setImage:img];
+            break;
+        case 1:
+            state++;
+            img = [self.grabFuncs f01_filtered_contours];
+            [self.cameraView setImage:img];
+            break;
+        case 2:
+            state++;
+            img = [self.grabFuncs f02_inside_contours];
+            [self.cameraView setImage:img];
+            break;
+        default:
+            state=0;
+            self.frame_grabber_on = YES;
+            [self.frameExtractor resume];
+    } // switch
 } // btnGo()
 
 #pragma mark - FrameExtractorDelegate protocol

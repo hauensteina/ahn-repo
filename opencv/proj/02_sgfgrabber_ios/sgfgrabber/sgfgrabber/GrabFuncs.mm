@@ -16,6 +16,13 @@ typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
 static cv::RNG rng(12345);
 
+
+//=======================
+@interface GrabFuncs()
+@property cv::Mat m; // Mat with image we are working on
+@property Contours cont; // Current set of contours
+@end
+
 @implementation GrabFuncs
 //=========================
 
@@ -245,33 +252,50 @@ Contours filter_outside_contours( const Points &centers, const Contours &conts,
     
 
 //-----------------------------------------
-- (UIImage *) findBoard:(UIImage *)img
+- (UIImage *) f00_contours:(UIImage *)img
 {
     // Convert UIImage to Mat
-    cv::Mat m;
-    UIImageToMat( img, m);
+    //cv::Mat m;
+    UIImageToMat( img, _m);
     // Resize
-    resize( m, m, 500);
-    int width = m.cols; int height = m.rows;
+    resize( _m, _m, 500);
     // Grayscale
-    cv::cvtColor( m, m, cv::COLOR_BGR2GRAY);
+    cv::cvtColor( _m, _m, cv::COLOR_BGR2GRAY);
     // Contours
-    cv::Mat drawing = cv::Mat::zeros( m.size(), CV_8UC3 );
-    Contours contours = get_contours(m);
+    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+    _cont = get_contours(_m);
+    draw_contours( _cont, drawing);
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+//-----------------------------------------
+- (UIImage *) f01_filtered_contours
+{
+    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+    int width = self.m.cols; int height = self.m.rows;
     // Straight large ones only
-    Contours filtered = filter_contours( contours, width, height);
+    Contours filtered = filter_contours( _cont, width, height);
     draw_contours( filtered, drawing);
+    UIImage *res = MatToUIImage( drawing);
+    _cont = filtered;
+    return res;
+}
+//-----------------------------------------
+- (UIImage *) f02_inside_contours
+{
+    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+    int width = self.m.cols; int height = self.m.rows;
     // Only contours on the board
     Points centers;
-    cv::Point board_center = get_board_center( filtered, centers);
+    cv::Point board_center = get_board_center( _cont, centers);
     draw_point( board_center, drawing);
-    Contours inside = filter_outside_contours( centers, filtered, board_center, width, height);
-    drawing = cv::Mat::zeros( m.size(), CV_8UC3 );
+    Contours inside = filter_outside_contours( centers, _cont, board_center, width, height);
     draw_contours( inside, drawing);
-    draw_point( board_center, drawing);
 
     // Convert back to UIImage
     UIImage *res = MatToUIImage( drawing);
+    _cont = inside;
     return res;
 } // drawRectOnImage()
 

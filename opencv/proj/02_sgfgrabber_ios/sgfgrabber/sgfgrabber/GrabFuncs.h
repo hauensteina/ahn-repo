@@ -11,6 +11,7 @@
 @interface GrabFuncs : NSObject
 //----------------------------
 + (NSString *) opencvVersion;
-- (UIImage *)  findBoard:(UIImage *)img;
-
+- (UIImage *) f00_contours:(UIImage *)img;
+- (UIImage *) f01_filtered_contours;
+- (UIImage *) f02_inside_contours;
 @end
