@@ -196,9 +196,8 @@ Contours filter_outside_contours( const Points &centers, const Contours &conts,
         Contour c = conts[i++];
         float dist = 0; int idx = -1;
         for (cv::Point p: c) {
-            float d =
-            (p.x - board_center.x)*(p.x - board_center.x) +
-            (p.y - board_center.y)*(p.y - board_center.y);
+            float d = sqrt( (p.x - board_center.x)*(p.x - board_center.x) +
+                           (p.y - board_center.y)*(p.y - board_center.y));
             if (d > dist) { dist = d; idx = i-1; }
         }
         dist_idx_t res;
