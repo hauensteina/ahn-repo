@@ -9,9 +9,12 @@
 #import <Foundation/Foundation.h>
 
 @interface GrabFuncs : NSObject
+
+@property int canny_low;
+@property int canny_hi;
+
 //----------------------------
 + (NSString *) opencvVersion;
-
 // Individual steps for debugging
 - (UIImage *) f00_contours:(UIImage *)img;
 - (UIImage *) f01_filtered_contours;

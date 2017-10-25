@@ -9,6 +9,8 @@
 #import "MainVC.h"
 #import "GrabFuncs.h"
 
+#define DDEBUG
+
 //==========================
 @interface MainVC ()
 @property FrameExtractor *frameExtractor;
@@ -16,8 +18,10 @@
 @property UIImageView *cameraView;
 // Data
 @property UIImage *img; // The current image
-// Buttons
+// Buttons etc
 @property UIButton *btnGo;
+@property UISlider *sldCannyLow;
+@property UISlider *sldCannyHi;
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 
@@ -34,6 +38,9 @@
     self.grabFuncs = [GrabFuncs new];
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
+    
+    self.sldCannyLow.value = self.grabFuncs.canny_low;
+    self.sldCannyHi.value  = self.grabFuncs.canny_hi;
     //NSString *tstr = [GrabFuncs opencvVersion];
     //NSLog(tstr);
 }
@@ -58,8 +65,26 @@
     self.cameraView = [UIImageView new];
     [v addSubview:self.cameraView];
     
-    // Buttons
+    // Buttons etc
     self.btnGo = [self addButtonWithTitle:@"Go" callback:@selector(btnGo:)];
+    
+    // Canny low slider
+    UISlider *s = [UISlider new];
+    self.sldCannyLow = s;
+    s.minimumValue = 0;
+    s.maximumValue = 255;
+    [s addTarget:self action:@selector(sldCannyLow:)forControlEvents:UIControlEventValueChanged];
+    s.backgroundColor = RGB (0xf0f0f0);
+    [v addSubview:s];
+
+    // Canny high slider
+    s = [UISlider new];
+    s.minimumValue = 0;
+    s.maximumValue = 255;
+    self.sldCannyHi = s;
+    [s addTarget:self action:@selector(sldCannyHi:)forControlEvents:UIControlEventValueChanged];
+    s.backgroundColor = RGB (0xf0f0f0);
+    [v addSubview:s];
 }
 
 //----------------------------------------------------------------------
@@ -92,9 +117,17 @@
     self.cameraView.hidden = NO;
     //[self.view bringSubviewToFront:self.cameraView];
 
+    // Button
     self.btnGo.frame = CGRectMake (lmarg, y, W - lmarg - rmarg, mh);
     self.btnGo.titleLabel.font = [UIFont fontWithName:@"HelveticaNeue" size: 40];
     [self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
+    // Canny hi slider
+    y -= delta_y;
+    self.sldCannyHi.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
+    // Canny low slider
+    y -= delta_y;
+    self.sldCannyLow.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
+
 } // doLayout
     
 
@@ -120,7 +153,23 @@
     return b;
 } // addButtonWithTitle
 
-#pragma mark - Button callbacks
+#pragma mark - Button etc callbacks
+
+// Slider for low canny threshold
+//-----------------------------------
+- (void) sldCannyLow:(id) sender
+{
+    int tt = [self.sldCannyLow value];
+    self.grabFuncs.canny_low = tt;
+}
+
+// Slider for hi canny threshold
+//-----------------------------------
+- (void) sldCannyHi:(id) sender
+{
+    int tt = [self.sldCannyHi value];
+    self.grabFuncs.canny_hi = tt;
+}
 
 // Debugging helper, shows individual processing stages
 //------------------------------------------------------

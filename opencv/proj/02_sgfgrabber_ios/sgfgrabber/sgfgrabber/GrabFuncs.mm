@@ -21,6 +21,7 @@ static cv::RNG rng(12345);
 //=======================
 @property cv::Mat m; // Mat with image we are working on
 @property Contours cont; // Current set of contours
+@property Points board;  // Current hypothesis on where the board is
 @end
 
 @implementation GrabFuncs
@@ -29,6 +30,17 @@ static cv::RNG rng(12345);
 
 #pragma mark - General utility funcs
 //======================================
+
+//----------------------
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _canny_hi = 120;
+        _canny_low = 70;
+    }
+    return self;
+}
 
 //----------------------------
 + (NSString *) opencvVersion
@@ -107,6 +119,34 @@ Points order_points( Points &points)
     Points res = top;
     res.insert(res.end(), bottom.begin(), bottom.end());
     return res;
+    
+}
+
+// Length of a line segment
+//---------------------------------------------------------
+float line_len( cv::Point p, cv::Point q)
+{
+    return cv::norm( q-p);
+}
+
+// Return unit vector of p
+//----------------------------------
+cv::Point2f unit_vector( cv::Point p)
+{
+    float norm = cv::norm(p);
+    return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
+}
+
+//----------------------------------------------------
+float angle_between_lines( cv::Point pa, cv::Point pe,
+                          cv::Point qa, cv::Point qe)
+{
+    cv::Point2f v1 = unit_vector( cv::Point( pe - pa) );
+    cv::Point2f v2 = unit_vector( cv::Point( qe - qa) );
+    float dot = v1.x * v2.x + v1.y * v2.y;
+    if (dot < -1) dot = -1;
+    if (dot > 1) dot = 1;
+    return std::acos(dot);
 }
 
 //# Enclose a contour with an n edge polygon
@@ -204,13 +244,14 @@ void draw_point( cv::Point p, cv::Mat &img)
 //==================================
 
 //---------------------------------------------
-Contours get_contours( const cv::Mat &img)
+Contours get_contours( const cv::Mat &img, int low, int hi)
 {
     Contours conts;
     std::vector<cv::Vec4i> hierarchy;
     // Edges
     cv::Mat m;
-    auto_canny( img, m, 0.5);
+    //auto_canny( img, m, 0.7);
+    cv::Canny( img, m, low, hi);
     // Find contours
     findContours( m, conts, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
     return conts;
@@ -353,6 +394,24 @@ Contours filter_outside_contours( const Contours &conts,
     return res;
 } // filter_outside_contours()
 
+// Reject board if opposing lines not parallel
+// or adjacent lines not at right angles
+//----------------------------------------------
+bool board_valid( Points board)
+{
+    float par_ang1   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[3], board[2]);
+    float par_ang2   = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[1], board[2]);
+    float right_ang1 = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[1], board[2]);
+    float right_ang2 = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[3], board[2]);
+    //float horiz_ang   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], cv::Point(0,0), cv::Point(1,0));
+    //NSLog(@"%f.2, %f.2, %f.2, %f.2", par_ang1,  par_ang2,  right_ang1,  right_ang2 );
+    //if (abs(horiz_ang) > 20) return false;
+    if (abs(par_ang1) > 10) return false;
+    if (abs(par_ang2) > 10) return false;
+    if (abs(right_ang1 - 90) > 10) return false;
+    if (abs(right_ang2 - 90) > 10) return false;
+    return true;
+}
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -364,12 +423,13 @@ Contours filter_outside_contours( const Contours &conts,
     //cv::Mat m;
     UIImageToMat( img, _m);
     // Resize
-    resize( _m, _m, 500);
+    resize( _m, _m, 1000);
     // Grayscale
     cv::cvtColor( _m, _m, cv::COLOR_BGR2GRAY);
+    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     // Contours
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    _cont = get_contours(_m);
+    _cont = get_contours(_m, _canny_low, _canny_hi);
     draw_contours( _cont, drawing);
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -430,7 +490,7 @@ Contours filter_outside_contours( const Contours &conts,
     cv::Mat small;
     resize( _m, small, 500);
     cv::cvtColor( small, _m, cv::COLOR_BGR2GRAY);
-    _cont = get_contours(_m);
+    _cont = get_contours(_m, _canny_low, _canny_hi );
     int width = self.m.cols; int height = self.m.rows;
     _cont = filter_contours( _cont, width, height);
     if (_cont.size()) {
@@ -438,8 +498,13 @@ Contours filter_outside_contours( const Contours &conts,
         _cont = filter_outside_contours( _cont, board_center, width, height);
         Points board = approx_poly( flatten(_cont), 4);
         board = order_points( board);
-        _cont = std::vector<Points>( 1, board);
-        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
+        if (board_valid( board)) {
+            _board = board;
+        }
+        if (_board.size()) {
+            _cont = std::vector<Points>( 1, _board);
+            cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
+        }
     }
     UIImage *res = MatToUIImage( small);
     return res;
