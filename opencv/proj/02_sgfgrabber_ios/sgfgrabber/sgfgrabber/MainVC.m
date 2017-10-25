@@ -23,6 +23,7 @@
 @property UISlider *sldCannyLow;
 @property UISlider *sldCannyHi;
 @property UISwitch *swiDbg;
+@property UILabel *lbDbg;
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 @property BOOL debug_mode;
@@ -77,6 +78,14 @@
     [swi addTarget:self action:@selector(swiDbg:) forControlEvents:UIControlEventValueChanged];
     [v addSubview:swi];
     self.swiDbg = swi;
+    
+    // Label for various debug info
+    UILabel *l = [UILabel new];
+    l.hidden = false;
+    l.text = @"";
+    l.backgroundColor = WHITE;
+    [v addSubview:l];
+    self.lbDbg = l;
     
     // Canny low slider
     UISlider *s = [UISlider new];
@@ -133,6 +142,10 @@
     [self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
     // Debug switch
     self.swiDbg.frame = CGRectMake (lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
+    // Debug label
+    int left = lmarg + W/5 + W/10 + W/5;
+    int width = W-rmarg-left;
+    self.lbDbg.frame = CGRectMake (left, y, width , mh);
     // Canny hi slider
     y -= delta_y;
     self.sldCannyHi.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
@@ -173,6 +186,7 @@
 {
     int tt = [self.sldCannyLow value];
     self.grabFuncs.canny_low = tt;
+    self.lbDbg.text = [NSString stringWithFormat:@"%d %d", tt, self.grabFuncs.canny_hi];
 }
 
 // Slider for hi canny threshold
@@ -181,6 +195,7 @@
 {
     int tt = [self.sldCannyHi value];
     self.grabFuncs.canny_hi = tt;
+    self.lbDbg.text = [NSString stringWithFormat:@"%d %d", self.grabFuncs.canny_low, tt];
 }
 
 // Debug on/off
