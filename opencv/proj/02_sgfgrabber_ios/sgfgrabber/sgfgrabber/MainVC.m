@@ -22,8 +22,10 @@
 @property UIButton *btnGo;
 @property UISlider *sldCannyLow;
 @property UISlider *sldCannyHi;
+@property UISwitch *swiDbg;
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
+@property BOOL debug_mode;
 
 @end
 
@@ -66,14 +68,22 @@
     [v addSubview:self.cameraView];
     
     // Buttons etc
+    //================
     self.btnGo = [self addButtonWithTitle:@"Go" callback:@selector(btnGo:)];
+    
+    // Toggle debug mode
+    UISwitch *swi = [UISwitch new];
+    [swi setOn:NO];
+    [swi addTarget:self action:@selector(swiDbg:) forControlEvents:UIControlEventValueChanged];
+    [v addSubview:swi];
+    self.swiDbg = swi;
     
     // Canny low slider
     UISlider *s = [UISlider new];
     self.sldCannyLow = s;
     s.minimumValue = 0;
     s.maximumValue = 255;
-    [s addTarget:self action:@selector(sldCannyLow:)forControlEvents:UIControlEventValueChanged];
+    [s addTarget:self action:@selector(sldCannyLow:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
 
@@ -82,7 +92,7 @@
     s.minimumValue = 0;
     s.maximumValue = 255;
     self.sldCannyHi = s;
-    [s addTarget:self action:@selector(sldCannyHi:)forControlEvents:UIControlEventValueChanged];
+    [s addTarget:self action:@selector(sldCannyHi:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
 }
@@ -118,9 +128,11 @@
     //[self.view bringSubviewToFront:self.cameraView];
 
     // Button
-    self.btnGo.frame = CGRectMake (lmarg, y, W - lmarg - rmarg, mh);
+    self.btnGo.frame = CGRectMake (lmarg, y, W /5 , mh);
     self.btnGo.titleLabel.font = [UIFont fontWithName:@"HelveticaNeue" size: 40];
     [self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
+    // Debug switch
+    self.swiDbg.frame = CGRectMake (lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
     // Canny hi slider
     y -= delta_y;
     self.sldCannyHi.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
@@ -171,42 +183,50 @@
     self.grabFuncs.canny_hi = tt;
 }
 
+// Debug on/off
+//-----------------------------------
+- (void) swiDbg:(id) sender
+{
+    BOOL tt = [self.swiDbg isOn];
+    self.debug_mode = tt;
+}
+
 // Debugging helper, shows individual processing stages
 //------------------------------------------------------
 - (void) btnGo: (id) sender
 {
-#ifdef DDEBUG
-    static int state = 0;
-    UIImage *img;
-    switch (state) {
-        case 0:
-            state++;
-            self.frame_grabber_on = NO;
-            [self.frameExtractor suspend];
-            img = [self.grabFuncs f00_contours:self.img];
-            [self.cameraView setImage:img];
-            break;
-        case 1:
-            state++;
-            img = [self.grabFuncs f01_filtered_contours];
-            [self.cameraView setImage:img];
-            break;
-        case 2:
-            state++;
-            img = [self.grabFuncs f02_inside_contours];
-            [self.cameraView setImage:img];
-            break;
-        case 3:
-            state++;
-            img = [self.grabFuncs f03_find_board];
-            [self.cameraView setImage:img];
-            break;
-        default:
-            state=0;
-            self.frame_grabber_on = YES;
-            [self.frameExtractor resume];
-    } // switch
-#endif
+    if (self.debug_mode) {
+        static int state = 0;
+        UIImage *img;
+        switch (state) {
+            case 0:
+                state++;
+                self.frame_grabber_on = NO;
+                [self.frameExtractor suspend];
+                img = [self.grabFuncs f00_contours:self.img];
+                [self.cameraView setImage:img];
+                break;
+            case 1:
+                state++;
+                img = [self.grabFuncs f01_filtered_contours];
+                [self.cameraView setImage:img];
+                break;
+            case 2:
+                state++;
+                img = [self.grabFuncs f02_inside_contours];
+                [self.cameraView setImage:img];
+                break;
+            case 3:
+                state++;
+                img = [self.grabFuncs f03_find_board];
+                [self.cameraView setImage:img];
+                break;
+            default:
+                state=0;
+                self.frame_grabber_on = YES;
+                [self.frameExtractor resume];
+        } // switch
+    }
 } // btnGo()
 
 
@@ -216,16 +236,17 @@
 {
     //self.cameraView.hidden = NO;
     if (self.frame_grabber_on) {
-#ifdef DDEBUG
-        [self.cameraView setImage:image];
-        self.img = image;
-#else
-        self.frame_grabber_on = NO;
-        UIImage *processedImg = [self.grabFuncs findBoard:image];
-        self.img = processedImg;
-        [self.cameraView setImage:self.img];
-        self.frame_grabber_on = YES;
-#endif
+        if (self.debug_mode) {
+            [self.cameraView setImage:image];
+            self.img = image;
+        }
+        else {
+            self.frame_grabber_on = NO;
+            UIImage *processedImg = [self.grabFuncs findBoard:image];
+            self.img = processedImg;
+            [self.cameraView setImage:self.img];
+            self.frame_grabber_on = YES;
+        }
     }
 }
 

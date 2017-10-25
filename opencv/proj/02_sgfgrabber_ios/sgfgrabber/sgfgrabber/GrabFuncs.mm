@@ -438,6 +438,7 @@ bool board_valid( Points board)
 //-----------------------------------------
 - (UIImage *) f01_filtered_contours
 {
+    if (!_cont.size()) { return MatToUIImage( _m);}
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
     int width = self.m.cols; int height = self.m.rows;
     // Straight large ones only
@@ -450,6 +451,7 @@ bool board_valid( Points board)
 //-----------------------------------------
 - (UIImage *) f02_inside_contours
 {
+    if (!_cont.size()) { return MatToUIImage( _m);}
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
     int width = self.m.cols; int height = self.m.rows;
     // Only contours on the board
@@ -467,6 +469,7 @@ bool board_valid( Points board)
 //-----------------------------------
 - (UIImage *) f03_find_board
 {
+    if (!_cont.size()) { return MatToUIImage( _m);}
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
     draw_contours( _cont, drawing);
     //int width = self.m.cols; int height = self.m.rows;
