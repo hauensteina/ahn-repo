@@ -18,7 +18,7 @@
 + (NSString *) opencvVersion;
 // Individual steps for debugging
 - (UIImage *) f00_adaptive_thresh:(UIImage *)img;
-- (UIImage *) f01_opening;
+- (UIImage *) f01_closing;
 - (UIImage *) f02_flood;
 - (UIImage *) f03_find_board;
 // All in one for production

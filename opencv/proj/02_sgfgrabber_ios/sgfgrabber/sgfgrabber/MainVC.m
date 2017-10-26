@@ -234,7 +234,7 @@
                 break;
             case 1:
                 state++;
-                img = [self.grabFuncs f01_opening];
+                img = [self.grabFuncs f01_closing];
                 [self.cameraView setImage:img];
                 break;
             case 2:

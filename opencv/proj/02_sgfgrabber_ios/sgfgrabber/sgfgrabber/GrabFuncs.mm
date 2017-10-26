@@ -414,54 +414,72 @@ bool board_valid( Points board)
     return true;
 }
 
+//---------------------------------------------------------------------------------------
+void morph_closing( cv::Mat &m, int size, int iterations, int type = cv::MORPH_RECT )
+{
+    cv::Mat element = cv::getStructuringElement( type,
+                                                cv::Size( 2*size + 1, 2*size+1 ),
+                                                cv::Point( size, size ) );
+    for (int i=0; i<iterations; i++) {
+        cv::dilate( m, m, element );
+        cv::erode( m, m, element );
+    }
+}
+
+// Find a nonzero point near the middle, flood from there,
+// eliminate all else.
+//--------------------------------------------------------
+void flood_from_center( cv::Mat &m)
+{
+    // Find some nonzero point close to the center
+    cv::Mat locations;
+    cv::findNonZero(m, locations);
+    std::vector<float> distvec(locations.rows);
+    std::vector<int> idxvec(locations.rows);
+    cv::Point center( m.cols / 2, m.rows / 2);
+    // Sort points by dist from center
+    for (int i=0; i<locations.rows; i++) {
+        cv::Point p = locations.at<cv::Point>(i,0);
+        distvec[i] = line_len(p, center);
+        idxvec[i] = i;
+    }
+    if (!distvec.size()) return;
+    std::sort( idxvec.begin(), idxvec.end(), [distvec](int a, int b) {
+        return distvec[a] < distvec[b];
+    });
+    // Floodfill from nonzero point closest to center
+    cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
+    cv::floodFill(m, seed, cv::Scalar(200));
+    
+    // Keep only filled area
+    cv::threshold(m, m, 199, 255, cv::THRESH_BINARY);
+}
+
+
 #pragma mark - Processing Pipeline for debugging
 //=================================================
 
 //-----------------------------------------
 - (UIImage *) f00_adaptive_thresh:(UIImage *)img
 {
-    // Convert UIImage to Mat
-    //cv::Mat m;
     UIImageToMat( img, _m);
-    // Resize
-    resize( _m, _m, 1000);
+    resize( _m, _m, 350);
     // Grayscale
     cv::cvtColor( _m, _m, cv::COLOR_BGR2GRAY);
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
-    // Contours
-    //cv::threshold(_m, _m, _thresh, 255, cv::THRESH_BINARY_INV);
     adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       7, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
-    //cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    //    _cont = get_contours(_m, _canny_low, _canny_hi);
-    //    draw_contours( _cont, drawing);
-    // UIImage *res = MatToUIImage( drawing);
     UIImage *res = MatToUIImage( _m);
     return res;
 }
 
 //-----------------------------------------
-- (UIImage *) f01_opening
+- (UIImage *) f01_closing
 {
-    // Opening three iterations
-    int erosion_type;
-    int erosion_elem = 2;
-    int erosion_size = 3;
-    if( erosion_elem == 0 ){ erosion_type = cv::MORPH_RECT; }
-    else if( erosion_elem == 1 ){ erosion_type = cv::MORPH_CROSS; }
-    else if( erosion_elem == 2) { erosion_type = cv::MORPH_ELLIPSE; }
-    else { erosion_type = cv::MORPH_RECT; }
-    
-    cv::Mat element = cv::getStructuringElement( erosion_type,
-                                                cv::Size( 2*erosion_size + 1, 2*erosion_size+1 ),
-                                                cv::Point( erosion_size, erosion_size ) );
-    cv::dilate( _m, _m, element );
-    cv::erode( _m, _m, element );
-    cv::dilate( _m, _m, element );
-    cv::erode( _m, _m, element );
-    cv::dilate( _m, _m, element );
-    cv::erode( _m, _m, element );
+    int erosion_size = 1;
+    int iterations = 3;
+    morph_closing( _m, erosion_size, iterations);
 
     UIImage *res = MatToUIImage( _m);
     return res;
@@ -470,27 +488,7 @@ bool board_valid( Points board)
 //-----------------------------------------
 - (UIImage *) f02_flood
 {
-    // Find some nonzero point close to the center
-    cv::Mat locations;
-    cv::findNonZero(_m, locations);
-    std::vector<float> distvec(locations.rows);
-    std::vector<int> idxvec(locations.rows);
-    cv::Point center( _m.cols / 2, _m.rows / 2);
-    // Sort points by dist from center
-    for (int i=0; i<locations.rows; i++) {
-        cv::Point p = locations.at<cv::Point>(i,0);
-        distvec[i] = line_len(p, center);
-        idxvec[i] = i;
-    }
-    std::sort( idxvec.begin(), idxvec.end(), [distvec](int a, int b) {
-        return distvec[a] < distvec[b];
-    });
-    // Floodfill from nonzero point closest to center
-    cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
-    cv::floodFill(_m, seed, cv::Scalar(200));
-    
-    // Keep only filled area
-    cv::threshold(_m, _m, 199, 255, cv::THRESH_BINARY);
+    flood_from_center( _m);
 
     UIImage *res = MatToUIImage( _m);
     return res;
@@ -521,14 +519,21 @@ bool board_valid( Points board)
 {
     UIImageToMat( img, _m);
     cv::Mat small;
-    resize( _m, small, 500);
+    resize( _m, small, 350);
     cv::cvtColor( small, _m, cv::COLOR_BGR2GRAY);
-    _cont = get_contours(_m, _canny_low, _canny_hi );
-    int width = self.m.cols; int height = self.m.rows;
-    _cont = filter_contours( _cont, width, height);
+    // Threshold
+    adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                      7, // neighborhood_size
+                      4); // constant to add. 2 to 6 is the viable range
+    // Morph closing
+    int erosion_size = 1;
+    int iterations = 3;
+    morph_closing( _m, erosion_size, iterations);
+    // Flood
+    flood_from_center( _m);
+    // Find a 4-polygon enclosing all remaining pixels
+    cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     if (_cont.size()) {
-        cv::Point board_center = get_board_center( _cont);
-        _cont = filter_outside_contours( _cont, board_center, width, height);
         Points board = approx_poly( flatten(_cont), 4);
         board = order_points( board);
         if (board_valid( board)) {
