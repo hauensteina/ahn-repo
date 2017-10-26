@@ -38,7 +38,7 @@ static cv::RNG rng(12345);
     if (self) {
         _canny_hi = 120;
         _canny_low = 70;
-        _thresh = 100;
+        //_thresh = 100;
     }
     return self;
 }
@@ -430,13 +430,17 @@ bool board_valid( Points board)
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     // Contours
     //cv::threshold(_m, _m, _thresh, 255, cv::THRESH_BINARY_INV);
-    adaptiveThreshold(_m, _m, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 7, _thresh);
+    adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                      7, // neighborhood_size
+                      4); // constant to add. 2 to 6 is the viable range
     //cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
 //    _cont = get_contours(_m, _canny_low, _canny_hi);
 //    draw_contours( _cont, drawing);
     
+
+    // Opening three iterations
     int erosion_type;
-    int erosion_elem = 0;
+    int erosion_elem = 2;
     int erosion_size = 3;
     if( erosion_elem == 0 ){ erosion_type = cv::MORPH_RECT; }
     else if( erosion_elem == 1 ){ erosion_type = cv::MORPH_CROSS; }
@@ -446,7 +450,6 @@ bool board_valid( Points board)
     cv::Mat element = cv::getStructuringElement( erosion_type,
                                                 cv::Size( 2*erosion_size + 1, 2*erosion_size+1 ),
                                                 cv::Point( erosion_size, erosion_size ) );
-    /// Apply the erosion operation
     cv::dilate( _m, _m, element );
     cv::erode( _m, _m, element );
     cv::dilate( _m, _m, element );
@@ -469,7 +472,8 @@ bool board_valid( Points board)
         return distvec[a] < distvec[b];
     });
     cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
-    cv::floodFill(_m, seed, cv::Scalar(100));
+    cv::floodFill(_m, seed, cv::Scalar(200));
+    cv::threshold(_m, _m, 199, 255, cv::THRESH_BINARY);
 
     // UIImage *res = MatToUIImage( drawing);
     UIImage *res = MatToUIImage( _m);

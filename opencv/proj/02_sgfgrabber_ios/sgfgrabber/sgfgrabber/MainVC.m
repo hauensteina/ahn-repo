@@ -187,7 +187,7 @@
 {
     int tt = [self.sldCannyLow value];
     self.grabFuncs.canny_low = tt;
-    self.grabFuncs.thresh = tt;
+    //self.grabFuncs.thresh = tt;
     self.lbDbg.text = [NSString stringWithFormat:@"%d %d", tt, self.grabFuncs.canny_hi];
 }
 
