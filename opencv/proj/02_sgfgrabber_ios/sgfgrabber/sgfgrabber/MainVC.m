@@ -42,8 +42,8 @@
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
     
-    self.sldCannyLow.value = self.grabFuncs.canny_low;
-    self.sldCannyHi.value  = self.grabFuncs.canny_hi;
+    //self.sldCannyLow.value = self.grabFuncs.canny_low;
+    //self.sldCannyHi.value  = self.grabFuncs.canny_hi;
     //NSString *tstr = [GrabFuncs opencvVersion];
     //NSLog(tstr);
 }
@@ -193,19 +193,19 @@
 //-----------------------------------
 - (void) sldCannyLow:(id) sender
 {
-    int tt = [self.sldCannyLow value];
-    self.grabFuncs.canny_low = tt;
+    //int tt = [self.sldCannyLow value];
+    //self.grabFuncs.canny_low = tt;
     //self.grabFuncs.thresh = tt;
-    self.lbDbg.text = [NSString stringWithFormat:@"%d %d", tt, self.grabFuncs.canny_hi];
+    //self.lbDbg.text = [NSString stringWithFormat:@"%d %d", tt, self.grabFuncs.canny_hi];
 }
 
 // Slider for hi canny threshold
 //-----------------------------------
 - (void) sldCannyHi:(id) sender
 {
-    int tt = [self.sldCannyHi value];
-    self.grabFuncs.canny_hi = tt;
-    self.lbDbg.text = [NSString stringWithFormat:@"%d %d", self.grabFuncs.canny_low, tt];
+    //int tt = [self.sldCannyHi value];
+    //self.grabFuncs.canny_hi = tt;
+    //self.lbDbg.text = [NSString stringWithFormat:@"%d %d", self.grabFuncs.canny_low, tt];
 }
 
 // Debug on/off

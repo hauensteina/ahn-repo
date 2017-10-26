@@ -36,9 +36,6 @@ static cv::RNG rng(12345);
 {
     self = [super init];
     if (self) {
-        _canny_hi = 120;
-        _canny_low = 70;
-        //_thresh = 100;
     }
     return self;
 }
@@ -66,22 +63,6 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 }
 
 //# Find x where f(x) = target where f is an increasing func.
-//#------------------------------------------------------------
-//def bisect( f, lower, upper, target, maxiter=10):
-//n=0
-//while True and n < maxiter:
-//n += 1
-//res = (upper + lower) / 2.0
-//val = f(res)
-//if val > target:
-//upper = res
-//elif val < target:
-//lower = res
-//else:
-//break
-//return res
-
-//# Find x where f(x) = target where f is an increasing func.
 //------------------------------------------------------------
 template<typename Func>
 float bisect( Func f, float lower, float upper, int target, int maxiter=10)
@@ -97,15 +78,6 @@ float bisect( Func f, float lower, float upper, int target, int maxiter=10)
     } // while
     return res;
 }
-
-//# Order four points clockwise
-//#------------------------------
-//def order_points(pts):
-//top_bottom = sorted( pts, key=lambda x: x[1])
-//top = top_bottom[:2]
-//bottom = top_bottom[2:]
-//res = sorted( top, key=lambda x: x[0]) + sorted( bottom, key=lambda x: -x[0])
-//return np.array(res).astype(np.float32)
 
 // Order four points clockwise
 //----------------------------------------
@@ -243,157 +215,6 @@ void draw_point( cv::Point p, cv::Mat &img)
 
 #pragma mark - Pipeline Helpers
 //==================================
-
-//---------------------------------------------
-Contours get_contours( const cv::Mat &img, int low, int hi)
-{
-    Contours conts;
-    std::vector<cv::Vec4i> hierarchy;
-    // Edges
-    cv::Mat m;
-    //auto_canny( img, m, 0.7);
-    cv::Canny( img, m, low, hi);
-    // Find contours
-    findContours( m, conts, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0) );
-    return conts;
-} // get_contours()
-
-// Try to eliminate small and wiggly contours
-//---------------------------------------------------------------------
-Contours filter_contours( const Contours conts, int width, int height)
-{
-    Contours large_conts;
-    float minArea = width * height / 4000.0;
-    std::copy_if( conts.begin(), conts.end(), std::back_inserter(large_conts),
-                 [minArea](Contour c){return cv::contourArea(c) > minArea;} );
-    
-    Contours large_hullarea;
-    std::copy_if( large_conts.begin(), large_conts.end(), std::back_inserter(large_hullarea),
-                 [minArea](Contour c){
-                     Contour hull;
-                     cv::convexHull( c, hull);
-                     return cv::contourArea(hull) > 0.001; });
-
-    return large_hullarea;
-}
-
-// Find the center of the board, which is the median of the contours on the board
-//----------------------------------------------------------------------------------
-cv::Point get_board_center( const Contours conts)
-{
-    Points centers;
-    centers.resize( conts.size());
-    int i = 0;
-    std::generate( centers.begin(), centers.end(), [conts,&i] {
-        Contour c = conts[i++];
-        cv::Moments M = cv::moments( c);
-        int cent_x = int(M.m10 / M.m00);
-        int cent_y = int(M.m01 / M.m00);
-        return cv::Point(cent_x, cent_y);
-    });
-    i=0;
-    std::vector<int> cent_x( conts.size());
-    std::generate( cent_x.begin(), cent_x.end(), [centers,&i] { return centers[i++].x; } );
-    i=0;
-    std::vector<int> cent_y( conts.size());
-    std::generate( cent_y.begin(), cent_y.end(), [centers,&i] { return centers[i++].y; } );
-    int x = int_median( cent_x);
-    int y = int_median( cent_y);
-    return cv::Point(x,y);
-}
-
-//# Remove spurious contours outside the board
-//#--------------------------------------------------
-//def cleanup_squares(centers, square_cnts, board_center, width, height):
-//# Store distance from center for each contour
-//# sqdists = [ {'cnt':sq, 'dist':np.linalg.norm( centers[idx] - board_center)}
-//#             for idx,sq in enumerate(square_cnts) ]
-//# distsorted = sorted( sqdists, key = lambda x: x['dist'])
-//
-//#ut.show_contours( g_frame, square_cnts)
-//sqdists = [ {'cnt':sq, 'dist':ut.contour_maxdist( sq, board_center)}
-//           for sq in square_cnts ]
-//distsorted = sorted( sqdists, key = lambda x: x['dist'])
-//
-//# Remove contours if there is a jump in distance
-//lastidx = len(distsorted)
-//for idx,c in enumerate(distsorted):
-//if not idx: continue
-//delta = c['dist'] - distsorted[idx-1]['dist']
-//#print(c['dist'], delta)
-//#ut.show_contours( g_frame, [c['cnt']])
-//#print ('dist:%f delta: %f' % (c['dist'],delta))
-//if delta > min(width,height) / 10.0:
-//lastidx = idx
-//break
-//
-//res = [x['cnt'] for x in distsorted[:lastidx]]
-//return res
-//
-
-// Remove spurious contours outside the board
-//-------------------------------------------------------------------------------
-Contours filter_outside_contours( const Contours &conts,
-                                 cv::Point board_center,
-                                 int width, int height)
-{
-    typedef struct dist_idx {
-        int idx;
-        float dist;
-    } dist_idx_t;
-    
-    //size_t sz = conts.size();
-    std::vector<dist_idx_t> sqdists( conts.size());
-    int i=0;
-    std::generate( sqdists.begin(), sqdists.end(), [conts,board_center,&i] {
-        Contour c = conts[i++];
-        float dist = 0; int idx = -1;
-        for (cv::Point p: c) {
-            float d = sqrt( (p.x - board_center.x)*(p.x - board_center.x) +
-                           (p.y - board_center.y)*(p.y - board_center.y));
-            if (d > dist) { dist = d; idx = i-1; }
-        }
-        dist_idx_t res;
-        res.dist = dist; res.idx = idx;
-        return res;
-    });
-    
-//    dist_idx_t di = sqdists[0];
-//    di = sqdists[1];
-//    di = sqdists[2];
-//    di = sqdists[3];
-//    di = sqdists[4];
-
-    std::sort( sqdists.begin(), sqdists.end(), [](dist_idx_t a, dist_idx_t b) { return a.dist < b.dist; });
-
-//    di = sqdists[0];
-//    di = sqdists[1];
-//    di = sqdists[2];
-//    di = sqdists[3];
-//    di = sqdists[4];
-
-    size_t lastidx = sqdists.size();
-    i=0;
-    float lim = fmin( width, height) / 10.0;
-    for (dist_idx_t di: sqdists) {
-        if (i) {
-            float delta = di.dist - sqdists[i-1].dist;
-            //NSLog(@"%.2f",delta);
-            assert(delta >= 0);
-            if (delta > lim) {
-                lastidx = i;
-                break;
-            }
-        }
-        i++;
-    } // for
-    Contours res( lastidx);
-    for (i=0; i < lastidx; i++) {
-        res[i] = conts[sqdists[i].idx];
-    }
-    //sz = res.size();
-    return res;
-} // filter_outside_contours()
 
 // Reject board if opposing lines not parallel
 // or adjacent lines not at right angles

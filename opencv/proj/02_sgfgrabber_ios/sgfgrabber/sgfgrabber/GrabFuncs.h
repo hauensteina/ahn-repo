@@ -10,10 +10,6 @@
 
 @interface GrabFuncs : NSObject
 
-@property int canny_low;
-@property int canny_hi;
-//@property int thresh;
-
 //----------------------------
 + (NSString *) opencvVersion;
 // Individual steps for debugging
