@@ -225,21 +225,21 @@
         UIImage *img;
         switch (state) {
             case 0:
-                //state++;
-                state=100;
+                state++;
+                //state=100;
                 self.frame_grabber_on = NO;
                 [self.frameExtractor suspend];
-                img = [self.grabFuncs f00_contours:self.img];
+                img = [self.grabFuncs f00_adaptive_thresh:self.img];
                 [self.cameraView setImage:img];
                 break;
             case 1:
                 state++;
-                img = [self.grabFuncs f01_filtered_contours];
+                img = [self.grabFuncs f01_opening];
                 [self.cameraView setImage:img];
                 break;
             case 2:
                 state++;
-                img = [self.grabFuncs f02_inside_contours];
+                img = [self.grabFuncs f02_flood];
                 [self.cameraView setImage:img];
                 break;
             case 3:

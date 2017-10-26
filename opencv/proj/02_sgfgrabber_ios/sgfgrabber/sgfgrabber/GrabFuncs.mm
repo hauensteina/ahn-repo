@@ -418,7 +418,7 @@ bool board_valid( Points board)
 //=================================================
 
 //-----------------------------------------
-- (UIImage *) f00_contours:(UIImage *)img
+- (UIImage *) f00_adaptive_thresh:(UIImage *)img
 {
     // Convert UIImage to Mat
     //cv::Mat m;
@@ -434,10 +434,16 @@ bool board_valid( Points board)
                       7, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
     //cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-//    _cont = get_contours(_m, _canny_low, _canny_hi);
-//    draw_contours( _cont, drawing);
-    
+    //    _cont = get_contours(_m, _canny_low, _canny_hi);
+    //    draw_contours( _cont, drawing);
+    // UIImage *res = MatToUIImage( drawing);
+    UIImage *res = MatToUIImage( _m);
+    return res;
+}
 
+//-----------------------------------------
+- (UIImage *) f01_opening
+{
     // Opening three iterations
     int erosion_type;
     int erosion_elem = 2;
@@ -446,7 +452,7 @@ bool board_valid( Points board)
     else if( erosion_elem == 1 ){ erosion_type = cv::MORPH_CROSS; }
     else if( erosion_elem == 2) { erosion_type = cv::MORPH_ELLIPSE; }
     else { erosion_type = cv::MORPH_RECT; }
-
+    
     cv::Mat element = cv::getStructuringElement( erosion_type,
                                                 cv::Size( 2*erosion_size + 1, 2*erosion_size+1 ),
                                                 cv::Point( erosion_size, erosion_size ) );
@@ -456,13 +462,21 @@ bool board_valid( Points board)
     cv::erode( _m, _m, element );
     cv::dilate( _m, _m, element );
     cv::erode( _m, _m, element );
-    //imshow( "Erosion Demo", erosion_dst );
+
+    UIImage *res = MatToUIImage( _m);
+    return res;
+}
+
+//-----------------------------------------
+- (UIImage *) f02_flood
+{
     // Find some nonzero point close to the center
     cv::Mat locations;
     cv::findNonZero(_m, locations);
     std::vector<float> distvec(locations.rows);
     std::vector<int> idxvec(locations.rows);
     cv::Point center( _m.cols / 2, _m.rows / 2);
+    // Sort points by dist from center
     for (int i=0; i<locations.rows; i++) {
         cv::Point p = locations.at<cv::Point>(i,0);
         distvec[i] = line_len(p, center);
@@ -471,53 +485,24 @@ bool board_valid( Points board)
     std::sort( idxvec.begin(), idxvec.end(), [distvec](int a, int b) {
         return distvec[a] < distvec[b];
     });
+    // Floodfill from nonzero point closest to center
     cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
     cv::floodFill(_m, seed, cv::Scalar(200));
+    
+    // Keep only filled area
     cv::threshold(_m, _m, 199, 255, cv::THRESH_BINARY);
 
-    // UIImage *res = MatToUIImage( drawing);
     UIImage *res = MatToUIImage( _m);
-    return res;
-}
-
-//-----------------------------------------
-- (UIImage *) f01_filtered_contours
-{
-    if (!_cont.size()) { return MatToUIImage( _m);}
-    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    int width = self.m.cols; int height = self.m.rows;
-    // Straight large ones only
-    Contours filtered = filter_contours( _cont, width, height);
-    draw_contours( filtered, drawing);
-    UIImage *res = MatToUIImage( drawing);
-    _cont = filtered;
-    return res;
-}
-//-----------------------------------------
-- (UIImage *) f02_inside_contours
-{
-    if (!_cont.size()) { return MatToUIImage( _m);}
-    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    int width = self.m.cols; int height = self.m.rows;
-    // Only contours on the board
-    cv::Point board_center = get_board_center( _cont);
-    draw_point( board_center, drawing);
-    Contours inside = filter_outside_contours( _cont, board_center, width, height);
-    draw_contours( inside, drawing);
-
-    // Convert back to UIImage
-    UIImage *res = MatToUIImage( drawing);
-    _cont = inside;
     return res;
 }
 
 //-----------------------------------
 - (UIImage *) f03_find_board
 {
+    cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     if (!_cont.size()) { return MatToUIImage( _m);}
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
     draw_contours( _cont, drawing);
-    //int width = self.m.cols; int height = self.m.rows;
     Points board = approx_poly( flatten(_cont), 4);
     board = order_points( board);
     _cont = std::vector<Points>( 1, board);
