@@ -38,6 +38,7 @@ static cv::RNG rng(12345);
     if (self) {
         _canny_hi = 120;
         _canny_low = 70;
+        _thresh = 100;
     }
     return self;
 }
@@ -428,10 +429,50 @@ bool board_valid( Points board)
     cv::cvtColor( _m, _m, cv::COLOR_BGR2GRAY);
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     // Contours
-    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    _cont = get_contours(_m, _canny_low, _canny_hi);
-    draw_contours( _cont, drawing);
-    UIImage *res = MatToUIImage( drawing);
+    //cv::threshold(_m, _m, _thresh, 255, cv::THRESH_BINARY_INV);
+    adaptiveThreshold(_m, _m, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 7, _thresh);
+    //cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+//    _cont = get_contours(_m, _canny_low, _canny_hi);
+//    draw_contours( _cont, drawing);
+    
+    int erosion_type;
+    int erosion_elem = 0;
+    int erosion_size = 3;
+    if( erosion_elem == 0 ){ erosion_type = cv::MORPH_RECT; }
+    else if( erosion_elem == 1 ){ erosion_type = cv::MORPH_CROSS; }
+    else if( erosion_elem == 2) { erosion_type = cv::MORPH_ELLIPSE; }
+    else { erosion_type = cv::MORPH_RECT; }
+
+    cv::Mat element = cv::getStructuringElement( erosion_type,
+                                                cv::Size( 2*erosion_size + 1, 2*erosion_size+1 ),
+                                                cv::Point( erosion_size, erosion_size ) );
+    /// Apply the erosion operation
+    cv::dilate( _m, _m, element );
+    cv::erode( _m, _m, element );
+    cv::dilate( _m, _m, element );
+    cv::erode( _m, _m, element );
+    cv::dilate( _m, _m, element );
+    cv::erode( _m, _m, element );
+    //imshow( "Erosion Demo", erosion_dst );
+    // Find some nonzero point close to the center
+    cv::Mat locations;
+    cv::findNonZero(_m, locations);
+    std::vector<float> distvec(locations.rows);
+    std::vector<int> idxvec(locations.rows);
+    cv::Point center( _m.cols / 2, _m.rows / 2);
+    for (int i=0; i<locations.rows; i++) {
+        cv::Point p = locations.at<cv::Point>(i,0);
+        distvec[i] = line_len(p, center);
+        idxvec[i] = i;
+    }
+    std::sort( idxvec.begin(), idxvec.end(), [distvec](int a, int b) {
+        return distvec[a] < distvec[b];
+    });
+    cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
+    cv::floodFill(_m, seed, cv::Scalar(100));
+
+    // UIImage *res = MatToUIImage( drawing);
+    UIImage *res = MatToUIImage( _m);
     return res;
 }
 

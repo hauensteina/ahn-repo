@@ -91,7 +91,8 @@
     UISlider *s = [UISlider new];
     self.sldCannyLow = s;
     s.minimumValue = 0;
-    s.maximumValue = 255;
+    //s.maximumValue = 255;
+    s.maximumValue = 10;
     [s addTarget:self action:@selector(sldCannyLow:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
@@ -186,6 +187,7 @@
 {
     int tt = [self.sldCannyLow value];
     self.grabFuncs.canny_low = tt;
+    self.grabFuncs.thresh = tt;
     self.lbDbg.text = [NSString stringWithFormat:@"%d %d", tt, self.grabFuncs.canny_hi];
 }
 
@@ -215,7 +217,8 @@
         UIImage *img;
         switch (state) {
             case 0:
-                state++;
+                //state++;
+                state=100;
                 self.frame_grabber_on = NO;
                 [self.frameExtractor suspend];
                 img = [self.grabFuncs f00_contours:self.img];
