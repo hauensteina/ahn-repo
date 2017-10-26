@@ -62,10 +62,12 @@
     UIView *v = self.view;
     v.autoresizesSubviews = NO;
     v.opaque = YES;
-    v.backgroundColor = RGB(0xF3DCA5);
-    
+    //v.backgroundColor = RGB(0xF3DCA5);
+    v.backgroundColor = BLACK;
+
     // Camera View
     self.cameraView = [UIImageView new];
+    self.cameraView.contentMode = UIViewContentModeScaleAspectFit;
     [v addSubview:self.cameraView];
     
     // Buttons etc
@@ -113,6 +115,12 @@
     [super viewWillAppear: animated];
     [self doLayout];
     
+}
+
+//-------------------------------
+- (BOOL)prefersStatusBarHidden
+{
+    return YES;
 }
 
 #pragma mark Layout
