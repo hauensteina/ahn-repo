@@ -17,6 +17,7 @@
 - (UIImage *) f01_closing;
 - (UIImage *) f02_flood;
 - (UIImage *) f03_find_board;
+- (UIImage *) f04_zoom_in;
 // All in one for production
 - (UIImage *) findBoard:(UIImage *)img;
 @end

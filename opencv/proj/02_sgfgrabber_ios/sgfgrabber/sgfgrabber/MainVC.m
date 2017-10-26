@@ -247,6 +247,11 @@
                 img = [self.grabFuncs f03_find_board];
                 [self.cameraView setImage:img];
                 break;
+            case 4:
+                state++;
+                img = [self.grabFuncs f04_zoom_in];
+                [self.cameraView setImage:img];
+                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;
