@@ -14,11 +14,13 @@
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
+typedef std::vector<cv::Point2f> Points2f;
 static cv::RNG rng(12345);
 
 
 @interface GrabFuncs()
 //=======================
+@property cv::Mat gray; // Garyscale version of img
 @property cv::Mat m; // Mat with image we are working on
 @property Contours cont; // Current set of contours
 @property Points board;  // Current hypothesis on where the board is
@@ -81,18 +83,18 @@ float bisect( Func f, float lower, float upper, int target, int maxiter=10)
 
 // Order four points clockwise
 //----------------------------------------
-Points order_points( Points &points)
+template <typename POINTS>
+POINTS order_points( POINTS &points)
 {
-    Points top_bottom = points;
-    std::sort( top_bottom.begin(), top_bottom.end(), [](cv::Point a, cv::Point b){ return a.y < b.y; });
-    Points top( top_bottom.begin(), top_bottom.begin()+2 );
-    Points bottom( top_bottom.end()-2, top_bottom.end());
-    std::sort( top.begin(), top.end(), [](cv::Point a, cv::Point b){ return a.x < b.x; });
-    std::sort( bottom.begin(), bottom.end(), [](cv::Point a, cv::Point b){ return b.x < a.x; });
-    Points res = top;
+    POINTS top_bottom = points;
+    std::sort( top_bottom.begin(), top_bottom.end(), [](cv::Point2f a, cv::Point2f b){ return a.y < b.y; });
+    POINTS top( top_bottom.begin(), top_bottom.begin()+2 );
+    POINTS bottom( top_bottom.end()-2, top_bottom.end());
+    std::sort( top.begin(), top.end(), [](cv::Point2f a, cv::Point2f b){ return a.x < b.x; });
+    std::sort( bottom.begin(), bottom.end(), [](cv::Point2f a, cv::Point2f b){ return b.x < a.x; });
+    POINTS res = top;
     res.insert(res.end(), bottom.begin(), bottom.end());
     return res;
-    
 }
 
 // Length of a line segment
@@ -281,13 +283,13 @@ Points stretch_line(Points line, float factor )
 
 // Make our 4-polygon a little larger
 //-------------------------------------
-Points enlarge_board( Points board)
+Points2f enlarge_board( Points board)
 {
     float factor = 1.1;
     board = order_points( board);
     Points diag1_stretched = stretch_line( { board[0],board[2] }, factor);
     Points diag2_stretched = stretch_line( { board[1],board[3] }, factor);
-    Points res = { diag1_stretched[0], diag2_stretched[0], diag1_stretched[1], diag2_stretched[1] };
+    Points2f res = { diag1_stretched[0], diag2_stretched[0], diag1_stretched[1], diag2_stretched[1] };
     return res;
 }
 
@@ -334,14 +336,42 @@ Points enlarge_board( Points board)
 
 // Zoom into an image area where pts are the four corners.
 // From pyimagesearch by Adrian Rosebrock
-void four_point_transform( const cv::Mat &m, Points pts)
+// TODO: It's a kludge. Do it right.
+//--------------------------------------------------------
+void four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
 {
-    Points rect = order_points(pts);
+    Points2f rect = order_points(pts);
     cv::Point tl = pts[0];
     cv::Point tr = pts[1];
     cv::Point br = pts[2];
     cv::Point bl = pts[3];
-    //@@@ cont here
+    // compute the width of the new image, which will be the
+    // maximum distance between bottom-right and bottom-left
+    // x-coordiates or the top-right and top-left x-coordinates
+    float widthA = sqrt(((br.x - bl.x)*(br.x - bl.x)) + ((br.y - bl.y)*(br.y - bl.y)));
+    float widthB = sqrt(((tr.x - tl.x)*(tr.x - tl.x)) + ((tr.y - tl.y)*(tr.y - tl.y)));
+    int maxWidth = fmax(int(widthA), int(widthB));
+    // compute the height of the new image, which will be the
+    // maximum distance between the top-right and bottom-right
+    // y-coordinates or the top-left and bottom-left y-coordinates
+    float heightA = sqrt(((tr.x - br.x)*(tr.x - br.x)) + ((tr.y - br.y)*(tr.y - br.y)));
+    float heightB = sqrt(((tl.x - bl.x)*(tl.x - bl.x)) + ((tl.y - bl.y)*(tl.y - bl.y)));
+    int maxHeight = fmax(int(heightA), int(heightB));
+    // now that we have the dimensions of the new image, construct
+    // the set of destination points to obtain a "birds eye view",
+    // (i.e. top-down view) of the image, again specifying points
+    // in the top-left, top-right, bottom-right, and bottom-left
+    // order
+    
+    Points2f dst = {
+        cv::Point(0,0),
+        cv::Point(maxWidth - 1, 0),
+        cv::Point(maxWidth - 1, maxHeight - 1),
+        cv::Point(0, maxHeight - 1) };
+
+    cv::Mat M = cv::getPerspectiveTransform(rect, dst);
+    cv::Mat res;
+    cv::warpPerspective(img, warped, M, cv::Size(maxWidth,maxHeight));
 } // four_point_transform()
 
 #pragma mark - Processing Pipeline for debugging
@@ -351,9 +381,9 @@ void four_point_transform( const cv::Mat &m, Points pts)
 {
     UIImageToMat( img, _m);
     resize( _m, _m, 350);
-    cv::cvtColor( _m, _m, cv::COLOR_BGR2GRAY);
+    cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
-    adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       7, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
     UIImage *res = MatToUIImage( _m);
@@ -400,21 +430,18 @@ void four_point_transform( const cv::Mat &m, Points pts)
 - (UIImage *) f04_zoom_in
 {
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    Points board_stretched = enlarge_board( _cont[0]);
-    _cont = std::vector<Points>( 1, board_stretched);
-//# Zoom in on the board
-//#----------------------
-//    zoomed,M = ut.four_point_transform( gray, board_stretched)
-//    ut.showim(zoomed,'gray')
-    
-    
-    cv::drawContours( drawing, _cont, -1, cv::Scalar(255,0,0));
-    UIImage *res = MatToUIImage( drawing);
+    Points2f board_stretched = enlarge_board( _cont[0]);
+    //_cont = std::vector<Points>( 1, board_stretched);
+    // Zoom in on the board
+    //----------------------
+    cv::Mat warped;
+    four_point_transform( _gray, warped, board_stretched);
+    UIImage *res = MatToUIImage( warped);
     return res;
 }
 
-#pragma mark - Release Methods
-//==============================
+#pragma mark - Real time implementation
+//========================================
 
 // f00 to f03_find_board in one go
 //--------------------------------------------
