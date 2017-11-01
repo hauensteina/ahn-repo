@@ -6,17 +6,25 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+//#include <math.h>
+//#include <complex.h>
 #import <opencv2/opencv.hpp>
 #import <opencv2/imgcodecs/ios.h>
 #import "Common.h"
 #import "GrabFuncs.h"
+
+#define ILOOP(n) for (int i=0; i < (n); i++ )
+#define JLOOP(n) for (int j=0; j < (n); j++ )
+#define KLOOP(n) for (int k=0; k < (n); k++ )
 
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
 typedef std::vector<cv::Point2f> Points2f;
 static cv::RNG rng(12345);
-
+double PI = M_PI;
+typedef std::complex<double> cplx;
+cplx I(0.0, 1.0);
 
 @interface GrabFuncs()
 //=======================
@@ -334,20 +342,29 @@ void four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
     cv::warpPerspective(img, warped, M, cv::Size(maxWidth,maxHeight));
 } // four_point_transform()
 
-//------------------------------------------------
-void plotCurve( cv::Mat &m1D, cv::Mat &res, int width = 200, int height = 100)
+//---------------------------------------------------
+void _fft(cplx buf[], cplx out[], int n, int step)
 {
-    res = cv::Mat::zeros( cv::Size( height, width), CV_8UC1 );
-    int length = m1D.cols;
-    double mmin, mmax;
-    cv::minMaxLoc(m1D, &mmin, &mmax);
-    
-    for (int i=0; i < length; i++) {
-        int x = i * width / (float)length;
-        int y = m1D.at<float>(i) * height / (float)mmax;
-        res.at<uint8_t>(y,x) = 255;
+    if (step < n) {
+        _fft( out, buf, n, step * 2);
+        _fft( out + step, buf + step, n, step * 2);
+        
+        for (int i = 0; i < n; i += 2 * step) {
+            cplx t = exp( -I * PI * (cplx(i) / cplx(n))) * out[ i + step];
+            buf[ i / 2]     = out[i] + t;
+            buf[ (i + n)/2] = out[i] - t;
+        }
     }
-} // plotCurve
+}
+
+//---------------------------
+void fft(cplx buf[], int n)
+{
+    cplx out[n];
+    for (int i = 0; i < n; i++) out[i] = buf[i];
+    
+    _fft( buf, out, n, 1);
+}
 
 //#---------------------------------------
 //def get_boardsize_by_fft(zoomed_img):
@@ -374,38 +391,27 @@ void plotCurve( cv::Mat &m1D, cv::Mat &res, int width = 200, int height = 100)
 //                       else: res = 9
 //                       return res
 
-//------------------------------------------------------
-int get_boardsize_by_fft( const cv::Mat &zoomed_img, cv::Mat &pplot)
+//--------------------------------------------------------------------
+int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 {
     cv::Mat flimg;
-    zoomed_img.convertTo( flimg, CV_32FC1);
-    // 1D dft per row
-    cv::Mat dft;
-    cv::dft( flimg, dft, cv::DFT_ROWS | cv::DFT_COMPLEX_OUTPUT);
-    // Convert to magnitude
-    cv::Mat norm;
-    cv::Mat planes[2];
-    cv::split( dft, planes);
-    cv::magnitude( planes[0], planes[1], norm);
-    // Average the rows
-    cv::Mat row_mean;
-    reduce( norm, row_mean, 0, CV_REDUCE_AVG);
-    cv::log( row_mean,row_mean);
-    // Clip values
-    const int CLIP = 500;
-    cv::Mat clipped;
-    cv::threshold(row_mean, clipped, CLIP, 0, cv::THRESH_TRUNC);
-    // Smooth
-    cv::Mat smoothed;
-    //cv::GaussianBlur( clipped, smoothed, cv::Size( 7, 7), 0, 0 );
-    cv::GaussianBlur( clipped, smoothed, cv::Size(5,5), 0, 0 );
-    // Show
-    float *m = row_mean.ptr<float>();
-    float *c = clipped.ptr<float>();
-    float *f = smoothed.ptr<float>();
-    int length = smoothed.cols;
+    zoomed_img.convertTo( flimg, CV_64FC1);
+    int width = zoomed_img.cols;
+    int height = zoomed_img.rows;
+    cplx crow[width];
+    double magsum[width];
+    ILOOP (width) { magsum[i]=0; }
+    ILOOP (height) {
+        double *row = flimg.ptr<double>(i);
+        KLOOP (width) { crow[k] = cplx( row[k],0); }
+        fft( crow, width);
+        KLOOP (width) { magsum[k] += std::abs(crow[k]); }
+    }
+    ILOOP (width) { magsum[i] /= height; }
+    //@@@ cont here
+    int tt = 42;
     return 9;
-}
+} // get_boardsize_by_fft
 
 
 #pragma mark - Processing Pipeline for debugging
@@ -476,11 +482,10 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img, cv::Mat &pplot)
 //-----------------------------------
 - (UIImage *) f05_get_boardsize
 {
-    cv::Mat pplot;
-    get_boardsize_by_fft( _m, pplot);
-    UIImage *res = MatToUIImage( pplot);
-    return res;
-}
+    cv::resize( _m, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
+    int sz = get_boardsize_by_fft( _m);
+    UIImage *res = MatToUIImage( _m);
+    return res;}
 
 
 #pragma mark - Real time implementation
