@@ -14,6 +14,7 @@
 		AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */; };
 		AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC628C221F9A7D3F0043FCEE /* Assets.xcassets */; };
 		AC628C341F9A80150043FCEE /* MainVC.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C331F9A80150043FCEE /* MainVC.m */; };
+		AC80400A1FA92613000088D2 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC8040091FA92604000088D2 /* Accelerate.framework */; };
 		ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.m */; };
 /* End PBXBuildFile section */
 
@@ -32,6 +33,7 @@
 		AC628C271F9A7D3F0043FCEE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AC628C321F9A80150043FCEE /* MainVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainVC.h; sourceTree = "<group>"; };
 		AC628C331F9A80150043FCEE /* MainVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainVC.m; sourceTree = "<group>"; };
+		AC8040091FA92604000088D2 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		ACA69E4B1F9D077B00F5E068 /* Common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Common.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -40,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC80400A1FA92613000088D2 /* Accelerate.framework in Frameworks */,
 				AC5540741F9BE6AD00922557 /* opencv2.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -52,6 +55,7 @@
 			children = (
 				AC628C151F9A7D3F0043FCEE /* sgfgrabber */,
 				AC628C141F9A7D3F0043FCEE /* Products */,
+				AC8040081FA92604000088D2 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -66,7 +70,6 @@
 		AC628C151F9A7D3F0043FCEE /* sgfgrabber */ = {
 			isa = PBXGroup;
 			children = (
-				AC5540731F9BE6AD00922557 /* opencv2.framework */,
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
 				ACA69E4B1F9D077B00F5E068 /* Common.m */,
 				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
@@ -90,6 +93,15 @@
 				AC628C171F9A7D3F0043FCEE /* main.m */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		AC8040081FA92604000088D2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AC5540731F9BE6AD00922557 /* opencv2.framework */,
+				AC8040091FA92604000088D2 /* Accelerate.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
