@@ -26,10 +26,13 @@ double PI = M_PI;
 typedef std::complex<double> cplx;
 cplx I(0.0, 1.0);
 
+#define STRETCH_FACTOR 1.1
+
 @interface GrabFuncs()
 //=======================
-@property cv::Mat gray; // Garyscale version of img
-@property cv::Mat m; // Mat with image we are working on
+@property cv::Mat gray;  // Garyscale version of img
+@property cv::Mat m;     // Mat with image we are working on
+@property cv::Mat mboard; // Mat with the exact board in grayscale
 @property Contours cont; // Current set of contours
 @property Points board;  // Current hypothesis on where the board is
 @end
@@ -293,7 +296,7 @@ Points stretch_line(Points line, float factor )
 //-------------------------------------
 Points2f enlarge_board( Points board)
 {
-    float factor = 1.1;
+    float factor = STRETCH_FACTOR;
     board = order_points( board);
     Points diag1_stretched = stretch_line( { board[0],board[2] }, factor);
     Points diag2_stretched = stretch_line( { board[1],board[3] }, factor);
@@ -401,16 +404,33 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     cplx crow[width];
     double magsum[width];
     ILOOP (width) { magsum[i]=0; }
+    // Sum the ffts of each row
     ILOOP (height) {
         double *row = flimg.ptr<double>(i);
         KLOOP (width) { crow[k] = cplx( row[k],0); }
         fft( crow, width);
         KLOOP (width) { magsum[k] += std::abs(crow[k]); }
     }
-    ILOOP (width) { magsum[i] /= height; }
-    //@@@ cont here
-    int tt = 42;
-    return 9;
+    double ssum = 0;
+    ILOOP (50) { ssum += magsum[width/2-i-1]; }
+    // Smooth
+    double old = magsum[0];
+    double alpha = 0.3;
+    ILOOP (width) { magsum[i] = (1-alpha)*magsum[i] + alpha*old; old = magsum[i]; }
+    
+    // Find max
+    old = magsum[7];
+    int argmax = 0;
+    for (int i = 7; i < 30; i++ ) {
+        double cur = magsum[i];
+        double nnext = magsum[i+1];
+        if (cur > old && cur > nnext) {
+            argmax = i;
+            break;
+        }
+    }
+    if (argmax > 15) return 19;
+    else return 9;
 } // get_boardsize_by_fft
 
 
@@ -422,7 +442,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     UIImageToMat( img, _m);
     resize( _m, _m, 350);
     cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
-    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
+    cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       7, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
@@ -469,23 +489,27 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 //-----------------------------------
 - (UIImage *) f04_zoom_in
 {
-    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+    // Just the board
+    Points2f b =  Points2f( _cont[0].begin(), _cont[0].end());
+    four_point_transform( _gray, _mboard, b);
+
+    // Zoom out a little
     Points2f board_stretched = enlarge_board( _cont[0]);
-    //_cont = std::vector<Points>( 1, board_stretched);
-    // Zoom in on the board
-    //----------------------
-    four_point_transform( _gray, _m, board_stretched);
-    UIImage *res = MatToUIImage( _m);
+    four_point_transform( _gray, _gray, board_stretched);
+
+    UIImage *res = MatToUIImage( _gray);
     return res;
 }
 
 //-----------------------------------
-- (UIImage *) f05_get_boardsize
+- (int) f05_get_boardsize
 {
-    cv::resize( _m, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
+    cv::resize( _mboard, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
+    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
+    
     int sz = get_boardsize_by_fft( _m);
-    UIImage *res = MatToUIImage( _m);
-    return res;}
+    return sz;
+}
 
 
 #pragma mark - Real time implementation

@@ -18,7 +18,7 @@
 - (UIImage *) f02_flood;
 - (UIImage *) f03_find_board;
 - (UIImage *) f04_zoom_in;
-- (UIImage *) f05_get_boardsize;
+- (int) f05_get_boardsize;
 // All in one for production
 - (UIImage *) findBoard:(UIImage *)img;
 @end

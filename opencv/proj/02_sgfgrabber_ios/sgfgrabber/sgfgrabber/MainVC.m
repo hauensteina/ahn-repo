@@ -254,8 +254,8 @@
                 break;
             case 5:
                 state++;
-                img = [self.grabFuncs f05_get_boardsize];
-                [self.cameraView setImage:img];
+                int sz = [self.grabFuncs f05_get_boardsize];
+                self.lbDbg.text = [NSString stringWithFormat:@"%d", sz];
                 break;
             default:
                 state=0;
