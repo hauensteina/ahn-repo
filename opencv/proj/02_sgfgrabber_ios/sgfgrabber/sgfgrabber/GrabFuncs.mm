@@ -16,6 +16,8 @@
 #define ILOOP(n) for (int i=0; i < (n); i++ )
 #define JLOOP(n) for (int j=0; j < (n); j++ )
 #define KLOOP(n) for (int k=0; k < (n); k++ )
+#define RLOOP(n) for (int r=0; r < (n); r++ )
+#define CLOOP(n) for (int c=0; c < (n); c++ )
 
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
@@ -35,6 +37,8 @@ cplx I(0.0, 1.0);
 @property cv::Mat mboard; // Mat with the exact board in grayscale
 @property Contours cont; // Current set of contours
 @property Points board;  // Current hypothesis on where the board is
+@property Points2f board_zoomed; // board corners after zooming in
+@property int board_sz; // board size, 9 or 19
 @end
 
 @implementation GrabFuncs
@@ -135,6 +139,38 @@ float angle_between_lines( cv::Point pa, cv::Point pe,
     return std::acos(dot);
 }
 
+// Intersection of two line segments
+//------------------------------------------------------
+cv::Point2f intersection( cv::Point2f A, cv::Point2f B,
+                         cv::Point2f C, cv::Point2f D)
+{
+    // Line AB represented as a1x + b1y = c1
+    double a1 = B.y - A.y;
+    double b1 = A.x - B.x;
+    double c1 = a1*(A.x) + b1*(A.y);
+    
+    // Line CD represented as a2x + b2y = c2
+    double a2 = D.y - C.y;
+    double b2 = C.x - D.x;
+    double c2 = a2*(C.x)+ b2*(C.y);
+    
+    double determinant = a1*b2 - a2*b1;
+    
+    if (determinant == 0)
+    {
+        // The lines are parallel. This is simplified
+        // by returning a pair of FLT_MAX
+        return cv::Point2f(FLT_MAX, FLT_MAX);
+    }
+    else
+    {
+        double x = (b2*c1 - b1*c2)/determinant;
+        double y = (a1*c2 - a2*c1)/determinant;
+        return cv::Point2f( x, y);
+    }
+} // intersection()
+
+
 // Enclose a contour with an n edge polygon
 //--------------------------------------------
 Points approx_poly( Points cont, int n)
@@ -210,9 +246,9 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
 
 // Mark a point on an image
 //--------------------------------------
-void draw_point( cv::Point p, cv::Mat &img)
+void draw_point( cv::Point p, cv::Mat &img, int r=10)
 {
-    cv::circle( img, p, 10, cv::Scalar(255,0,0), -1);
+    cv::circle( img, p, r, cv::Scalar(255,0,0), -1);
 }
 
 
@@ -309,7 +345,7 @@ Points2f enlarge_board( Points board)
 // From pyimagesearch by Adrian Rosebrock
 // TODO: It's a kludge. Do it right.
 //--------------------------------------------------------
-void four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
+cv::Mat four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
 {
     Points2f rect = order_points(pts);
     cv::Point tl = pts[0];
@@ -343,6 +379,7 @@ void four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
     cv::Mat M = cv::getPerspectiveTransform(rect, dst);
     cv::Mat res;
     cv::warpPerspective(img, warped, M, cv::Size(maxWidth,maxHeight));
+    return M;
 } // four_point_transform()
 
 //---------------------------------------------------
@@ -415,7 +452,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     ILOOP (50) { ssum += magsum[width/2-i-1]; }
     // Smooth
     double old = magsum[0];
-    double alpha = 0.3;
+    double alpha = 0.4;
     ILOOP (width) { magsum[i] = (1-alpha)*magsum[i] + alpha*old; old = magsum[i]; }
     
     // Find max
@@ -432,6 +469,32 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     if (argmax > 15) return 19;
     else return 9;
 } // get_boardsize_by_fft
+
+
+//# Compute lines on the board
+//#-----------------------------
+//tl,tr,br,bl = board_zoomed
+//
+//left_x   = np.linspace( tl[0], bl[0], boardsize)
+//left_y   = np.linspace( tl[1], bl[1], boardsize)
+//right_x  = np.linspace( tr[0], br[0], boardsize)
+//right_y  = np.linspace( tr[1], br[1], boardsize)
+//left_points =  np.array(zip(left_x, left_y)).astype('int')
+//right_points = np.array(zip(right_x, right_y)).astype('int')
+//h_lines = zip(left_points, right_points)
+//# fcp = zoomed.copy()
+//# ut.plot_lines( fcp, h_lines)
+//# ut.showim(fcp)
+//
+//top_x   = np.linspace( tl[0], tr[0], boardsize)
+//top_y   = np.linspace( tl[1], tr[1], boardsize)
+//bottom_x  = np.linspace( bl[0], br[0], boardsize)
+//bottom_y  = np.linspace( bl[1], br[1], boardsize)
+//top_points =  np.array(zip(top_x, top_y)).astype('int')
+//bottom_points = np.array(zip(bottom_x, bottom_y)).astype('int')
+//v_lines = zip(top_points, bottom_points)
+
+
 
 
 #pragma mark - Processing Pipeline for debugging
@@ -479,6 +542,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     draw_contours( _cont, drawing);
     Points board = approx_poly( flatten(_cont), 4);
     board = order_points( board);
+    _board = board;
     _cont = std::vector<Points>( 1, board);
     cv::drawContours( drawing, _cont, -1, cv::Scalar(255,0,0));
     // Convert back to UIImage
@@ -495,8 +559,10 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 
     // Zoom out a little
     Points2f board_stretched = enlarge_board( _cont[0]);
-    four_point_transform( _gray, _gray, board_stretched);
-
+    cv::Mat transform = four_point_transform( _gray, _gray, board_stretched);
+    //Points2f board = Points2f( _board.begin(), _board.end());
+    cv::perspectiveTransform( b, _board_zoomed, transform);
+    
     UIImage *res = MatToUIImage( _gray);
     return res;
 }
@@ -505,12 +571,57 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 - (int) f05_get_boardsize
 {
     cv::resize( _mboard, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
-    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
+    cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     
-    int sz = get_boardsize_by_fft( _m);
-    return sz;
+    _board_sz = get_boardsize_by_fft( _m);
+    return _board_sz;
 }
 
+//------------------------------------
+- (UIImage *) f06_get_intersections
+{
+    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
+    
+    cv::Point2f tl = _board_zoomed[0];
+    cv::Point2f tr = _board_zoomed[1];
+    cv::Point2f br = _board_zoomed[2];
+    cv::Point2f bl = _board_zoomed[3];
+    
+    std::vector<float> left_x;
+    std::vector<float> left_y;
+    std::vector<float> right_x;
+    std::vector<float> right_y;
+    ILOOP (_board_sz) {
+        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (float)(_board_sz-1));
+        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (float)(_board_sz-1));
+        right_x.push_back( tr.x + i * (br.x - tr.x) / (float)(_board_sz-1));
+        right_y.push_back( tr.y + i * (br.y - tr.y) / (float)(_board_sz-1));
+    }
+    std::vector<float> top_x;
+    std::vector<float> top_y;
+    std::vector<float> bot_x;
+    std::vector<float> bot_y;
+    ILOOP (_board_sz) {
+        top_x.push_back( tl.x + i * (tr.x - tl.x) / (float)(_board_sz-1));
+        top_y.push_back( tl.y + i * (tr.y - tl.y) / (float)(_board_sz-1));
+        bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(_board_sz-1));
+        bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(_board_sz-1));
+    }
+    Points2f intersections;
+    RLOOP (_board_sz) {
+        CLOOP (_board_sz) {
+            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
+                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
+            intersections.push_back(p);
+            draw_point( p, drawing, 1);
+        }
+    }
+    
+    
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
 
 #pragma mark - Real time implementation
 //========================================

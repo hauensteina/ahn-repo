@@ -257,6 +257,11 @@
                 int sz = [self.grabFuncs f05_get_boardsize];
                 self.lbDbg.text = [NSString stringWithFormat:@"%d", sz];
                 break;
+            case 6:
+                state++;
+                img = [self.grabFuncs f06_get_intersections];
+                [self.cameraView setImage:img];
+                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;
