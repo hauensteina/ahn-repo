@@ -23,4 +23,7 @@
 - (UIImage *) f07_classify;
 // All in one for production
 - (UIImage *) findBoard:(UIImage *)img;
+@property int canny_low;
+@property int canny_hi;
+
 @end

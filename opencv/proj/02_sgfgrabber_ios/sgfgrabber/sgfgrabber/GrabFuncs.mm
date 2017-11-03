@@ -27,6 +27,7 @@ static cv::RNG rng(12345);
 double PI = M_PI;
 typedef std::complex<double> cplx;
 cplx I(0.0, 1.0);
+const cv::Size TMPL_SZ(16,16);
 
 #define STRETCH_FACTOR 1.1
 
@@ -42,23 +43,81 @@ cplx I(0.0, 1.0);
 @property Points2f intersections; // locations of line intersections (81,361)
 @property int delta_v; // approx vertical line dist
 @property int delta_h; // approx horiz line dist
+
+@property cv::Mat tmpl_black;
+@property cv::Mat tmpl_white;
+@property cv::Mat tmpl_top_left;
+@property cv::Mat tmpl_top_right;
+@property cv::Mat tmpl_bot_right;
+@property cv::Mat tmpl_bot_left;
+@property cv::Mat tmpl_top;
+@property cv::Mat tmpl_right;
+@property cv::Mat tmpl_bot;
+@property cv::Mat tmpl_left;
+@property cv::Mat tmpl_inner;
+@property cv::Mat tmpl_hoshi;
 @end
 
 @implementation GrabFuncs
 //=========================
-
-
-#pragma mark - General utility funcs
-//======================================
 
 //----------------------
 - (instancetype)init
 {
     self = [super init];
     if (self) {
+        [self jpg:@"black.jpg" toTmpl:_tmpl_black];
+        [self jpg:@"white.jpg" toTmpl:_tmpl_white];
+        [self jpg:@"top_left.jpg" toTmpl:_tmpl_top_left];
+        [self jpg:@"top_right.jpg" toTmpl:_tmpl_top_right];
+        [self jpg:@"bot_right.jpg" toTmpl:_tmpl_bot_right];
+        [self jpg:@"bot_left.jpg" toTmpl:_tmpl_bot_left];
+        [self jpg:@"top.jpg" toTmpl:_tmpl_top];
+        [self jpg:@"right.jpg" toTmpl:_tmpl_right];
+        [self jpg:@"bot.jpg" toTmpl:_tmpl_bot];
+        [self jpg:@"left.jpg" toTmpl:_tmpl_left];
+        [self jpg:@"inner.jpg" toTmpl:_tmpl_inner];
+        [self jpg:@"hoshi.jpg" toTmpl:_tmpl_hoshi];
     }
     return self;
 }
+
+// Prepare image for use as a similarity template
+//-------------------------------------------------
+void templify( cv::Mat &m)
+{
+    cv::resize(m,m,TMPL_SZ);
+    m.convertTo( m, CV_64FC1);
+    cv::Mat sq = m.mul(m);
+    double ssum = cv::sum(sq)[0];
+    ssum = sqrt(ssum);
+    m /= ssum;
+}
+
+// Compare two templified images of same size
+//-------------------------------------------------------
+double cmpTmpl( const cv::Mat &m1, const cv::Mat &m2)
+{
+//    cv::Mat prod = m1.mul(m2);
+//    double d = cv::sum(prod)[0];
+//    return d;
+    cv::Mat diff = m1 - m2;
+    cv::Mat sq = diff.mul(diff);
+    double d = cv::sum(sq)[0];
+    return -d;
+}
+
+// Convert jpg file to 16x16 template cv::Mat
+//-------------------------------------------------
+- (void) jpg:(NSString *)fname toTmpl:(cv::Mat&)m
+{
+    UIImage *img = [UIImage imageNamed:fname];
+    UIImageToMat(img, m);
+    templify( m);
+}
+
+#pragma mark - General utility funcs
+//======================================
 
 //----------------------------
 + (NSString *) opencvVersion
@@ -520,7 +579,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     UIImageToMat( img, _m);
     resize( _m, _m, 350);
     cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
+    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       7, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
@@ -663,6 +722,27 @@ float get_brightness( const cv::Mat &img, float frac=4)
     return ssum / area;
 }
 
+//---------------------------------------------
+- (NSString *) getFullPath:(NSString *)fname
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+    NSString *filePath = [documentsDirectory stringByAppendingPathComponent:fname];
+    return filePath;
+}
+
+//--------------------------------------------
+void printvec( char *msg, std::vector<int> v)
+{
+    char buf[10000];
+    sprintf(buf,"%s",msg);
+    ILOOP (v.size()) {
+        if (i%9 == 0) { sprintf(buf+strlen(buf),"%s","\n"); }
+        sprintf(buf+strlen(buf), "%d ", v[i] );
+    }
+    NSLog(@"%s", buf);
+}
+
 // Classify intersection into b,w,empty
 //----------------------------------------
 - (UIImage *) f07_classify
@@ -671,11 +751,14 @@ float get_brightness( const cv::Mat &img, float frac=4)
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
     // Contour image of the zoomed board
     cv::Mat zoomed_edges;
-    auto_canny( _gray, zoomed_edges);
-    //Contours cont;
-    //cv::findContours( zoomed_edges, cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
+    cv::Canny( _gray, zoomed_edges, 30, 70);
+    //auto_canny( _gray, zoomed_edges);
+    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
     // Cut out areas around the intersections
     std::vector<float> brightness;
+    std::vector<float> crossness;
+    std::vector<int> isempty;
     ILOOP( _intersections.size()) {
         float x = _intersections[i].x;
         float y = _intersections[i].y;
@@ -690,31 +773,76 @@ float get_brightness( const cv::Mat &img, float frac=4)
             cv::Mat hood = cv::Mat( _gray, rect);
             cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
             brightness.push_back( get_brightness( hood));
+            crossness.push_back( get_brightness(contour_hood,6));
             cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
+
+            // Template approach
+            templify(hood);
+            double sim_black = cmpTmpl(hood,_tmpl_black);
+            double sim_white = cmpTmpl(hood,_tmpl_white);
+            double sim_inner = cmpTmpl(hood,_tmpl_inner);
+            if (sim_inner > sim_white) { isempty.push_back(2); }
+            else { isempty.push_back(0); }
+//            NSString *fname = [NSString stringWithFormat:@"hood_%03d.jpg",i];
+//            if (sim_black > sim_white && sim_black > sim_inner) {
+//                NSLog(@"black");
+//            }
+//            else if (sim_white > sim_black && sim_white > sim_inner) {
+//                NSLog(@"white");
+//            }
+            //fname = [self getFullPath:fname];
+            //BOOL ret = cv::imwrite( [fname UTF8String], hood);
+            
         }
     }
+    // Black stones
+    float thresh = *(std::min_element(brightness.begin(), brightness.end())) * 4;
+    std::vector<int> isblack( brightness.size(), 0);
+    ILOOP (brightness.size()) {
+        if (brightness[i] < thresh) {
+            isblack[i] = 1;
+            //draw_point( _intersections[i], drawing, 1);
+        }
+    }
+    printvec( (char *)"isblack:", isblack);
+    ILOOP (isempty.size()) {
+        if (isblack[i]) isempty[i] = 0;
+    }
+    printvec( (char *)"isempty:", isempty);
+    std::vector<int> board;
+    ILOOP (isblack.size()) {
+        if (isblack[i]) board.push_back(1);
+        else if (isempty[i]) board.push_back(0);
+        else board.push_back(2);
+    }
+    printvec( (char *)"board:", board);
+
+//    // Empty places
+//    std::vector<int> isempty( crossness.size(), 0);
+//    ILOOP (crossness.size()) {
+//        if (crossness[i] > 5) {
+//            isempty[i] = 1;
+//            draw_point( _intersections[i], drawing, 1);
+//        }
+//    }
+
+//# Empty intersections
+//    print('crossness')
+//    print(crossness.reshape((boardsize,boardsize)).astype('int'))
+//    isempty = np.array([ 1 if x > 5 else 0 for x in crossness ])
+//
+//# White stones
+//    iswhite = np.array([ 2 if not isempty[i] + isblack[i] else 0  for i,x in enumerate( isempty) ])
+//
+//    print('position')
+//    position = iswhite + isblack
+//    print(position.reshape((boardsize,boardsize)))
+    
+    
     UIImage *res = MatToUIImage( drawing);
+    //UIImage *res = MatToUIImage( zoomed_edges);
     return res;
 
-//# Contour image of the zoomed board
-//#-------------------------------------
-//    zoomed_edges = ut.auto_canny(zoomed)
-//    zoomed_contours, cnts, hierarchy  = cv2.findContours(zoomed_edges, cv2.RETR_LIST,
-//                                                         cv2.CHAIN_APPROX_SIMPLE)
-//#ut.showim(zoomed_contours)
-//
-//# Cut out areas around the intersections
-//#------------------------------------------
-//    delta_v = abs(int(np.round( 0.5 * (bottom_y[0] - top_y[0]) / (boardsize -1))))
-//    delta_h = abs(int(np.round( 0.5 * (right_x[0] - left_x[0]) / (boardsize -1))))
-//    brightness  = np.empty(boardsize * boardsize)
-//    crossness = np.empty(boardsize * boardsize)
-//    for i,p in enumerate(intersections):
-//        hood = zoomed[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
-//        contour_hood = zoomed_contours[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
-//        brightness[i] = get_brightness(hood)
-//        crossness[i] = get_brightness(contour_hood,6)
-//}
 }
 
 #pragma mark - Real time implementation
