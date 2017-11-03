@@ -20,6 +20,7 @@
 - (UIImage *) f04_zoom_in;
 - (int) f05_get_boardsize;
 - (UIImage *) f06_get_intersections;
+- (UIImage *) f07_classify;
 // All in one for production
 - (UIImage *) findBoard:(UIImage *)img;
 @end

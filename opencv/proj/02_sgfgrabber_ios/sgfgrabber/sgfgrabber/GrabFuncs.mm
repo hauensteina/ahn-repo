@@ -39,6 +39,9 @@ cplx I(0.0, 1.0);
 @property Points board;  // Current hypothesis on where the board is
 @property Points2f board_zoomed; // board corners after zooming in
 @property int board_sz; // board size, 9 or 19
+@property Points2f intersections; // locations of line intersections (81,361)
+@property int delta_v; // approx vertical line dist
+@property int delta_h; // approx horiz line dist
 @end
 
 @implementation GrabFuncs
@@ -452,22 +455,34 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     ILOOP (50) { ssum += magsum[width/2-i-1]; }
     // Smooth
     double old = magsum[0];
-    double alpha = 0.4;
+    double alpha = 0.2;
     ILOOP (width) { magsum[i] = (1-alpha)*magsum[i] + alpha*old; old = magsum[i]; }
     
     // Find max
     old = magsum[7];
-    int argmax = 0;
+    std::vector<int> argmaxes;
+    std::vector<float> maxes;
     for (int i = 7; i < 30; i++ ) {
         double cur = magsum[i];
         double nnext = magsum[i+1];
         if (cur > old && cur > nnext) {
-            argmax = i;
-            break;
+            argmaxes.push_back(i);
+            maxes.push_back(cur);
+        }
+        old = magsum[i];
+    }
+    if (!argmaxes.size()) { return 9;}
+    ILOOP (argmaxes.size()) {
+        if (argmaxes[i] < 16 && maxes[i] > 50000) {
+            return 9;
+        }
+        if ((argmaxes[i] >= 18 && argmaxes[i] <= 20)
+            && maxes[i] > 50000) {
+            return 19;
         }
     }
-    if (argmax > 15) return 19;
-    else return 9;
+    return 9;
+    
 } // get_boardsize_by_fft
 
 
@@ -567,11 +582,11 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     return res;
 }
 
-//-----------------------------------
+//--------------------------
 - (int) f05_get_boardsize
 {
     cv::resize( _mboard, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
-    cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
+    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     
     _board_sz = get_boardsize_by_fft( _m);
     return _board_sz;
@@ -608,19 +623,98 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
         bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(_board_sz-1));
         bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(_board_sz-1));
     }
-    Points2f intersections;
+    _delta_v = abs(int(round( 0.5 * (bot_y[0] - top_y[0]) / (_board_sz -1))));
+    _delta_h = abs(int(round( 0.5 * (right_x[0] - left_x[0]) / (_board_sz -1))));
+
+    _intersections = Points2f();
     RLOOP (_board_sz) {
         CLOOP (_board_sz) {
             cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
                                          cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
-            intersections.push_back(p);
+            _intersections.push_back(p);
             draw_point( p, drawing, 1);
         }
     }
     
-    
     UIImage *res = MatToUIImage( drawing);
     return res;
+} // f06_get_intersections()
+
+// Get a center crop of an image
+//-------------------------------------------------------------------
+int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4)
+{
+    float cx = img.cols / 2.0;
+    float cy = img.rows / 2.0;
+    float dx = img.cols / frac;
+    float dy = img.rows / frac;
+    dst = cv::Mat( img, cv::Rect( round(cx-dx), round(cy-dy), round(2*dx), round(2*dy)));
+    int area = dst.rows * dst.cols;
+    return area;
+}
+
+// Sum brightness at the center, normalize
+//------------------------------------------------------
+float get_brightness( const cv::Mat &img, float frac=4)
+{
+    cv::Mat crop;
+    int area = get_center_crop( img, crop, frac);
+    float ssum = cv::sum(crop)[0];
+    return ssum / area;
+}
+
+// Classify intersection into b,w,empty
+//----------------------------------------
+- (UIImage *) f07_classify
+{
+    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
+    // Contour image of the zoomed board
+    cv::Mat zoomed_edges;
+    auto_canny( _gray, zoomed_edges);
+    //Contours cont;
+    //cv::findContours( zoomed_edges, cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    // Cut out areas around the intersections
+    std::vector<float> brightness;
+    ILOOP( _intersections.size()) {
+        float x = _intersections[i].x;
+        float y = _intersections[i].y;
+        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
+        if (0 <= rect.x &&
+            0 <= rect.width &&
+            rect.x + rect.width <= _gray.cols &&
+            0 <= rect.y &&
+            0 <= rect.height &&
+            rect.y + rect.height <= _gray.rows)
+        {
+            cv::Mat hood = cv::Mat( _gray, rect);
+            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
+            brightness.push_back( get_brightness( hood));
+            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
+        }
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+
+//# Contour image of the zoomed board
+//#-------------------------------------
+//    zoomed_edges = ut.auto_canny(zoomed)
+//    zoomed_contours, cnts, hierarchy  = cv2.findContours(zoomed_edges, cv2.RETR_LIST,
+//                                                         cv2.CHAIN_APPROX_SIMPLE)
+//#ut.showim(zoomed_contours)
+//
+//# Cut out areas around the intersections
+//#------------------------------------------
+//    delta_v = abs(int(np.round( 0.5 * (bottom_y[0] - top_y[0]) / (boardsize -1))))
+//    delta_h = abs(int(np.round( 0.5 * (right_x[0] - left_x[0]) / (boardsize -1))))
+//    brightness  = np.empty(boardsize * boardsize)
+//    crossness = np.empty(boardsize * boardsize)
+//    for i,p in enumerate(intersections):
+//        hood = zoomed[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
+//        contour_hood = zoomed_contours[p[1]-delta_v:p[1]+delta_v, p[0]-delta_h:p[0]+delta_h ]
+//        brightness[i] = get_brightness(hood)
+//        crossness[i] = get_brightness(contour_hood,6)
+//}
 }
 
 #pragma mark - Real time implementation
