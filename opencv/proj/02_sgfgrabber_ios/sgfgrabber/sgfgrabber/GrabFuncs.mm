@@ -9,7 +9,9 @@
 //#include <math.h>
 //#include <complex.h>
 #import <opencv2/opencv.hpp>
+//#import <opencv2/core/ptr.inl.hpp>
 #import <opencv2/imgcodecs/ios.h>
+//#import <opencv2/imgproc/imgproc.hpp>
 #import "Common.h"
 #import "GrabFuncs.h"
 
@@ -337,11 +339,11 @@ bool board_valid( Points board)
 }
 
 //---------------------------------------------------------------------------------------
-void morph_closing( cv::Mat &m, int size, int iterations, int type = cv::MORPH_RECT )
+void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORPH_RECT )
 {
-    cv::Mat element = cv::getStructuringElement( type,
-                                                cv::Size( 2*size + 1, 2*size+1 ),
-                                                cv::Point( size, size ) );
+    cv::Mat element = cv::getStructuringElement( type, sz);
+                                                //cv::Size( 2*size + 1, 2*size+1 ),
+                                                //cv::Point( size, size ) );
     for (int i=0; i<iterations; i++) {
         cv::dilate( m, m, element );
         cv::erode( m, m, element );
@@ -579,9 +581,12 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     UIImageToMat( img, _m);
     resize( _m, _m, 350);
     cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
+    // Ptr<CLAHE> createCLAHE(double clipLimit = 40.0, Size tileGridSize = Size(8, 8));
+    //cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(1.0, cv::Size(16,16));
+    //clahe->apply( _gray, _gray );
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                      7, // neighborhood_size
+                      3, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
     UIImage *res = MatToUIImage( _m);
     return(res);
@@ -589,10 +594,11 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 
 //-----------------------------------------
 - (UIImage *) f01_closing
-{
-    int erosion_size = 1;
-    int iterations = 3;
-    morph_closing( _m, erosion_size, iterations);
+{ 
+    //int erosion_size = 2;
+    int iterations = 1;
+    morph_closing( _m, cv::Size(3,1), iterations);
+    morph_closing( _m, cv::Size(1,3), iterations);
 
     UIImage *res = MatToUIImage( _m);
     return res;
@@ -602,6 +608,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 - (UIImage *) f02_flood
 {
     flood_from_center( _m);
+    morph_closing( _m, cv::Size(3,3), 1);
 
     UIImage *res = MatToUIImage( _m);
     return res;
@@ -614,7 +621,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     if (!_cont.size()) { return MatToUIImage( _m);}
     cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
     draw_contours( _cont, drawing);
-    Points board = approx_poly( flatten(_cont), 4);
+    Points board = approx_poly( flatten(_cont), 4); //@@@
     board = order_points( board);
     _board = board;
     _cont = std::vector<Points>( 1, board);
@@ -855,17 +862,23 @@ void printvec( char *msg, std::vector<int> v)
     UIImageToMat( img, _m);
     cv::Mat small;
     resize( _m, small, 350);
+    //resize( _m, small, 512);
     cv::cvtColor( small, _m, cv::COLOR_BGR2GRAY);
     // Threshold
-    adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                      7, // neighborhood_size
-                      4); // constant to add. 2 to 6 is the viable range
+//    cv::adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+//                          7, // neighborhood_size
+//                          4); // constant to add. 2 to 6 is the viable range
+    cv::adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          3, // neighborhood_size
+                          4); // constant to add. 2 to 6 is the viable range
     // Morph closing
-    int erosion_size = 1;
-    int iterations = 3;
-    morph_closing( _m, erosion_size, iterations);
+    //int erosion_size = 1;
+    int iterations = 1;
+    morph_closing( _m, cv::Size(3,1), iterations);
+    morph_closing( _m, cv::Size(1,3), iterations);
     // Flood
     flood_from_center( _m);
+
     // Find a 4-polygon enclosing all remaining pixels
     cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     if (_cont.size()) {
