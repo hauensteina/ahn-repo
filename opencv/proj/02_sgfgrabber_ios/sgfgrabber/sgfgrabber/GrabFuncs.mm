@@ -393,8 +393,13 @@ void draw_point( cv::Point p, cv::Mat &img, int r=10)
 // Reject board if opposing lines not parallel
 // or adjacent lines not at right angles
 //----------------------------------------------
-bool board_valid( Points board)
+bool board_valid( Points board, float screenArea)
 {
+    if (board.size() != 4) return false;
+    float area = cv::contourArea(board);
+    if (area / screenArea > 0.95) return false;
+    if (area / screenArea < 0.20) return false;
+
     float par_ang1   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[3], board[2]);
     float par_ang2   = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[1], board[2]);
     float right_ang1 = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[1], board[2]);
@@ -541,31 +546,6 @@ void fft(cplx buf[], int n)
     _fft( buf, out, n, 1);
 }
 
-//#---------------------------------------
-//def get_boardsize_by_fft(zoomed_img):
-//CLIP = 5000
-//width = zoomed_img.shape[1]
-//# 1D fft per row, magnitude per row, average them all into a 1D array, clip
-//magspec_clip = np.clip(np.average( np.abs( np.fft.fftshift( np.fft.fft( zoomed_img))), axis=0), 0, CLIP)
-//# Smooth it
-//smooth_magspec = np.convolve(magspec_clip, np.bartlett(7), 'same')
-//if not len(smooth_magspec) % 2:
-//smooth_magspec = np.append( smooth_magspec, 0.0)
-//# The first frequency peak above 9 should be close to the board size.
-//half = len(smooth_magspec) // 2
-//plt.subplot(111)
-//plt.plot(range( -half, half+1 ), smooth_magspec)
-//plt.show()
-//MINSZ = 9
-//highf = smooth_magspec[width // 2 + MINSZ:]
-//                       maxes = scipy.signal.argrelextrema( highf, np.greater)[0] + MINSZ
-//                       res = maxes[0] if len(maxes) else 0
-//                       print(res)
-//                       if res > 19: res = 19
-//#elif res > 13: res = 13
-//                       else: res = 9
-//                       return res
-
 //--------------------------------------------------------------------
 int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 {
@@ -616,30 +596,6 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     return 9;
     
 } // get_boardsize_by_fft
-
-
-//# Compute lines on the board
-//#-----------------------------
-//tl,tr,br,bl = board_zoomed
-//
-//left_x   = np.linspace( tl[0], bl[0], boardsize)
-//left_y   = np.linspace( tl[1], bl[1], boardsize)
-//right_x  = np.linspace( tr[0], br[0], boardsize)
-//right_y  = np.linspace( tr[1], br[1], boardsize)
-//left_points =  np.array(zip(left_x, left_y)).astype('int')
-//right_points = np.array(zip(right_x, right_y)).astype('int')
-//h_lines = zip(left_points, right_points)
-//# fcp = zoomed.copy()
-//# ut.plot_lines( fcp, h_lines)
-//# ut.showim(fcp)
-//
-//top_x   = np.linspace( tl[0], tr[0], boardsize)
-//top_y   = np.linspace( tl[1], tr[1], boardsize)
-//bottom_x  = np.linspace( bl[0], br[0], boardsize)
-//bottom_y  = np.linspace( bl[1], br[1], boardsize)
-//top_points =  np.array(zip(top_x, top_y)).astype('int')
-//bottom_points = np.array(zip(bottom_x, bottom_y)).astype('int')
-//v_lines = zip(top_points, bottom_points)
 
 //--------------------------------------------------------------
 void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst)
@@ -736,6 +692,28 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     return board;
 } // find_board()
 
+// Make a better board estimate from several
+//--------------------------------------------
+Points best_board( std::vector<Points> boards)
+{
+    Points res(4);
+    int minidx;
+    float minArea = 1E9;
+    ILOOP (boards.size()) {
+        Points b = boards[i];
+        float area = cv::contourArea(b);
+        if (area < minArea) { minArea = area; minidx = i;}
+//        res[0] += b[0];
+//        res[1] += b[1];
+//        res[2] += b[2];
+//        res[3] += b[3];
+    }
+//    res[0] /= (float)boards.size();
+//    res[1] /= (float)boards.size();
+//    res[2] /= (float)boards.size();
+//    res[3] /= (float)boards.size();
+    return boards[minidx];
+}
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -745,10 +723,6 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     UIImageToMat( img, _m);
     resize( _m, _m, 350);
     cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
-    // Ptr<CLAHE> createCLAHE(double clipLimit = 40.0, Size tileGridSize = Size(8, 8));
-    //cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(1.0, cv::Size(16,16));
-    //clahe->apply( _gray, _gray );
-    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       3, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
@@ -1022,6 +996,8 @@ void printvec( char *msg, std::vector<int> v)
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
+    const int N_BOARDS = 8;
+    static std::vector<Points> boards; // Some history for averaging
     UIImageToMat( img, _m);
     cv::Mat small;
     resize( _m, small, 350);
@@ -1038,7 +1014,10 @@ void printvec( char *msg, std::vector<int> v)
     // Find Hough lines and construct the board from them
     cv::Mat boardImg;
     _board = find_board( _m, boardImg);
-    if (_board.size()) {
+    if ( board_valid( _board, cv::contourArea(whole_screen(small)))) {
+        boards.push_back( _board);
+        if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
+        _board = best_board( boards);
         _cont = std::vector<Points>( 1, _board);
         cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
     }
