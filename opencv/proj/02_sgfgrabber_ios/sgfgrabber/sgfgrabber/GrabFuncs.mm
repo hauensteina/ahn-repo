@@ -7,7 +7,7 @@
 //
 
 //#include <math.h>
-//#include <complex.h>
+#include <type_traits>
 #import <opencv2/opencv.hpp>
 //#import <opencv2/core/ptr.inl.hpp>
 #import <opencv2/imgcodecs/ios.h>
@@ -24,6 +24,7 @@
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
+typedef cv::Point Line[2];
 typedef std::vector<cv::Point2f> Points2f;
 static cv::RNG rng(12345);
 double PI = M_PI;
@@ -143,6 +144,67 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
     return result;
 }
 
+// Partition a vector of elements by class func.
+// Return parts as vec of vec
+//---------------------------------------------------------------------
+template<typename Func, typename T>
+std::vector<std::vector<T> >
+partition( std::vector<T> elts, int nof_classes, Func getClass)
+{
+    // Extract parts
+    std::vector<std::vector<T> > res( nof_classes);
+    ILOOP (elts.size()) {
+        res[getClass( elts[i])].push_back( elts[i]);
+    }
+    return res;
+} // partition()
+
+// Cluster a vector of elements by func.
+// Return clusters as vec of vec.
+//---------------------------------------------------------------------
+template<typename Func, typename T>
+std::vector<std::vector<T> >
+cluster (std::vector<T> elts, int nof_clust, Func getFeature)
+{
+    std::vector<float> features;
+    std::vector<float> centers;
+    ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
+    std::vector<int> labels;
+    cv::kmeans( features, nof_clust, labels,
+               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+               3, cv::KMEANS_PP_CENTERS, centers);
+    // Extract parts
+    std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
+    ILOOP (elts.size()) {
+        res[labels[i]].push_back( elts[i]);
+    }
+    return res;
+} // cluster()
+
+// Average a bunch of line segments
+// Put a line through the all the endpoints
+//------------------------------------------------------
+cv::Vec4f avg_lines( std::vector<cv::Vec4f> lines )
+{
+    // Get the points
+    Points2f points;
+    ILOOP (lines.size()) {
+        cv::Point2f p1(lines[i][0], lines[i][1]);
+        cv::Point2f p2(lines[i][2], lines[i][3]);
+        points.push_back( p1);
+        points.push_back( p2);
+    }
+    // Put a line through them
+    cv::Vec4f lparms;
+    cv::fitLine( points, lparms, CV_DIST_L2, 0.0, 0.01, 0.01);
+    cv::Vec4f res;
+    res[0] = lparms[2];
+    res[1] = lparms[3];
+    res[2] = lparms[2] + lparms[0];
+    res[3] = lparms[3] + lparms[1];
+    return res;
+} // avg_lines()
+
 //# Find x where f(x) = target where f is an increasing func.
 //------------------------------------------------------------
 template<typename Func>
@@ -222,8 +284,7 @@ cv::Point2f intersection( cv::Point2f A, cv::Point2f B,
     
     if (determinant == 0)
     {
-        // The lines are parallel. This is simplified
-        // by returning a pair of FLT_MAX
+        // The lines are parallel.
         return cv::Point2f(FLT_MAX, FLT_MAX);
     }
     else
@@ -234,13 +295,21 @@ cv::Point2f intersection( cv::Point2f A, cv::Point2f B,
     }
 } // intersection()
 
+//---------------------------------------------------------
+cv::Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
+{
+    return intersection( cv::Point2f( line1[0], line1[1]),
+                        cv::Point2f( line1[2], line1[3]),
+                        cv::Point2f( line2[0], line2[1]),
+                        cv::Point2f( line2[2], line2[3]));
+}
 
 // Enclose a contour with an n edge polygon
 //--------------------------------------------
 Points approx_poly( Points cont, int n)
 {
-    Points hull;
-    cv::convexHull( cont, hull);
+    Points hull = cont;
+    //cv::convexHull( cont, hull);
     float peri = cv::arcLength( hull, true);
     float epsilon = bisect(
                            [hull,peri](float x) {
@@ -252,6 +321,7 @@ Points approx_poly( Points cont, int n)
     Points res;
     cv::approxPolyDP( hull, res, epsilon*peri, true);
     return res;
+    //return hull;
 }
 
 // Resize image such that min(width,height) = sz
@@ -570,7 +640,34 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 //bottom_points = np.array(zip(bottom_x, bottom_y)).astype('int')
 //v_lines = zip(top_points, bottom_points)
 
+//--------------------------------------------------------------
+void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst)
+{
+    ILOOP (lines.size()) {
+        float rho = lines[i][0], theta = lines[i][1];
+        cv::Point pt1, pt2;
+        double a = cos(theta), b = sin(theta);
+        double x0 = a*rho, y0 = b*rho;
+        pt1.x = cvRound(x0 + 1000*(-b));
+        pt1.y = cvRound(y0 + 1000*(a));
+        pt2.x = cvRound(x0 - 1000*(-b));
+        pt2.y = cvRound(y0 - 1000*(a));
+        line( dst, pt1, pt2, cv::Scalar(0,0,255), 1, CV_AA);
+    }
+}
 
+//--------------------------------------------------------------
+void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
+{
+    ILOOP (lines.size()) {
+        cv::Point pt1, pt2;
+        pt1.x = cvRound(lines[i][0]);
+        pt1.y = cvRound(lines[i][1]);
+        pt2.x = cvRound(lines[i][2]);
+        pt2.y = cvRound(lines[i][3]);
+        line( dst, pt1, pt2, cv::Scalar(0,0,255), 1, CV_AA);
+    }
+}
 
 
 #pragma mark - Processing Pipeline for debugging
@@ -592,9 +689,9 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     return(res);
 }
 
-//-----------------------------------------
+//--------------------------
 - (UIImage *) f01_closing
-{ 
+{
     //int erosion_size = 2;
     int iterations = 1;
     morph_closing( _m, cv::Size(3,1), iterations);
@@ -604,28 +701,124 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     return res;
 }
 
-//-----------------------------------------
+//----------------------
 - (UIImage *) f02_flood
 {
     flood_from_center( _m);
-    morph_closing( _m, cv::Size(3,3), 1);
-
     UIImage *res = MatToUIImage( _m);
     return res;
 }
 
-//-----------------------------------
+//-----------------------------
 - (UIImage *) f03_find_board
 {
     cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    //cv::findContours( _m, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    // only keep the biggest one
+    std::sort( _cont.begin(), _cont.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
+    //_cont.erase( _cont.begin(), _cont.begin()+_cont.size()/20);
+    //_cont.erase( _cont.begin() + 38*_cont.size()/39, _cont.end());
+    _cont.erase( _cont.begin()+1, _cont.end());
     if (!_cont.size()) { return MatToUIImage( _m);}
-    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-    draw_contours( _cont, drawing);
-    Points board = approx_poly( flatten(_cont), 4); //@@@
-    board = order_points( board);
-    _board = board;
-    _cont = std::vector<Points>( 1, board);
-    cv::drawContours( drawing, _cont, -1, cv::Scalar(255,0,0));
+    cv::Mat canvas = cv::Mat::zeros( _m.size(), CV_8UC1 );
+    cv::drawContours( canvas, _cont, 0, cv::Scalar(255), 3);
+    // Find lines
+    std::vector<cv::Vec4f> lines;
+    HoughLinesP(canvas, lines, 1, CV_PI/180, 150, 0, 0 );
+    // Find vertical and horizontal lines
+    std::vector<std::vector<cv::Vec4f> > horiz_vert_lines;
+    horiz_vert_lines = partition( lines, 2,
+                                 [](cv::Vec4f &line) {
+                                     if (fabs( line[0] - line[2]) > fabs( line[1] - line[3])) return 0;
+                                     else return 1;
+                                 });
+    std::vector<cv::Vec4f> horiz_lines = horiz_vert_lines[0];
+    std::vector<cv::Vec4f> vert_lines = horiz_vert_lines[1];
+    // Separate top from bottom
+    std::vector<std::vector<cv::Vec4f> > top_bottom_lines;
+    top_bottom_lines = cluster( horiz_lines, 2,
+                               [](cv::Vec4f &line) {
+                                   return (line[1] + line[3]) / 2.0;
+                               });
+    // Separate left from right
+    std::vector<std::vector<cv::Vec4f> > left_right_lines;
+    left_right_lines = cluster( vert_lines, 2,
+                               [](cv::Vec4f &line) {
+                                   return (line[0] + line[2]) / 2.0;
+                               });
+    // Average vertical lines
+    cv::Vec4f vert_1 = avg_lines( left_right_lines[0]);
+    cv::Vec4f vert_2 = avg_lines( left_right_lines[1]);
+    // Average horiz lines
+    cv::Vec4f horiz_1 = avg_lines( top_bottom_lines[0]);
+    cv::Vec4f horiz_2 = avg_lines( top_bottom_lines[1]);
+    
+    // Corners are the intersections
+    cv::Point2f c1 = intersection( vert_1, horiz_1);
+    cv::Point2f c2 = intersection( vert_1, horiz_2);
+    cv::Point2f c3 = intersection( vert_2, horiz_1);
+    cv::Point2f c4 = intersection( vert_2, horiz_2);
+    Points corners = { cv::Point(c1), cv::Point(c2), cv::Point(c3), cv::Point(c4) };
+    corners = order_points( corners);
+
+    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
+    cv::cvtColor( canvas, drawing, cv::COLOR_GRAY2BGR);
+    std::vector<Points> c(1, corners);
+    cv::drawContours( drawing, c, -1, cv::Scalar(255,0,0));
+    //Points board = Points( order_points( corners));
+    //_cont = std::vector<Points>( 1, board);
+    //@@@
+    int tt = 42;
+    
+
+    // To do:
+    // - there are vertical and horiz lines (dy > dx => vert else horiz)
+    // - the horiz lines get clustered by y coord
+    // - the vert lines get clustered by x coord
+    // => four clusters  v_left, v_right, h_top, h_bot
+    // for each cluster, for each line, get ten points, put a line through the points
+    //  cv::vec4f linemerge (std::vector<cv::vec4f>)
+    // get the corners by finding the 4 intersections between (v1,h1),(v1,h2),(v2,h1),(v2,h2)
+    // order_points, etc pp
+    
+//    std::vector<float> rhos;   ILOOP (lines.size()) { rhos.push_back(lines[i][0]); };
+//    std::vector<float> thetas; ILOOP (lines.size()) { thetas.push_back(lines[i][1]); };
+//    //std::vector<float> vi = { 1,2,3 , 10,11,12};
+//    std::vector<int> rho_labels, theta_labels;
+//    std::vector<float> rho_centers, theta_centers;
+//    cv::kmeans( rhos, 2, rho_labels,
+//               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+//               3, cv::KMEANS_PP_CENTERS, rho_centers);
+//    cv::kmeans( thetas, 2, theta_labels,
+//               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+//               3, cv::KMEANS_PP_CENTERS, theta_centers);
+//    std::vector<cv::Vec2f> four_lines;
+//    four_lines.push_back( {rho_centers[0], theta_centers[0]} );
+//    four_lines.push_back( {rho_centers[0], theta_centers[1]} );
+//    four_lines.push_back( {rho_centers[1], theta_centers[0]} );
+//    four_lines.push_back( {rho_centers[1], theta_centers[1]} );
+
+//    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
+//    cv::cvtColor( canvas, drawing, cv::COLOR_GRAY2BGR);
+//    drawLines( lines, drawing);
+    //drawPolarLines( four_lines, drawing);
+//    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(20,20));
+//    cv::dilate( canvas,canvas,element);
+//    cv::erode(canvas, canvas, element);
+//    cv::dilate( canvas,canvas,element);
+//    cv::erode(canvas, canvas, element);
+//    cv::dilate( canvas,canvas,element);
+//    cv::erode(canvas, canvas, element);
+//    cv::findContours( canvas, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+//    std::sort( _cont.begin(), _cont.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
+//    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
+//    draw_contours( _cont, drawing);
+//    //Points board = approx_poly( flatten(_cont), 4, _sld_low);
+//    Points board = approx_poly( _cont[0], 4);
+//    board = order_points( board);
+//    _board = board;
+//    _cont = std::vector<Points>( 1, board);
+//    cv::drawContours( drawing, _cont, -1, cv::Scalar(255,0,0));
     // Convert back to UIImage
     UIImage *res = MatToUIImage( drawing);
     return res;

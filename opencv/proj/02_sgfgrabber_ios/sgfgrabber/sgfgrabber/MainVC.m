@@ -93,7 +93,7 @@
     UISlider *s = [UISlider new];
     self.sldCannyLow = s;
     s.minimumValue = 0;
-    s.maximumValue = 255;
+    s.maximumValue = 0.5;
     //s.maximumValue = 10;
     [s addTarget:self action:@selector(sldCannyLow:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
@@ -193,10 +193,10 @@
 //-----------------------------------
 - (void) sldCannyLow:(id) sender
 {
-    int tt = [self.sldCannyLow value];
-    self.grabFuncs.canny_low = tt;
+    float tt = [self.sldCannyLow value];
+    self.grabFuncs.sld_low = tt;
     //self.grabFuncs.thresh = tt;
-    self.lbDbg.text = [NSString stringWithFormat:@"%d %d", tt, self.grabFuncs.canny_hi];
+    self.lbDbg.text = [NSString stringWithFormat:@"%.2f %d", tt, self.grabFuncs.canny_hi];
 }
 
 // Slider for hi canny threshold
@@ -205,7 +205,7 @@
 {
     int tt = [self.sldCannyHi value];
     self.grabFuncs.canny_hi = tt;
-    self.lbDbg.text = [NSString stringWithFormat:@"%d %d", self.grabFuncs.canny_low, tt];
+    self.lbDbg.text = [NSString stringWithFormat:@"%.2f %d", self.grabFuncs.sld_low, tt];
 }
 
 // Debug on/off
