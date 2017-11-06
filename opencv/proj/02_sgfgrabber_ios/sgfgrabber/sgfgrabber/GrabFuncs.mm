@@ -166,6 +166,7 @@ template<typename Func, typename T>
 std::vector<std::vector<T> >
 cluster (std::vector<T> elts, int nof_clust, Func getFeature)
 {
+    if (elts.size() < 2) return std::vector<std::vector<T> >();
     std::vector<float> features;
     std::vector<float> centers;
     ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
@@ -669,6 +670,72 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
     }
 }
 
+// Return whole screen as board
+//-----------------------------------------
+Points whole_screen( const cv::Mat &img)
+{
+    Points res = { cv::Point(1,1), cv::Point(img.cols-2,1),
+        cv::Point(img.cols-2,img.rows-2), cv::Point(1,img.rows-2) };
+    return res;
+}
+
+// Find board in binary image (after threshold or canny)
+//-------------------------------------------------------------
+Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
+{
+    Contours conts;
+    cv::findContours( binImg, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    // only keep the biggest one
+    std::sort( conts.begin(), conts.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
+    //conts.erase( conts.begin()+1, conts.end());
+    if (!conts.size()) return whole_screen( binImg);
+    boardImg = cv::Mat::zeros( binImg.size(), CV_8UC1 );
+    cv::drawContours( boardImg, conts, 0, cv::Scalar(255), 3);
+    // Find lines
+    std::vector<cv::Vec4f> lines;
+    HoughLinesP(boardImg, lines, 1, CV_PI/180, 150, 0, 0 );
+    // Find vertical and horizontal lines
+    std::vector<std::vector<cv::Vec4f> > horiz_vert_lines;
+    horiz_vert_lines = partition( lines, 2,
+                                 [](cv::Vec4f &line) {
+                                     if (fabs( line[0] - line[2]) > fabs( line[1] - line[3])) return 0;
+                                     else return 1;
+                                 });
+    std::vector<cv::Vec4f> horiz_lines = horiz_vert_lines[0];
+    std::vector<cv::Vec4f> vert_lines = horiz_vert_lines[1];
+    // Separate top from bottom
+    std::vector<std::vector<cv::Vec4f> > top_bottom_lines;
+    top_bottom_lines = cluster( horiz_lines, 2,
+                               [](cv::Vec4f &line) {
+                                   return (line[1] + line[3]) / 2.0;
+                               });
+    if (!top_bottom_lines.size()) return whole_screen( binImg);
+    // Separate left from right
+    std::vector<std::vector<cv::Vec4f> > left_right_lines;
+    left_right_lines = cluster( vert_lines, 2,
+                               [](cv::Vec4f &line) {
+                                   return (line[0] + line[2]) / 2.0;
+                               });
+    if (!left_right_lines.size()) return whole_screen( binImg);
+
+    // Average vertical lines
+    cv::Vec4f vert_1 = avg_lines( left_right_lines[0]);
+    cv::Vec4f vert_2 = avg_lines( left_right_lines[1]);
+    // Average horiz lines
+    cv::Vec4f horiz_1 = avg_lines( top_bottom_lines[0]);
+    cv::Vec4f horiz_2 = avg_lines( top_bottom_lines[1]);
+    
+    // Corners are the intersections
+    cv::Point2f c1 = intersection( vert_1, horiz_1);
+    cv::Point2f c2 = intersection( vert_1, horiz_2);
+    cv::Point2f c3 = intersection( vert_2, horiz_1);
+    cv::Point2f c4 = intersection( vert_2, horiz_2);
+    Points corners = { cv::Point(c1), cv::Point(c2), cv::Point(c3), cv::Point(c4) };
+    Points board = order_points( corners);
+    if (board.size() != 4) return whole_screen( binImg);
+    return board;
+} // find_board()
+
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -688,6 +755,8 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
     UIImage *res = MatToUIImage( _m);
     return(res);
 }
+
+
 
 //--------------------------
 - (UIImage *) f01_closing
@@ -712,55 +781,10 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
 //-----------------------------
 - (UIImage *) f03_find_board
 {
-    cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    // only keep the biggest one
-    std::sort( _cont.begin(), _cont.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
-    _cont.erase( _cont.begin()+1, _cont.end());
-    if (!_cont.size()) { return MatToUIImage( _m);}
-    cv::Mat canvas = cv::Mat::zeros( _m.size(), CV_8UC1 );
-    cv::drawContours( canvas, _cont, 0, cv::Scalar(255), 3);
-    // Find lines
-    std::vector<cv::Vec4f> lines;
-    HoughLinesP(canvas, lines, 1, CV_PI/180, 150, 0, 0 );
-    // Find vertical and horizontal lines
-    std::vector<std::vector<cv::Vec4f> > horiz_vert_lines;
-    horiz_vert_lines = partition( lines, 2,
-                                 [](cv::Vec4f &line) {
-                                     if (fabs( line[0] - line[2]) > fabs( line[1] - line[3])) return 0;
-                                     else return 1;
-                                 });
-    std::vector<cv::Vec4f> horiz_lines = horiz_vert_lines[0];
-    std::vector<cv::Vec4f> vert_lines = horiz_vert_lines[1];
-    // Separate top from bottom
-    std::vector<std::vector<cv::Vec4f> > top_bottom_lines;
-    top_bottom_lines = cluster( horiz_lines, 2,
-                               [](cv::Vec4f &line) {
-                                   return (line[1] + line[3]) / 2.0;
-                               });
-    // Separate left from right
-    std::vector<std::vector<cv::Vec4f> > left_right_lines;
-    left_right_lines = cluster( vert_lines, 2,
-                               [](cv::Vec4f &line) {
-                                   return (line[0] + line[2]) / 2.0;
-                               });
-    // Average vertical lines
-    cv::Vec4f vert_1 = avg_lines( left_right_lines[0]);
-    cv::Vec4f vert_2 = avg_lines( left_right_lines[1]);
-    // Average horiz lines
-    cv::Vec4f horiz_1 = avg_lines( top_bottom_lines[0]);
-    cv::Vec4f horiz_2 = avg_lines( top_bottom_lines[1]);
-    
-    // Corners are the intersections
-    cv::Point2f c1 = intersection( vert_1, horiz_1);
-    cv::Point2f c2 = intersection( vert_1, horiz_2);
-    cv::Point2f c3 = intersection( vert_2, horiz_1);
-    cv::Point2f c4 = intersection( vert_2, horiz_2);
-    Points corners = { cv::Point(c1), cv::Point(c2), cv::Point(c3), cv::Point(c4) };
-    _board = order_points( corners);
-
-    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-    cv::cvtColor( canvas, drawing, cv::COLOR_GRAY2BGR);
-    ///_cont = std::vector<Points> (1, corners);
+    cv::Mat drawing, boardImg;
+    _board = find_board( _m, boardImg);
+    if (!_board.size()) { return MatToUIImage( _m); }
+    cv::cvtColor( boardImg, drawing, cv::COLOR_GRAY2BGR);
     cv::drawContours( drawing, std::vector<Points> (1, _board), -1, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -769,6 +793,7 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
 //-----------------------------------
 - (UIImage *) f04_zoom_in
 {
+    if (!_board.size()) { return MatToUIImage( _m); }
     // Just the board
     //Points2f b =  Points2f( _cont[0].begin(), _cont[0].end());
     Points2f b =  Points2f( _board.begin(), _board.end());
@@ -798,6 +823,7 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
 //------------------------------------
 - (UIImage *) f06_get_intersections
 {
+    if (!_board.size()) { return MatToUIImage( _m); }
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
     
@@ -992,42 +1018,29 @@ void printvec( char *msg, std::vector<int> v)
 #pragma mark - Real time implementation
 //========================================
 
-// f00 to f03_find_board in one go
+// f00_*, f01_*, ... all in one go
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
     UIImageToMat( img, _m);
     cv::Mat small;
     resize( _m, small, 350);
-    //resize( _m, small, 512);
-    cv::cvtColor( small, _m, cv::COLOR_BGR2GRAY);
-    // Threshold
-//    cv::adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-//                          7, // neighborhood_size
-//                          4); // constant to add. 2 to 6 is the viable range
-    cv::adaptiveThreshold(_m, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    cv::cvtColor( small, _gray, cv::COLOR_BGR2GRAY);
+    cv::adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           3, // neighborhood_size
                           4); // constant to add. 2 to 6 is the viable range
-    // Morph closing
-    //int erosion_size = 1;
+    // Make sure the board in the center is in one piece
     int iterations = 1;
     morph_closing( _m, cv::Size(3,1), iterations);
     morph_closing( _m, cv::Size(1,3), iterations);
-    // Flood
+    // Find the biggest connected piece in the center
     flood_from_center( _m);
-
-    // Find a 4-polygon enclosing all remaining pixels
-    cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    if (_cont.size()) {
-        Points board = approx_poly( flatten(_cont), 4);
-        board = order_points( board);
-        if (board_valid( board)) {
-            _board = board;
-        }
-        if (_board.size()) {
-            _cont = std::vector<Points>( 1, _board);
-            cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
-        }
+    // Find Hough lines and construct the board from them
+    cv::Mat boardImg;
+    _board = find_board( _m, boardImg);
+    if (_board.size()) {
+        _cont = std::vector<Points>( 1, _board);
+        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
     }
     UIImage *res = MatToUIImage( small);
     return res;
