@@ -713,11 +713,8 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
 - (UIImage *) f03_find_board
 {
     cv::findContours( _m, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    //cv::findContours( _m, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
     // only keep the biggest one
     std::sort( _cont.begin(), _cont.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
-    //_cont.erase( _cont.begin(), _cont.begin()+_cont.size()/20);
-    //_cont.erase( _cont.begin() + 38*_cont.size()/39, _cont.end());
     _cont.erase( _cont.begin()+1, _cont.end());
     if (!_cont.size()) { return MatToUIImage( _m);}
     cv::Mat canvas = cv::Mat::zeros( _m.size(), CV_8UC1 );
@@ -759,67 +756,12 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
     cv::Point2f c3 = intersection( vert_2, horiz_1);
     cv::Point2f c4 = intersection( vert_2, horiz_2);
     Points corners = { cv::Point(c1), cv::Point(c2), cv::Point(c3), cv::Point(c4) };
-    corners = order_points( corners);
+    _board = order_points( corners);
 
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( canvas, drawing, cv::COLOR_GRAY2BGR);
-    std::vector<Points> c(1, corners);
-    cv::drawContours( drawing, c, -1, cv::Scalar(255,0,0));
-    //Points board = Points( order_points( corners));
-    //_cont = std::vector<Points>( 1, board);
-    //@@@
-    int tt = 42;
-    
-
-    // To do:
-    // - there are vertical and horiz lines (dy > dx => vert else horiz)
-    // - the horiz lines get clustered by y coord
-    // - the vert lines get clustered by x coord
-    // => four clusters  v_left, v_right, h_top, h_bot
-    // for each cluster, for each line, get ten points, put a line through the points
-    //  cv::vec4f linemerge (std::vector<cv::vec4f>)
-    // get the corners by finding the 4 intersections between (v1,h1),(v1,h2),(v2,h1),(v2,h2)
-    // order_points, etc pp
-    
-//    std::vector<float> rhos;   ILOOP (lines.size()) { rhos.push_back(lines[i][0]); };
-//    std::vector<float> thetas; ILOOP (lines.size()) { thetas.push_back(lines[i][1]); };
-//    //std::vector<float> vi = { 1,2,3 , 10,11,12};
-//    std::vector<int> rho_labels, theta_labels;
-//    std::vector<float> rho_centers, theta_centers;
-//    cv::kmeans( rhos, 2, rho_labels,
-//               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
-//               3, cv::KMEANS_PP_CENTERS, rho_centers);
-//    cv::kmeans( thetas, 2, theta_labels,
-//               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
-//               3, cv::KMEANS_PP_CENTERS, theta_centers);
-//    std::vector<cv::Vec2f> four_lines;
-//    four_lines.push_back( {rho_centers[0], theta_centers[0]} );
-//    four_lines.push_back( {rho_centers[0], theta_centers[1]} );
-//    four_lines.push_back( {rho_centers[1], theta_centers[0]} );
-//    four_lines.push_back( {rho_centers[1], theta_centers[1]} );
-
-//    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-//    cv::cvtColor( canvas, drawing, cv::COLOR_GRAY2BGR);
-//    drawLines( lines, drawing);
-    //drawPolarLines( four_lines, drawing);
-//    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(20,20));
-//    cv::dilate( canvas,canvas,element);
-//    cv::erode(canvas, canvas, element);
-//    cv::dilate( canvas,canvas,element);
-//    cv::erode(canvas, canvas, element);
-//    cv::dilate( canvas,canvas,element);
-//    cv::erode(canvas, canvas, element);
-//    cv::findContours( canvas, _cont, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-//    std::sort( _cont.begin(), _cont.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
-//    cv::Mat drawing = cv::Mat::zeros( _m.size(), CV_8UC3 );
-//    draw_contours( _cont, drawing);
-//    //Points board = approx_poly( flatten(_cont), 4, _sld_low);
-//    Points board = approx_poly( _cont[0], 4);
-//    board = order_points( board);
-//    _board = board;
-//    _cont = std::vector<Points>( 1, board);
-//    cv::drawContours( drawing, _cont, -1, cv::Scalar(255,0,0));
-    // Convert back to UIImage
+    ///_cont = std::vector<Points> (1, corners);
+    cv::drawContours( drawing, std::vector<Points> (1, _board), -1, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
@@ -828,11 +770,12 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
 - (UIImage *) f04_zoom_in
 {
     // Just the board
-    Points2f b =  Points2f( _cont[0].begin(), _cont[0].end());
+    //Points2f b =  Points2f( _cont[0].begin(), _cont[0].end());
+    Points2f b =  Points2f( _board.begin(), _board.end());
     four_point_transform( _gray, _mboard, b);
 
     // Zoom out a little
-    Points2f board_stretched = enlarge_board( _cont[0]);
+    Points2f board_stretched = enlarge_board( _board);
     cv::Mat transform = four_point_transform( _gray, _gray, board_stretched);
     //Points2f board = Points2f( _board.begin(), _board.end());
     cv::perspectiveTransform( b, _board_zoomed, transform);
@@ -847,7 +790,8 @@ void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
     cv::resize( _mboard, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
     
-    _board_sz = get_boardsize_by_fft( _m);
+    //_board_sz = get_boardsize_by_fft( _m);
+    _board_sz = 13;
     return _board_sz;
 }
 
