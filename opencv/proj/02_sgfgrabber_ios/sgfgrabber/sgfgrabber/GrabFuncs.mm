@@ -784,19 +784,15 @@ Points best_board( std::vector<Points> boards)
 //--------------------------------
 - (UIImage *) f05_black_blobs //@@@
 {
+    // Find black stones
     adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       21,  // neighborhood_size
                       16); // constant to add. Large values make lines disappear.
+    // Separate adjacent blobs from each other
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
     cv::erode( _m, _m, element );
-    //cv::dilate( _m, _m, element );
     cv::erode( _m, _m, element );
-    //cv::dilate( _m, _m, element );
-    //cv::erode( _m, _m, element );
-
-    //cv::Size( 2*size + 1, 2*size+1 ),
-    //cv::Point( size, size ) );
-    // Set up the detector.
+    // Find the blobs. These are the B stones.
     cv::SimpleBlobDetector::Params params;
     params.filterByColor = true;
     params.blobColor = 255;
@@ -807,18 +803,39 @@ Points best_board( std::vector<Points> boards)
     params.minCircularity = 0.5;
     params.maxCircularity = 100;
     params.minArea = 10;
-    //params.minArea = 30;
     params.maxArea = 200;
     cv::Ptr<cv::SimpleBlobDetector> d = cv::SimpleBlobDetector::create(params);
-    
-    // Detect blobs.
     std::vector<cv::KeyPoint> keypoints;
     d->detect( _m, keypoints);
+
+    // Find empty intersections
+    adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                      21,  // neighborhood_size
+                      12); // constant to add. Large values make lines disappear.
+    cv::Mat eelement = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    cv::erode( _m, _m, eelement );
+    cv::dilate( _m, _m, eelement );
+    //cv::erode( _m, _m, eelement );
+    cv::SimpleBlobDetector::Params eparams;
+    eparams.filterByColor = true;
+    eparams.blobColor = 255;
+    eparams.minDistBetweenBlobs = 2;
+    eparams.filterByConvexity = false;
+    eparams.filterByInertia = false;
+    eparams.filterByCircularity = false;
+    eparams.minCircularity = 0.5;
+    eparams.maxCircularity = 100;
+    eparams.minArea = 5;
+    eparams.maxArea = 20;
+    cv::Ptr<cv::SimpleBlobDetector> ed = cv::SimpleBlobDetector::create(eparams);
+    std::vector<cv::KeyPoint> ekeypoints;
+    ed->detect( _m, ekeypoints);
     
+    // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
-    ILOOP ( keypoints.size()) {
-        draw_point( keypoints[i].pt, drawing,1);
+    ILOOP ( ekeypoints.size()) {
+        draw_point( ekeypoints[i].pt, drawing,1);
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
