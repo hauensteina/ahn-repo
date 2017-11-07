@@ -254,17 +254,7 @@
                 break;
             case 5:
                 state++;
-                int sz = [self.grabFuncs f05_get_boardsize];
-                self.lbDbg.text = [NSString stringWithFormat:@"%d", sz];
-                break;
-            case 6:
-                state++;
-                img = [self.grabFuncs f06_get_intersections];
-                [self.cameraView setImage:img];
-                break;
-            case 7:
-                state++;
-                img = [self.grabFuncs f07_classify];
+                img = [self.grabFuncs f05_black_blobs];
                 [self.cameraView setImage:img];
                 break;
             default:

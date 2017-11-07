@@ -697,7 +697,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 Points best_board( std::vector<Points> boards)
 {
     Points res(4);
-    int minidx;
+    int minidx=0;
     float minArea = 1E9;
     ILOOP (boards.size()) {
         Points b = boards[i];
@@ -723,14 +723,12 @@ Points best_board( std::vector<Points> boards)
     UIImageToMat( img, _m);
     resize( _m, _m, 350);
     cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
-    adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       3, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
     UIImage *res = MatToUIImage( _m);
     return(res);
 }
-
-
 
 //--------------------------
 - (UIImage *) f01_closing
@@ -764,7 +762,7 @@ Points best_board( std::vector<Points> boards)
     return res;
 }
 
-//-----------------------------------
+//----------------------------
 - (UIImage *) f04_zoom_in
 {
     if (!_board.size()) { return MatToUIImage( _m); }
@@ -783,8 +781,51 @@ Points best_board( std::vector<Points> boards)
     return res;
 }
 
+//--------------------------------
+- (UIImage *) f05_black_blobs //@@@
+{
+    adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                      21,  // neighborhood_size
+                      16); // constant to add. Large values make lines disappear.
+    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    cv::erode( _m, _m, element );
+    //cv::dilate( _m, _m, element );
+    cv::erode( _m, _m, element );
+    //cv::dilate( _m, _m, element );
+    //cv::erode( _m, _m, element );
+
+    //cv::Size( 2*size + 1, 2*size+1 ),
+    //cv::Point( size, size ) );
+    // Set up the detector.
+    cv::SimpleBlobDetector::Params params;
+    params.filterByColor = true;
+    params.blobColor = 255;
+    params.minDistBetweenBlobs = 2;
+    params.filterByConvexity = false;
+    params.filterByInertia = false;
+    params.filterByCircularity = true;
+    params.minCircularity = 0.5;
+    params.maxCircularity = 100;
+    params.minArea = 10;
+    //params.minArea = 30;
+    params.maxArea = 200;
+    cv::Ptr<cv::SimpleBlobDetector> d = cv::SimpleBlobDetector::create(params);
+    
+    // Detect blobs.
+    std::vector<cv::KeyPoint> keypoints;
+    d->detect( _m, keypoints);
+    
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
+    ILOOP ( keypoints.size()) {
+        draw_point( keypoints[i].pt, drawing,1);
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
 //--------------------------
-- (int) f05_get_boardsize
+- (int) fxx_get_boardsize
 {
     cv::resize( _mboard, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
     //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
@@ -795,7 +836,7 @@ Points best_board( std::vector<Points> boards)
 }
 
 //------------------------------------
-- (UIImage *) f06_get_intersections
+- (UIImage *) fxx_get_intersections
 {
     if (!_board.size()) { return MatToUIImage( _m); }
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
@@ -889,7 +930,7 @@ void printvec( char *msg, std::vector<int> v)
 
 // Classify intersection into b,w,empty
 //----------------------------------------
-- (UIImage *) f07_classify
+- (UIImage *) fxx_classify
 {
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
