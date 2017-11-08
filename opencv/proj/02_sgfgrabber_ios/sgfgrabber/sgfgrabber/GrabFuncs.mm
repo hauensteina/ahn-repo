@@ -46,6 +46,7 @@ const cv::Size TMPL_SZ(16,16);
 @property Points2f intersections; // locations of line intersections (81,361)
 @property int delta_v; // approx vertical line dist
 @property int delta_h; // approx horiz line dist
+@property Points2f black_or_empty; // places where we suspect black stones or empty
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -781,9 +782,12 @@ Points best_board( std::vector<Points> boards)
     return res;
 }
 
-//--------------------------------
-- (UIImage *) f05_black_blobs //@@@
+
+// Find black stones and empty intersections
+//---------------------------------------------
+- (UIImage *) f05_black_blobs
 {
+    _black_or_empty = Points2f();
     // Find black stones
     adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       21,  // neighborhood_size
@@ -807,7 +811,8 @@ Points best_board( std::vector<Points> boards)
     cv::Ptr<cv::SimpleBlobDetector> d = cv::SimpleBlobDetector::create(params);
     std::vector<cv::KeyPoint> keypoints;
     d->detect( _m, keypoints);
-
+    ILOOP (keypoints.size()) { _black_or_empty.push_back(keypoints[i].pt); }
+    
     // Find empty intersections
     adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       21,  // neighborhood_size
@@ -830,12 +835,212 @@ Points best_board( std::vector<Points> boards)
     cv::Ptr<cv::SimpleBlobDetector> ed = cv::SimpleBlobDetector::create(eparams);
     std::vector<cv::KeyPoint> ekeypoints;
     ed->detect( _m, ekeypoints);
-    
+    ILOOP (keypoints.size()) { _black_or_empty.push_back(ekeypoints[i].pt); }
+
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
     ILOOP ( ekeypoints.size()) {
         draw_point( ekeypoints[i].pt, drawing,1);
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+// Compute all gridpoints given corners and boardsize
+//----------------------------------------------------
+void get_grid( const cv::Point2f *corners, int boardsize, Points2f &grid)
+{
+    cv::Point2f tl = corners[0];
+    cv::Point2f tr = corners[1];
+    cv::Point2f br = corners[2];
+    cv::Point2f bl = corners[3];
+    
+    std::vector<float> left_x;
+    std::vector<float> left_y;
+    std::vector<float> right_x;
+    std::vector<float> right_y;
+    ILOOP (boardsize) {
+        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (float)(boardsize-1));
+        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (float)(boardsize-1));
+        right_x.push_back( tr.x + i * (br.x - tr.x) / (float)(boardsize-1));
+        right_y.push_back( tr.y + i * (br.y - tr.y) / (float)(boardsize-1));
+    }
+    std::vector<float> top_x;
+    std::vector<float> top_y;
+    std::vector<float> bot_x;
+    std::vector<float> bot_y;
+    ILOOP (boardsize) {
+        top_x.push_back( tl.x + i * (tr.x - tl.x) / (float)(boardsize-1));
+        top_y.push_back( tl.y + i * (tr.y - tl.y) / (float)(boardsize-1));
+        bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(boardsize-1));
+        bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(boardsize-1));
+    }
+    //float delta_v = abs(int(round( 0.5 * (bot_y[0] - top_y[0]) / (boardsize -1))));
+    //float delta_h = abs(int(round( 0.5 * (right_x[0] - left_x[0]) / (boardsize -1))));
+    
+    grid = Points2f();
+    RLOOP (boardsize) {
+        CLOOP (boardsize) {
+            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
+                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
+            grid.push_back(p);
+        }
+    }
+} // get_grid()
+
+// Get MSE of the dots relative to the grid defined by corners and boardsize
+//-----------------------------------------------------------------------------
+float grid_err( const cv::Point2f *corners, const Points2f &dots, int boardsize)
+{
+    Points2f gridpoints;
+    get_grid( corners, boardsize, gridpoints);
+    double err = 0;
+    ILOOP (dots.size()) {
+        float mind = 10E9;
+        JLOOP (gridpoints.size()) {
+            float d = cv::norm( dots[i] - gridpoints[j]);
+            if (d < mind) {
+                mind = d;
+            }
+        }
+        //NSLog(@"mind:%f", mind);
+        err += mind * mind;
+    }
+    err = sqrt(err);
+    return err;
+}
+
+// One SGD step to make the grid match the dots better
+//--------------------------------------------------------------
+void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
+{
+    const int NONE  = 0;
+    const int UP    = 1;
+    const int DOWN  = 2;
+    const int LEFT  = 3;
+    const int RIGHT = 4;
+    const int OVER  = 5;
+    
+    std::vector<int> tlmotions = { NONE, DOWN, RIGHT };
+    std::vector<int> trmotions = { NONE, DOWN, LEFT };
+    std::vector<int> brmotions = { NONE, UP, LEFT };
+    std::vector<int> blmotions = { NONE, UP, RIGHT };
+
+    cv::Point2f deltas[OVER];
+    float rate = 0.25;
+    deltas[NONE]  = cv::Point2f(0,0);
+    deltas[UP]    = cv::Point2f(0,-rate);
+    deltas[DOWN]  = cv::Point2f(0,rate);
+    deltas[LEFT]  = cv::Point2f(-rate,0);
+    deltas[RIGHT] = cv::Point2f(rate,0);
+    
+    cv::Point2f bestCorners[4];
+    cv::Point2f curCorners[4];
+    float mind = 1E9;
+
+    for (int tl = 0; tl < tlmotions.size(); tl++) {
+        for (int tr = 0; tr < trmotions.size(); tr++) {
+            for (int br = 0; br < brmotions.size(); br++) {
+                for (int bl = 0; bl < blmotions.size(); bl++) {
+                    curCorners[0] = corners[0] + deltas[tlmotions[tl]];
+                    curCorners[1] = corners[1] + deltas[trmotions[tr]];
+                    curCorners[2] = corners[2] + deltas[brmotions[br]];
+                    curCorners[3] = corners[3] + deltas[blmotions[bl]];
+                    float newd = grid_err( curCorners, dots, boardsize);
+                    if (newd < mind) {
+                        bestCorners[0] = curCorners[0];
+                        bestCorners[1] = curCorners[1];
+                        bestCorners[2] = curCorners[2];
+                        bestCorners[3] = curCorners[3];
+                        mind = newd;
+                    }
+                }
+            }
+        }
+    }
+    //if (corners.size() != 4) {
+    //    int tt = 42;
+    //}
+    corners[0] = bestCorners[0];
+    corners[1] = bestCorners[1];
+    corners[2] = bestCorners[2];
+    corners[3] = bestCorners[3];
+    
+    NSLog(@"(%d %d) (%d %d) (%d %d) (%d %d)",
+          int(corners[0].x),
+          int(corners[0].y),
+          int(corners[1].x),
+          int(corners[1].y),
+          int(corners[2].x),
+          int(corners[2].y),
+          int(corners[3].x),
+          int(corners[3].y));
+//
+//    Points2f betterCorners = corners;
+//    Points2f origCorners = corners;
+//    bool found = false;
+//    float mind = grid_err( corners, dots, boardsize);
+//    //std::vector<int> mindx(4,0);
+//    //std::vector<int> mindy(4,0);
+//    float newd = 0;
+//    ILOOP (4) {
+//        //cv::Point2f c = corners[i]; // save corner
+//        for (int dx = -1; dx <=1; dx += 1) {
+//            for (int dy = -1; dy <=1; dy += 1) {
+//                corners[i].x = origCorners[i].x + dx;
+//                corners[i].y = origCorners[i].y + dy;
+//                newd = grid_err( corners, dots, boardsize);
+//                if (newd < mind) {
+//                    found = true;
+//                    mind = newd;
+//                    betterCorners = corners;
+//                    //NSLog(@"dx:%d dy:%d",dx,dy);
+//                }
+//            } // for (dy)
+//        } // for (dx)
+//    } // ILOOP
+//    if (!found) {
+//        NSLog(@"stuck");
+//    }
+//    corners = betterCorners;
+//    float tt = grid_err( corners, dots, boardsize);
+//    if (tt > mind) {
+//        int xx = 42;
+//    }
+//    ILOOP (4) {
+//        corners[i].x += mindx[i];
+//        corners[i].y += mindy[i];
+//    }
+} // grid_sgd
+
+// Find grid by sgd from black stones and empty
+//-----------------------------------------------
+- (UIImage *) f06_sgd_grid //@@@
+{
+    //float err = 10E9;
+    //float delta_err = 10E9;
+    float epsilon = 0;
+    int boardsize = 13;
+    cv::Point2f corners[] = { cv::Point2f(0,0), cv::Point2f(_gray.cols,0),
+        cv::Point2f(_gray.cols,_gray.rows), cv::Point2f(0,_gray.rows) };
+
+    //while (delta_err > epsilon) {
+    ILOOP(1000) {
+        grid_sgd( corners, _black_or_empty, boardsize);
+        float newerr = grid_err( corners, _black_or_empty, boardsize);
+        //delta_err = err - newerr;
+        //err = newerr;
+        NSLog( @"newerr: %f", newerr);
+    }
+    
+    // Show results
+    Points2f grid;
+    get_grid( corners, boardsize, grid);
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
+    ILOOP (grid.size()) {
+        draw_point( grid[i], drawing,1);
     }
     UIImage *res = MatToUIImage( drawing);
     return res;

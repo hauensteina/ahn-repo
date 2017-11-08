@@ -257,6 +257,11 @@
                 img = [self.grabFuncs f05_black_blobs];
                 [self.cameraView setImage:img];
                 break;
+            case 6:
+                state++;
+                img = [self.grabFuncs f06_sgd_grid];
+                [self.cameraView setImage:img];
+                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;
