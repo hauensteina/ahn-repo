@@ -86,6 +86,18 @@ const cv::Size TMPL_SZ(16,16);
     return self;
 }
 
+//---------------------------------
+void printMat( const cv::Mat &m)
+{
+    RLOOP (m.rows) {
+        printf("\n");
+        CLOOP (m.cols) {
+            printf("%4d",m.at<uint8_t>(r,c) );
+        }
+    }
+    printf("\n");
+}
+
 // Prepare image for use as a similarity template
 //-------------------------------------------------
 void templify( cv::Mat &m)
@@ -778,17 +790,45 @@ Points best_board( std::vector<Points> boards)
     Points2f board_stretched = enlarge_board( _board);
     cv::Mat transform = four_point_transform( _gray, _gray, board_stretched);
     //Points2f board = Points2f( _board.begin(), _board.end());
+    // _board_zoomed has the approximate corners of the board in the zoomed version
     cv::perspectiveTransform( b, _board_zoomed, transform);
     
     UIImage *res = MatToUIImage( _gray);
     return res;
 }
 
+// Save smalll crops around intersections for use as template
+//-------------------------------------------------------------------------------
+void save_intersections( const cv::Mat img,
+                        const Points2f &intersections, int delta_v, int delta_h)
+{
+    ILOOP( intersections.size()) {
+        float x = intersections[i].x;
+        float y = intersections[i].y;
+        cv::Rect rect( x - delta_h/2.0, y - delta_v/2.0, delta_h, delta_v );
+        if (0 <= rect.x &&
+            0 <= rect.width &&
+            rect.x + rect.width <= img.cols &&
+            0 <= rect.y &&
+            0 <= rect.height &&
+            rect.y + rect.height <= img.rows)
+        {
+            cv::Mat hood = cv::Mat( img, rect);
+            NSString *fname = nsprintf(@"hood_%03d.jpg",i);
+            fname = getFullPath( fname);
+            cv::imwrite( [fname UTF8String], hood);
+        }
+    } // ILOOP
+} // save_intersections()
 
 // Find black stones and empty intersections
 //---------------------------------------------
 - (UIImage *) f05_black_blobs
 {
+    Points2f intersections;
+    float delta_v, delta_h;
+    _board_sz = 19;
+    get_intersections( _board_zoomed, _board_sz, intersections, delta_v, delta_h);
     _black_or_empty = Points2f();
     // Find black stones
     adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
@@ -832,10 +872,46 @@ Points best_board( std::vector<Points> boards)
     cv::adaptiveThreshold( _gray, tmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           11,  // neighborhood_size
                           8); // 8 or ten, need to try both. 8 better for 19x19
-    cv::threshold(tmp, tmp, 1, 255, CV_THRESH_BINARY_INV);
     cv::Mat element1 = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::erode( tmp, tmp, element );
-    cv::erode( tmp, tmp, element );
+    cv::dilate( tmp, tmp, element );
+    //save_intersections( tmp, intersections, delta_v, delta_h);
+    const int tsz = 15;
+    uint8_t cross[tsz*tsz] = {
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0
+    };
+    cv::Mat mcross = cv::Mat(tsz, tsz, CV_8UC1, cross);
+    mcross *= 255;
+    cv::Mat matchRes;
+    cv::Mat tmp1;
+    cv::copyMakeBorder( tmp, tmp1, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
+    cv::matchTemplate( tmp1, mcross, matchRes, CV_TM_SQDIFF);
+    cv::normalize( matchRes, matchRes, 0 , 255, CV_MINMAX, CV_8UC1);
+    cv::adaptiveThreshold( matchRes, matchRes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          11,  // neighborhood_size
+                          80); // threshold; less is more
+    int tt = 42;
+
+
+    
+    /// Inverted case
+    //cv::threshold(tmp, tmp, 1, 255, CV_THRESH_BINARY_INV);
+    //cv::Mat element1 = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    //cv::erode( tmp, tmp, element );
+    //cv::erode( tmp, tmp, element );
 //    cv::SimpleBlobDetector::Params params1;
 //    params1.filterByColor = true;
 //    params1.blobColor = 255;
@@ -860,59 +936,19 @@ Points best_board( std::vector<Points> boards)
 //    ILOOP ( ekeypoints.size()) {
 //        draw_point( ekeypoints[i].pt, drawing,1);
 //    }
-    UIImage *res = MatToUIImage( tmp);
+    UIImage *res = MatToUIImage( matchRes);
     //UIImage *res = MatToUIImage( drawing);
     return res;
 }
 
-// Compute all gridpoints given corners and boardsize
-//----------------------------------------------------
-void get_grid( const cv::Point2f *corners, int boardsize, Points2f &grid)
-{
-    cv::Point2f tl = corners[0];
-    cv::Point2f tr = corners[1];
-    cv::Point2f br = corners[2];
-    cv::Point2f bl = corners[3];
-    
-    std::vector<float> left_x;
-    std::vector<float> left_y;
-    std::vector<float> right_x;
-    std::vector<float> right_y;
-    ILOOP (boardsize) {
-        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (float)(boardsize-1));
-        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (float)(boardsize-1));
-        right_x.push_back( tr.x + i * (br.x - tr.x) / (float)(boardsize-1));
-        right_y.push_back( tr.y + i * (br.y - tr.y) / (float)(boardsize-1));
-    }
-    std::vector<float> top_x;
-    std::vector<float> top_y;
-    std::vector<float> bot_x;
-    std::vector<float> bot_y;
-    ILOOP (boardsize) {
-        top_x.push_back( tl.x + i * (tr.x - tl.x) / (float)(boardsize-1));
-        top_y.push_back( tl.y + i * (tr.y - tl.y) / (float)(boardsize-1));
-        bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(boardsize-1));
-        bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(boardsize-1));
-    }
-    //float delta_v = abs(int(round( 0.5 * (bot_y[0] - top_y[0]) / (boardsize -1))));
-    //float delta_h = abs(int(round( 0.5 * (right_x[0] - left_x[0]) / (boardsize -1))));
-    
-    grid = Points2f();
-    RLOOP (boardsize) {
-        CLOOP (boardsize) {
-            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
-                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
-            grid.push_back(p);
-        }
-    }
-} // get_grid()
 
 // Get MSE of the dots relative to the grid defined by corners and boardsize
 //-----------------------------------------------------------------------------
-float grid_err( const cv::Point2f *corners, const Points2f &dots, int boardsize)
+float grid_err( const Points2f &corners, const Points2f &dots, int boardsize)
 {
     Points2f gridpoints;
-    get_grid( corners, boardsize, gridpoints);
+    float delta_v, delta_h;
+    get_intersections( corners, boardsize, gridpoints, delta_v, delta_h);
     double err = 0;
     ILOOP (gridpoints.size()) {
         float mind = 10E9;
@@ -954,8 +990,8 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     deltas[LEFT]  = cv::Point2f(-1,0);
     deltas[RIGHT] = cv::Point2f(1,0);
     
-    cv::Point2f bestCorners[4];
-    cv::Point2f curCorners[4];
+    Points2f bestCorners(4);
+    Points2f curCorners(4);
     float mind = 1E9;
 
     for (int r = 0; r < rates.size(); r++) {
@@ -1072,6 +1108,51 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     return _board_sz;
 }
 
+// Find all intersections from corners and boardsize
+//--------------------------------------------------------------------------------
+void get_intersections( const Points2f &corners, int boardsz,
+                       Points2f &result, float &delta_v, float &delta_h)
+{
+    if (corners.size() != 4) return;
+    
+    cv::Point2f tl = corners[0];
+    cv::Point2f tr = corners[1];
+    cv::Point2f br = corners[2];
+    cv::Point2f bl = corners[3];
+    
+    std::vector<float> left_x;
+    std::vector<float> left_y;
+    std::vector<float> right_x;
+    std::vector<float> right_y;
+    ILOOP (boardsz) {
+        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (float)(boardsz-1));
+        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (float)(boardsz-1));
+        right_x.push_back( tr.x + i * (br.x - tr.x) / (float)(boardsz-1));
+        right_y.push_back( tr.y + i * (br.y - tr.y) / (float)(boardsz-1));
+    }
+    std::vector<float> top_x;
+    std::vector<float> top_y;
+    std::vector<float> bot_x;
+    std::vector<float> bot_y;
+    ILOOP (boardsz) {
+        top_x.push_back( tl.x + i * (tr.x - tl.x) / (float)(boardsz-1));
+        top_y.push_back( tl.y + i * (tr.y - tl.y) / (float)(boardsz-1));
+        bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(boardsz-1));
+        bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(boardsz-1));
+    }
+    delta_v = abs(int(round( 0.5 * (bot_y[0] - top_y[0]) / (boardsz -1))));
+    delta_h = abs(int(round( 0.5 * (right_x[0] - left_x[0]) / (boardsz -1))));
+    
+    result = Points2f();
+    RLOOP (boardsz) {
+        CLOOP (boardsz) {
+            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
+                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
+            result.push_back(p);
+        }
+    }
+} // get_intersections()
+
 //------------------------------------
 - (UIImage *) fxx_get_intersections
 {
@@ -1079,44 +1160,12 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
     
-    cv::Point2f tl = _board_zoomed[0];
-    cv::Point2f tr = _board_zoomed[1];
-    cv::Point2f br = _board_zoomed[2];
-    cv::Point2f bl = _board_zoomed[3];
-    
-    std::vector<float> left_x;
-    std::vector<float> left_y;
-    std::vector<float> right_x;
-    std::vector<float> right_y;
-    ILOOP (_board_sz) {
-        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (float)(_board_sz-1));
-        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (float)(_board_sz-1));
-        right_x.push_back( tr.x + i * (br.x - tr.x) / (float)(_board_sz-1));
-        right_y.push_back( tr.y + i * (br.y - tr.y) / (float)(_board_sz-1));
+    Points2f intersections;
+    float delta_v, delta_h;
+    get_intersections( _board_zoomed, _board_sz, intersections, delta_v, delta_h);
+    ILOOP (intersections.size()) {
+        draw_point( intersections[i], drawing, 1);
     }
-    std::vector<float> top_x;
-    std::vector<float> top_y;
-    std::vector<float> bot_x;
-    std::vector<float> bot_y;
-    ILOOP (_board_sz) {
-        top_x.push_back( tl.x + i * (tr.x - tl.x) / (float)(_board_sz-1));
-        top_y.push_back( tl.y + i * (tr.y - tl.y) / (float)(_board_sz-1));
-        bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(_board_sz-1));
-        bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(_board_sz-1));
-    }
-    _delta_v = abs(int(round( 0.5 * (bot_y[0] - top_y[0]) / (_board_sz -1))));
-    _delta_h = abs(int(round( 0.5 * (right_x[0] - left_x[0]) / (_board_sz -1))));
-
-    _intersections = Points2f();
-    RLOOP (_board_sz) {
-        CLOOP (_board_sz) {
-            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
-                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
-            _intersections.push_back(p);
-            draw_point( p, drawing, 1);
-        }
-    }
-    
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f06_get_intersections()
@@ -1142,15 +1191,6 @@ float get_brightness( const cv::Mat &img, float frac=4)
     int area = get_center_crop( img, crop, frac);
     float ssum = cv::sum(crop)[0];
     return ssum / area;
-}
-
-//---------------------------------------------
-- (NSString *) getFullPath:(NSString *)fname
-{
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentsDirectory = [paths objectAtIndex:0];
-    NSString *filePath = [documentsDirectory stringByAppendingPathComponent:fname];
-    return filePath;
 }
 
 //--------------------------------------------

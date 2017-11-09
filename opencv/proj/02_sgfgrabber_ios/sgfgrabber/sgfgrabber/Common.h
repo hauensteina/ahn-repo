@@ -38,10 +38,18 @@ r = int(rr * 255); g = int(gg * 255); b = int(bb * 255); \
 
 extern UIFont *g_fntBtn;
 
-void g_init(void); // Init globals. Called from Appdelegate.
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+    void g_init(void); // Init globals. Called from Appdelegate.
+    NSString *nsprintf (NSString *format, ...);
+    NSString* getFullPath( NSString *fname);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 
 
 
