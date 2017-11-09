@@ -46,7 +46,7 @@ const cv::Size TMPL_SZ(16,16);
 @property Points2f intersections; // locations of line intersections (81,361)
 @property int delta_v; // approx vertical line dist
 @property int delta_h; // approx horiz line dist
-@property Points2f black_or_empty; // places where we suspect black stones or empty
+@property Points black_or_empty; // places where we suspect black stones or empty
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -113,9 +113,10 @@ void PointsToInt( const Points2f &pf, Points &pi)
 // Draw one contour (e.g. the board)
 //------------------------------------
 template <typename Points_>
-void drawContour( cv::Mat &img, const Points_ &cont, cv::Scalar color = cv::Scalar(255,0,0,255))
+void drawContour( cv::Mat &img, const Points_ &cont,
+                 cv::Scalar color = cv::Scalar(255,0,0), int thickness = 1)
 {
-    cv::drawContours( img, std::vector<Points_>( 1, cont), -1, color);
+    cv::drawContours( img, std::vector<Points_>( 1, cont), -1, color, thickness, 8);
 }
 
 // Prepare image for use as a similarity template
@@ -418,7 +419,7 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
 //--------------------------------------
 void draw_point( cv::Point p, cv::Mat &img, int r=10, cv::Scalar col = cv::Scalar(255,0,0))
 {
-    cv::circle( img, p, r, cv::Scalar(255,0,0), -1);
+    cv::circle( img, p, r, col, -1);
 }
 
 
@@ -503,11 +504,9 @@ Points stretch_line(Points line, float factor )
     return res;
 }
 
-// Make our 4-polygon a little larger
-//-------------------------------------
-Points2f enlarge_board( Points board)
+//--------------------------------------------------
+Points2f scale_board( Points board, float factor)
 {
-    float factor = STRETCH_FACTOR;
     board = order_points( board);
     Points diag1_stretched = stretch_line( { board[0],board[2] }, factor);
     Points diag2_stretched = stretch_line( { board[1],board[3] }, factor);
@@ -515,10 +514,15 @@ Points2f enlarge_board( Points board)
     return res;
 }
 
+// Make our 4-polygon a little larger
+//-------------------------------------
+Points2f enlarge_board( Points board)
+{
+    return scale_board( board, STRETCH_FACTOR);
+}
 
 // Zoom into an image area where pts are the four corners.
 // From pyimagesearch by Adrian Rosebrock
-// TODO: It's a kludge. Do it right.
 //--------------------------------------------------------
 cv::Mat four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
 {
@@ -633,7 +637,7 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
 } // get_boardsize_by_fft
 
 //--------------------------------------------------------------
-void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst)
+void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0))
 {
     ILOOP (lines.size()) {
         float rho = lines[i][0], theta = lines[i][1];
@@ -644,7 +648,7 @@ void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst)
         pt1.y = cvRound(y0 + 1000*(a));
         pt2.x = cvRound(x0 - 1000*(-b));
         pt2.y = cvRound(y0 - 1000*(a));
-        line( dst, pt1, pt2, cv::Scalar(0,0,255), 1, CV_AA);
+        line( dst, pt1, pt2, col, 1, CV_AA);
     }
 }
 
@@ -791,7 +795,7 @@ Points best_board( std::vector<Points> boards)
     cv::Mat drawing, boardImg;
     _board = find_board( _m, boardImg);
     if (!_board.size()) { return MatToUIImage( _m); }
-    cv::cvtColor( boardImg, drawing, cv::COLOR_GRAY2BGR);
+    cv::cvtColor( boardImg, drawing, cv::COLOR_GRAY2RGB);
     cv::drawContours( drawing, std::vector<Points> (1, _board), -1, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -876,39 +880,129 @@ void find_black_stones( const cv::Mat &img, Points2f &result)
 //-------------------------------------------------------------
 void find_empty_places( const cv::Mat &img, Points &result)
 {
+    // Prepare image for template matching
     cv::Mat mtmp;
     cv::adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           11,  // neighborhood_size
                           8); // 8 or ten, need to try both. 8 better for 19x19
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
     cv::dilate( mtmp, mtmp, element );
+    
+    // Define the templates
     const int tsz = 15;
     uint8_t cross[tsz*tsz] = {
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        0,0,0,0,0,1,1,1,1,1,0,0,0,0,0
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
     };
-    cv::Mat mcross = cv::Mat(tsz, tsz, CV_8UC1, cross);
-    mcross *= 255;
+    uint8_t right[tsz*tsz] = {
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0
+    };
+    uint8_t left[tsz*tsz] = {
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,
+        0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,
+        0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+    };
+    uint8_t top[tsz*tsz] = {
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0
+    };
+    uint8_t bottom[tsz*tsz] = {
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    };
+    cv::Mat mcross  = 255 * cv::Mat(tsz, tsz, CV_8UC1, cross);
+    cv::Mat mright  = 255 * cv::Mat(tsz, tsz, CV_8UC1, right);
+    cv::Mat mleft   = 255 * cv::Mat(tsz, tsz, CV_8UC1, left);
+    cv::Mat mtop    = 255 * cv::Mat(tsz, tsz, CV_8UC1, top);
+    cv::Mat mbottom = 255 * cv::Mat(tsz, tsz, CV_8UC1, bottom);
+    
+    // Match
+    //matchTemplate( mtmp, mcross, result, 90);
+    matchTemplate( mtmp, mright, result, 90);
+    matchTemplate( mtmp, mleft, result, 90);
+    matchTemplate( mtmp, mtop, result, 90);
+    matchTemplate( mtmp, mbottom, result, 90);
+} // find_empty_places()
+
+// Template maching for empty intersections
+//------------------------------------------------------------------------------
+void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, int thresh)
+{
     cv::Mat matchRes;
-    cv::copyMakeBorder( mtmp, mtmp, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
-    cv::matchTemplate( mtmp, mcross, matchRes, CV_TM_SQDIFF);
+    cv::Mat mtmp;
+    int tsz = templ.rows;
+    cv::copyMakeBorder( img, mtmp, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
+    cv::matchTemplate( mtmp, templ, matchRes, CV_TM_SQDIFF);
     cv::normalize( matchRes, matchRes, 0 , 255, CV_MINMAX, CV_8UC1);
     cv::adaptiveThreshold( matchRes, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          //11,  // neighborhood_size
                           11,  // neighborhood_size
-                          80); // threshold; less is more
+                          thresh); // threshold; less is more
     // Find the blobs. They are the empty places.
     cv::SimpleBlobDetector::Params params;
     params.filterByColor = true;
@@ -917,24 +1011,23 @@ void find_empty_places( const cv::Mat &img, Points &result)
     params.filterByConvexity = false;
     params.filterByInertia = false;
     params.filterByCircularity = false;
-    params.minCircularity = 0.5;
+    params.minCircularity = 0.0;
     params.maxCircularity = 100;
     params.minArea = 0;
-    params.maxArea = 200;
+    params.maxArea = 100;
     cv::Ptr<cv::SimpleBlobDetector> d = cv::SimpleBlobDetector::create(params);
     std::vector<cv::KeyPoint> keypoints;
     d->detect( mtmp, keypoints);
-    result = Points();
+    //result = Points();
     ILOOP (keypoints.size()) { result.push_back(keypoints[i].pt); }
     
-} // find_empty_places
-
+} // matchTemplate()
 
 
 
 // Find black stones and empty intersections
 //---------------------------------------------
-- (UIImage *) f05_find_grid
+- (UIImage *) f05_find_intersections
 {
     //Points2f intersections;
     //float delta_v, delta_h;
@@ -945,54 +1038,28 @@ void find_empty_places( const cv::Mat &img, Points &result)
     //Points2f black_stones;
     //find_black_stones( _gray, black_stones);
 
-    // White stones too hard. We don't need them.
-
     Points empty_places;
     find_empty_places( _gray, empty_places);
+    // Use only inner ones
+    Points2f innerboard = scale_board( _board_zoomed, 1.01);
+    _black_or_empty = Points();
+    ILOOP (empty_places.size()) {
+        cv::Point2f p( empty_places[i]);
+        if (cv::pointPolygonTest( innerboard, p, false) > 0) {
+            _black_or_empty.push_back( p);
+        }
+    }
     
-    // Adjust _board_zoomed corners until the grid fits
-    const int rad = 3;
-    // Try to adjust corners
-    Points old_corners = _board_zoomed;
-    
-    bool change = true;
-    while (change) {
-        change = false;
-        CLOOP (4) { // Four corners
-            Points corners = old_corners;
-            int minx=0;
-            int miny=0;
-            float minerr = 10E9;
-            for (int x = old_corners[c].x - rad; x < old_corners[c].x + rad; x++) {
-                for (int y = old_corners[c].y - rad; y < old_corners[c].y + rad; y++) {
-                    if (x < 0 || y < 0 || x >= _gray.cols || y >= _gray.rows) continue;
-                    corners[c].x = x; corners[c].y = y;
-                    float err = grid_err( corners, empty_places, _board_sz);
-                    if (err < minerr) {
-                        minerr = err;
-                        minx = x; miny = y;
-                    }
-                }
-            } // for neighborhood
-            if (old_corners[c].x != minx || old_corners[c].y != miny) {
-                NSLog( @"Corner %d better at %d %d than at %d %d", c, minx, miny, old_corners[c].x, old_corners[c].y );
-                old_corners[c].x = minx; old_corners[c].y = miny;
-                change = true;
-            }
-            else {
-                NSLog( @"Corner %d unchanged", c);
-            }
-        } // for corner
-    } // while change
-    //@@@
-
     // Show results
+//    float delta_v, delta_h;
+//    Points intersections;
+//    get_intersections( old_corners, _board_sz, intersections, delta_v, delta_h);
     cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
-    drawContour( drawing, old_corners, cv::Scalar(255,0,0,255));
-    drawContour( drawing, _board_zoomed, cv::Scalar(0,255,0,255));
-    ILOOP ( empty_places.size()) {
-        draw_point( empty_places[i], drawing,1);
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    drawContour( drawing, _board_zoomed, cv::Scalar(255,0,0),2);
+//    drawContour( drawing, old_corners, cv::Scalar(0,255,0),1);
+    ILOOP ( _black_or_empty.size()) {
+        draw_point( _black_or_empty[i], drawing, 2);
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1178,9 +1245,9 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 //    }
 } // grid_sgd
 
-// Find grid by sgd from black stones and empty
-//-----------------------------------------------
-- (UIImage *) f06_hough_grid
+// Find grid by putting lines through detected stones and intersections
+//------------------------------------------------------------------------
+- (UIImage *) f06_hough_grid //@@@
 {
     // Find Hough lines in the detected intersections and black stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
@@ -1188,15 +1255,24 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
         draw_point( _black_or_empty[i], canvas,1, cv::Scalar(255));
     }
     std::vector<cv::Vec2f> lines;
-    HoughLines(canvas, lines, 1, CV_PI/180, 8, 0, 0 );
+    HoughLines(canvas, lines, 1, CV_PI/180, 20, 0, 0 );
+    std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
+    
+    horiz_vert_other_lines = partition( lines, 3,
+                                       [](cv::Vec2f &line) {
+                                           const float thresh = 10.0;
+                                           float theta = line[1] * (180.0 / CV_PI);
+                                           if (fabs(theta - 180) < thresh) return 1;
+                                           else if (fabs(theta) < thresh) return 1;
+                                           else if (fabs(theta-90) < thresh) return 0;
+                                           else return 2;
+                                       });
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
-    drawPolarLines( lines, drawing);
-    ILOOP (_black_or_empty.size()) {
-        draw_point( _black_or_empty[i], drawing ,2, cv::Scalar(255,0,0));
-    }
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    drawPolarLines( horiz_vert_other_lines[0], drawing);
+    drawPolarLines( horiz_vert_other_lines[1], drawing, cv::Scalar(0,0,255));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
@@ -1218,7 +1294,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 {
     if (!_board.size()) { return MatToUIImage( _m); }
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     
     Points intersections;
     float delta_v, delta_h;
@@ -1270,7 +1346,7 @@ void printvec( char *msg, std::vector<int> v)
 - (UIImage *) fxx_classify
 {
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     // Contour image of the zoomed board
     cv::Mat zoomed_edges;
     //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
@@ -1376,9 +1452,10 @@ void printvec( char *msg, std::vector<int> v)
 {
     const int N_BOARDS = 8;
     static std::vector<Points> boards; // Some history for averaging
-    UIImageToMat( img, _m);
+    UIImageToMat( img, _m, false);
     cv::Mat small;
     resize( _m, small, 350);
+    //cv::cvtColor( small, small, cv::COLOR_BGR2RGB);
     cv::cvtColor( small, _gray, cv::COLOR_BGR2GRAY);
     cv::adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           3, // neighborhood_size
@@ -1396,10 +1473,11 @@ void printvec( char *msg, std::vector<int> v)
         boards.push_back( _board);
         if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
         _board = best_board( boards);
-        drawContour( small, _board);
+        drawContour( small, _board, cv::Scalar(255,0,0,255));
 //        _cont = std::vector<Points>( 1, _board);
 //        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
     }
+    //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
     UIImage *res = MatToUIImage( small);
     return res;
 }

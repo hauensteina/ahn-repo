@@ -254,7 +254,7 @@
                 break;
             case 5:
                 state++;
-                img = [self.grabFuncs f05_find_grid];
+                img = [self.grabFuncs f05_find_intersections];
                 [self.cameraView setImage:img];
                 break;
             case 6:
