@@ -259,7 +259,7 @@
                 break;
             case 6:
                 state++;
-                img = [self.grabFuncs f06_sgd_grid];
+                img = [self.grabFuncs f06_hough_grid];
                 [self.cameraView setImage:img];
                 break;
             default:

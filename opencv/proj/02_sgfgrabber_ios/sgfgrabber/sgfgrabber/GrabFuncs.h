@@ -19,7 +19,7 @@
 - (UIImage *) f03_find_board;
 - (UIImage *) f04_zoom_in;
 - (UIImage *) f05_black_blobs;
-- (UIImage *) f06_sgd_grid;
+- (UIImage *) f06_hough_grid;
 //- (int) f05_get_boardsize;
 //- (UIImage *) f06_get_intersections;
 //- (UIImage *) f07_classify;

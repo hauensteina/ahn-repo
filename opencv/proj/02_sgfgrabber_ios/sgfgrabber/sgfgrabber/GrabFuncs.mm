@@ -91,11 +91,13 @@ const cv::Size TMPL_SZ(16,16);
 void templify( cv::Mat &m)
 {
     cv::resize(m,m,TMPL_SZ);
-    m.convertTo( m, CV_64FC1);
-    cv::Mat sq = m.mul(m);
-    double ssum = cv::sum(sq)[0];
-    ssum = sqrt(ssum);
-    m /= ssum;
+    cv::normalize( m, m, 0 , 255, CV_MINMAX, CV_8UC1);
+    //m.convertTo( m, CV_64FC1);
+    //m.convertTo( m, CV_8UC1);
+    //cv::Mat sq = m.mul(m);
+    //double ssum = cv::sum(sq)[0];
+    //ssum = sqrt(ssum);
+    //m /= ssum;
 }
 
 // Compare two templified images of same size
@@ -382,7 +384,7 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
 
 // Mark a point on an image
 //--------------------------------------
-void draw_point( cv::Point p, cv::Mat &img, int r=10)
+void draw_point( cv::Point p, cv::Mat &img, int r=10, cv::Scalar col = cv::Scalar(255,0,0))
 {
     cv::circle( img, p, r, cv::Scalar(255,0,0), -1);
 }
@@ -813,37 +815,53 @@ Points best_board( std::vector<Points> boards)
     d->detect( _m, keypoints);
     ILOOP (keypoints.size()) { _black_or_empty.push_back(keypoints[i].pt); }
     
-    // Find empty intersections
-    adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                      21,  // neighborhood_size
-                      12); // constant to add. Large values make lines disappear.
-    cv::Mat eelement = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::erode( _m, _m, eelement );
-    cv::dilate( _m, _m, eelement );
-    //cv::erode( _m, _m, eelement );
-    cv::SimpleBlobDetector::Params eparams;
-    eparams.filterByColor = true;
-    eparams.blobColor = 255;
-    eparams.minDistBetweenBlobs = 2;
-    eparams.filterByConvexity = false;
-    eparams.filterByInertia = false;
-    eparams.filterByCircularity = false;
-    eparams.minCircularity = 0.5;
-    eparams.maxCircularity = 100;
-    eparams.minArea = 5;
-    eparams.maxArea = 20;
-    cv::Ptr<cv::SimpleBlobDetector> ed = cv::SimpleBlobDetector::create(eparams);
-    std::vector<cv::KeyPoint> ekeypoints;
-    ed->detect( _m, ekeypoints);
-    ILOOP (keypoints.size()) { _black_or_empty.push_back(ekeypoints[i].pt); }
+    // Find empty intersections @@@
+    //cv::Mat matchRes;
+    //matchRes.create( _gray.rows - _tmpl_inner.rows + 1, _gray.cols - _tmpl_inner.cols + 1 , CV_8UC1);
+    //cv::normalize( _gray, tmp, 0 , 255, CV_MINMAX, CV_8UC1);
+    //cv::matchTemplate( _gray, _tmpl_inner, matchRes, CV_TM_SQDIFF);
+    //double minVal; double maxVal; cv::Point minLoc; cv::Point maxLoc;
+    //cv::Point matchLoc;
+    //cv::normalize( matchRes, matchRes, 0 , 255, CV_MINMAX, CV_8UC1);
+    //cv::minMaxLoc( matchRes, &minVal, &maxVal, &minLoc, &maxLoc );
+    //cv::threshold(matchRes, matchRes, 6, 255, CV_THRESH_BINARY_INV);
+    //    cv::adaptiveThreshold( matchRes, matchRes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    //                          11,  // neighborhood_size
+    //                          8); // 8 or ten, need to try both. 8 better for 19x19
+    cv::Mat tmp;
+    cv::adaptiveThreshold( _gray, tmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          11,  // neighborhood_size
+                          8); // 8 or ten, need to try both. 8 better for 19x19
+    cv::threshold(tmp, tmp, 1, 255, CV_THRESH_BINARY_INV);
+    cv::Mat element1 = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    cv::erode( tmp, tmp, element );
+    cv::erode( tmp, tmp, element );
+//    cv::SimpleBlobDetector::Params params1;
+//    params1.filterByColor = true;
+//    params1.blobColor = 255;
+//    params1.minDistBetweenBlobs = 2;
+//    params1.filterByConvexity = false;
+//    params1.filterByInertia = false;
+//    params1.filterByCircularity = true;
+//    params1.minCircularity = 0.5;
+//    params1.maxCircularity = 100;
+//    params1.minArea = 1;
+//    params1.maxArea = 40;
+//    cv::Ptr<cv::SimpleBlobDetector> d1 = cv::SimpleBlobDetector::create(params1);
+//    std::vector<cv::KeyPoint> keypoints1;
+//    d1->detect( matchRes, keypoints1);
+//    ILOOP (keypoints1.size()) { _black_or_empty.push_back(keypoints1[i].pt); }
+
+    
 
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
-    ILOOP ( ekeypoints.size()) {
-        draw_point( ekeypoints[i].pt, drawing,1);
-    }
-    UIImage *res = MatToUIImage( drawing);
+//    ILOOP ( ekeypoints.size()) {
+//        draw_point( ekeypoints[i].pt, drawing,1);
+//    }
+    UIImage *res = MatToUIImage( tmp);
+    //UIImage *res = MatToUIImage( drawing);
     return res;
 }
 
@@ -896,10 +914,10 @@ float grid_err( const cv::Point2f *corners, const Points2f &dots, int boardsize)
     Points2f gridpoints;
     get_grid( corners, boardsize, gridpoints);
     double err = 0;
-    ILOOP (dots.size()) {
+    ILOOP (gridpoints.size()) {
         float mind = 10E9;
-        JLOOP (gridpoints.size()) {
-            float d = cv::norm( dots[i] - gridpoints[j]);
+        JLOOP (dots.size()) {
+            float d = cv::norm( dots[j] - gridpoints[i]);
             if (d < mind) {
                 mind = d;
             }
@@ -922,38 +940,44 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     const int RIGHT = 4;
     const int OVER  = 5;
     
-    std::vector<int> tlmotions = { NONE, DOWN, RIGHT };
-    std::vector<int> trmotions = { NONE, DOWN, LEFT };
-    std::vector<int> brmotions = { NONE, UP, LEFT };
-    std::vector<int> blmotions = { NONE, UP, RIGHT };
+    std::vector<int> tlmotions = { NONE, UP, DOWN, RIGHT, LEFT };
+    std::vector<int> trmotions = { NONE, UP, DOWN, RIGHT, LEFT };
+    std::vector<int> brmotions = { NONE, UP, DOWN, RIGHT, LEFT };
+    std::vector<int> blmotions = { NONE, UP, DOWN, RIGHT, LEFT };
 
     cv::Point2f deltas[OVER];
-    float rate = 0.25;
+    //std::vector<float> rates = { 0.25, 0.5, 1.0 ,2.0 };
+    std::vector<float> rates = { 1.0 };
     deltas[NONE]  = cv::Point2f(0,0);
-    deltas[UP]    = cv::Point2f(0,-rate);
-    deltas[DOWN]  = cv::Point2f(0,rate);
-    deltas[LEFT]  = cv::Point2f(-rate,0);
-    deltas[RIGHT] = cv::Point2f(rate,0);
+    deltas[UP]    = cv::Point2f(0,-1);
+    deltas[DOWN]  = cv::Point2f(0,1);
+    deltas[LEFT]  = cv::Point2f(-1,0);
+    deltas[RIGHT] = cv::Point2f(1,0);
     
     cv::Point2f bestCorners[4];
     cv::Point2f curCorners[4];
     float mind = 1E9;
 
-    for (int tl = 0; tl < tlmotions.size(); tl++) {
-        for (int tr = 0; tr < trmotions.size(); tr++) {
-            for (int br = 0; br < brmotions.size(); br++) {
-                for (int bl = 0; bl < blmotions.size(); bl++) {
-                    curCorners[0] = corners[0] + deltas[tlmotions[tl]];
-                    curCorners[1] = corners[1] + deltas[trmotions[tr]];
-                    curCorners[2] = corners[2] + deltas[brmotions[br]];
-                    curCorners[3] = corners[3] + deltas[blmotions[bl]];
-                    float newd = grid_err( curCorners, dots, boardsize);
-                    if (newd < mind) {
-                        bestCorners[0] = curCorners[0];
-                        bestCorners[1] = curCorners[1];
-                        bestCorners[2] = curCorners[2];
-                        bestCorners[3] = curCorners[3];
-                        mind = newd;
+    for (int r = 0; r < rates.size(); r++) {
+        for (int tl = 0; tl < tlmotions.size(); tl++) {
+            for (int tr = 0; tr < trmotions.size(); tr++) {
+                for (int br = 0; br < brmotions.size(); br++) {
+                    for (int bl = 0; bl < blmotions.size(); bl++) {
+                        curCorners[0] = corners[0] + rates[r] * deltas[tlmotions[tl]];
+                        curCorners[1] = corners[1] + rates[r] * deltas[trmotions[tr]];
+                        curCorners[2] = corners[2] + rates[r] * deltas[brmotions[br]];
+                        curCorners[3] = corners[3] + rates[r] * deltas[blmotions[bl]];
+                        if (bl && r) {
+                            int tt = 42;
+                        }
+                        float newd = grid_err( curCorners, dots, boardsize);
+                        if (newd < mind) {
+                            bestCorners[0] = curCorners[0];
+                            bestCorners[1] = curCorners[1];
+                            bestCorners[2] = curCorners[2];
+                            bestCorners[3] = curCorners[3];
+                            mind = newd;
+                        }
                     }
                 }
             }
@@ -1016,31 +1040,22 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 
 // Find grid by sgd from black stones and empty
 //-----------------------------------------------
-- (UIImage *) f06_sgd_grid //@@@
+- (UIImage *) f06_hough_grid
 {
-    //float err = 10E9;
-    //float delta_err = 10E9;
-    float epsilon = 0;
-    int boardsize = 13;
-    cv::Point2f corners[] = { cv::Point2f(0,0), cv::Point2f(_gray.cols,0),
-        cv::Point2f(_gray.cols,_gray.rows), cv::Point2f(0,_gray.rows) };
-
-    //while (delta_err > epsilon) {
-    ILOOP(1000) {
-        grid_sgd( corners, _black_or_empty, boardsize);
-        float newerr = grid_err( corners, _black_or_empty, boardsize);
-        //delta_err = err - newerr;
-        //err = newerr;
-        NSLog( @"newerr: %f", newerr);
+    // Find Hough lines in the detected intersections and black stones
+    cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
+    ILOOP (_black_or_empty.size()) {
+        draw_point( _black_or_empty[i], canvas,1, cv::Scalar(255));
     }
+    std::vector<cv::Vec2f> lines;
+    HoughLines(canvas, lines, 1, CV_PI/180, 8, 0, 0 );
     
     // Show results
-    Points2f grid;
-    get_grid( corners, boardsize, grid);
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2BGR);
-    ILOOP (grid.size()) {
-        draw_point( grid[i], drawing,1);
+    drawPolarLines( lines, drawing);
+    ILOOP (_black_or_empty.size()) {
+        draw_point( _black_or_empty[i], drawing ,2, cv::Scalar(255,0,0));
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
