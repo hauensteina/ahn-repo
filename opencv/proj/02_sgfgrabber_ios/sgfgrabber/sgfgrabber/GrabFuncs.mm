@@ -21,6 +21,9 @@
 #define RLOOP(n) for (int r=0; r < (n); r++ )
 #define CLOOP(n) for (int c=0; c < (n); c++ )
 
+#define ISLOOP(n) for (int i=0; i < ((n).size()); i++ )
+
+
 typedef std::vector<std::vector<cv::Point> > Contours;
 typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
@@ -385,14 +388,26 @@ int channel_median( cv::Mat channel )
     return res;
 }
 
-// Calculates the median value of a vector of int
-//-------------------------------------------------
-int int_median( std::vector<int> ints )
+// Calculates the median value of a vector
+//----------------------------------------------
+template <typename T>
+T vec_median( std::vector<T> vec )
 {
-    std::sort( ints.begin(), ints.end(), [](int a, int b) { return a < b; });
-    int res = ints[ints.size() / 2];
+    std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
+    T res = vec[vec.size() / 2];
     return res;
 }
+
+// Calculates the avg value of a vector
+//----------------------------------------------
+template <typename T>
+T vec_avg( std::vector<T> vec )
+{
+    double ssum = 0;
+    ISLOOP (vec) { ssum += vec[i]; }
+    return T(ssum / vec.size());
+}
+
 
 //-------------------------------------------------------
 void draw_contours( const Contours cont, cv::Mat &dst)
@@ -828,7 +843,8 @@ Points best_board( std::vector<Points> boards)
 void save_intersections( const cv::Mat img,
                         const Points2f &intersections, int delta_v, int delta_h)
 {
-    ILOOP( intersections.size()) {
+    ILOOP( intersections.size())
+    {
         float x = intersections[i].x;
         float y = intersections[i].y;
         cv::Rect rect( x - delta_h/2.0, y - delta_v/2.0, delta_h, delta_v );
@@ -850,26 +866,45 @@ void save_intersections( const cv::Mat img,
 cv::Mat mtmp;
 cv::Mat mtmp1;
 //-------------------------------------------------------------
-void find_black_stones( const cv::Mat &img, Points2f &result) //@@@
+void find_stones( const cv::Mat &img, Points2f &result) //@@@
 {
     
+    // Find circles
     std::vector<cv::Vec3f> circles;
-    // smooth it, otherwise a lot of false circles may be detected
     cv::GaussianBlur( img, mtmp, cv::Size(5, 5), 2, 2 );
-    /// Apply the Hough Transform to find the circles
     cv::HoughCircles( mtmp, circles, CV_HOUGH_GRADIENT,
                      1, // acumulator res == image res; Larger means less acc res
                      img.rows/30, // minimum distance between circles
                      260, // upper canny thresh; half of this is the lower canny
-                     10, // less means more circles. The higher ones come first in the result
+                     12, // less means more circles. The higher ones come first in the result
                      0,   // min radius
                      25 ); // max radius
+
+    // Keep the ones where radius close to avg radius
+    std::vector<float> rads;
+    ISLOOP (circles){ rads.push_back( circles[i][2]); }
+    float avg_r = vec_median( rads);
     
-    cv::cvtColor( mtmp, mtmp, cv::COLOR_GRAY2RGB);
-    ILOOP (circles.size())
+    std::vector<cv::Vec3f> good_circles;
+    //const float TOL_LO = 2.0;
+    const float TOL_HI = 0.5;
+    ISLOOP (circles)
     {
-        cv::Point center( cvRound(circles[i][0]), cvRound(circles[i][1]));
-        int radius = cvRound( circles[i][2]);
+        cv::Vec3f c = circles[i];
+        if ( c[2] > avg_r && (c[2] - avg_r) / avg_r < TOL_HI) {
+            good_circles.push_back( circles[i]);
+        }
+        else if ( c[2] <= avg_r) {
+            good_circles.push_back( circles[i]);
+        }
+    }
+
+    cv::cvtColor( mtmp, mtmp, cv::COLOR_GRAY2RGB);
+    ISLOOP (good_circles)
+    {
+        cv::Vec3f c = good_circles[i];
+        cv::Point center( cvRound(c[0]), cvRound(c[1]));
+        int radius = cvRound( c[2]);
         // draw the circle center
         cv::circle( mtmp, center, 3, cv::Scalar(0,255,0), -1, 8, 0 );
         // draw the circle outline
@@ -1093,7 +1128,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
     //_black_or_empty = Points2f();
     
     Points2f black_stones;
-    find_black_stones( _gray, black_stones);
+    find_stones( _gray, black_stones);
 
     Points empty_places;
     find_empty_places( _gray, empty_places);
