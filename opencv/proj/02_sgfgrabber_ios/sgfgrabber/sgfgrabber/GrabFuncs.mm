@@ -691,6 +691,30 @@ void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst,
     ISLOOP (lines) { drawPolarLine( lines[i], dst, col); }
 }
 
+// Get the middle screen x val for a somewhat vertical Hough line.
+// Used to find leftmost, rightmost lines.
+//----------------------------------------------------------------------------------
+float polarMiddleValV( const cv::Vec2f &hline, int rows)
+{
+    float rho = hline[0];
+    float theta = hline[1];
+    float y = rows / 2.0;
+    float x = (rho - y * sin(theta)) / cos(theta);
+    return x;
+}
+
+// Get the middle screen y val for a somewhat horizontal Hough line.
+// Used to find top, bottom lines.
+//----------------------------------------------------------------------------------
+float polarMiddleValH( const cv::Vec2f &hline, int cols)
+{
+    float rho = hline[0];
+    float theta = hline[1];
+    float x = cols / 2.0;
+    float y = (rho - x * cos(theta)) / sin(theta);
+    return y;
+}
+
 //--------------------------------------------------------------
 void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
 {
@@ -1311,28 +1335,45 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
         draw_point( _stone_or_empty[i], canvas,1, cv::Scalar(255));
     }
     std::vector<cv::Vec2f> lines;
-    HoughLines(canvas, lines, 1, CV_PI/180, 15, 0, 0 );
     std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
+    std::vector<int> vote_thresholds = { 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5 };
     
-    // Separate horizontal, vertical, and other lines
-    horiz_vert_other_lines = partition( lines, 3,
-                                       [](cv::Vec2f &line) {
-                                           const float thresh = 10.0;
-                                           float theta = line[1] * (180.0 / CV_PI);
-                                           if (fabs(theta - 180) < thresh) return 1;
-                                           else if (fabs(theta) < thresh) return 1;
-                                           else if (fabs(theta-90) < thresh) return 0;
-                                           else return 2;
-                                       });
-    // Sort by Rho (distance of line from origin)
+    ISLOOP (vote_thresholds) {
+        int votes = vote_thresholds[i];
+        NSLog( @"trying %d hough line votes", votes );
+        HoughLines(canvas, lines, 1, CV_PI/180, votes, 0, 0 );
+        
+        // Separate horizontal, vertical, and other lines
+        horiz_vert_other_lines = partition( lines, 3,
+                                           [](cv::Vec2f &line) {
+                                               const float thresh = 5.0;
+                                               float theta = line[1] * (180.0 / CV_PI);
+                                               if (fabs(theta - 180) < thresh) return 1;
+                                               else if (fabs(theta) < thresh) return 1;
+                                               else if (fabs(theta-90) < thresh) return 0;
+                                               else return 2;
+                                           });
+        // Sort by Rho (distance of line from origin)
+        std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
+        std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
+        std::sort( hlines.begin(), hlines.end(),
+                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValH(a,canvas.cols) < polarMiddleValH(b,canvas.cols); });
+        std::sort( vlines.begin(), vlines.end(),
+                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValV(a,canvas.rows) < polarMiddleValV(b,canvas.rows); });
+        if (hlines.size() >= 2 && vlines.size() >= 2) {
+            //break;
+            if (fabs(hlines.back()[0]) - fabs(hlines.front()[0]) > canvas.rows * 0.5 &&
+                fabs(vlines.back()[0]) - fabs(vlines.front()[0]) > canvas.cols * 0.5)
+            {
+                break; // we found the borders
+            }
+        }
+    }
     std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
     std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
     if (hlines.size() < 2 || vlines.size() < 2) {
         return MatToUIImage( canvas);
     }
-    
-    std::sort( hlines.begin(), hlines.end(), [](cv::Vec2f a, cv::Vec2f b){ return a[0] < b[0]; });
-    std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f a, cv::Vec2f b){ return a[0] < b[0]; });
     
     // Extract the four border lines
     cv::Vec2f topline   = hlines[0];
@@ -1350,7 +1391,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     Points corners = { tl, tr, br, bl };
     float delta_v, delta_h;
     get_intersections( corners, _board_sz, _intersections, delta_v, delta_h);
-
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -1361,7 +1402,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     ISLOOP (_intersections) { draw_point( _intersections[i], drawing, 2, cv::Scalar(0,255,0)); }
     UIImage *res = MatToUIImage( drawing);
     return res;
-}
+} // f06_hough_grid()
 
 //--------------------------
 - (int) fxx_get_boardsize
