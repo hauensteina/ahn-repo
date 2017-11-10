@@ -847,28 +847,85 @@ void save_intersections( const cv::Mat img,
     } // ILOOP
 } // save_intersections()
 
+cv::Mat mtmp;
+cv::Mat mtmp1;
 //-------------------------------------------------------------
-void find_black_stones( const cv::Mat &img, Points2f &result)
+void find_black_stones( const cv::Mat &img, Points2f &result) //@@@
 {
-    cv::Mat mtmp;
-    adaptiveThreshold( img, mtmp, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                      21,  // neighborhood_size
-                      16); // threshold. Less is more.
+    
+    std::vector<cv::Vec3f> circles;
+    // smooth it, otherwise a lot of false circles may be detected
+    cv::GaussianBlur( img, mtmp, cv::Size(5, 5), 2, 2 );
+    /// Apply the Hough Transform to find the circles
+    cv::HoughCircles( mtmp, circles, CV_HOUGH_GRADIENT,
+                     1, // acumulator res == image res; Larger means less acc res
+                     img.rows/30, // minimum distance between circles
+                     260, // upper canny thresh; half of this is the lower canny
+                     10, // less means more circles. The higher ones come first in the result
+                     0,   // min radius
+                     25 ); // max radius
+    
+    cv::cvtColor( mtmp, mtmp, cv::COLOR_GRAY2RGB);
+    ILOOP (circles.size())
+    {
+        cv::Point center( cvRound(circles[i][0]), cvRound(circles[i][1]));
+        int radius = cvRound( circles[i][2]);
+        // draw the circle center
+        cv::circle( mtmp, center, 3, cv::Scalar(0,255,0), -1, 8, 0 );
+        // draw the circle outline
+        cv::circle( mtmp, center, radius, cv::Scalar(0,0,255), 3, 8, 0 );
+    }
+    return;
+    
+    //===================================
+    adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                      3, // neighborhood_size
+                      4); // constant to add. 2 to 6 is the viable range
+    int iterations = 1;
+    morph_closing( mtmp, cv::Size(3,1), iterations);
+    morph_closing( mtmp, cv::Size(1,3), iterations);
+    Contours conts;
+    cv::findContours( mtmp, conts, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    cv::cvtColor( mtmp, mtmp1, cv::COLOR_GRAY2RGB);
+    draw_contours( conts, mtmp1);
+    
+//    // invert
+//    cv::threshold( mtmp, mtmp, 254, 255, cv::THRESH_BINARY_INV);
+//    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+//    cv::erode( mtmp, mtmp, element );
+//    cv::erode( mtmp, mtmp, element );
+
+    //    flood_from_center( mtmp);
+//    Contours conts;
+//    cv::findContours( mtmp, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+//    // only keep the biggest one
+//    std::sort( conts.begin(), conts.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
+//    //conts.erase( conts.begin()+1, conts.end());
+//    //if (!conts.size()) return whole_screen( binImg);
+//    mtmp = cv::Mat::zeros( img.size(), CV_8UC1 );
+//    cv::drawContours( mtmp, conts, -1, cv::Scalar(255), 3);
+
+    //cv::Canny( img, mtmp, 30, 70);
+//    adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+//                      31,  // neighborhood_size
+//                      8); // threshold. Less is more.
     // Separate adjacent blobs from each other
-    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::erode( mtmp, mtmp, element );
-    cv::erode( mtmp, mtmp, element );
+    //cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(1,3));
+    //cv::erode( mtmp, mtmp, element );
+    //cv::erode( mtmp, mtmp, element );
     // Find the blobs. They are the B stones.
     cv::SimpleBlobDetector::Params params;
     params.filterByColor = true;
     params.blobColor = 255;
     params.minDistBetweenBlobs = 2;
-    params.filterByConvexity = false;
+    params.filterByConvexity = true;
+    params.minConvexity = 0.9;
+    params.maxConvexity = 100;
     params.filterByInertia = false;
-    params.filterByCircularity = true;
-    params.minCircularity = 0.5;
-    params.maxCircularity = 100;
-    params.minArea = 10;
+    //params.filterByCircularity = true;
+    //params.minCircularity = 0.8;
+    //params.maxCircularity = 100;
+    params.minArea = 0;
     params.maxArea = 200;
     cv::Ptr<cv::SimpleBlobDetector> d = cv::SimpleBlobDetector::create(params);
     std::vector<cv::KeyPoint> keypoints;
@@ -1027,7 +1084,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
 
 // Find black stones and empty intersections
 //---------------------------------------------
-- (UIImage *) f05_find_intersections
+- (UIImage *) f05_find_intersections //@@@
 {
     //Points2f intersections;
     //float delta_v, delta_h;
@@ -1035,8 +1092,8 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
     //get_intersections( _board_zoomed, _board_sz, intersections, delta_v, delta_h);
     //_black_or_empty = Points2f();
     
-    //Points2f black_stones;
-    //find_black_stones( _gray, black_stones);
+    Points2f black_stones;
+    find_black_stones( _gray, black_stones);
 
     Points empty_places;
     find_empty_places( _gray, empty_places);
@@ -1054,14 +1111,18 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
 //    float delta_v, delta_h;
 //    Points intersections;
 //    get_intersections( old_corners, _board_sz, intersections, delta_v, delta_h);
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    //cv::Mat drawing;
+    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( mtmp1, drawing, cv::COLOR_GRAY2RGB);
 //    drawContour( drawing, _board_zoomed, cv::Scalar(255,0,0),2);
 //    drawContour( drawing, old_corners, cv::Scalar(0,255,0),1);
-    ILOOP ( _black_or_empty.size()) {
-        draw_point( _black_or_empty[i], drawing, 2);
-    }
-    UIImage *res = MatToUIImage( drawing);
+//    ILOOP ( _black_or_empty.size()) {
+//        draw_point( _black_or_empty[i], drawing, 2);
+//    }
+//    ILOOP ( black_stones.size()) {
+//        draw_point( black_stones[i], drawing, 2);
+//    }
+    UIImage *res = MatToUIImage( mtmp);
     return res;
 }
 
@@ -1247,7 +1308,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 
 // Find grid by putting lines through detected stones and intersections
 //------------------------------------------------------------------------
-- (UIImage *) f06_hough_grid //@@@
+- (UIImage *) f06_hough_grid
 {
     // Find Hough lines in the detected intersections and black stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
