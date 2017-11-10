@@ -651,20 +651,26 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     
 } // get_boardsize_by_fft
 
-//--------------------------------------------------------------
-void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0))
+//-------------------------------------------------------
+void drawPolarLine( cv::Vec2f line, cv::Mat &dst,
+                   cv::Scalar col = cv::Scalar(255,0,0))
 {
-    ILOOP (lines.size()) {
-        float rho = lines[i][0], theta = lines[i][1];
-        cv::Point pt1, pt2;
-        double a = cos(theta), b = sin(theta);
-        double x0 = a*rho, y0 = b*rho;
-        pt1.x = cvRound(x0 + 1000*(-b));
-        pt1.y = cvRound(y0 + 1000*(a));
-        pt2.x = cvRound(x0 - 1000*(-b));
-        pt2.y = cvRound(y0 - 1000*(a));
-        line( dst, pt1, pt2, col, 1, CV_AA);
-    }
+    float rho = line[0], theta = line[1];
+    cv::Point pt1, pt2;
+    double a = cos(theta), b = sin(theta);
+    double x0 = a*rho, y0 = b*rho;
+    pt1.x = cvRound(x0 + 1000*(-b));
+    pt1.y = cvRound(y0 + 1000*(a));
+    pt2.x = cvRound(x0 - 1000*(-b));
+    pt2.y = cvRound(y0 - 1000*(a));
+    cv::line( dst, pt1, pt2, col, 1, CV_AA);
+}
+
+//--------------------------------------------------------------
+void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst,
+                    cv::Scalar col = cv::Scalar(255,0,0))
+{
+    ISLOOP (lines) { drawPolarLine( lines[i], dst, col); }
 }
 
 //--------------------------------------------------------------
@@ -1271,7 +1277,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 //------------------------------------------------------------------------
 - (UIImage *) f06_hough_grid
 {
-    // Find Hough lines in the detected intersections and black stones
+    // Find Hough lines in the detected intersections and stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
     ILOOP (_stone_or_empty.size()) {
         draw_point( _stone_or_empty[i], canvas,1, cv::Scalar(255));
@@ -1289,12 +1295,26 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
                                            else if (fabs(theta-90) < thresh) return 0;
                                            else return 2;
                                        });
+    // Sort by Rho (distance of line from origin)
+    std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
+    std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
+    std::sort( hlines.begin(), hlines.end(), [](cv::Vec2f a, cv::Vec2f b){ return a[0] < b[0]; });
+    std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f a, cv::Vec2f b){ return a[0] < b[0]; });
     
+    // Extract the four border lines
+    cv::Vec2f topline   = hlines[0];
+    cv::Vec2f botline   = hlines[hlines.size()-1];
+    cv::Vec2f leftline  = vlines[0];
+    cv::Vec2f rightline = vlines[vlines.size()-1];
+    
+
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    drawPolarLines( horiz_vert_other_lines[0], drawing);
-    drawPolarLines( horiz_vert_other_lines[1], drawing, cv::Scalar(0,0,255));
+    drawPolarLine( topline, drawing);
+    drawPolarLine( botline, drawing);
+    drawPolarLine( leftline, drawing, cv::Scalar(0,0,255));
+    drawPolarLine( rightline, drawing, cv::Scalar(0,0,255));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
