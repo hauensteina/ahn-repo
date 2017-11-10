@@ -1066,16 +1066,20 @@ void find_empty_places( const cv::Mat &img, Points &border, Points &inner)
     cv::Mat mbottom = 255 * cv::Mat(tsz, tsz, CV_8UC1, bottom);
     
     // Match
-    matchTemplate( mtmp, mcross, inner, 90);
-    matchTemplate( mtmp, mright, border, 90);
-    matchTemplate( mtmp, mleft, border, 90);
-    matchTemplate( mtmp, mtop, border, 90);
-    matchTemplate( mtmp, mbottom, border, 90);
+    double thresh = 90;
+    inner.clear();
+    border.clear();
+    matchTemplate( mtmp, mcross, inner, thresh);
+    matchTemplate( mtmp, mright, border, thresh);
+    matchTemplate( mtmp, mleft, border, thresh);
+    matchTemplate( mtmp, mtop, border, thresh);
+    matchTemplate( mtmp, mbottom, border, thresh);
+    //NSLog (@"template thresh at %.2f inner %ld border %ld", thresh, innersize, bordersize );
 } // find_empty_places()
 
 // Template maching for empty intersections
 //------------------------------------------------------------------------------
-void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, int thresh)
+void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, double thresh)
 {
     cv::Mat matchRes;
     cv::Mat mtmp;
@@ -1113,7 +1117,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
 - (UIImage *) f05_find_intersections
 {
     Points pts, crosses;
-    find_empty_places( _gray, pts, crosses);
+    find_empty_places( _gray, pts, crosses); // has to be first
     find_stones( _gray, pts);
     // Use only inner ones
     Points2f innerboard = scale_board( _board_zoomed, 1.01);
@@ -1134,7 +1138,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
     size_t n = _stone_or_empty.size() + inner_empty.size();
     _board_sz = 19;
     if (n <= 9*9) { _board_sz = 9; }
-    else if (n <= 13*13) { _board_sz = 13; }
+    else if (n <= 250) { _board_sz = 13; }
     // Show results
     cv::Mat canvas;
     cv::cvtColor( _gray, canvas, cv::COLOR_GRAY2RGB);
