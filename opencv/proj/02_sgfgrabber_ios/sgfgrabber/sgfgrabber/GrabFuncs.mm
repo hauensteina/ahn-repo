@@ -49,7 +49,7 @@ const cv::Size TMPL_SZ(16,16);
 @property Points2f intersections; // locations of line intersections (81,361)
 @property int delta_v; // approx vertical line dist
 @property int delta_h; // approx horiz line dist
-@property Points black_or_empty; // places where we suspect black stones or empty
+@property Points stone_or_empty; // places where we suspect stones or empty
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -863,12 +863,10 @@ void save_intersections( const cv::Mat img,
     } // ILOOP
 } // save_intersections()
 
-cv::Mat mtmp;
-cv::Mat mtmp1;
 //-------------------------------------------------------------
-void find_stones( const cv::Mat &img, Points2f &result) //@@@
+void find_stones( const cv::Mat &img, Points &result) //@@@
 {
-    
+    cv::Mat mtmp;
     // Find circles
     std::vector<cv::Vec3f> circles;
     cv::GaussianBlur( img, mtmp, cv::Size(5, 5), 2, 2 );
@@ -898,75 +896,20 @@ void find_stones( const cv::Mat &img, Points2f &result) //@@@
             good_circles.push_back( circles[i]);
         }
     }
+    ISLOOP (good_circles) { result.push_back( cv::Point( circles[i][0], circles[i][1]) ); }
 
-    cv::cvtColor( mtmp, mtmp, cv::COLOR_GRAY2RGB);
-    ISLOOP (good_circles)
-    {
-        cv::Vec3f c = good_circles[i];
-        cv::Point center( cvRound(c[0]), cvRound(c[1]));
-        int radius = cvRound( c[2]);
-        // draw the circle center
-        cv::circle( mtmp, center, 3, cv::Scalar(0,255,0), -1, 8, 0 );
-        // draw the circle outline
-        cv::circle( mtmp, center, radius, cv::Scalar(0,0,255), 3, 8, 0 );
-    }
-    return;
-    
-    //===================================
-    adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                      3, // neighborhood_size
-                      4); // constant to add. 2 to 6 is the viable range
-    int iterations = 1;
-    morph_closing( mtmp, cv::Size(3,1), iterations);
-    morph_closing( mtmp, cv::Size(1,3), iterations);
-    Contours conts;
-    cv::findContours( mtmp, conts, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-    cv::cvtColor( mtmp, mtmp1, cv::COLOR_GRAY2RGB);
-    draw_contours( conts, mtmp1);
-    
-//    // invert
-//    cv::threshold( mtmp, mtmp, 254, 255, cv::THRESH_BINARY_INV);
-//    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-//    cv::erode( mtmp, mtmp, element );
-//    cv::erode( mtmp, mtmp, element );
-
-    //    flood_from_center( mtmp);
-//    Contours conts;
-//    cv::findContours( mtmp, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-//    // only keep the biggest one
-//    std::sort( conts.begin(), conts.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
-//    //conts.erase( conts.begin()+1, conts.end());
-//    //if (!conts.size()) return whole_screen( binImg);
-//    mtmp = cv::Mat::zeros( img.size(), CV_8UC1 );
-//    cv::drawContours( mtmp, conts, -1, cv::Scalar(255), 3);
-
-    //cv::Canny( img, mtmp, 30, 70);
-//    adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-//                      31,  // neighborhood_size
-//                      8); // threshold. Less is more.
-    // Separate adjacent blobs from each other
-    //cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(1,3));
-    //cv::erode( mtmp, mtmp, element );
-    //cv::erode( mtmp, mtmp, element );
-    // Find the blobs. They are the B stones.
-    cv::SimpleBlobDetector::Params params;
-    params.filterByColor = true;
-    params.blobColor = 255;
-    params.minDistBetweenBlobs = 2;
-    params.filterByConvexity = true;
-    params.minConvexity = 0.9;
-    params.maxConvexity = 100;
-    params.filterByInertia = false;
-    //params.filterByCircularity = true;
-    //params.minCircularity = 0.8;
-    //params.maxCircularity = 100;
-    params.minArea = 0;
-    params.maxArea = 200;
-    cv::Ptr<cv::SimpleBlobDetector> d = cv::SimpleBlobDetector::create(params);
-    std::vector<cv::KeyPoint> keypoints;
-    d->detect( mtmp, keypoints);
-    result = Points2f();
-    ILOOP (keypoints.size()) { result.push_back(keypoints[i].pt); }
+    // Draw circles for debug
+//    cv::cvtColor( mtmp, mtmp, cv::COLOR_GRAY2RGB);
+//    ISLOOP (good_circles)
+//    {
+//        cv::Vec3f c = good_circles[i];
+//        cv::Point center( cvRound(c[0]), cvRound(c[1]));
+//        int radius = cvRound( c[2]);
+//        // draw the circle center
+//        cv::circle( mtmp, center, 3, cv::Scalar(0,255,0), -1, 8, 0 );
+//        // draw the circle outline
+//        cv::circle( mtmp, center, radius, cv::Scalar(0,0,255), 3, 8, 0 );
+//    }
 } // find_black_stones()
 
 //-------------------------------------------------------------
@@ -1121,43 +1064,26 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
 //---------------------------------------------
 - (UIImage *) f05_find_intersections //@@@
 {
-    //Points2f intersections;
-    //float delta_v, delta_h;
     _board_sz = 19;
-    //get_intersections( _board_zoomed, _board_sz, intersections, delta_v, delta_h);
-    //_black_or_empty = Points2f();
-    
-    Points2f black_stones;
-    find_stones( _gray, black_stones);
-
-    Points empty_places;
-    find_empty_places( _gray, empty_places);
+    Points pts;
+    find_stones( _gray, pts);
+    find_empty_places( _gray, pts);
     // Use only inner ones
     Points2f innerboard = scale_board( _board_zoomed, 1.01);
-    _black_or_empty = Points();
-    ILOOP (empty_places.size()) {
-        cv::Point2f p( empty_places[i]);
+    _stone_or_empty = Points();
+    ISLOOP (pts) {
+        cv::Point2f p( pts[i]);
         if (cv::pointPolygonTest( innerboard, p, false) > 0) {
-            _black_or_empty.push_back( p);
+            _stone_or_empty.push_back( p);
         }
     }
-    
     // Show results
-//    float delta_v, delta_h;
-//    Points intersections;
-//    get_intersections( old_corners, _board_sz, intersections, delta_v, delta_h);
-    //cv::Mat drawing;
-    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    //cv::cvtColor( mtmp1, drawing, cv::COLOR_GRAY2RGB);
-//    drawContour( drawing, _board_zoomed, cv::Scalar(255,0,0),2);
-//    drawContour( drawing, old_corners, cv::Scalar(0,255,0),1);
-//    ILOOP ( _black_or_empty.size()) {
-//        draw_point( _black_or_empty[i], drawing, 2);
-//    }
-//    ILOOP ( black_stones.size()) {
-//        draw_point( black_stones[i], drawing, 2);
-//    }
-    UIImage *res = MatToUIImage( mtmp);
+    cv::Mat canvas;
+    cv::cvtColor( _gray, canvas, cv::COLOR_GRAY2RGB);
+    ISLOOP ( _stone_or_empty) {
+        draw_point( _stone_or_empty[i], canvas, 2);
+    }
+    UIImage *res = MatToUIImage( canvas);
     return res;
 }
 
@@ -1347,8 +1273,8 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 {
     // Find Hough lines in the detected intersections and black stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
-    ILOOP (_black_or_empty.size()) {
-        draw_point( _black_or_empty[i], canvas,1, cv::Scalar(255));
+    ILOOP (_stone_or_empty.size()) {
+        draw_point( _stone_or_empty[i], canvas,1, cv::Scalar(255));
     }
     std::vector<cv::Vec2f> lines;
     HoughLines(canvas, lines, 1, CV_PI/180, 20, 0, 0 );
