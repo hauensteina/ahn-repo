@@ -46,7 +46,7 @@ const cv::Size TMPL_SZ(16,16);
 @property Points board;  // Current hypothesis on where the board is
 @property Points board_zoomed; // board corners after zooming in
 @property int board_sz; // board size, 9 or 19
-@property Points2f intersections; // locations of line intersections (81,361)
+@property Points intersections; // locations of line intersections (81,361)
 @property int delta_v; // approx vertical line dist
 @property int delta_h; // approx horiz line dist
 @property Points stone_or_empty; // places where we suspect stones or empty
@@ -322,9 +322,7 @@ cv::Point2f intersection( Point_ A, Point_ B, Point_ C, Point_ D)
     
     double determinant = a1*b2 - a2*b1;
     
-    if (determinant == 0)
-    {
-        // The lines are parallel.
+    if (determinant == 0) { // The lines are parallel.
         return Point_(10E9, 10E9);
     }
     else
@@ -343,6 +341,17 @@ cv::Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
                         cv::Point2f( line2[0], line2[1]),
                         cv::Point2f( line2[2], line2[3]));
 }
+
+// Intersection of Hough lines (rho, theta)
+//---------------------------------------------------------
+cv::Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
+{
+    cv::Vec4f seg1, seg2;
+    polarToSegment( line1, seg1);
+    polarToSegment( line2, seg2);
+    return intersection( seg1, seg2);
+}
+
 
 // Enclose a contour with an n edge polygon
 //--------------------------------------------
@@ -651,18 +660,27 @@ int get_boardsize_by_fft( const cv::Mat &zoomed_img)
     
 } // get_boardsize_by_fft
 
+// Get a line segment representation of a Hough line (rho, theta)
+//----------------------------------------------------------------
+void polarToSegment( const cv::Vec2f &hline, cv::Vec4f &result)
+{
+    float rho = hline[0], theta = hline[1];
+    double a = cos(theta), b = sin(theta);
+    double x0 = a*rho, y0 = b*rho;
+    result[0] = cvRound(x0 + 1000*(-b));
+    result[1] = cvRound(y0 + 1000*(a));
+    result[2] = cvRound(x0 - 1000*(-b));
+    result[3] = cvRound(y0 - 1000*(a));
+}
+
+// Draw a Hough line (rho, theta)
 //-------------------------------------------------------
 void drawPolarLine( cv::Vec2f line, cv::Mat &dst,
                    cv::Scalar col = cv::Scalar(255,0,0))
 {
-    float rho = line[0], theta = line[1];
-    cv::Point pt1, pt2;
-    double a = cos(theta), b = sin(theta);
-    double x0 = a*rho, y0 = b*rho;
-    pt1.x = cvRound(x0 + 1000*(-b));
-    pt1.y = cvRound(y0 + 1000*(a));
-    pt2.x = cvRound(x0 - 1000*(-b));
-    pt2.y = cvRound(y0 - 1000*(a));
+    cv::Vec4f seg;
+    polarToSegment( line, seg);
+    cv::Point pt1( seg[0], seg[1]), pt2( seg[2], seg[3]);
     cv::line( dst, pt1, pt2, col, 1, CV_AA);
 }
 
@@ -870,7 +888,7 @@ void save_intersections( const cv::Mat img,
 } // save_intersections()
 
 //-------------------------------------------------------------
-void find_stones( const cv::Mat &img, Points &result) //@@@
+void find_stones( const cv::Mat &img, Points &result)
 {
     cv::Mat mtmp;
     // Find circles
@@ -883,6 +901,7 @@ void find_stones( const cv::Mat &img, Points &result) //@@@
                      12, // less means more circles. The higher ones come first in the result
                      0,   // min radius
                      25 ); // max radius
+    if (!circles.size()) return;
 
     // Keep the ones where radius close to avg radius
     std::vector<float> rads;
@@ -919,7 +938,7 @@ void find_stones( const cv::Mat &img, Points &result) //@@@
 } // find_black_stones()
 
 //-------------------------------------------------------------
-void find_empty_places( const cv::Mat &img, Points &result)
+void find_empty_places( const cv::Mat &img, Points &border, Points &inner)
 {
     // Prepare image for template matching
     cv::Mat mtmp;
@@ -1023,11 +1042,11 @@ void find_empty_places( const cv::Mat &img, Points &result)
     cv::Mat mbottom = 255 * cv::Mat(tsz, tsz, CV_8UC1, bottom);
     
     // Match
-    //matchTemplate( mtmp, mcross, result, 90);
-    matchTemplate( mtmp, mright, result, 90);
-    matchTemplate( mtmp, mleft, result, 90);
-    matchTemplate( mtmp, mtop, result, 90);
-    matchTemplate( mtmp, mbottom, result, 90);
+    matchTemplate( mtmp, mcross, inner, 90);
+    matchTemplate( mtmp, mright, border, 90);
+    matchTemplate( mtmp, mleft, border, 90);
+    matchTemplate( mtmp, mtop, border, 90);
+    matchTemplate( mtmp, mbottom, border, 90);
 } // find_empty_places()
 
 // Template maching for empty intersections
@@ -1064,16 +1083,14 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
     
 } // matchTemplate()
 
-
-
-// Find black stones and empty intersections
-//---------------------------------------------
-- (UIImage *) f05_find_intersections //@@@
+// Find rough guess at stones and empty intersections
+// Also determines board size (9,13,19)
+//------------------------------------------------------
+- (UIImage *) f05_find_intersections
 {
-    _board_sz = 19;
-    Points pts;
+    Points pts, crosses;
+    find_empty_places( _gray, pts, crosses);
     find_stones( _gray, pts);
-    find_empty_places( _gray, pts);
     // Use only inner ones
     Points2f innerboard = scale_board( _board_zoomed, 1.01);
     _stone_or_empty = Points();
@@ -1083,6 +1100,17 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, in
             _stone_or_empty.push_back( p);
         }
     }
+    Points inner_empty;
+    ISLOOP (crosses) {
+        cv::Point2f p( crosses[i]);
+        if (cv::pointPolygonTest( innerboard, p, false) > 0) {
+            inner_empty.push_back( p);
+        }
+    }
+    size_t n = _stone_or_empty.size() + inner_empty.size();
+    _board_sz = 19;
+    if (n <= 9*9) { _board_sz = 9; }
+    else if (n <= 13*13) { _board_sz = 13; }
     // Show results
     cv::Mat canvas;
     cv::cvtColor( _gray, canvas, cv::COLOR_GRAY2RGB);
@@ -1275,7 +1303,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 
 // Find grid by putting lines through detected stones and intersections
 //------------------------------------------------------------------------
-- (UIImage *) f06_hough_grid
+- (UIImage *) f06_hough_grid //@@@
 {
     // Find Hough lines in the detected intersections and stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
@@ -1283,9 +1311,10 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
         draw_point( _stone_or_empty[i], canvas,1, cv::Scalar(255));
     }
     std::vector<cv::Vec2f> lines;
-    HoughLines(canvas, lines, 1, CV_PI/180, 20, 0, 0 );
+    HoughLines(canvas, lines, 1, CV_PI/180, 15, 0, 0 );
     std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
     
+    // Separate horizontal, vertical, and other lines
     horiz_vert_other_lines = partition( lines, 3,
                                        [](cv::Vec2f &line) {
                                            const float thresh = 10.0;
@@ -1298,6 +1327,10 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     // Sort by Rho (distance of line from origin)
     std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
     std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
+    if (hlines.size() < 2 || vlines.size() < 2) {
+        return MatToUIImage( canvas);
+    }
+    
     std::sort( hlines.begin(), hlines.end(), [](cv::Vec2f a, cv::Vec2f b){ return a[0] < b[0]; });
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f a, cv::Vec2f b){ return a[0] < b[0]; });
     
@@ -1307,6 +1340,16 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     cv::Vec2f leftline  = vlines[0];
     cv::Vec2f rightline = vlines[vlines.size()-1];
     
+    // Find the grid corners
+    cv::Point tl = intersection( topline, leftline);
+    cv::Point tr = intersection( topline, rightline);
+    cv::Point bl = intersection( botline, leftline);
+    cv::Point br = intersection( botline, rightline);
+    
+    // Find the grid
+    Points corners = { tl, tr, br, bl };
+    float delta_v, delta_h;
+    get_intersections( corners, _board_sz, _intersections, delta_v, delta_h);
 
     // Show results
     cv::Mat drawing;
@@ -1315,6 +1358,7 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     drawPolarLine( botline, drawing);
     drawPolarLine( leftline, drawing, cv::Scalar(0,0,255));
     drawPolarLine( rightline, drawing, cv::Scalar(0,0,255));
+    ISLOOP (_intersections) { draw_point( _intersections[i], drawing, 2, cv::Scalar(0,255,0)); }
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
@@ -1374,9 +1418,9 @@ float get_brightness( const cv::Mat &img, float frac=4)
 //--------------------------------------------
 void printvec( char *msg, std::vector<int> v)
 {
-    char buf[10000];
+    static char buf[10000];
     sprintf(buf,"%s",msg);
-    ILOOP (v.size()) {
+    ISLOOP (v) {
         if (i%9 == 0) { sprintf(buf+strlen(buf),"%s","\n"); }
         sprintf(buf+strlen(buf), "%d ", v[i] );
     }
