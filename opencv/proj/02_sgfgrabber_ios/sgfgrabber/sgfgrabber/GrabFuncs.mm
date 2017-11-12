@@ -42,7 +42,6 @@ const cv::Size TMPL_SZ(16,16);
 //=======================
 @property cv::Mat gray;  // Garyscale version of img
 @property cv::Mat m;     // Mat with image we are working on
-@property cv::Mat mboard; // Mat with the exact board in grayscale
 @property Contours cont; // Current set of contours
 @property Points board;  // Current hypothesis on where the board is
 @property Points board_zoomed; // board corners after zooming in
@@ -51,6 +50,8 @@ const cv::Size TMPL_SZ(16,16);
 @property int delta_v; // approx vertical line dist
 @property int delta_h; // approx horiz line dist
 @property Points stone_or_empty; // places where we suspect stones or empty
+@property std::vector<Points> horizontal_clusters; // Result of Hough lines and clustering
+@property std::vector<Points> vertical_clusters;
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -481,6 +482,25 @@ T vec_median( std::vector<T> vec )
     return res;
 }
 
+// Gets the min value of a vector
+//----------------------------------------------
+template <typename T>
+T vec_min( std::vector<T> vec )
+{
+    T res = *(std::min_element(vec.begin(), vec.end()));
+    return res;
+}
+
+// Gets the max value of a vector
+//----------------------------------------------
+template <typename T>
+T vec_max( std::vector<T> vec )
+{
+    T res = *(std::max_element(vec.begin(), vec.end()));
+    return res;
+}
+
+
 // Calculates the avg value of a vector
 //----------------------------------------------
 template <typename T>
@@ -678,6 +698,24 @@ cv::Mat four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
     cv::warpPerspective(img, warped, M, cv::Size(maxWidth,maxHeight));
     return M;
 } // four_point_transform()
+
+// Linear map of four corners to whole screen width
+//--------------------------------------------------------
+cv::Mat board_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
+{
+    Points2f rect = order_points(pts);
+    Points2f dst = {
+        cv::Point(0,0),
+        cv::Point(img.cols - 1, 0),
+        cv::Point(img.cols - 1, img.cols - 1),
+        cv::Point(0, img.cols - 1) };
+    
+    cv::Mat M = cv::getPerspectiveTransform(rect, dst);
+    cv::Mat res;
+    cv::warpPerspective(img, warped, M, cv::Size(img.cols, img.rows));
+    return M;
+} // board_transform()
+
 
 //---------------------------------------------------
 void _fft(cplx buf[], cplx out[], int n, int step)
@@ -967,17 +1005,11 @@ Points best_board( std::vector<Points> boards)
 - (UIImage *) f04_zoom_in
 {
     if (!_board.size()) { return MatToUIImage( _m); }
-    // Just the board
-    //Points2f b =  Points2f( _cont[0].begin(), _cont[0].end());
-    Points2f b =  Points2f( _board.begin(), _board.end());
-    four_point_transform( _gray, _mboard, b);
-
     // Zoom out a little
     Points2f board_stretched = enlarge_board( _board);
-    cv::Mat transform = four_point_transform( _gray, _gray, board_stretched);
-    //Points2f board = Points2f( _board.begin(), _board.end());
-    // _board_zoomed has the approximate corners of the board in the zoomed version
-    Points2f tt;
+    cv::Mat transform = board_transform( _gray, _gray, board_stretched);
+    Points2f b,tt;
+    PointsToFloat( _board, b);
     cv::perspectiveTransform( b, tt, transform);
     PointsToInt( tt, _board_zoomed);
     
@@ -1321,125 +1353,18 @@ float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
     return err;
 }
 
-// One SGD step to make the grid match the dots better
-//--------------------------------------------------------------
-void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
-{
-    const int NONE  = 0;
-    const int UP    = 1;
-    const int DOWN  = 2;
-    const int LEFT  = 3;
-    const int RIGHT = 4;
-    const int OVER  = 5;
-    
-    std::vector<int> tlmotions = { NONE, UP, DOWN, RIGHT, LEFT };
-    std::vector<int> trmotions = { NONE, UP, DOWN, RIGHT, LEFT };
-    std::vector<int> brmotions = { NONE, UP, DOWN, RIGHT, LEFT };
-    std::vector<int> blmotions = { NONE, UP, DOWN, RIGHT, LEFT };
-
-    cv::Point2f deltas[OVER];
-    //std::vector<float> rates = { 0.25, 0.5, 1.0 ,2.0 };
-    std::vector<float> rates = { 1.0 };
-    deltas[NONE]  = cv::Point2f(0,0);
-    deltas[UP]    = cv::Point2f(0,-1);
-    deltas[DOWN]  = cv::Point2f(0,1);
-    deltas[LEFT]  = cv::Point2f(-1,0);
-    deltas[RIGHT] = cv::Point2f(1,0);
-    
-    Points2f bestCorners(4);
-    Points2f curCorners(4);
-    float mind = 1E9;
-
-    for (int r = 0; r < rates.size(); r++) {
-        for (int tl = 0; tl < tlmotions.size(); tl++) {
-            for (int tr = 0; tr < trmotions.size(); tr++) {
-                for (int br = 0; br < brmotions.size(); br++) {
-                    for (int bl = 0; bl < blmotions.size(); bl++) {
-                        curCorners[0] = corners[0] + rates[r] * deltas[tlmotions[tl]];
-                        curCorners[1] = corners[1] + rates[r] * deltas[trmotions[tr]];
-                        curCorners[2] = corners[2] + rates[r] * deltas[brmotions[br]];
-                        curCorners[3] = corners[3] + rates[r] * deltas[blmotions[bl]];
-                        if (bl && r) {
-                            //int tt = 42;
-                        }
-                        float newd = grid_err( curCorners, dots, boardsize);
-                        if (newd < mind) {
-                            bestCorners[0] = curCorners[0];
-                            bestCorners[1] = curCorners[1];
-                            bestCorners[2] = curCorners[2];
-                            bestCorners[3] = curCorners[3];
-                            mind = newd;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    //if (corners.size() != 4) {
-    //    int tt = 42;
-    //}
-    corners[0] = bestCorners[0];
-    corners[1] = bestCorners[1];
-    corners[2] = bestCorners[2];
-    corners[3] = bestCorners[3];
-    
-    NSLog(@"(%d %d) (%d %d) (%d %d) (%d %d)",
-          int(corners[0].x),
-          int(corners[0].y),
-          int(corners[1].x),
-          int(corners[1].y),
-          int(corners[2].x),
-          int(corners[2].y),
-          int(corners[3].x),
-          int(corners[3].y));
-//
-//    Points2f betterCorners = corners;
-//    Points2f origCorners = corners;
-//    bool found = false;
-//    float mind = grid_err( corners, dots, boardsize);
-//    //std::vector<int> mindx(4,0);
-//    //std::vector<int> mindy(4,0);
-//    float newd = 0;
-//    ILOOP (4) {
-//        //cv::Point2f c = corners[i]; // save corner
-//        for (int dx = -1; dx <=1; dx += 1) {
-//            for (int dy = -1; dy <=1; dy += 1) {
-//                corners[i].x = origCorners[i].x + dx;
-//                corners[i].y = origCorners[i].y + dy;
-//                newd = grid_err( corners, dots, boardsize);
-//                if (newd < mind) {
-//                    found = true;
-//                    mind = newd;
-//                    betterCorners = corners;
-//                    //NSLog(@"dx:%d dy:%d",dx,dy);
-//                }
-//            } // for (dy)
-//        } // for (dx)
-//    } // ILOOP
-//    if (!found) {
-//        NSLog(@"stuck");
-//    }
-//    corners = betterCorners;
-//    float tt = grid_err( corners, dots, boardsize);
-//    if (tt > mind) {
-//        int xx = 42;
-//    }
-//    ILOOP (4) {
-//        corners[i].x += mindx[i];
-//        corners[i].y += mindy[i];
-//    }
-} // grid_sgd
-
-
-// Eliminate points that don't fit the rhythm of horizontal lines
+// Eliminate points that don't fit the rhythm of lines
 //--------------------------------------------------------------------
-void clean_points_x( const std::vector<Points> &horiz_clusters,
-                    Points &out, float epsilon = 0.25)
+void outlier_points( const std::vector<Points> &clusters,
+                    float &phase,
+                    float &wavelength,
+                    float &slope, float &minslope, float &maxslope,
+                    Points &clean_points, Points &dirty_points, float epsilon = 0.25)
 {
     std::vector<cv::Vec4f> lines;
     // Lines through the clusters
-    ISLOOP (horiz_clusters) {
-        lines.push_back( fit_line( horiz_clusters[i]));
+    ISLOOP (clusters) {
+        lines.push_back( fit_line( clusters[i]));
     }
     // Slopes of the lines
     std::vector<float> slopes;
@@ -1447,20 +1372,37 @@ void clean_points_x( const std::vector<Points> &horiz_clusters,
         cv::Vec4f line = lines[i];
         float dx = line[2] - line[0];
         float dy = line[3] - line[1];
-        if (dx < 0) { dx *= -1; dy *= -1; }
+        if (fabs(dx) > fabs(dy)) { // horizontal
+            if (dx < 0) { dx *= -1; dy *= -1; }
+        }
+        else { // vertical
+            if (dy > 0) { dx *= -1; dy *= -1; }
+        }
         float theta = atan2( dy, dx);
+        NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
+        // One direction only
+        //if (theta < 0) theta += CV_PI;
+//        if (fabs(fabs(theta) - CV_PI/2.0) < CV_PI/4 && theta < 0) {
+//            theta += CV_PI;
+//        }
+//        if (fabs(fabs(theta) - CV_PI) < CV_PI/4) {
+//            theta -= CV_PI * SIGN(theta);
+//        }
         slopes.push_back( theta);
     }
-    float median_slope = vec_median( slopes);
+    NSLog(@"==========");
+    slope = vec_median( slopes);
+    minslope = vec_min( slopes);
+    maxslope = vec_max( slopes);
     // A polar line with the median slope
-    cv::Vec2f median_hline(0, median_slope + CV_PI/2.0);
+    cv::Vec2f median_hline(0, slope + CV_PI/2.0);
 
     // For each cluster, get the median dist from the median slope line
-    std::vector<float> distances( horiz_clusters.size());
-    ISLOOP (horiz_clusters) {
+    std::vector<float> distances( clusters.size());
+    ISLOOP (clusters) {
         std::vector<float> ds;
-        JSLOOP (horiz_clusters[i]) {
-            cv::Point p = horiz_clusters[i][j];
+        JSLOOP (clusters[i]) {
+            cv::Point p = clusters[i][j];
             float d = dist_point_line( p, median_hline);
             ds.push_back( d);
         }
@@ -1473,37 +1415,34 @@ void clean_points_x( const std::vector<Points> &horiz_clusters,
         if (!i) continue;
         delta_dists.push_back( distances[i] - distances[i-1]);
     }
-    float wavelength = vec_median( delta_dists);
+    wavelength = vec_median( delta_dists);
     // Get the phase
     std::vector<float> phases;
     ISLOOP (distances) {
         phases.push_back( fmod( distances[i],wavelength));
     }
-    float phase = vec_median( phases);
+    phase = vec_median( phases);
     // Filter
-    Points survivors;
-    ISLOOP (horiz_clusters) {
-        JSLOOP (horiz_clusters[i]) {
-            cv::Point p = horiz_clusters[i][j];
+    ISLOOP (clusters) {
+        JSLOOP (clusters[i]) {
+            cv::Point p = clusters[i][j];
             float d = dist_point_line( p, median_hline);
             float rem = fmod( d, wavelength) ;
             float delta = fabs( rem - phase);
             if ( delta < epsilon * wavelength) {
-                survivors.push_back( p);
+                clean_points.push_back( p);
             }
             else {
-                NSLog( @"outlier");
+                dirty_points.push_back(p);
             }
         }
     }
-    out = survivors;
-} // clean_points()
+} // outlier_points()
 
 // Find grid by putting lines through detected stones and intersections
 //------------------------------------------------------------------------
 - (UIImage *) f06_hough_grid
 {
-    
     // Find Hough lines in the detected intersections and stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
     ILOOP (_stone_or_empty.size()) {
@@ -1521,7 +1460,7 @@ void clean_points_x( const std::vector<Points> &horiz_clusters,
         // Separate horizontal, vertical, and other lines
         horiz_vert_other_lines = partition( lines, 3,
                                            [](cv::Vec2f &line) {
-                                               const float thresh = 5.0;
+                                               const float thresh = 10.0;
                                                float theta = line[1] * (180.0 / CV_PI);
                                                if (fabs(theta - 180) < thresh) return 1;
                                                else if (fabs(theta) < thresh) return 1;
@@ -1531,10 +1470,6 @@ void clean_points_x( const std::vector<Points> &horiz_clusters,
         // Sort by Rho (distance of line from origin)
         std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
         std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
-//        std::sort( hlines.begin(), hlines.end(),
-//                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValH(a,canvas.cols) < polarMiddleValH(b,canvas.cols); });
-//        std::sort( vlines.begin(), vlines.end(),
-//                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValV(a,canvas.rows) < polarMiddleValV(b,canvas.rows); });
         if (hlines.size() >= 2 && vlines.size() >= 2) break;
     }
     std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
@@ -1543,67 +1478,19 @@ void clean_points_x( const std::vector<Points> &horiz_clusters,
     cv::Vec4f vslope = avg_slope_line( vlines);
 
     // Cluster points into board_size clusters by dist from hslope, vslope
-    std::vector<Points> horizontal_clusters;
-    horizontal_clusters = cluster( _stone_or_empty, _board_sz,
+    _horizontal_clusters = cluster( _stone_or_empty, _board_sz,
                                   [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
-    std::vector<Points> vertical_clusters;
-    vertical_clusters = cluster( _stone_or_empty, _board_sz,
+    _vertical_clusters = cluster( _stone_or_empty, _board_sz,
                                   [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
     
-    Points clean_points;
-    clean_points_x( horizontal_clusters, clean_points,
-                   0.25); // epsilon should be between 0 and 0.5
-    
-    // Sort clusters top bottom, left right
-    std::sort( horizontal_clusters.begin(), horizontal_clusters.end(),
-              [](Points a, Points b) { return avg_y(a) < avg_y(b); });
-    std::sort( vertical_clusters.begin(), vertical_clusters.end(),
-              [](Points a, Points b) { return avg_x(a) < avg_x(b); });
-    
-    // Put lines through the outermost clusters
-    cv::Vec4f topline, botline, leftline, rightline;
-    topline   = stretch_line( fit_line( horizontal_clusters.front()), 1000);
-    botline   = stretch_line( fit_line( horizontal_clusters.back()), 1000);
-    leftline  = stretch_line( fit_line( vertical_clusters.front()), 1000);
-    rightline = stretch_line( fit_line( vertical_clusters.back()), 1000);
-    int tt=42;
-//    if (hlines.size() < 2 || vlines.size() < 2) {
-//        return MatToUIImage( canvas);
-//    }
-//
-//    // Extract the four border lines
-//    cv::Vec2f topline   = hlines[0];
-//    cv::Vec2f botline   = hlines[hlines.size()-1];
-//    cv::Vec2f leftline  = vlines[0];
-//    cv::Vec2f rightline = vlines[vlines.size()-1];
-//
-//    // Find the grid corners
-//    cv::Point tl = intersection( topline, leftline);
-//    cv::Point tr = intersection( topline, rightline);
-//    cv::Point bl = intersection( botline, leftline);
-//    cv::Point br = intersection( botline, rightline);
-//
-//    // Find the grid
-//    Points corners = { tl, tr, br, bl };
-//    float delta_v, delta_h;
-//    get_intersections( corners, _board_sz, _intersections, delta_v, delta_h);
-//    _delta_h = std::round(delta_h);
-//    _delta_v = std::round(delta_v);
-//
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
 //    drawLine(topline, drawing);
-//    drawLine(botline, drawing);
-//    drawLine(leftline, drawing);
-//    drawLine(rightline, drawing);
 //    drawPolarLine( topline, drawing);
-//    drawPolarLine( botline, drawing);
-//    drawPolarLine( leftline, drawing, cv::Scalar(0,0,255));
-//    drawPolarLine( rightline, drawing, cv::Scalar(0,0,255));
 //    ISLOOP (_intersections) { draw_point( _intersections[i], drawing, 2, cv::Scalar(0,255,0)); }
-    ISLOOP( horizontal_clusters) {
-        Points cl = horizontal_clusters[i];
+    ISLOOP( _horizontal_clusters) {
+        Points cl = _horizontal_clusters[i];
         cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
         draw_points( cl, drawing, 2, color);
     }
@@ -1611,15 +1498,62 @@ void clean_points_x( const std::vector<Points> &horiz_clusters,
     return res;
 } // f06_hough_grid()
 
-//--------------------------
-- (int) fxx_get_boardsize
+// Find wavelength and phase of the grid, remove outliers.
+//------------------------------------------------------------------------
+- (UIImage *) f07_clean_grid_h
 {
-    cv::resize( _mboard, _m, cv::Size(256,256), 0, 0, cv::INTER_AREA);
-    //cv::GaussianBlur( _m, _m, cv::Size( 7, 7), 0, 0 );
+    Points clean_points, dirty_points;
+    float phase, wavelength, slope, minslope, maxslope;
+    outlier_points( _horizontal_clusters, phase, wavelength,
+                   slope, minslope, maxslope,
+                   clean_points, dirty_points,
+                 0.25); // epsilon should be between 0 and 0.5
     
-    //_board_sz = get_boardsize_by_fft( _m);
-    _board_sz = 13;
-    return _board_sz;
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    // Draw the family of lines from phase, wavelength, slope
+    float theta = slope + CV_PI/2;
+    float rho = phase;
+    while (rho < 500) {
+        cv::Vec2f hline( rho, theta);
+        cv::Vec4f line;
+        polarToSegment( hline, line);
+        drawLine( line, drawing, cv::Scalar(0,0,255));
+        rho += wavelength;
+    }
+    draw_points( clean_points, drawing, 2, cv::Scalar(0,255,0));
+    draw_points( dirty_points, drawing, 2, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+//------------------------------------------------------------------------
+- (UIImage *) f08_clean_grid_v
+{
+    Points clean_points, dirty_points;
+    float phase, wavelength, slope, minslope, maxslope;
+    outlier_points( _vertical_clusters, phase, wavelength,
+                   slope, minslope, maxslope,
+                   clean_points, dirty_points,
+                   0.25); // epsilon should be between 0 and 0.5
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    // Draw the family of lines from phase, wavelength, slope
+    float theta = slope + CV_PI/2;
+    float rho = phase;
+    while (rho < 500) {
+        cv::Vec2f hline( rho, theta);
+        cv::Vec4f line;
+        polarToSegment( hline, line);
+        drawLine( line, drawing, cv::Scalar(0,0,255));
+        rho += wavelength;
+    }
+    draw_points( clean_points, drawing, 2, cv::Scalar(0,255,0));
+    draw_points( dirty_points, drawing, 2, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
 }
 
 
@@ -1687,7 +1621,7 @@ void logvecf( NSString *str, std::vector<float> v)
 
 // Classify intersections into b,w,empty
 //----------------------------------------
-- (UIImage *) f07_classify
+- (UIImage *) f09_classify
 {
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
