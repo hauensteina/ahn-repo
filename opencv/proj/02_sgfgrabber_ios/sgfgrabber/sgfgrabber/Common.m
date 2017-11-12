@@ -29,6 +29,13 @@ NSString* nsprintf (NSString *format, ...)
     return msg;
 }
 
+// Concatenate two NSStrings
+//-----------------------------
+NSString *nscat (id a, id b)
+{
+    return [NSString stringWithFormat:@"%@%@",a,b];
+}
+
 // Prepend path to our documents folder
 //---------------------------------------------
 NSString* getFullPath( NSString *fname)

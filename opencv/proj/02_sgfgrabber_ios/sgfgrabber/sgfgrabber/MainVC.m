@@ -262,6 +262,11 @@
                 img = [self.grabFuncs f06_hough_grid];
                 [self.cameraView setImage:img];
                 break;
+//            case 7:
+//                state++;
+//                img = [self.grabFuncs f07_classify];
+//                [self.cameraView setImage:img];
+//                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;

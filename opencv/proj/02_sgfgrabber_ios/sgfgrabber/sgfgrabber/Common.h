@@ -44,6 +44,7 @@ extern "C" {
     
     void g_init(void); // Init globals. Called from Appdelegate.
     NSString *nsprintf (NSString *format, ...);
+    NSString *nscat (id a, id b);
     NSString* getFullPath( NSString *fname);
 
 

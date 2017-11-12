@@ -22,6 +22,7 @@
 #define CLOOP(n) for (int c=0; c < (n); c++ )
 
 #define ISLOOP(n) for (int i=0; i < ((n).size()); i++ )
+#define JSLOOP(n) for (int j=0; j < ((n).size()); j++ )
 
 
 typedef std::vector<std::vector<cv::Point> > Contours;
@@ -221,10 +222,10 @@ cluster (std::vector<T> elts, int nof_clust, Func getFeature)
     return res;
 } // cluster()
 
-// Average a bunch of line segments
-// Put a line through the all the endpoints
-//------------------------------------------------------
-cv::Vec4f avg_lines( std::vector<cv::Vec4f> lines )
+// Average a bunch of line segments.
+// Put a line through all the endpoints.
+//---------------------------------------------------------
+cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines )
 {
     // Get the points
     Points2f points;
@@ -244,6 +245,23 @@ cv::Vec4f avg_lines( std::vector<cv::Vec4f> lines )
     res[3] = lparms[3] + lparms[1];
     return res;
 } // avg_lines()
+
+// Take a bunch of Hough lines, set rho to zero, turn into
+// segments, return avg line segment
+//-----------------------------------------------------------
+cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &hlines )
+{
+    std::vector<cv::Vec4f> segs;
+    cv::Vec2f hline;
+    ISLOOP (hlines) {
+        hline = hlines[i];
+        hline[0] = 0;
+        cv::Vec4f seg;
+        polarToSegment( hline, seg);
+        segs.push_back(seg);
+    }
+    return avg_lines( segs);
+}
 
 //# Find x where f(x) = target where f is an increasing func.
 //------------------------------------------------------------
@@ -278,6 +296,19 @@ POINTS order_points( POINTS &points)
     return res;
 }
 
+// Fit a line through points, L2 norm
+//--------------------------------------
+cv::Vec4f fit_line( const Points &p)
+{
+    cv::Vec4f res,tt;
+    cv::fitLine( p, tt, CV_DIST_L2, 0.0, 0.01, 0.01);
+    res[0] = tt[2];
+    res[1] = tt[3];
+    res[2] = tt[2] + tt[0];
+    res[3] = tt[3] + tt[1];
+    return res;
+}
+
 // Length of a line segment
 //---------------------------------------------------------
 float line_len( cv::Point p, cv::Point q)
@@ -285,8 +316,51 @@ float line_len( cv::Point p, cv::Point q)
     return cv::norm( q-p);
 }
 
+// Distance between point and line segment
+//----------------------------------------------------------
+float dist_point_line( cv::Point p, const cv::Vec4f &line)
+{
+    float x = p.x;
+    float y = p.y;
+    float x0 = line[0];
+    float y0 = line[1];
+    float x1 = line[2];
+    float y1 = line[3];
+    float num = (y0-y1)*x + (x1-x0)*y + (x0*y1 - x1*y0);
+    float den = sqrt( (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+    return num / den;
+}
+
+// Distance between point and Hough line
+//----------------------------------------------------------
+float dist_point_line( cv::Point p, const cv::Vec2f &hline)
+{
+    cv::Vec4f line;
+    polarToSegment( hline, line);
+    return dist_point_line( p, line);
+}
+
+// Get average x of a bunch of points
+//-----------------------------------------
+float avg_x (const Points &p)
+{
+    double ssum = 0.0;
+    ISLOOP (p) { ssum += p[i].x; }
+    return ssum / p.size();
+}
+
+// Get average y of a bunch of points
+//-----------------------------------------
+float avg_y (const Points &p)
+{
+    double ssum = 0.0;
+    ISLOOP (p) { ssum += p[i].y; }
+    return ssum / p.size();
+}
+
+
 // Return unit vector of p
-//----------------------------------
+//------------------------------------
 cv::Point2f unit_vector( cv::Point p)
 {
     float norm = cv::norm(p);
@@ -307,7 +381,7 @@ float angle_between_lines( cv::Point pa, cv::Point pe,
 
 // Intersection of two line segments
 template <typename Point_>
-//------------------------------------------------------
+//-----------------------------------------------------------------
 cv::Point2f intersection( Point_ A, Point_ B, Point_ C, Point_ D)
 {
     // Line AB represented as a1x + b1y = c1
@@ -333,7 +407,8 @@ cv::Point2f intersection( Point_ A, Point_ B, Point_ C, Point_ D)
     }
 } // intersection()
 
-//---------------------------------------------------------
+// Intersection of two lines defined by point pairs
+//----------------------------------------------------------
 cv::Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
 {
     return intersection( cv::Point2f( line1[0], line1[1]),
@@ -351,7 +426,6 @@ cv::Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
     polarToSegment( line2, seg2);
     return intersection( seg1, seg2);
 }
-
 
 // Enclose a contour with an n edge polygon
 //--------------------------------------------
@@ -441,9 +515,14 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33)
 
 // Mark a point on an image
 //--------------------------------------
-void draw_point( cv::Point p, cv::Mat &img, int r=10, cv::Scalar col = cv::Scalar(255,0,0))
+void draw_point( cv::Point p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0))
 {
     cv::circle( img, p, r, col, -1);
+}
+//-------------------------------------------------------------------------------------------
+void draw_points( Points p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0))
+{
+    ISLOOP( p) draw_point( p[i], img, r, col);
 }
 
 
@@ -525,6 +604,21 @@ Points stretch_line(Points line, float factor )
     float length = line_len( p0, p1);
     cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
     Points res = {p0-v , p1+v};
+    return res;
+}
+
+//----------------------------------------------------
+cv::Vec4f stretch_line(cv::Vec4f line, float factor )
+{
+    const cv::Point p0( line[0], line[1]);
+    const cv::Point p1( line[2], line[3]);
+    float length = line_len( p0, p1);
+    const cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
+    cv::Vec4f res;
+    res[0] = (p0-v).x;
+    res[1] = (p0-v).y;
+    res[2] = (p1+v).x;
+    res[3] = (p1+v).y;
     return res;
 }
 
@@ -715,17 +809,22 @@ float polarMiddleValH( const cv::Vec2f &hline, int cols)
     return y;
 }
 
-//--------------------------------------------------------------
-void drawLines( std::vector<cv::Vec4f> lines, cv::Mat &dst)
+//-----------------------------------------------------------------------------------------
+void drawLine( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0))
 {
-    ILOOP (lines.size()) {
-        cv::Point pt1, pt2;
-        pt1.x = cvRound(lines[i][0]);
-        pt1.y = cvRound(lines[i][1]);
-        pt2.x = cvRound(lines[i][2]);
-        pt2.y = cvRound(lines[i][3]);
-        line( dst, pt1, pt2, cv::Scalar(0,0,255), 1, CV_AA);
-    }
+    cv::Point pt1, pt2;
+    pt1.x = cvRound(line[0]);
+    pt1.y = cvRound(line[1]);
+    pt2.x = cvRound(line[2]);
+    pt2.y = cvRound(line[3]);
+    cv::line( dst, pt1, pt2, col, 1, CV_AA);
+}
+
+//--------------------------------------------------------------
+void drawLines( const std::vector<cv::Vec4f> &lines, cv::Mat &dst,
+               cv::Scalar col = cv::Scalar(255,0,0))
+{
+    ISLOOP (lines) drawLine( lines[i], dst, col);
 }
 
 // Return whole screen as board
@@ -962,7 +1061,7 @@ void find_stones( const cv::Mat &img, Points &result)
 } // find_black_stones()
 
 //-------------------------------------------------------------
-void find_empty_places( const cv::Mat &img, Points &border, Points &inner)
+void find_empty_places( const cv::Mat &img, Points &border) //, Points &inner)
 {
     // Prepare image for template matching
     cv::Mat mtmp;
@@ -1067,13 +1166,14 @@ void find_empty_places( const cv::Mat &img, Points &border, Points &inner)
     
     // Match
     double thresh = 90;
-    inner.clear();
-    border.clear();
-    matchTemplate( mtmp, mcross, inner, thresh);
+    //inner.clear();
+    //border.clear();
+    //matchTemplate( mtmp, mcross, inner, thresh);
     matchTemplate( mtmp, mright, border, thresh);
     matchTemplate( mtmp, mleft, border, thresh);
     matchTemplate( mtmp, mtop, border, thresh);
     matchTemplate( mtmp, mbottom, border, thresh);
+    matchTemplate( mtmp, mcross, border, thresh);
     //NSLog (@"template thresh at %.2f inner %ld border %ld", thresh, innersize, bordersize );
 } // find_empty_places()
 
@@ -1117,7 +1217,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
 - (UIImage *) f05_find_intersections
 {
     Points pts, crosses;
-    find_empty_places( _gray, pts, crosses); // has to be first
+    find_empty_places( _gray, pts); // , crosses); // has to be first
     find_stones( _gray, pts);
     // Use only inner ones
     Points2f innerboard = scale_board( _board_zoomed, 1.01);
@@ -1128,17 +1228,18 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
             _stone_or_empty.push_back( p);
         }
     }
-    Points inner_empty;
-    ISLOOP (crosses) {
-        cv::Point2f p( crosses[i]);
-        if (cv::pointPolygonTest( innerboard, p, false) > 0) {
-            inner_empty.push_back( p);
-        }
-    }
-    size_t n = _stone_or_empty.size() + inner_empty.size();
     _board_sz = 19;
-    if (n <= 9*9) { _board_sz = 9; }
-    else if (n <= 250) { _board_sz = 13; }
+//    Points inner_empty;
+//    ISLOOP (crosses) {
+//        cv::Point2f p( crosses[i]);
+//        if (cv::pointPolygonTest( innerboard, p, false) > 0) {
+//            inner_empty.push_back( p);
+//        }
+//    }
+//    size_t n = _stone_or_empty.size() + inner_empty.size();
+//    _board_sz = 19;
+//    if (n <= 9*9) { _board_sz = 9; }
+//    else if (n <= 250) { _board_sz = 13; }
     // Show results
     cv::Mat canvas;
     cv::cvtColor( _gray, canvas, cv::COLOR_GRAY2RGB);
@@ -1329,10 +1430,80 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
 //    }
 } // grid_sgd
 
+
+// Eliminate points that don't fit the rhythm of horizontal lines
+//--------------------------------------------------------------------
+void clean_points_x( const std::vector<Points> &horiz_clusters,
+                    Points &out, float epsilon = 0.25)
+{
+    std::vector<cv::Vec4f> lines;
+    // Lines through the clusters
+    ISLOOP (horiz_clusters) {
+        lines.push_back( fit_line( horiz_clusters[i]));
+    }
+    // Slopes of the lines
+    std::vector<float> slopes;
+    ISLOOP( lines) {
+        cv::Vec4f line = lines[i];
+        float dx = line[2] - line[0];
+        float dy = line[3] - line[1];
+        if (dx < 0) { dx *= -1; dy *= -1; }
+        float theta = atan2( dy, dx);
+        slopes.push_back( theta);
+    }
+    float median_slope = vec_median( slopes);
+    // A polar line with the median slope
+    cv::Vec2f median_hline(0, median_slope + CV_PI/2.0);
+
+    // For each cluster, get the median dist from the median slope line
+    std::vector<float> distances( horiz_clusters.size());
+    ISLOOP (horiz_clusters) {
+        std::vector<float> ds;
+        JSLOOP (horiz_clusters[i]) {
+            cv::Point p = horiz_clusters[i][j];
+            float d = dist_point_line( p, median_hline);
+            ds.push_back( d);
+        }
+        distances[i] = vec_median( ds);
+    }
+    // Get the rhythm (wavelength of line distances)
+    std::sort( distances.begin(), distances.end(), [](float a, float b){ return a < b; });
+    std::vector<float> delta_dists;
+    ISLOOP (distances) {
+        if (!i) continue;
+        delta_dists.push_back( distances[i] - distances[i-1]);
+    }
+    float wavelength = vec_median( delta_dists);
+    // Get the phase
+    std::vector<float> phases;
+    ISLOOP (distances) {
+        phases.push_back( fmod( distances[i],wavelength));
+    }
+    float phase = vec_median( phases);
+    // Filter
+    Points survivors;
+    ISLOOP (horiz_clusters) {
+        JSLOOP (horiz_clusters[i]) {
+            cv::Point p = horiz_clusters[i][j];
+            float d = dist_point_line( p, median_hline);
+            float rem = fmod( d, wavelength) ;
+            float delta = fabs( rem - phase);
+            if ( delta < epsilon * wavelength) {
+                survivors.push_back( p);
+            }
+            else {
+                NSLog( @"outlier");
+            }
+        }
+    }
+    out = survivors;
+} // clean_points()
+
 // Find grid by putting lines through detected stones and intersections
 //------------------------------------------------------------------------
-- (UIImage *) f06_hough_grid //@@@
+- (UIImage *) f06_hough_grid
 {
+    
     // Find Hough lines in the detected intersections and stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
     ILOOP (_stone_or_empty.size()) {
@@ -1340,13 +1511,13 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
     }
     std::vector<cv::Vec2f> lines;
     std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
-    std::vector<int> vote_thresholds = { 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5 };
-    
+    std::vector<int> vote_thresholds = { 10, 9, 8, 7, 6, 5 };
+
     ISLOOP (vote_thresholds) {
         int votes = vote_thresholds[i];
         NSLog( @"trying %d hough line votes", votes );
         HoughLines(canvas, lines, 1, CV_PI/180, votes, 0, 0 );
-        
+
         // Separate horizontal, vertical, and other lines
         horiz_vert_other_lines = partition( lines, 3,
                                            [](cv::Vec2f &line) {
@@ -1360,50 +1531,82 @@ void grid_sgd( cv::Point2f *corners, const Points2f &dots, int boardsize)
         // Sort by Rho (distance of line from origin)
         std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
         std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
-        std::sort( hlines.begin(), hlines.end(),
-                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValH(a,canvas.cols) < polarMiddleValH(b,canvas.cols); });
-        std::sort( vlines.begin(), vlines.end(),
-                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValV(a,canvas.rows) < polarMiddleValV(b,canvas.rows); });
-        if (hlines.size() >= 2 && vlines.size() >= 2) {
-            //break;
-            if (fabs(hlines.back()[0]) - fabs(hlines.front()[0]) > canvas.rows * 0.5 &&
-                fabs(vlines.back()[0]) - fabs(vlines.front()[0]) > canvas.cols * 0.5)
-            {
-                break; // we found the borders
-            }
-        }
+//        std::sort( hlines.begin(), hlines.end(),
+//                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValH(a,canvas.cols) < polarMiddleValH(b,canvas.cols); });
+//        std::sort( vlines.begin(), vlines.end(),
+//                  [canvas](cv::Vec2f a, cv::Vec2f b){ return polarMiddleValV(a,canvas.rows) < polarMiddleValV(b,canvas.rows); });
+        if (hlines.size() >= 2 && vlines.size() >= 2) break;
     }
     std::vector<cv::Vec2f> &hlines = horiz_vert_other_lines[0];
     std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
-    if (hlines.size() < 2 || vlines.size() < 2) {
-        return MatToUIImage( canvas);
-    }
+    cv::Vec4f hslope = avg_slope_line( hlines);
+    cv::Vec4f vslope = avg_slope_line( vlines);
+
+    // Cluster points into board_size clusters by dist from hslope, vslope
+    std::vector<Points> horizontal_clusters;
+    horizontal_clusters = cluster( _stone_or_empty, _board_sz,
+                                  [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
+    std::vector<Points> vertical_clusters;
+    vertical_clusters = cluster( _stone_or_empty, _board_sz,
+                                  [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
     
-    // Extract the four border lines
-    cv::Vec2f topline   = hlines[0];
-    cv::Vec2f botline   = hlines[hlines.size()-1];
-    cv::Vec2f leftline  = vlines[0];
-    cv::Vec2f rightline = vlines[vlines.size()-1];
+    Points clean_points;
+    clean_points_x( horizontal_clusters, clean_points,
+                   0.25); // epsilon should be between 0 and 0.5
     
-    // Find the grid corners
-    cv::Point tl = intersection( topline, leftline);
-    cv::Point tr = intersection( topline, rightline);
-    cv::Point bl = intersection( botline, leftline);
-    cv::Point br = intersection( botline, rightline);
+    // Sort clusters top bottom, left right
+    std::sort( horizontal_clusters.begin(), horizontal_clusters.end(),
+              [](Points a, Points b) { return avg_y(a) < avg_y(b); });
+    std::sort( vertical_clusters.begin(), vertical_clusters.end(),
+              [](Points a, Points b) { return avg_x(a) < avg_x(b); });
     
-    // Find the grid
-    Points corners = { tl, tr, br, bl };
-    float delta_v, delta_h;
-    get_intersections( corners, _board_sz, _intersections, delta_v, delta_h);
-    
+    // Put lines through the outermost clusters
+    cv::Vec4f topline, botline, leftline, rightline;
+    topline   = stretch_line( fit_line( horizontal_clusters.front()), 1000);
+    botline   = stretch_line( fit_line( horizontal_clusters.back()), 1000);
+    leftline  = stretch_line( fit_line( vertical_clusters.front()), 1000);
+    rightline = stretch_line( fit_line( vertical_clusters.back()), 1000);
+    int tt=42;
+//    if (hlines.size() < 2 || vlines.size() < 2) {
+//        return MatToUIImage( canvas);
+//    }
+//
+//    // Extract the four border lines
+//    cv::Vec2f topline   = hlines[0];
+//    cv::Vec2f botline   = hlines[hlines.size()-1];
+//    cv::Vec2f leftline  = vlines[0];
+//    cv::Vec2f rightline = vlines[vlines.size()-1];
+//
+//    // Find the grid corners
+//    cv::Point tl = intersection( topline, leftline);
+//    cv::Point tr = intersection( topline, rightline);
+//    cv::Point bl = intersection( botline, leftline);
+//    cv::Point br = intersection( botline, rightline);
+//
+//    // Find the grid
+//    Points corners = { tl, tr, br, bl };
+//    float delta_v, delta_h;
+//    get_intersections( corners, _board_sz, _intersections, delta_v, delta_h);
+//    _delta_h = std::round(delta_h);
+//    _delta_v = std::round(delta_v);
+//
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    drawPolarLine( topline, drawing);
-    drawPolarLine( botline, drawing);
-    drawPolarLine( leftline, drawing, cv::Scalar(0,0,255));
-    drawPolarLine( rightline, drawing, cv::Scalar(0,0,255));
-    ISLOOP (_intersections) { draw_point( _intersections[i], drawing, 2, cv::Scalar(0,255,0)); }
+//    drawLine(topline, drawing);
+//    drawLine(botline, drawing);
+//    drawLine(leftline, drawing);
+//    drawLine(rightline, drawing);
+//    drawPolarLine( topline, drawing);
+//    drawPolarLine( botline, drawing);
+//    drawPolarLine( leftline, drawing, cv::Scalar(0,0,255));
+//    drawPolarLine( rightline, drawing, cv::Scalar(0,0,255));
+//    ISLOOP (_intersections) { draw_point( _intersections[i], drawing, 2, cv::Scalar(0,255,0)); }
+    ISLOOP( horizontal_clusters) {
+        Points cl = horizontal_clusters[i];
+        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
+        draw_points( cl, drawing, 2, color);
+    }
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f06_hough_grid()
@@ -1460,21 +1663,31 @@ float get_brightness( const cv::Mat &img, float frac=4)
     return ssum / area;
 }
 
-//--------------------------------------------
-void printvec( char *msg, std::vector<int> v)
+//------------------------------------------------
+void logveci( NSString *str, std::vector<int> v)
 {
-    static char buf[10000];
-    sprintf(buf,"%s",msg);
+    NSString *msg = nsprintf( @"%@", str);
     ISLOOP (v) {
-        if (i%9 == 0) { sprintf(buf+strlen(buf),"%s","\n"); }
-        sprintf(buf+strlen(buf), "%d ", v[i] );
+        if (i%19 == 0) msg = nscat( msg, @"\n");
+        msg = nscat( msg, nsprintf( @"%5d ", v[i]));
     }
-    NSLog(@"%s", buf);
+    NSLog(@"%@\n", msg);
 }
 
-// Classify intersection into b,w,empty
+//------------------------------------------------
+void logvecf( NSString *str, std::vector<float> v)
+{
+    NSString *msg = nsprintf( @"%@", str);
+    ISLOOP (v) {
+        if (i%19 == 0) msg = nscat( msg, @"\n");
+        msg = nscat( msg, nsprintf( @"%7.2f ", v[i]));
+    }
+    NSLog(@"%@\n", msg);
+}
+
+// Classify intersections into b,w,empty
 //----------------------------------------
-- (UIImage *) fxx_classify
+- (UIImage *) f07_classify
 {
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -1505,46 +1718,38 @@ void printvec( char *msg, std::vector<int> v)
             crossness.push_back( get_brightness(contour_hood,6));
             cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
 
-            // Template approach
-            templify(hood);
-            //double sim_black = cmpTmpl(hood,_tmpl_black);
-            double sim_white = cmpTmpl(hood,_tmpl_white);
-            double sim_inner = cmpTmpl(hood,_tmpl_inner);
-            if (sim_inner > sim_white) { isempty.push_back(2); }
-            else { isempty.push_back(0); }
-//            NSString *fname = [NSString stringWithFormat:@"hood_%03d.jpg",i];
-//            if (sim_black > sim_white && sim_black > sim_inner) {
-//                NSLog(@"black");
-//            }
-//            else if (sim_white > sim_black && sim_white > sim_inner) {
-//                NSLog(@"white");
-//            }
-            //fname = [self getFullPath:fname];
-            //BOOL ret = cv::imwrite( [fname UTF8String], hood);
-            
+//            // Template approach
+//            templify(hood);
+//            double sim_white = cmpTmpl(hood,_tmpl_white);
+//            double sim_inner = cmpTmpl(hood,_tmpl_inner);
+//            if (sim_inner > sim_white) { isempty.push_back(2); }
+//            else { isempty.push_back(0); }
         }
     }
+    //logvecf( @"brightness:", brightness);
+    //logvecf( @"crossness:",  crossness);
+    
     // Black stones
-    float thresh = *(std::min_element(brightness.begin(), brightness.end())) * 4;
+    float thresh = *(std::min_element( brightness.begin(), brightness.end())) * 4;
     std::vector<int> isblack( brightness.size(), 0);
     ILOOP (brightness.size()) {
         if (brightness[i] < thresh) {
             isblack[i] = 1;
-            //draw_point( _intersections[i], drawing, 1);
+            draw_point( _intersections[i], drawing, 1);
         }
     }
-    printvec( (char *)"isblack:", isblack);
-    ILOOP (isempty.size()) {
-        if (isblack[i]) isempty[i] = 0;
-    }
-    printvec( (char *)"isempty:", isempty);
-    std::vector<int> board;
-    ILOOP (isblack.size()) {
-        if (isblack[i]) board.push_back(1);
-        else if (isempty[i]) board.push_back(0);
-        else board.push_back(2);
-    }
-    printvec( (char *)"board:", board);
+//    logveci( @"isblack:", isblack);
+//    ILOOP (isempty.size()) {
+//        if (isblack[i]) isempty[i] = 0;
+//    }
+//    logveci( @"isempty:", isempty);
+//    std::vector<int> board;
+//    ILOOP (isblack.size()) {
+//        if (isblack[i]) board.push_back(1);
+//        else if (isempty[i]) board.push_back(0);
+//        else board.push_back(2);
+//    }
+//    logveci(<#NSString *str#>, <#std::vector<int> v#>)( @"board:", board);
 
 //    // Empty places
 //    std::vector<int> isempty( crossness.size(), 0);
@@ -1572,7 +1777,7 @@ void printvec( char *msg, std::vector<int> v)
     //UIImage *res = MatToUIImage( zoomed_edges);
     return res;
 
-}
+} // f07_classify()
 
 #pragma mark - Real time implementation
 //========================================
