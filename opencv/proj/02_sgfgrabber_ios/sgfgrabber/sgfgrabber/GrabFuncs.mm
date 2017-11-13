@@ -23,6 +23,9 @@
 
 #define ISLOOP(n) for (int i=0; i < ((n).size()); i++ )
 #define JSLOOP(n) for (int j=0; j < ((n).size()); j++ )
+#define KSLOOP(n) for (int k=0; k < ((n).size()); k++ )
+#define RSLOOP(n) for (int r=0; r < ((n).size()); r++ )
+#define CSLOOP(n) for (int c=0; c < ((n).size()); c++ )
 
 
 typedef std::vector<std::vector<cv::Point> > Contours;
@@ -52,6 +55,10 @@ const cv::Size TMPL_SZ(16,16);
 @property Points stone_or_empty; // places where we suspect stones or empty
 @property std::vector<Points> horizontal_clusters; // Result of Hough lines and clustering
 @property std::vector<Points> vertical_clusters;
+@property std::vector<cv::Vec4f> horizontal_lines;
+@property float wavelen_h;
+@property std::vector<cv::Vec4f> vertical_lines;
+@property float wavelen_v;
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -202,6 +209,7 @@ partition( std::vector<T> elts, int nof_classes, Func getClass)
 
 // Cluster a vector of elements by func.
 // Return clusters as vec of vec.
+// Assumes feature is a single float.
 //---------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
@@ -222,6 +230,32 @@ cluster (std::vector<T> elts, int nof_clust, Func getFeature)
     }
     return res;
 } // cluster()
+
+// Cluster a vector of elements by func.
+// Return clusters as vec of vec.
+// Assumes feature is a vec of float.
+//---------------------------------------------------------------------
+template<typename Func, typename T>
+std::vector<std::vector<T> >
+mcluster (std::vector<T> elts, int nof_clust, Func getFeature)
+{
+    if (elts.size() < 2) return std::vector<std::vector<T> >();
+    std::vector<float> features;
+    std::vector<float> centers;
+    ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
+    std::vector<int> labels;
+    cv::kmeans( features, nof_clust, labels,
+               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+               3, cv::KMEANS_PP_CENTERS, centers);
+    // Extract parts
+    std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
+    ILOOP (elts.size()) {
+        res[labels[i]].push_back( elts[i]);
+    }
+    return res;
+} // mcluster()
+
+
 
 // Average a bunch of line segments.
 // Put a line through all the endpoints.
@@ -1358,7 +1392,7 @@ float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
 void outlier_points( const std::vector<Points> &clusters,
                     float &phase,
                     float &wavelength,
-                    float &slope, float &minslope, float &maxslope,
+                    float &slope,
                     Points &clean_points, Points &dirty_points, float epsilon = 0.25)
 {
     std::vector<cv::Vec4f> lines;
@@ -1379,21 +1413,11 @@ void outlier_points( const std::vector<Points> &clusters,
             if (dy > 0) { dx *= -1; dy *= -1; }
         }
         float theta = atan2( dy, dx);
-        NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
-        // One direction only
-        //if (theta < 0) theta += CV_PI;
-//        if (fabs(fabs(theta) - CV_PI/2.0) < CV_PI/4 && theta < 0) {
-//            theta += CV_PI;
-//        }
-//        if (fabs(fabs(theta) - CV_PI) < CV_PI/4) {
-//            theta -= CV_PI * SIGN(theta);
-//        }
+        //NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
         slopes.push_back( theta);
     }
     NSLog(@"==========");
     slope = vec_median( slopes);
-    minslope = vec_min( slopes);
-    maxslope = vec_max( slopes);
     // A polar line with the median slope
     cv::Vec2f median_hline(0, slope + CV_PI/2.0);
 
@@ -1503,9 +1527,9 @@ void outlier_points( const std::vector<Points> &clusters,
 - (UIImage *) f07_clean_grid_h
 {
     Points clean_points, dirty_points;
-    float phase, wavelength, slope, minslope, maxslope;
-    outlier_points( _horizontal_clusters, phase, wavelength,
-                   slope, minslope, maxslope,
+    float phase, slope;
+    outlier_points( _horizontal_clusters, phase, _wavelen_h,
+                   slope,
                    clean_points, dirty_points,
                  0.25); // epsilon should be between 0 and 0.5
     
@@ -1515,12 +1539,14 @@ void outlier_points( const std::vector<Points> &clusters,
     // Draw the family of lines from phase, wavelength, slope
     float theta = slope + CV_PI/2;
     float rho = phase;
-    while (rho < 500) {
+    _horizontal_lines = std::vector<cv::Vec4f>();
+    while (rho < _gray.rows) {
         cv::Vec2f hline( rho, theta);
         cv::Vec4f line;
         polarToSegment( hline, line);
+        _horizontal_lines.push_back( line);
         drawLine( line, drawing, cv::Scalar(0,0,255));
-        rho += wavelength;
+        rho += _wavelen_h;
     }
     draw_points( clean_points, drawing, 2, cv::Scalar(0,255,0));
     draw_points( dirty_points, drawing, 2, cv::Scalar(255,0,0));
@@ -1531,9 +1557,9 @@ void outlier_points( const std::vector<Points> &clusters,
 - (UIImage *) f08_clean_grid_v
 {
     Points clean_points, dirty_points;
-    float phase, wavelength, slope, minslope, maxslope;
-    outlier_points( _vertical_clusters, phase, wavelength,
-                   slope, minslope, maxslope,
+    float phase, slope;
+    outlier_points( _vertical_clusters, phase, _wavelen_v,
+                   slope,
                    clean_points, dirty_points,
                    0.25); // epsilon should be between 0 and 0.5
     
@@ -1543,12 +1569,14 @@ void outlier_points( const std::vector<Points> &clusters,
     // Draw the family of lines from phase, wavelength, slope
     float theta = slope + CV_PI/2;
     float rho = phase;
-    while (rho < 500) {
+    _vertical_lines = std::vector<cv::Vec4f>();
+    while (rho < _gray.cols) {
         cv::Vec2f hline( rho, theta);
         cv::Vec4f line;
         polarToSegment( hline, line);
+        _vertical_lines.push_back( line);
         drawLine( line, drawing, cv::Scalar(0,0,255));
-        rho += wavelength;
+        rho += _wavelen_v;
     }
     draw_points( clean_points, drawing, 2, cv::Scalar(0,255,0));
     draw_points( dirty_points, drawing, 2, cv::Scalar(255,0,0));
@@ -1619,59 +1647,152 @@ void logvecf( NSString *str, std::vector<float> v)
     NSLog(@"%@\n", msg);
 }
 
+typedef struct feat {
+    std::string key;
+    int x,y;     // Pixel pos
+    std::vector<float> features;
+} Feat;
+
+// Compute features from a neighborhood of point
+//---------------------------------------------------------------------------------------------
+void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavelen_v, Feat &f)
+{ //@@@
+    cv::Rect rect( p.x - wavelen_h/2.0, p.y - wavelen_v/2.0, wavelen_h, wavelen_v );
+    if (0 <= rect.x &&
+        0 <= rect.width &&
+        rect.x + rect.width <= img.cols &&
+        0 <= rect.y &&
+        0 <= rect.height &&
+        rect.y + rect.height <= img.rows)
+    {
+        cv::Mat hood = cv::Mat( img, rect);
+        float area = hood.rows * hood.cols;
+        float brightness = cv::sum( hood)[0] / area;
+        f.features.push_back( brightness);
+    }
+    f.x = p.x;
+    f.y = p.y;
+    
+} // get_features()
+
+//----------------------------------
+std::string rc_key (int r, int c)
+{
+    char buf[100];
+    sprintf( buf, "%d_%d", r,c);
+    return std::string (buf);
+}
+
+// Get a list of features for the intersections in a subgrid
+// with r,c as upper left corner.
+//------------------------------------------------------------
+bool get_subgrid( int r, int c, int boardsize,
+                 std::map<std::string, Feat> &features,
+                 std::vector<Feat> &subgrid)
+{
+    RLOOP (boardsize) {
+        CLOOP (boardsize) {
+            std::string key = rc_key( r,c);
+            if (!features.count( key)) { return false; }
+            subgrid.push_back( features[key]);
+        }
+    }
+    return true;
+}
+
 // Classify intersections into b,w,empty
 //----------------------------------------
 - (UIImage *) f09_classify
 {
+    // Get pixel pos for each potential board intersection
+    std::map<std::string, cv::Point> intersections;
+    RSLOOP (_horizontal_lines) {
+        CSLOOP (_vertical_lines) {
+            intersections[rc_key(r,c)] = intersection( _horizontal_lines[r], _vertical_lines[c]);
+        }
+    }
+    // Compute features for each potential board intersection
+    std::map<std::string, Feat> features;
+    for (const auto &x : intersections) {
+        std::string key = x.first;
+        cv::Point p = x.second;
+        Feat f;
+        get_features( _gray, p, _wavelen_h, _wavelen_v, f);
+        f.key = key;
+        features[key] = f;
+    }
+    // Try all possible grids
+    RSLOOP (_horizontal_lines) {
+        CSLOOP (_vertical_lines) {
+            std::vector<Feat> subgrid;
+            if (!get_subgrid( r, c, _board_sz, features, subgrid)) break;
+            // Cluster the features into three classes
+            std::vector<std::vector<Feat> > clusters;
+            std::vector<std::vector<float> > points;
+            cv::Mat m(3,2,CV_32FC1);
+            m.row(0) =  cv::Mat( std::vector<float>(1,2));
+            m.row(1) =  cv::Mat( std::vector<float>(10,20));
+            m.row(2) =  cv::Mat( std::vector<float>(11,21));
+            std::vector<int> labels;
+            cv::Mat centers;
+            cv::kmeans( m, 2, labels,
+                       cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+                       3, cv::KMEANS_PP_CENTERS, centers);
+            int tt = 42;
+        }
+    }
+    
+
+//
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    // Contour image of the zoomed board
-    cv::Mat zoomed_edges;
-    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
-    cv::Canny( _gray, zoomed_edges, 30, 70);
-    //auto_canny( _gray, zoomed_edges);
-    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-    // Cut out areas around the intersections
-    std::vector<float> brightness;
-    std::vector<float> crossness;
-    std::vector<int> isempty;
-    ILOOP( _intersections.size()) {
-        float x = _intersections[i].x;
-        float y = _intersections[i].y;
-        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
-        if (0 <= rect.x &&
-            0 <= rect.width &&
-            rect.x + rect.width <= _gray.cols &&
-            0 <= rect.y &&
-            0 <= rect.height &&
-            rect.y + rect.height <= _gray.rows)
-        {
-            cv::Mat hood = cv::Mat( _gray, rect);
-            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
-            brightness.push_back( get_brightness( hood));
-            crossness.push_back( get_brightness(contour_hood,6));
-            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
-
-//            // Template approach
-//            templify(hood);
-//            double sim_white = cmpTmpl(hood,_tmpl_white);
-//            double sim_inner = cmpTmpl(hood,_tmpl_inner);
-//            if (sim_inner > sim_white) { isempty.push_back(2); }
-//            else { isempty.push_back(0); }
-        }
-    }
-    //logvecf( @"brightness:", brightness);
-    //logvecf( @"crossness:",  crossness);
-    
-    // Black stones
-    float thresh = *(std::min_element( brightness.begin(), brightness.end())) * 4;
-    std::vector<int> isblack( brightness.size(), 0);
-    ILOOP (brightness.size()) {
-        if (brightness[i] < thresh) {
-            isblack[i] = 1;
-            draw_point( _intersections[i], drawing, 1);
-        }
-    }
+//    // Contour image of the zoomed board
+//    cv::Mat zoomed_edges;
+//    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
+//    cv::Canny( _gray, zoomed_edges, 30, 70);
+//    //auto_canny( _gray, zoomed_edges);
+//    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+//    // Cut out areas around the intersections
+//    std::vector<float> brightness;
+//    std::vector<float> crossness;
+//    std::vector<int> isempty;
+//    ILOOP( _intersections.size()) {
+//        float x = _intersections[i].x;
+//        float y = _intersections[i].y;
+//        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
+//        if (0 <= rect.x &&
+//            0 <= rect.width &&
+//            rect.x + rect.width <= _gray.cols &&
+//            0 <= rect.y &&
+//            0 <= rect.height &&
+//            rect.y + rect.height <= _gray.rows)
+//        {
+//            cv::Mat hood = cv::Mat( _gray, rect);
+//            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
+//            brightness.push_back( get_brightness( hood));
+//            crossness.push_back( get_brightness(contour_hood,6));
+//            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
+//
+////            // Template approach
+////            templify(hood);
+////            double sim_white = cmpTmpl(hood,_tmpl_white);
+////            double sim_inner = cmpTmpl(hood,_tmpl_inner);
+////            if (sim_inner > sim_white) { isempty.push_back(2); }
+////            else { isempty.push_back(0); }
+//        }
+//    }
+//    //logvecf( @"brightness:", brightness);
+//    //logvecf( @"crossness:",  crossness);
+//
+//    // Black stones
+//    float thresh = *(std::min_element( brightness.begin(), brightness.end())) * 4;
+//    std::vector<int> isblack( brightness.size(), 0);
+//    ILOOP (brightness.size()) {
+//        if (brightness[i] < thresh) {
+//            isblack[i] = 1;
+//            draw_point( _intersections[i], drawing, 1);
+//        }
+//    }
 //    logveci( @"isblack:", isblack);
 //    ILOOP (isempty.size()) {
 //        if (isblack[i]) isempty[i] = 0;
