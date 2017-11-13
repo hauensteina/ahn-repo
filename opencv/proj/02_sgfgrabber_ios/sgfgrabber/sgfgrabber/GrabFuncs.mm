@@ -289,9 +289,9 @@ mcluster (std::vector<T> elts, int nof_clust, int ndims, Func getFeatVec)
     std::vector<float> featVec;
     // Append all vecs into one large one
     ILOOP (elts.size()) {
-        int n1 = featVec.size();
+        size_t n1 = featVec.size();
         vapp( featVec, getFeatVec( elts[i]));
-        int n2 = featVec.size();
+        size_t n2 = featVec.size();
         if (n1 == n2) {
             int tt = 42;
         }
@@ -1714,9 +1714,10 @@ typedef struct feat {
 
 // Compute features from a neighborhood of point
 //---------------------------------------------------------------------------------------------
-void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavelen_v, Feat &f)
-{ //@@@
-    cv::Rect rect( p.x - wavelen_h/2.0, p.y - wavelen_v/2.0, wavelen_h, wavelen_v );
+void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavelen_v,
+                  std::string key, Feat &f)
+{
+    cv::Rect rect( p.x - wavelen_h/4.0, p.y - wavelen_v/4.0, wavelen_h/2.0, wavelen_v/2.0 );
     if (0 <= rect.x &&
         0 <= rect.width &&
         rect.x + rect.width <= img.cols &&
@@ -1729,6 +1730,10 @@ void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavel
         float brightness = cv::sum( hood)[0] / area;
         f.features.push_back( brightness);
     }
+    else {
+        NSLog( @"get_features failed at key %s", key.c_str());
+    }
+    f.key = key;
     f.x = p.x;
     f.y = p.y;
     
@@ -1749,13 +1754,18 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
                  std::map<std::string, Feat> &features,
                  std::vector<Feat> &subgrid)
 {
+    //NSLog( @"get_subgrid_features for %d %d", top_row, left_col);
     RLOOP (boardsize) {
         CLOOP (boardsize) {
             std::string key = rc_key( top_row + r, left_col + c);
             if (!features.count( key)) {
-                return false; }
+                //NSLog( @"no intersection at %d %d", top_row + r, left_col + c);
+                return false;
+            }
             if (!features[key].features.size()) {
-                return false; }
+                //NSLog( @"no features at %d %d", top_row + r, left_col + c);
+                return false;
+            }
             subgrid.push_back( features[key]);
         }
     }
@@ -1779,23 +1789,25 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
         std::string key = x.first;
         cv::Point p = x.second;
         Feat f;
-        get_features( _gray, p, _wavelen_h, _wavelen_v, f);
-        f.key = key;
+        get_features( _gray, p, _wavelen_h, _wavelen_v, key, f);
         features[key] = f;
     }
-    // Try all possible grids
+    // Try all possible grids @@@
     RSLOOP (_horizontal_lines) {
         CSLOOP (_vertical_lines) {
+            //NSLog(@">>>>>>>>>>> %d %d", r, c);
             std::vector<Feat> subgrid;
-            if (!get_subgrid_features( r, c, _board_sz, features, subgrid)) break;
+            if (!get_subgrid_features( r, c, _board_sz, features, subgrid)) continue;
+            //NSLog( @"$$$$$$$$$$$$$ Complete grid at %d %d", r, c);
             // Cluster the features into two classes
             std::vector<std::vector<Feat> > clusters;
             clusters = mcluster( subgrid, 2, 1,
                                 [](Feat f) { return f.features; });
-            int tt = 42;
+            NSLog( @"%ld %ld clusters at %ld %ld", clusters[0].size(), clusters[1].size(), r, c);
         }
     }
-    
+    NSLog( @"==================");
+
 
 //
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
