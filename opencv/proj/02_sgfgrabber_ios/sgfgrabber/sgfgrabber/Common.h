@@ -55,5 +55,20 @@ extern "C" {
 #endif
 
 
+#ifdef __cplusplus
+
+#import <iostream>
+
+// Append a vector to another
+//--------------------------------------------------------
+template <typename T>
+void vapp( std::vector<T> &v1, const std::vector<T> &v2)
+{
+    v1.insert( v1.end(), v2.begin(), v2.end());
+}
+
+#endif
+
+
 
 

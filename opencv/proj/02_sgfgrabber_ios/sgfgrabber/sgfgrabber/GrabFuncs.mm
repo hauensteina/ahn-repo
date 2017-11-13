@@ -98,8 +98,41 @@ const cv::Size TMPL_SZ(16,16);
     return self;
 }
 
+//------------------------------------------
+std::string mat_typestr( const cv::Mat &m)
+{
+    int type = m.type();
+    std::string r;
+    
+    uchar depth = type & CV_MAT_DEPTH_MASK;
+    uchar chans = 1 + (type >> CV_CN_SHIFT);
+    
+    switch ( depth ) {
+        case CV_8U:  r = "8U"; break;
+        case CV_8S:  r = "8S"; break;
+        case CV_16U: r = "16U"; break;
+        case CV_16S: r = "16S"; break;
+        case CV_32S: r = "32S"; break;
+        case CV_32F: r = "32F"; break;
+        case CV_64F: r = "64F"; break;
+        default:     r = "User"; break;
+    }
+    
+    r += "C";
+    r += (chans+'0');
+    
+    return r;
+}
+
+//---------------------------------------
+void print_mat_type( const cv::Mat &m)
+{
+    std::cout << mat_typestr( m) << std::endl;
+    printf("\n========================\n");
+}
+
 //---------------------------------
-void printMat( const cv::Mat &m)
+void printMatU( const cv::Mat &m)
 {
     RLOOP (m.rows) {
         printf("\n");
@@ -107,8 +140,21 @@ void printMat( const cv::Mat &m)
             printf("%4d",m.at<uint8_t>(r,c) );
         }
     }
-    printf("\n");
+    printf("\n========================\n");
 }
+
+//---------------------------------
+void printMatF( const cv::Mat &m)
+{
+    RLOOP (m.rows) {
+        printf("\n");
+        CLOOP (m.cols) {
+            printf("%8.2f",m.at<float>(r,c) );
+        }
+    }
+    printf("\n========================\n");
+}
+
 
 //--------------------------------------------------
 void PointsToFloat( const Points &pi, Points2f &pf)
@@ -234,17 +280,30 @@ cluster (std::vector<T> elts, int nof_clust, Func getFeature)
 // Cluster a vector of elements by func.
 // Return clusters as vec of vec.
 // Assumes feature is a vec of float.
-//---------------------------------------------------------------------
+//-----------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
-mcluster (std::vector<T> elts, int nof_clust, Func getFeature)
+mcluster (std::vector<T> elts, int nof_clust, int ndims, Func getFeatVec)
 {
     if (elts.size() < 2) return std::vector<std::vector<T> >();
-    std::vector<float> features;
-    std::vector<float> centers;
-    ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
+    std::vector<float> featVec;
+    // Append all vecs into one large one
+    ILOOP (elts.size()) {
+        int n1 = featVec.size();
+        vapp( featVec, getFeatVec( elts[i]));
+        int n2 = featVec.size();
+        if (n1 == n2) {
+            int tt = 42;
+        }
+    }
+    // Reshape into a matrix with one row per feature vector
+    //cv::Mat m = cv::Mat(featVec).reshape( 0, sizeof(elts) );
+    cv::Mat m = cv::Mat(featVec).reshape( 0, ndims );
+
+    // Cluster
     std::vector<int> labels;
-    cv::kmeans( features, nof_clust, labels,
+    cv::Mat centers;
+    cv::kmeans( m, nof_clust, labels,
                cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
                3, cv::KMEANS_PP_CENTERS, centers);
     // Extract parts
@@ -254,8 +313,6 @@ mcluster (std::vector<T> elts, int nof_clust, Func getFeature)
     }
     return res;
 } // mcluster()
-
-
 
 // Average a bunch of line segments.
 // Put a line through all the endpoints.
@@ -1647,6 +1704,8 @@ void logvecf( NSString *str, std::vector<float> v)
     NSLog(@"%@\n", msg);
 }
 
+// Type to hold a feature vector at a board position
+//=====================================================
 typedef struct feat {
     std::string key;
     int x,y;     // Pixel pos
@@ -1686,14 +1745,17 @@ std::string rc_key (int r, int c)
 // Get a list of features for the intersections in a subgrid
 // with r,c as upper left corner.
 //------------------------------------------------------------
-bool get_subgrid( int r, int c, int boardsize,
+bool get_subgrid_features( int top_row, int left_col, int boardsize,
                  std::map<std::string, Feat> &features,
                  std::vector<Feat> &subgrid)
 {
     RLOOP (boardsize) {
         CLOOP (boardsize) {
-            std::string key = rc_key( r,c);
-            if (!features.count( key)) { return false; }
+            std::string key = rc_key( top_row + r, left_col + c);
+            if (!features.count( key)) {
+                return false; }
+            if (!features[key].features.size()) {
+                return false; }
             subgrid.push_back( features[key]);
         }
     }
@@ -1725,19 +1787,11 @@ bool get_subgrid( int r, int c, int boardsize,
     RSLOOP (_horizontal_lines) {
         CSLOOP (_vertical_lines) {
             std::vector<Feat> subgrid;
-            if (!get_subgrid( r, c, _board_sz, features, subgrid)) break;
-            // Cluster the features into three classes
+            if (!get_subgrid_features( r, c, _board_sz, features, subgrid)) break;
+            // Cluster the features into two classes
             std::vector<std::vector<Feat> > clusters;
-            std::vector<std::vector<float> > points;
-            cv::Mat m(3,2,CV_32FC1);
-            m.row(0) =  cv::Mat( std::vector<float>(1,2));
-            m.row(1) =  cv::Mat( std::vector<float>(10,20));
-            m.row(2) =  cv::Mat( std::vector<float>(11,21));
-            std::vector<int> labels;
-            cv::Mat centers;
-            cv::kmeans( m, 2, labels,
-                       cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
-                       3, cv::KMEANS_PP_CENTERS, centers);
+            clusters = mcluster( subgrid, 2, 1,
+                                [](Feat f) { return f.features; });
             int tt = 42;
         }
     }

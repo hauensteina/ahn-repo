@@ -15,7 +15,7 @@
 		AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC628C221F9A7D3F0043FCEE /* Assets.xcassets */; };
 		AC628C341F9A80150043FCEE /* MainVC.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C331F9A80150043FCEE /* MainVC.m */; };
 		AC80400A1FA92613000088D2 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC8040091FA92604000088D2 /* Accelerate.framework */; };
-		ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.m */; };
+		ACA69E4C1F9D077B00F5E068 /* Common.mm in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.mm */; };
 		ACD9EB211FAD0B3D0049BBDE /* black.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB171FAD0B3C0049BBDE /* black.jpg */; };
 		ACD9EB221FAD0B3D0049BBDE /* right.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB181FAD0B3C0049BBDE /* right.jpg */; };
 		ACD9EB231FAD0B3D0049BBDE /* bot.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB191FAD0B3C0049BBDE /* bot.jpg */; };
@@ -46,7 +46,7 @@
 		AC628C321F9A80150043FCEE /* MainVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MainVC.h; sourceTree = "<group>"; };
 		AC628C331F9A80150043FCEE /* MainVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MainVC.m; sourceTree = "<group>"; };
 		AC8040091FA92604000088D2 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
-		ACA69E4B1F9D077B00F5E068 /* Common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Common.m; sourceTree = "<group>"; };
+		ACA69E4B1F9D077B00F5E068 /* Common.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Common.mm; sourceTree = "<group>"; };
 		ACD9EB171FAD0B3C0049BBDE /* black.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = black.jpg; sourceTree = "<group>"; };
 		ACD9EB181FAD0B3C0049BBDE /* right.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = right.jpg; sourceTree = "<group>"; };
 		ACD9EB191FAD0B3C0049BBDE /* bot.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = bot.jpg; sourceTree = "<group>"; };
@@ -96,7 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
-				ACA69E4B1F9D077B00F5E068 /* Common.m */,
+				ACA69E4B1F9D077B00F5E068 /* Common.mm */,
 				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
 				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
@@ -230,7 +230,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */,
+				ACA69E4C1F9D077B00F5E068 /* Common.mm in Sources */,
 				AC5540771F9BE71900922557 /* GrabFuncs.mm in Sources */,
 				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
 				AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */,
