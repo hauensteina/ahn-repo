@@ -329,9 +329,6 @@ mcluster (std::vector<T> elts, int nof_clust, int ndims, double &compactness, Fu
     ILOOP (elts.size()) {
         res[labels[i]].push_back( elts[i]);
     }
-    if (res[0].size() == 7 || res[1].size() == 7) {
-        int xx=42;
-    }
     return res;
 } // mcluster()
 
@@ -363,7 +360,6 @@ void test_mcluster()
         }
         std::cout << "\n";
     }
-    int tt=42;
     return;
 }
 
@@ -619,16 +615,11 @@ int channel_median( cv::Mat channel )
 // Calculates the median value of a vector
 //----------------------------------------------
 template <typename T>
-void vec_median( std::vector<T> vec, T &median, T &median_delta )
+T vec_median( std::vector<T> vec)
 {
+    if (!vec.size()) return T(0);
     std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
-    median = vec[vec.size() / 2];
-    std::vector<T> deltas;
-    ISLOOP (vec) {
-        if (!i) continue;
-        deltas.push_back( vec[i] - vec[i-1]);
-    }
-    median_delta = deltas[deltas.size() / 2];
+    return vec[vec.size() / 2];
 }
 
 // Gets the min value of a vector
@@ -653,22 +644,39 @@ T vec_max( std::vector<T> vec )
 // Calculates the avg value of a vector
 //----------------------------------------------
 template <typename T>
-void vec_avg( std::vector<T> vec, T &avg, T &avg_delta)
+T vec_avg( std::vector<T> vec)
 {
-    std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
+    if (!vec.size()) return T(0);
     double ssum = 0;
     ISLOOP (vec) { ssum += vec[i]; }
-    avg = T(ssum / vec.size());
+    return T(ssum / vec.size());
+}
+
+// Calculates the avg delta of a vector
+//----------------------------------------------
+template <typename T>
+T vec_avg_delta( const std::vector<T> &vec)
+{
     std::vector<T> deltas;
     ISLOOP (vec) {
         if (!i) continue;
         deltas.push_back( vec[i] - vec[i-1]);
     }
-    ssum = 0;
-    ISLOOP (deltas) { ssum += deltas[i]; }
-    avg_delta = T(ssum / deltas.size());
+    return vec_avg( deltas);
 }
 
+// Calculates the median delta of a vector
+//----------------------------------------------
+template <typename T>
+T vec_median_delta( const std::vector<T> &vec)
+{
+    std::vector<T> deltas;
+    ISLOOP (vec) {
+        if (!i) continue;
+        deltas.push_back( vec[i] - vec[i-1]);
+    }
+    return vec_median( deltas);
+}
 
 //-------------------------------------------------------
 void draw_contours( const Contours cont, cv::Mat &dst)
@@ -1286,8 +1294,7 @@ void find_stones( const cv::Mat &img, Points &result)
     // Keep the ones where radius close to avg radius
     std::vector<float> rads;
     ISLOOP (circles){ rads.push_back( circles[i][2]); }
-    float avg_r, fdummy;
-    vec_median( rads, avg_r, fdummy);
+    float avg_r = vec_median( rads);
     
     std::vector<cv::Vec3f> good_circles;
     //const float TOL_LO = 2.0;
@@ -1605,7 +1612,7 @@ void find_rhythm( const std::vector<Points> &clusters,
                  float &median_rho
                  )
 {
-    float fdummy;
+    typedef struct { float dist; float slope; } DistSlope;
     std::vector<cv::Vec4f> lines;
     // Lines through the clusters
     ISLOOP (clusters) {
@@ -1628,12 +1635,13 @@ void find_rhythm( const std::vector<Points> &clusters,
         slopes.push_back( theta);
     }
     //NSLog(@"==========");
-    vec_median( slopes, slope, delta_slope);
+    slope = vec_median( slopes);
+    //vec_avg( slopes, slope, delta_slope);
     // A polar line with the median slope
     cv::Vec2f median_hline(0, slope + CV_PI/2.0);
 
     // For each cluster, get the median dist from the median slope line
-    std::vector<float> distances( clusters.size());
+    std::vector<DistSlope> distSlopes( clusters.size());
     ISLOOP (clusters) {
         std::vector<float> ds;
         JSLOOP (clusters[i]) {
@@ -1641,25 +1649,37 @@ void find_rhythm( const std::vector<Points> &clusters,
             float d = dist_point_line( p, median_hline);
             ds.push_back( d);
         }
-        vec_median( ds, distances[i], fdummy);
+        float dist = vec_median( ds);
+        distSlopes[i].dist = dist;
+        distSlopes[i].slope = slopes[i];
     }
     
     // Get the rhythm (wavelength of line distances)
-    std::sort( distances.begin(), distances.end(), [](float a, float b){ return a < b; });
-    median_rho = distances[distances.size() / 2];
+    std::sort( distSlopes.begin(), distSlopes.end(), [](DistSlope a, DistSlope b){ return a.dist < b.dist; });
+    median_rho = distSlopes[distSlopes.size() / 2].dist;
     std::vector<float> delta_dists;
-    ISLOOP (distances) {
+    std::vector<float> sslopes;
+    ISLOOP (distSlopes) {
+        sslopes.push_back( distSlopes[i].slope);
         if (!i) continue;
-        delta_dists.push_back( distances[i] - distances[i-1]);
+        delta_dists.push_back( distSlopes[i].dist - distSlopes[i-1].dist);
     }
-    //vec_median( delta_dists, wavelength, delta_wavelength);
-    vec_avg( delta_dists, wavelength, delta_wavelength);
+    delta_wavelength = vec_median_delta( delta_dists);
+    delta_slope = vec_median_delta( sslopes);
+    wavelength = vec_median( delta_dists);
+    int nd = (int)distSlopes.size();
+//    delta_wavelength = ((distSlopes[nd-1].dist - distSlopes[nd-2].dist) -
+//                        (distSlopes[1].dist - distSlopes[0].dist)) / (float) (nd-1);
+//    vec_avg( delta_dists, fdummy, delta_wavelength);
+
+    //delta_slope = ((distSlopes[nd-1].slope - distSlopes[0].slope)) / (float) (nd-1);
+    //vec_avg( delta_dists, wavelength, fdummy);
     // Get the phase
     std::vector<float> phases;
-    ISLOOP (distances) {
-        phases.push_back( fmod( distances[i],wavelength));
+    ISLOOP (distSlopes) {
+        phases.push_back( fmod( distSlopes[i].dist, wavelength));
     }
-    vec_median( phases, phase, fdummy);
+    phase = vec_median( phases);
 } // find_rhythm()
 
 // Start in the middle with the medians, expand to both sides
@@ -1677,6 +1697,16 @@ void find_lines( int max_rho,
     
     std::vector<cv::Vec2f> hlines;
 
+    //    // center to lower rho
+    wavelength = wavelength_;
+    theta = slope + CV_PI/2;
+    rho = median_rho - wavelength;
+    while (rho > 0) {
+        hlines.push_back( cv::Vec2f ( rho, theta));
+        rho -= wavelength;
+        wavelength -= delta_wavelength;
+        //theta -= delta_slope;
+    }
     // center to higher rho
     wavelength = wavelength_;
     theta = slope + CV_PI/2;
@@ -1685,16 +1715,6 @@ void find_lines( int max_rho,
         hlines.push_back( cv::Vec2f ( rho, theta));
         rho += wavelength;
         wavelength += delta_wavelength;
-        //theta -= delta_slope;
-    }
-    // center to lower rho
-    wavelength = wavelength_;
-    theta = slope + CV_PI/2;
-    rho = median_rho - wavelength;
-    while (rho > 0) {
-        hlines.push_back( cv::Vec2f ( rho, theta));
-        rho -= wavelength;
-        wavelength -= delta_wavelength;
         //theta += delta_slope;
     }
     // convert to segments
@@ -1709,6 +1729,11 @@ void find_lines( int max_rho,
 //------------------------------------------------------------------------
 - (UIImage *) f06_hough_grid
 {
+    NSString *func = @"f06_hough_grid()";
+    if (_stone_or_empty.size() < _board_sz) {
+        NSLog( @"%@: not enough points", func);
+        return MatToUIImage( _gray);
+    }
     // Find Hough lines in the detected intersections and stones
     cv::Mat canvas = cv::Mat::zeros( _gray.size(), CV_8UC1 );
     ILOOP (_stone_or_empty.size()) {
