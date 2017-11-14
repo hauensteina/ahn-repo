@@ -1780,19 +1780,20 @@ void find_lines( int max_rho,
     
     // Fix generated lines using cluster lines
     std::vector<cv::Vec4f> lines_out;
-    clean_lines( lines, _horizontal_clusters, lines_out ); //@@@
+    _horizontal_lines.clear();
+    clean_lines( lines, _horizontal_clusters, _horizontal_lines ); //@@@
 
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (lines_out) { drawLine( lines_out[i], drawing, cv::Scalar(0,0,255)); }
+    ISLOOP (_horizontal_lines) { drawLine( _horizontal_lines[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
 
-//@@@@@@@@@@@@@@@@@@@
-//@@@@@@@@@@@@@@@@@@@
+// Replace each synthetic line with a close cluster line.
+// If none found, interpolate rho and theta from predecessor.
 //-------------------------------------------------------------------------------------------------
 void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Points> &clusters,
                     std::vector<cv::Vec4f> &lines_out)
@@ -1823,8 +1824,10 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     // Sort by rho
     std::sort( hlines.begin(), hlines.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
     
-    const float EPS = 10.0;
+    const float EPS = 7.0; // Could take the median dist here
     float delta_rho = -1;
+    int takenj = -1;
+    std::vector<bool> match(hlines.size(), false);
     // Replace each hline with a close chline, if you find one
     ISLOOP (hlines) {
         cv::Vec2f hline = hlines[i];
@@ -1832,26 +1835,70 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
         float mindist = 1E9;
         JSLOOP (chlines) {
             cv::Vec2f chline = chlines[j];
-            if (fabs( chline[0] - hline[0]) < mindist) {
+            if (fabs( chline[0] - hline[0]) < mindist && takenj < j) {
                 mindist = fabs( chline[0] - hline[0]);
                 minidx = j;
             }
         } // for chlines
         NSLog( @"mindist: %.0f", mindist);
         if (mindist < EPS) {
+            takenj = minidx;
             NSLog( @"%@: replaced line %d with %d", func, i, minidx );
             hlines[i] = chlines[minidx];
+            match[i] = true;
         }
-        else { // no match
-            NSLog( @"%@: No match for line %d", func, i);
-            if (i > 0 && delta_rho > 0) {
-                // Interpolate
-                hlines[i][0] = hlines[i-1][0] + delta_rho; // Keep rho increment
-                hlines[i][1] = hlines[i-1][1]; // Copy old theta
+    } // for hlines
+    
+    // Interpolate whoever didn't find a match, low to high rho
+    bool init = false;
+    float theta = 0;
+    delta_rho = -1;
+    float old_rho = 0;
+    ISLOOP (match) {
+        if (match[i]) {
+            init = true;
+            theta = hlines[i][1];
+            if (i > 0) delta_rho = hlines[i][0] - hlines[i-1][0];
+            old_rho = hlines[i][0];
+            continue;
+        }
+        if (!init) continue;
+        if (!match[i]) {
+            if (delta_rho > 0) {
+                NSLog( @"Forward interpolated line %d", i);
+                hlines[i][1] = theta;
+                hlines[i][0] = old_rho + delta_rho;
+                old_rho = old_rho + delta_rho;
+                match[i] = true;
             }
         }
-        if (i > 0) delta_rho = hlines[i][0] - hlines[i-1][0];
-    } // for hlines
+    }
+    
+    // Interpolate whoever didn't find a match, high to low rho
+    init = false;
+    theta = 0;
+    delta_rho = -1;
+    old_rho = 0;
+    const int lim = (int)match.size()-1;
+    for (int i = lim; i >= 0; i--) {
+        if (match[i]) {
+            init = true;
+            theta = hlines[i][1];
+            if (i < lim) delta_rho = hlines[i+1][0] - hlines[i][0];
+            old_rho = hlines[i][0];
+            continue;
+        }
+        if (!init) continue;
+        if (!match[i]) {
+            if (delta_rho > 0) {
+                NSLog( @"Backward interpolated line %d", i);
+                hlines[i][1] = theta;
+                hlines[i][0] = old_rho - delta_rho;
+                old_rho = old_rho - delta_rho;
+                match[i] = true;
+            }
+        }
+    }
     
     // Convert back to segment
     ISLOOP (hlines) {
@@ -1875,12 +1922,13 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     
     // Fix generated lines using cluster lines
     std::vector<cv::Vec4f> lines_out;
-    clean_lines( lines, _vertical_clusters, lines_out ); //@@@
+    _vertical_lines.clear();
+    clean_lines( lines, _vertical_clusters, _vertical_lines );
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (lines_out) { drawLine( lines_out[i], drawing, cv::Scalar(0,0,255)); }
+    ISLOOP (_vertical_lines) { drawLine( _vertical_lines[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -2056,7 +2104,6 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
 //----------------------------------------
 - (UIImage *) f09_classify
 {
-    //test_mcluster();
     // Get pixel pos for each potential board intersection
     std::map<std::string, cv::Point> intersections;
     RSLOOP (_horizontal_lines) {
@@ -2117,9 +2164,9 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     drawing = _small.clone();
-    for (const auto &x : intersections) {
-        std::string key = x.first;
-        cv::Point p = x.second;
+    for (const auto &f : subgrid) {
+        //std::string key = x.first;
+        cv::Point p( f.x, f.y);
         cv::Rect rect( p.x - _wavelen_h/4.0, p.y - _wavelen_v/4.0, _wavelen_h/2.0, _wavelen_v/2.0 );
         cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
     }
