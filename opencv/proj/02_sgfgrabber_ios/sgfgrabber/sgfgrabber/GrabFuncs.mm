@@ -295,7 +295,7 @@ cluster (std::vector<T> elts, int nof_clust, Func getFeature)
 //-----------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
-mcluster (std::vector<T> elts, int nof_clust, int ndims, Func getFeatVec)
+mcluster (std::vector<T> elts, int nof_clust, int ndims, double &compactness, Func getFeatVec)
 {
     if (elts.size() < 2) return std::vector<std::vector<T> >();
     std::vector<float> featVec;
@@ -313,9 +313,9 @@ mcluster (std::vector<T> elts, int nof_clust, int ndims, Func getFeatVec)
     // Cluster
     std::vector<int> labels;
     cv::Mat centers;
-    cv::kmeans( m, nof_clust, labels,
-               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 100, 1.0),
-               3, cv::KMEANS_PP_CENTERS, centers);
+    compactness = cv::kmeans( m, nof_clust, labels,
+                             cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 100, 1.0),
+                             3, cv::KMEANS_PP_CENTERS, centers);
     // Extract parts
     std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
     ILOOP (elts.size()) {
@@ -344,7 +344,9 @@ void test_mcluster()
     samples.push_back( v5);
     samples.push_back( v6);
 
-    auto res = mcluster( samples, 3, 2, [](std::vector<float>s) {return s;} );
+    double compactness;
+    auto res = mcluster( samples, 3, 2, compactness,
+                        [](std::vector<float>s) {return s;} );
     CSLOOP (res) {
         std::cout << "Cluster " << c << ":\n";
         std::vector<std::vector<float> > clust = res[c];
@@ -1067,7 +1069,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 
 // Make a better board estimate from several
 //--------------------------------------------
-Points best_board( std::vector<Points> boards)
+Points smallest_board( std::vector<Points> boards)
 {
     Points res(4);
     int minidx=0;
@@ -1076,16 +1078,26 @@ Points best_board( std::vector<Points> boards)
         Points b = boards[i];
         float area = cv::contourArea(b);
         if (area < minArea) { minArea = area; minidx = i;}
-//        res[0] += b[0];
-//        res[1] += b[1];
-//        res[2] += b[2];
-//        res[3] += b[3];
     }
-//    res[0] /= (float)boards.size();
-//    res[1] /= (float)boards.size();
-//    res[2] /= (float)boards.size();
-//    res[3] /= (float)boards.size();
     return boards[minidx];
+}
+
+//---------------------------------------------------
+Points avg_board( std::vector<Points> boards)
+{
+    Points res(4);
+    ILOOP (boards.size()) {
+        Points b = boards[i];
+        res[0] += b[0];
+        res[1] += b[1];
+        res[2] += b[2];
+        res[3] += b[3];
+    }
+    res[0] /= (float)boards.size();
+    res[1] /= (float)boards.size();
+    res[2] /= (float)boards.size();
+    res[3] /= (float)boards.size();
+    return res;
 }
 
 #pragma mark - Processing Pipeline for debugging
@@ -1416,6 +1428,19 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
     }
     UIImage *res = MatToUIImage( canvas);
     return res;
+}
+
+// Get center of a bunch of points
+//--------------------------------------------------------------------------------
+template <typename Points_>
+cv::Point2f get_center( const Points_ ps)
+{
+    double avg_x = 0, avg_y = 0;
+    ISLOOP (ps) {
+        avg_x += ps[i].x;
+        avg_y += ps[i].y;
+    }
+    return cv::Point2f( avg_x / ps.size(), avg_y / ps.size());
 }
 
 // Find all intersections from corners and boardsize
@@ -1776,11 +1801,11 @@ void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavel
         float brightness_r = ssum[0] / area;
         float brightness_g = ssum[1] / area;
         float brightness_b = ssum[2] / area;
-        float v = sqrt (brightness_r*brightness_r + brightness_g*brightness_g + brightness_b*brightness_b);
-        f.features.push_back( v);
-        f.features.push_back( v);
-        f.features.push_back( v);
-        std::cout << v << std::endl;
+        //float v = sqrt (brightness_r*brightness_r + brightness_g*brightness_g + brightness_b*brightness_b);
+        f.features.push_back( brightness_r);
+        f.features.push_back( brightness_g);
+        f.features.push_back( brightness_b);
+        //std::cout << v << std::endl;
     }
     else {
         NSLog( @"get_features failed at key %s", key.c_str());
@@ -1803,9 +1828,12 @@ std::string rc_key (int r, int c)
 // with r,c as upper left corner.
 //------------------------------------------------------------
 bool get_subgrid_features( int top_row, int left_col, int boardsize,
-                 std::map<std::string, Feat> &features,
-                 std::vector<Feat> &subgrid)
+                          std::map<std::string, Feat> &features,
+                          std::vector<Feat> &subgrid,
+                          cv::Point2f &center)
 {
+    double avg_x, avg_y;
+    avg_x = 0; avg_y = 0;
     //NSLog( @"get_subgrid_features for %d %d", top_row, left_col);
     RLOOP (boardsize) {
         CLOOP (boardsize) {
@@ -1819,8 +1847,12 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
                 return false;
             }
             subgrid.push_back( features[key]);
+            avg_x += features[key].x;
+            avg_y += features[key].y;
         }
     }
+    center.x = avg_x / (boardsize*boardsize);
+    center.y = avg_y / (boardsize*boardsize);
     return true;
 }
 
@@ -1874,24 +1906,36 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
         get_features( img, p, _wavelen_h, _wavelen_v, key, f);
         features[key] = f;
     }
-    // Try all possible grids @@@
+    // Find the best grid
+    cv::Point2f bcenter = get_center( _board_zoomed);
+    double mindist = 1E9;
+    int minr = -1, minc = -1;
     RSLOOP (_horizontal_lines) {
         CSLOOP (_vertical_lines) {
             //NSLog(@">>>>>>>>>>> %d %d", r, c);
+            cv::Point2f gridcenter;
             std::vector<Feat> subgrid;
-            if (!get_subgrid_features( r, c, _board_sz, features, subgrid)) continue;
-            //NSLog( @"$$$$$$$$$$$$$ Complete grid at %d %d", r, c);
-            // Cluster the features into two classes
-            std::vector<std::vector<Feat> > clusters;
-            clusters = mcluster( subgrid,
-                                2, // clusters
-                                3, // feature dims
-                                [](Feat f) { return f.features; });
-            NSLog( @"%ld %ld clusters at %d %d",
-                  clusters[0].size(), clusters[1].size(),
-                  r, c);
+            if (!get_subgrid_features( r, c, _board_sz, features, subgrid, gridcenter)) continue;
+            double d = cv::norm( bcenter - gridcenter);
+            if (d < mindist) {
+                mindist = d;
+                minr = r; minc = c;
+            }
         }
     }
+
+    std::vector<Feat> subgrid; cv::Point2f center;
+    get_subgrid_features( minr, minc, _board_sz, features, subgrid, center);
+    std::vector<std::vector<Feat> > clusters;
+    double compactness;
+    clusters = mcluster( subgrid,
+                        2, // clusters
+                        3, // feature dims
+                        compactness,
+                        [](Feat f) { return f.features; });
+    NSLog( @"%ld %ld clusters at %d %d compact %6.2f",
+          clusters[0].size(), clusters[1].size(),
+          minr, minc, compactness);
     NSLog( @"==================");
 
 
@@ -2021,7 +2065,8 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     if ( board_valid( _board, cv::contourArea(whole_screen(_small)))) {
         boards.push_back( _board);
         if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
-        _board = best_board( boards);
+        //_board = smallest_board( boards);
+        _board = avg_board( boards);
         drawContour( _small, _board, cv::Scalar(255,0,0,255));
 //        _cont = std::vector<Points>( 1, _board);
 //        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
