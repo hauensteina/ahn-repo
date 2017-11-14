@@ -43,7 +43,8 @@ const cv::Size TMPL_SZ(16,16);
 
 @interface GrabFuncs()
 //=======================
-@property cv::Mat gray;  // Garyscale version of img
+@property cv::Mat small; // resized image, in color
+@property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
 @property Points board;  // Current hypothesis on where the board is
@@ -96,6 +97,17 @@ const cv::Size TMPL_SZ(16,16);
         [self jpg:@"hoshi.jpg" toTmpl:_tmpl_hoshi];
     }
     return self;
+}
+
+//----------------------------------
+template <typename T>
+void print_vec( std::vector<T> v)
+{
+    std::cout << "( ";
+    ISLOOP (v) {
+        std::cout << v[i] << ' ';
+    }
+    std::cout << ")";
 }
 
 //------------------------------------------
@@ -289,30 +301,61 @@ mcluster (std::vector<T> elts, int nof_clust, int ndims, Func getFeatVec)
     std::vector<float> featVec;
     // Append all vecs into one large one
     ILOOP (elts.size()) {
-        size_t n1 = featVec.size();
+        //size_t n1 = featVec.size();
         vapp( featVec, getFeatVec( elts[i]));
-        size_t n2 = featVec.size();
-        if (n1 == n2) {
-            int tt = 42;
-        }
+        //size_t n2 = featVec.size();
     }
     // Reshape into a matrix with one row per feature vector
     //cv::Mat m = cv::Mat(featVec).reshape( 0, sizeof(elts) );
-    cv::Mat m = cv::Mat(featVec).reshape( 0, ndims );
+    //assert (featVec.size() == 361*ndims);
+    cv::Mat m = cv::Mat(featVec).reshape( 0, int(elts.size()));
 
     // Cluster
     std::vector<int> labels;
     cv::Mat centers;
     cv::kmeans( m, nof_clust, labels,
-               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 100, 1.0),
                3, cv::KMEANS_PP_CENTERS, centers);
     // Extract parts
     std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
     ILOOP (elts.size()) {
         res[labels[i]].push_back( elts[i]);
     }
+    if (res[0].size() == 7 || res[1].size() == 7) {
+        int xx=42;
+    }
     return res;
 } // mcluster()
+
+//------------------------
+void test_mcluster()
+{
+    std::vector<float> v1 = { 1, 2 };
+    std::vector<float> v2 = { 3, 4  };
+    std::vector<float> v3 = { 10, 20 };
+    std::vector<float> v4 = { 11, 21 };
+    std::vector<float> v5 = { 30, 40 };
+    std::vector<float> v6 = { 31, 41 };
+    std::vector<std::vector<float> > samples;
+    samples.push_back( v1);
+    samples.push_back( v2);
+    samples.push_back( v3);
+    samples.push_back( v4);
+    samples.push_back( v5);
+    samples.push_back( v6);
+
+    auto res = mcluster( samples, 3, 2, [](std::vector<float>s) {return s;} );
+    CSLOOP (res) {
+        std::cout << "Cluster " << c << ":\n";
+        std::vector<std::vector<float> > clust = res[c];
+        ISLOOP (clust) {
+            print_vec( clust[i]);
+        }
+        std::cout << "\n";
+    }
+    int tt=42;
+    return;
+}
 
 // Average a bunch of line segments.
 // Put a line through all the endpoints.
@@ -1108,7 +1151,7 @@ Points best_board( std::vector<Points> boards)
     return res;
 }
 
-// Save smalll crops around intersections for use as template
+// Save small crops around intersections for use as template
 //-------------------------------------------------------------------------------
 void save_intersections( const cv::Mat img,
                         const Points2f &intersections, int delta_v, int delta_h)
@@ -1727,8 +1770,14 @@ void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavel
     {
         cv::Mat hood = cv::Mat( img, rect);
         float area = hood.rows * hood.cols;
-        float brightness = cv::sum( hood)[0] / area;
-        f.features.push_back( brightness);
+        cv::Scalar ssum = cv::sum( hood);
+        float brightness_r = ssum[0] / area;
+        float brightness_g = ssum[1] / area;
+        float brightness_b = ssum[2] / area;
+        float v = sqrt (brightness_r*brightness_r + brightness_g*brightness_g + brightness_b*brightness_b);
+        f.features.push_back( brightness_r);
+        f.features.push_back( brightness_g);
+        f.features.push_back( brightness_b);
     }
     else {
         NSLog( @"get_features failed at key %s", key.c_str());
@@ -1772,10 +1821,32 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
     return true;
 }
 
+// Normalize mean and variance, per channel
+//========================================================
+void normalize_image( const cv::Mat &src, cv::Mat &dst)
+{
+    cv::Mat planes[4];
+    cv::split( src, planes);
+    cv::Scalar mmean, sstddev;
+    
+    cv::meanStdDev( planes[0], mmean, sstddev);
+    planes[0].convertTo( planes[0], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    
+    cv::meanStdDev( planes[1], mmean, sstddev);
+    planes[1].convertTo( planes[1], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    
+    cv::meanStdDev( planes[2], mmean, sstddev);
+    planes[2].convertTo( planes[2], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    
+    cv::merge( planes, 4, dst);
+}
+
+
 // Classify intersections into b,w,empty
 //----------------------------------------
 - (UIImage *) f09_classify
 {
+    //test_mcluster();
     // Get pixel pos for each potential board intersection
     std::map<std::string, cv::Point> intersections;
     RSLOOP (_horizontal_lines) {
@@ -1783,13 +1854,28 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
             intersections[rc_key(r,c)] = intersection( _horizontal_lines[r], _vertical_lines[c]);
         }
     }
+    
+    // Normalize color image
+    cv::Mat img;
+    normalize_image( _small, img);
+
     // Compute features for each potential board intersection
     std::map<std::string, Feat> features;
     for (const auto &x : intersections) {
         std::string key = x.first;
         cv::Point p = x.second;
         Feat f;
-        get_features( _gray, p, _wavelen_h, _wavelen_v, key, f);
+        //get_features( _gray, p, _wavelen_h, _wavelen_v, key, f);
+        
+        
+//
+//        _small.convertTo( _small, CV_32FC3);
+//        cv::Mat img;
+//        _small.convertTo( img, CV_32FC4, sstddev, -mmean/sstddev);
+//        //_small -= mmean;
+//        //_small = _small / sstddev;
+
+        get_features( img, p, _wavelen_h, _wavelen_v, key, f);
         features[key] = f;
     }
     // Try all possible grids @@@
@@ -1801,9 +1887,13 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
             //NSLog( @"$$$$$$$$$$$$$ Complete grid at %d %d", r, c);
             // Cluster the features into two classes
             std::vector<std::vector<Feat> > clusters;
-            clusters = mcluster( subgrid, 2, 1,
+            clusters = mcluster( subgrid,
+                                2, // clusters
+                                3, // feature dims
                                 [](Feat f) { return f.features; });
-            NSLog( @"%ld %ld clusters at %ld %ld", clusters[0].size(), clusters[1].size(), r, c);
+            NSLog( @"%ld %ld clusters at %d %d",
+                  clusters[0].size(), clusters[1].size(),
+                  r, c);
         }
     }
     NSLog( @"==================");
@@ -1910,10 +2000,9 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
     const int N_BOARDS = 8;
     static std::vector<Points> boards; // Some history for averaging
     UIImageToMat( img, _m, false);
-    cv::Mat small;
-    resize( _m, small, 350);
+    resize( _m, _small, 350);
     //cv::cvtColor( small, small, cv::COLOR_BGR2RGB);
-    cv::cvtColor( small, _gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
     cv::adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           3, // neighborhood_size
                           4); // constant to add. 2 to 6 is the viable range
@@ -1926,16 +2015,16 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
     // Find Hough lines and construct the board from them
     cv::Mat boardImg;
     _board = find_board( _m, boardImg);
-    if ( board_valid( _board, cv::contourArea(whole_screen(small)))) {
+    if ( board_valid( _board, cv::contourArea(whole_screen(_small)))) {
         boards.push_back( _board);
         if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
         _board = best_board( boards);
-        drawContour( small, _board, cv::Scalar(255,0,0,255));
+        drawContour( _small, _board, cv::Scalar(255,0,0,255));
 //        _cont = std::vector<Points>( 1, _board);
 //        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
     }
     //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
-    UIImage *res = MatToUIImage( small);
+    UIImage *res = MatToUIImage( _small);
     return res;
 }
 
