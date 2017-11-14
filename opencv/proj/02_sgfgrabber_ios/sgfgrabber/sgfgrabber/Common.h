@@ -67,6 +67,13 @@ void vapp( std::vector<T> &v1, const std::vector<T> &v2)
     v1.insert( v1.end(), v2.begin(), v2.end());
 }
 
+// Swap two things
+//---------------------------
+template <typename T>
+void swap( T &x1, T &x2)
+{
+    T tmp = x1; x1 = x2; x2 = tmp;
+}
 #endif
 
 

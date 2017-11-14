@@ -61,11 +61,13 @@ const cv::Size TMPL_SZ(16,16);
 @property float delta_wavelen_h;
 @property float slope_h;
 @property float delta_slope_h;
+@property float median_rho_h;
 @property std::vector<cv::Vec4f> vertical_lines;
 @property float wavelen_v;
 @property float delta_wavelen_v;
 @property float slope_v;
 @property float delta_slope_v;
+@property float median_rho_v;
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -651,11 +653,20 @@ T vec_max( std::vector<T> vec )
 // Calculates the avg value of a vector
 //----------------------------------------------
 template <typename T>
-T vec_avg( std::vector<T> vec )
+void vec_avg( std::vector<T> vec, T &avg, T &avg_delta)
 {
+    std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
     double ssum = 0;
     ISLOOP (vec) { ssum += vec[i]; }
-    return T(ssum / vec.size());
+    avg = T(ssum / vec.size());
+    std::vector<T> deltas;
+    ISLOOP (vec) {
+        if (!i) continue;
+        deltas.push_back( vec[i] - vec[i-1]);
+    }
+    ssum = 0;
+    ISLOOP (deltas) { ssum += deltas[i]; }
+    avg_delta = T(ssum / deltas.size());
 }
 
 
@@ -950,6 +961,61 @@ void polarToSegment( const cv::Vec2f &hline, cv::Vec4f &result)
     result[1] = cvRound(y0 + 1000*(a));
     result[2] = cvRound(x0 - 1000*(-b));
     result[3] = cvRound(y0 - 1000*(a));
+}
+
+
+// Line segment to polar, with positive rho
+//-----------------------------------------------------------------
+void segmentToPolar( const cv::Vec4f &line_, cv::Vec2f &result)
+{
+    cv::Vec4f line = line_;
+    // Always go left to right
+    if (line[2] < line[0]) {
+        swap( line[0], line[2]);
+        swap( line[1], line[3]);
+    }
+    float dx = line[2] - line[0];
+    float dy = line[3] - line[1];
+    if (fabs(dx) > fabs(dy)) { // horizontal
+        if (dx < 0) { dx *= -1; dy *= -1; }
+    }
+    else { // vertical
+        if (dy > 0) { dx *= -1; dy *= -1; }
+    }
+    float theta = atan2( dy, dx) + CV_PI/2;
+    float rho = fabs(dist_point_line( cv::Point(0,0), line));
+    result[0] = rho;
+    result[1] = theta;
+}
+
+//---------------------------
+void testSegmentToPolar()
+{
+    cv::Vec4f line;
+    cv::Vec2f hline;
+
+    // horizontal
+    line = cv::Vec4f( 0, 1, 2, 1.1);
+    segmentToPolar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 1");
+    }
+    line = cv::Vec4f( 0, 1, 2, 0.9);
+    segmentToPolar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 2");
+    }
+    // vertical down up
+    line = cv::Vec4f( 1, 1, 1.1, 3);
+    segmentToPolar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 3");
+    }
+    line = cv::Vec4f( 1, 1 , 0.9, 3);
+    segmentToPolar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 4");
+    }
 }
 
 // Draw a Hough line (rho, theta)
@@ -1530,6 +1596,7 @@ float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
 // Each cluster has a bunch of points which are probably on the same line.
 //----------------------------------------------------------------------------
 void find_rhythm( const std::vector<Points> &clusters,
+                 float min_rho, float max_rho,
                  float &phase,
                  float &wavelength,
                  float &delta_wavelength,
@@ -1585,7 +1652,8 @@ void find_rhythm( const std::vector<Points> &clusters,
         if (!i) continue;
         delta_dists.push_back( distances[i] - distances[i-1]);
     }
-    vec_median( delta_dists, wavelength, delta_wavelength);
+    //vec_median( delta_dists, wavelength, delta_wavelength);
+    vec_avg( delta_dists, wavelength, delta_wavelength);
     // Get the phase
     std::vector<float> phases;
     ISLOOP (distances) {
@@ -1600,26 +1668,40 @@ void find_rhythm( const std::vector<Points> &clusters,
 void find_lines( int max_rho,
                 float wavelength_,
                 float delta_wavelength,
-                float slope_,
+                float slope,
                 float delta_slope,
                 float median_rho,
                 std::vector<cv::Vec4f> &lines)
 { //@@@ cont here
-    float theta, rho;
+    float theta, rho, wavelength;
+    
     std::vector<cv::Vec2f> hlines;
 
+    // center to higher rho
+    wavelength = wavelength_;
     theta = slope + CV_PI/2;
     rho = median_rho;
     while (rho < max_rho) {
         hlines.push_back( cv::Vec2f ( rho, theta));
+        rho += wavelength;
+        wavelength += delta_wavelength;
+        //theta -= delta_slope;
     }
-        
+    // center to lower rho
+    wavelength = wavelength_;
+    theta = slope + CV_PI/2;
+    rho = median_rho - wavelength;
+    while (rho > 0) {
+        hlines.push_back( cv::Vec2f ( rho, theta));
+        rho -= wavelength;
+        wavelength -= delta_wavelength;
+        //theta += delta_slope;
+    }
+    // convert to segments
+    ISLOOP (hlines) {
         cv::Vec4f line;
-        polarToSegment( hline, line);
-        _horizontal_lines.push_back( line);
-        drawLine( line, drawing, cv::Scalar(0,0,255));
-        rho += _wavelen_h;
-    }
+        polarToSegment( hlines[i], line);
+        lines.push_back( line);
     }
 }
 
@@ -1684,39 +1766,46 @@ void find_lines( int max_rho,
 
 // Find wavelength and phase of the grid, remove outliers.
 //------------------------------------------------------------------------
-- (UIImage *) f07_clean_grid_h
+- (UIImage *) f07_clean_grid_h //@@@
 {
+//    std::vector<int> corner_x;
+//    ISLOOP (_board_zoomed) { corner_x.push_back( _board_zoomed[i].x); }
+//    int left  = vec_min( corner_x);
+//    int right = vec_max( corner_x);
+
+    std::vector<int> corner_y;
+    ISLOOP (_board_zoomed) { corner_y.push_back( _board_zoomed[i].y); }
+    int top = vec_min( corner_y);
+    int bot = vec_max( corner_y);
+
+    // Find the rhythm
     float phase;
-    find_rhythm( _horizontal_clusters, phase,
+    find_rhythm( _horizontal_clusters, // in
+                top, bot,
+                phase,  // out
                 _wavelen_h, _delta_wavelen_h,
-                _slope_h, _delta_slope_h);
+                _slope_h, _delta_slope_h, _median_rho_h);
     
+    // Generate lines from the rhythm
+    std::vector<cv::Vec4f> lines;
+    find_lines( _gray.rows, _wavelen_h, _delta_wavelen_h, _slope_h, _delta_slope_h, _median_rho_h, lines);
+
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    // Draw the family of lines from phase, wavelength, slope
-    float theta = _slope_h + CV_PI/2;
-    float rho = phase;
-    _horizontal_lines = std::vector<cv::Vec4f>();
-    while (rho < _gray.rows) {
-        cv::Vec2f hline( rho, theta);
-        cv::Vec4f line;
-        polarToSegment( hline, line);
-        _horizontal_lines.push_back( line);
-        drawLine( line, drawing, cv::Scalar(0,0,255));
-        rho += _wavelen_h;
-    }
+    ISLOOP (lines) { drawLine( lines[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
+
 //------------------------------------------------------------------------
 - (UIImage *) f08_clean_grid_v
 {
     float phase;
-    find_rhythm( _vertical_clusters, phase,
-                _wavelen_v, _delta_wavelen_v,
-                _slope_v, _delta_slope_v);
+//    find_rhythm( _vertical_clusters, phase,
+//                _wavelen_v, _delta_wavelen_v,
+//                _slope_v, _delta_slope_v, _median_rho_v);
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -1736,7 +1825,6 @@ void find_lines( int max_rho,
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
-
 
 //------------------------------------
 - (UIImage *) fxx_get_intersections

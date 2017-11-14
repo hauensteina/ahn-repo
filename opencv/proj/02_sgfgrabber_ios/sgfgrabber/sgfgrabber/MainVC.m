@@ -267,16 +267,16 @@
                 img = [self.grabFuncs f07_clean_grid_h];
                 [self.cameraView setImage:img];
                 break;
-            case 8:
-                state++;
-                img = [self.grabFuncs f08_clean_grid_v];
-                [self.cameraView setImage:img];
-                break;
-            case 9:
-                state++;
-                img = [self.grabFuncs f09_classify];
-                [self.cameraView setImage:img];
-                break;
+//            case 8:
+//                state++;
+//                img = [self.grabFuncs f08_clean_grid_v];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 9:
+//                state++;
+//                img = [self.grabFuncs f09_classify];
+//                [self.cameraView setImage:img];
+//                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;
