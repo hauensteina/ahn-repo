@@ -1777,15 +1777,89 @@ void find_lines( int max_rho,
     // Generate lines from the rhythm
     std::vector<cv::Vec4f> lines;
     find_lines( _gray.rows, _wavelen_h, _delta_wavelen_h, _slope_h, _median_rho_h, lines);
+    
+    // Fix generated lines using cluster lines
+    std::vector<cv::Vec4f> lines_out;
+    clean_lines( lines, _horizontal_clusters, lines_out ); //@@@
 
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (lines) { drawLine( lines[i], drawing, cv::Scalar(0,0,255)); }
+    ISLOOP (lines_out) { drawLine( lines_out[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
+
+//@@@@@@@@@@@@@@@@@@@
+//@@@@@@@@@@@@@@@@@@@
+//-------------------------------------------------------------------------------------------------
+void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Points> &clusters,
+                    std::vector<cv::Vec4f> &lines_out)
+{
+    NSString *func = @"clean_lines()";
+    // Lines through the clusters
+    std::vector<cv::Vec4f> clines;
+    ISLOOP (clusters) {
+        clines.push_back( fit_line( clusters[i]));
+    }
+    // Convert cluster lines to polar
+    std::vector<cv::Vec2f> chlines;
+    ISLOOP (clines) {
+        cv::Vec2f hline;
+        segmentToPolar( clines[i], hline);
+        chlines.push_back( hline);
+    }
+    // Sort by rho
+    std::sort( chlines.begin(), chlines.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
+
+    // Convert our synthetic lines to polar
+    std::vector<cv::Vec2f> hlines;
+    ISLOOP (lines_in) {
+        cv::Vec2f hline;
+        segmentToPolar( lines_in[i], hline);
+        hlines.push_back( hline);
+    }
+    // Sort by rho
+    std::sort( hlines.begin(), hlines.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
+    
+    const float EPS = 10.0;
+    float delta_rho = -1;
+    // Replace each hline with a close chline, if you find one
+    ISLOOP (hlines) {
+        cv::Vec2f hline = hlines[i];
+        int minidx = -1;
+        float mindist = 1E9;
+        JSLOOP (chlines) {
+            cv::Vec2f chline = chlines[j];
+            if (fabs( chline[0] - hline[0]) < mindist) {
+                mindist = fabs( chline[0] - hline[0]);
+                minidx = j;
+            }
+        } // for chlines
+        NSLog( @"mindist: %.0f", mindist);
+        if (mindist < EPS) {
+            NSLog( @"%@: replaced line %d with %d", func, i, minidx );
+            hlines[i] = chlines[minidx];
+        }
+        else { // no match
+            NSLog( @"%@: No match for line %d", func, i);
+            if (i > 0 && delta_rho > 0) {
+                // Interpolate
+                hlines[i][0] = hlines[i-1][0] + delta_rho; // Keep rho increment
+                hlines[i][1] = hlines[i-1][1]; // Copy old theta
+            }
+        }
+        if (i > 0) delta_rho = hlines[i][0] - hlines[i-1][0];
+    } // for hlines
+    
+    // Convert back to segment
+    ISLOOP (hlines) {
+        cv::Vec4f line;
+        polarToSegment( hlines[i], line);
+        lines_out.push_back( line);
+    }
+} // clean_lines()
 
 //------------------------------------------------------------------------
 - (UIImage *) f08_clean_grid_v
@@ -1799,10 +1873,14 @@ void find_lines( int max_rho,
     std::vector<cv::Vec4f> lines;
     find_lines( _gray.cols, _wavelen_v, _delta_wavelen_v, _slope_v, _median_rho_v, lines);
     
+    // Fix generated lines using cluster lines
+    std::vector<cv::Vec4f> lines_out;
+    clean_lines( lines, _vertical_clusters, lines_out ); //@@@
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (lines) { drawLine( lines[i], drawing, cv::Scalar(0,0,255)); }
+    ISLOOP (lines_out) { drawLine( lines_out[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
