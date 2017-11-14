@@ -1094,8 +1094,9 @@ Points best_board( std::vector<Points> boards)
 - (UIImage *) f00_adaptive_thresh:(UIImage *)img
 {
     UIImageToMat( img, _m);
-    resize( _m, _m, 350);
-    cv::cvtColor( _m, _gray, cv::COLOR_BGR2GRAY);
+    resize( _m, _small, 350);
+    cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+    //cv::cvtColor( _small, _small, cv::COLOR_BGR2RGB);
     adaptiveThreshold( _gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                       3, // neighborhood_size
                       4); // constant to add. 2 to 6 is the viable range
@@ -1142,6 +1143,7 @@ Points best_board( std::vector<Points> boards)
     // Zoom out a little
     Points2f board_stretched = enlarge_board( _board);
     cv::Mat transform = board_transform( _gray, _gray, board_stretched);
+    cv::warpPerspective( _small, _small, transform, cv::Size(_small.cols, _small.rows));
     Points2f b,tt;
     PointsToFloat( _board, b);
     cv::perspectiveTransform( b, tt, transform);
@@ -1775,9 +1777,10 @@ void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavel
         float brightness_g = ssum[1] / area;
         float brightness_b = ssum[2] / area;
         float v = sqrt (brightness_r*brightness_r + brightness_g*brightness_g + brightness_b*brightness_b);
-        f.features.push_back( brightness_r);
-        f.features.push_back( brightness_g);
-        f.features.push_back( brightness_b);
+        f.features.push_back( v);
+        f.features.push_back( v);
+        f.features.push_back( v);
+        std::cout << v << std::endl;
     }
     else {
         NSLog( @"get_features failed at key %s", key.c_str());
@@ -1857,25 +1860,17 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     }
     
     // Normalize color image
-    cv::Mat img;
-    normalize_image( _small, img);
+    //cv::Mat img;
+    //normalize_image( _small, img);
+    cv::Mat &img(_small);
 
     // Compute features for each potential board intersection
     std::map<std::string, Feat> features;
+    NSLog( @"getting features for intersections...");
     for (const auto &x : intersections) {
         std::string key = x.first;
         cv::Point p = x.second;
         Feat f;
-        //get_features( _gray, p, _wavelen_h, _wavelen_v, key, f);
-        
-        
-//
-//        _small.convertTo( _small, CV_32FC3);
-//        cv::Mat img;
-//        _small.convertTo( img, CV_32FC4, sstddev, -mmean/sstddev);
-//        //_small -= mmean;
-//        //_small = _small / sstddev;
-
         get_features( img, p, _wavelen_h, _wavelen_v, key, f);
         features[key] = f;
     }
@@ -1902,7 +1897,14 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
 
 //
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    drawing = _small.clone();
+    for (const auto &x : intersections) {
+        std::string key = x.first;
+        cv::Point p = x.second;
+        cv::Rect rect( p.x - _wavelen_h/4.0, p.y - _wavelen_v/4.0, _wavelen_h/2.0, _wavelen_v/2.0 );
+        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+    }
 //    // Contour image of the zoomed board
 //    cv::Mat zoomed_edges;
 //    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
