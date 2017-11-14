@@ -1838,7 +1838,8 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     cv::meanStdDev( planes[2], mmean, sstddev);
     planes[2].convertTo( planes[2], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
     
-    cv::merge( planes, 4, dst);
+    // ignore channel 4, that's alpha
+    cv::merge( planes, 3, dst);
 }
 
 
