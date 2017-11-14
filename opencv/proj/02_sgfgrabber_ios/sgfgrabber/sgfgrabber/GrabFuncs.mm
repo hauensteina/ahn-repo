@@ -58,8 +58,14 @@ const cv::Size TMPL_SZ(16,16);
 @property std::vector<Points> vertical_clusters;
 @property std::vector<cv::Vec4f> horizontal_lines;
 @property float wavelen_h;
+@property float delta_wavelen_h;
+@property float slope_h;
+@property float delta_slope_h;
 @property std::vector<cv::Vec4f> vertical_lines;
 @property float wavelen_v;
+@property float delta_wavelen_v;
+@property float slope_v;
+@property float delta_slope_v;
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -611,11 +617,16 @@ int channel_median( cv::Mat channel )
 // Calculates the median value of a vector
 //----------------------------------------------
 template <typename T>
-T vec_median( std::vector<T> vec )
+void vec_median( std::vector<T> vec, T &median, T &median_delta )
 {
     std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
-    T res = vec[vec.size() / 2];
-    return res;
+    median = vec[vec.size() / 2];
+    std::vector<T> deltas;
+    ISLOOP (vec) {
+        if (!i) continue;
+        deltas.push_back( vec[i] - vec[i-1]);
+    }
+    median_delta = deltas[deltas.size() / 2];
 }
 
 // Gets the min value of a vector
@@ -1209,7 +1220,8 @@ void find_stones( const cv::Mat &img, Points &result)
     // Keep the ones where radius close to avg radius
     std::vector<float> rads;
     ISLOOP (circles){ rads.push_back( circles[i][2]); }
-    float avg_r = vec_median( rads);
+    float avg_r, fdummy;
+    vec_median( rads, avg_r, fdummy);
     
     std::vector<cv::Vec3f> good_circles;
     //const float TOL_LO = 2.0;
@@ -1514,14 +1526,19 @@ float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
     return err;
 }
 
-// Eliminate points that don't fit the rhythm of lines
-//--------------------------------------------------------------------
-void outlier_points( const std::vector<Points> &clusters,
-                    float &phase,
-                    float &wavelength,
-                    float &slope,
-                    Points &clean_points, Points &dirty_points, float epsilon = 0.25)
+// Find phase, wavelength etc of a family of lines.
+// Each cluster has a bunch of points which are probably on the same line.
+//----------------------------------------------------------------------------
+void find_rhythm( const std::vector<Points> &clusters,
+                 float &phase,
+                 float &wavelength,
+                 float &delta_wavelength,
+                 float &slope,
+                 float &delta_slope,
+                 float &median_rho
+                 )
 {
+    float fdummy;
     std::vector<cv::Vec4f> lines;
     // Lines through the clusters
     ISLOOP (clusters) {
@@ -1543,8 +1560,8 @@ void outlier_points( const std::vector<Points> &clusters,
         //NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
         slopes.push_back( theta);
     }
-    NSLog(@"==========");
-    slope = vec_median( slopes);
+    //NSLog(@"==========");
+    vec_median( slopes, slope, delta_slope);
     // A polar line with the median slope
     cv::Vec2f median_hline(0, slope + CV_PI/2.0);
 
@@ -1557,38 +1574,54 @@ void outlier_points( const std::vector<Points> &clusters,
             float d = dist_point_line( p, median_hline);
             ds.push_back( d);
         }
-        distances[i] = vec_median( ds);
+        vec_median( ds, distances[i], fdummy);
     }
+    
     // Get the rhythm (wavelength of line distances)
     std::sort( distances.begin(), distances.end(), [](float a, float b){ return a < b; });
+    median_rho = distances[distances.size() / 2];
     std::vector<float> delta_dists;
     ISLOOP (distances) {
         if (!i) continue;
         delta_dists.push_back( distances[i] - distances[i-1]);
     }
-    wavelength = vec_median( delta_dists);
+    vec_median( delta_dists, wavelength, delta_wavelength);
     // Get the phase
     std::vector<float> phases;
     ISLOOP (distances) {
         phases.push_back( fmod( distances[i],wavelength));
     }
-    phase = vec_median( phases);
-    // Filter
-    ISLOOP (clusters) {
-        JSLOOP (clusters[i]) {
-            cv::Point p = clusters[i][j];
-            float d = dist_point_line( p, median_hline);
-            float rem = fmod( d, wavelength) ;
-            float delta = fabs( rem - phase);
-            if ( delta < epsilon * wavelength) {
-                clean_points.push_back( p);
-            }
-            else {
-                dirty_points.push_back(p);
-            }
-        }
+    vec_median( phases, phase, fdummy);
+} // find_rhythm()
+
+// Start in the middle with the medians, expand to both sides
+// while adjusting with delta_slope and delta_rho.
+//---------------------------------------------------------------
+void find_lines( int max_rho,
+                float wavelength_,
+                float delta_wavelength,
+                float slope_,
+                float delta_slope,
+                float median_rho,
+                std::vector<cv::Vec4f> &lines)
+{ //@@@ cont here
+    float theta, rho;
+    std::vector<cv::Vec2f> hlines;
+
+    theta = slope + CV_PI/2;
+    rho = median_rho;
+    while (rho < max_rho) {
+        hlines.push_back( cv::Vec2f ( rho, theta));
     }
-} // outlier_points()
+        
+        cv::Vec4f line;
+        polarToSegment( hline, line);
+        _horizontal_lines.push_back( line);
+        drawLine( line, drawing, cv::Scalar(0,0,255));
+        rho += _wavelen_h;
+    }
+    }
+}
 
 // Find grid by putting lines through detected stones and intersections
 //------------------------------------------------------------------------
@@ -1653,18 +1686,16 @@ void outlier_points( const std::vector<Points> &clusters,
 //------------------------------------------------------------------------
 - (UIImage *) f07_clean_grid_h
 {
-    Points clean_points, dirty_points;
-    float phase, slope;
-    outlier_points( _horizontal_clusters, phase, _wavelen_h,
-                   slope,
-                   clean_points, dirty_points,
-                 0.25); // epsilon should be between 0 and 0.5
+    float phase;
+    find_rhythm( _horizontal_clusters, phase,
+                _wavelen_h, _delta_wavelen_h,
+                _slope_h, _delta_slope_h);
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     // Draw the family of lines from phase, wavelength, slope
-    float theta = slope + CV_PI/2;
+    float theta = _slope_h + CV_PI/2;
     float rho = phase;
     _horizontal_lines = std::vector<cv::Vec4f>();
     while (rho < _gray.rows) {
@@ -1675,26 +1706,22 @@ void outlier_points( const std::vector<Points> &clusters,
         drawLine( line, drawing, cv::Scalar(0,0,255));
         rho += _wavelen_h;
     }
-    draw_points( clean_points, drawing, 2, cv::Scalar(0,255,0));
-    draw_points( dirty_points, drawing, 2, cv::Scalar(255,0,0));
+    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
 //------------------------------------------------------------------------
 - (UIImage *) f08_clean_grid_v
 {
-    Points clean_points, dirty_points;
-    float phase, slope;
-    outlier_points( _vertical_clusters, phase, _wavelen_v,
-                   slope,
-                   clean_points, dirty_points,
-                   0.25); // epsilon should be between 0 and 0.5
-    
+    float phase;
+    find_rhythm( _vertical_clusters, phase,
+                _wavelen_v, _delta_wavelen_v,
+                _slope_v, _delta_slope_v);
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     // Draw the family of lines from phase, wavelength, slope
-    float theta = slope + CV_PI/2;
+    float theta = _slope_v + CV_PI/2;
     float rho = phase;
     _vertical_lines = std::vector<cv::Vec4f>();
     while (rho < _gray.cols) {
@@ -1705,8 +1732,7 @@ void outlier_points( const std::vector<Points> &clusters,
         drawLine( line, drawing, cv::Scalar(0,0,255));
         rho += _wavelen_v;
     }
-    draw_points( clean_points, drawing, 2, cv::Scalar(0,255,0));
-    draw_points( dirty_points, drawing, 2, cv::Scalar(255,0,0));
+    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
