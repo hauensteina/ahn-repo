@@ -652,6 +652,18 @@ T vec_avg( std::vector<T> vec)
     return T(ssum / vec.size());
 }
 
+// Calculates the avg value of a vector, with acces func
+//----------------------------------------------------------
+template <typename T, typename Func>
+float vec_avg( std::vector<T> vec, Func at)
+{
+    if (!vec.size()) return 0;
+    double ssum = 0;
+    ISLOOP (vec) { ssum += at(vec, i); }
+    return ssum / vec.size();
+}
+
+
 // Calculates the avg delta of a vector
 //----------------------------------------------
 template <typename T>
@@ -1671,7 +1683,7 @@ void find_lines( int max_rho,
                 float slope,
                 float median_rho,
                 std::vector<cv::Vec4f> &lines)
-{ //@@@ cont here
+{
     float theta, rho, wavelength;
     std::vector<cv::Vec2f> hlines;
 
@@ -1767,7 +1779,7 @@ void find_lines( int max_rho,
 
 // Find wavelength and phase of the grid, remove outliers.
 //------------------------------------------------------------------------
-- (UIImage *) f07_clean_grid_h //@@@
+- (UIImage *) f07_clean_grid_h
 {
     // Find the rhythm
     find_rhythm( _horizontal_clusters, // in
@@ -1781,7 +1793,7 @@ void find_lines( int max_rho,
     // Fix generated lines using cluster lines
     std::vector<cv::Vec4f> lines_out;
     _horizontal_lines.clear();
-    clean_lines( lines, _horizontal_clusters, _horizontal_lines ); //@@@
+    clean_lines( lines, _horizontal_clusters, _horizontal_lines );
 
     // Show results
     cv::Mat drawing;
@@ -1855,23 +1867,21 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     delta_rho = -1;
     float old_rho = 0;
     ISLOOP (match) {
-        if (match[i]) {
+        if (i > 0 && match[i] && match[i-1]) {
             init = true;
             theta = hlines[i][1];
-            if (i > 0) delta_rho = hlines[i][0] - hlines[i-1][0];
+            delta_rho = hlines[i][0] - hlines[i-1][0];
             old_rho = hlines[i][0];
             continue;
         }
         if (!init) continue;
         if (!match[i]) {
-            if (delta_rho > 0) {
-                NSLog( @"Forward interpolated line %d", i);
-                hlines[i][1] = theta;
-                hlines[i][0] = old_rho + delta_rho;
-                old_rho = old_rho + delta_rho;
-                match[i] = true;
-            }
+            NSLog( @"Forward interpolated line %d", i);
+            hlines[i][1] = theta;
+            hlines[i][0] = old_rho + delta_rho;
+            match[i] = true;
         }
+        old_rho = hlines[i][0];
     }
     
     // Interpolate whoever didn't find a match, high to low rho
@@ -1881,23 +1891,21 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     old_rho = 0;
     const int lim = (int)match.size()-1;
     for (int i = lim; i >= 0; i--) {
-        if (match[i]) {
+        if (i < lim && match[i] && match[i+1]) {
             init = true;
             theta = hlines[i][1];
-            if (i < lim) delta_rho = hlines[i+1][0] - hlines[i][0];
+            delta_rho = hlines[i+1][0] - hlines[i][0];
             old_rho = hlines[i][0];
             continue;
         }
         if (!init) continue;
         if (!match[i]) {
-            if (delta_rho > 0) {
-                NSLog( @"Backward interpolated line %d", i);
-                hlines[i][1] = theta;
-                hlines[i][0] = old_rho - delta_rho;
-                old_rho = old_rho - delta_rho;
-                match[i] = true;
-            }
+            NSLog( @"Backward interpolated line %d", i);
+            hlines[i][1] = theta;
+            hlines[i][0] = old_rho - delta_rho;
+            match[i] = true;
         }
+        old_rho = hlines[i][0];
     }
     
     // Convert back to segment
@@ -2020,13 +2028,13 @@ void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavel
         cv::Mat hood = cv::Mat( img, rect);
         float area = hood.rows * hood.cols;
         cv::Scalar ssum = cv::sum( hood);
-        float brightness_r = ssum[0] / area;
-        float brightness_g = ssum[1] / area;
-        float brightness_b = ssum[2] / area;
+        float brightness = ssum[0] / area;
+        //float brightness_g = ssum[1] / area;
+        //float brightness_b = ssum[2] / area;
         //float v = sqrt (brightness_r*brightness_r + brightness_g*brightness_g + brightness_b*brightness_b);
-        f.features.push_back( brightness_r);
-        f.features.push_back( brightness_g);
-        f.features.push_back( brightness_b);
+        f.features.push_back( brightness);
+        //f.features.push_back( brightness_g);
+        //f.features.push_back( brightness_b);
         //std::cout << v << std::endl;
     }
     else {
@@ -2102,7 +2110,7 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
 
 // Classify intersections into b,w,empty
 //----------------------------------------
-- (UIImage *) f09_classify
+- (UIImage *) f09_classify //@@@
 {
     // Get pixel pos for each potential board intersection
     std::map<std::string, cv::Point> intersections;
@@ -2115,7 +2123,7 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     // Normalize color image
     //cv::Mat img;
     //normalize_image( _small, img);
-    cv::Mat &img(_small);
+    cv::Mat &img(_gray);
 
     // Compute features for each potential board intersection
     std::map<std::string, Feat> features;
@@ -2158,7 +2166,10 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
           clusters[0].size(), clusters[1].size(),
           minr, minc, compactness);
     NSLog( @"==================");
-
+    float avg0 = vec_avg( clusters[0], [](std::vector<Feat> c, int i) { return c[i].features[0]; });
+    float avg1 = vec_avg( clusters[1], [](std::vector<Feat> c, int i) { return c[i].features[0]; });
+    int black_cluster = 0;
+    if (avg1 < avg0) black_cluster = 1;
 
 //
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
@@ -2167,8 +2178,12 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     for (const auto &f : subgrid) {
         //std::string key = x.first;
         cv::Point p( f.x, f.y);
-        cv::Rect rect( p.x - _wavelen_h/4.0, p.y - _wavelen_v/4.0, _wavelen_h/2.0, _wavelen_v/2.0 );
+        cv::Rect rect( p.x - cvRound(_wavelen_h/4.0), p.y - cvRound(_wavelen_v/4.0), cvRound(_wavelen_h/2.0), cvRound(_wavelen_v/2.0) );
         cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+    } // for subgrid
+    ISLOOP (clusters[black_cluster]) {
+        cv::Point p(clusters[black_cluster][i].x, clusters[black_cluster][i].y);
+        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
     }
 //    // Contour image of the zoomed board
 //    cv::Mat zoomed_edges;
