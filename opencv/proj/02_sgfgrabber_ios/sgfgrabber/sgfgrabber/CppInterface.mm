@@ -6,20 +6,22 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-#import "Ocv.h"
-//#include <math.h>
-#include <type_traits>
+// This class is the only place where Objective-C and C++ mix.
+// All other files are either pure Obj-C or pure C++.
 
-//#import <opencv2/core/ptr.inl.hpp>
-//#import <opencv2/imgproc/imgproc.hpp>
+// Don't change the order of these two,
+// and don't move them down
+#import "Ocv.hpp"
+#import <opencv2/imgcodecs/ios.h>
+
 #import "Common.h"
-#import "GrabFuncs.h"
+#import "CppInterface.h"
 
 const cv::Size TMPL_SZ(16,16);
 
 #define STRETCH_FACTOR 1.1
 
-@interface GrabFuncs()
+@interface CppInterface()
 //=======================
 @property cv::Mat small; // resized image, in color
 @property cv::Mat gray;  // Grayscale version of small
@@ -61,7 +63,7 @@ const cv::Size TMPL_SZ(16,16);
 @property cv::Mat tmpl_hoshi;
 @end
 
-@implementation GrabFuncs
+@implementation CppInterface
 //=========================
 
 //----------------------

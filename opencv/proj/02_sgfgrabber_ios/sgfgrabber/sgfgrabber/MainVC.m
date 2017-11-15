@@ -9,14 +9,14 @@
 #import "MainVC.h"
 
 #import "Globals.h"
-#import "GrabFuncs.h"
+#import "CppInterface.h"
 
 #define DDEBUG
 
 //==========================
 @interface MainVC ()
 @property FrameExtractor *frameExtractor;
-@property GrabFuncs *grabFuncs;
+@property CppInterface *grabFuncs;
 @property UIImageView *cameraView;
 // Data
 @property UIImage *img; // The current image
@@ -40,7 +40,7 @@
 {
     [super viewDidLoad];
     self.frameExtractor = [FrameExtractor new];
-    self.grabFuncs = [GrabFuncs new];
+    self.grabFuncs = [CppInterface new];
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
     

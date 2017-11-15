@@ -8,30 +8,30 @@
 
 /* Begin PBXBuildFile section */
 		AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */ = {isa = PBXBuildFile; fileRef = AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */; };
-		AC3C5EBC1FBC942000BB8B4F /* Ocv.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC3C5EBA1FBC942000BB8B4F /* Ocv.mm */; };
+		AC3C5EBC1FBC942000BB8B4F /* Ocv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */; };
 		AC5540741F9BE6AD00922557 /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC5540731F9BE6AD00922557 /* opencv2.framework */; };
-		AC5540771F9BE71900922557 /* GrabFuncs.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC5540761F9BE71800922557 /* GrabFuncs.mm */; };
-		AC61AD571FBCCB0B00DEBCDA /* Common_cpp.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC61AD551FBCCB0B00DEBCDA /* Common_cpp.mm */; };
+		AC5540771F9BE71900922557 /* CppInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC5540761F9BE71800922557 /* CppInterface.mm */; };
+		AC61AD571FBCCB0B00DEBCDA /* Common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC61AD551FBCCB0B00DEBCDA /* Common.cpp */; };
 		AC628C181F9A7D3F0043FCEE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C171F9A7D3F0043FCEE /* main.m */; };
 		AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */; };
 		AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC628C221F9A7D3F0043FCEE /* Assets.xcassets */; };
 		AC628C341F9A80150043FCEE /* MainVC.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C331F9A80150043FCEE /* MainVC.m */; };
 		AC80400A1FA92613000088D2 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC8040091FA92604000088D2 /* Accelerate.framework */; };
 		AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */ = {isa = PBXBuildFile; fileRef = AC9702171FBC87DF0057C4C2 /* Globals.m */; };
-		ACA69E4C1F9D077B00F5E068 /* Common.mm in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.mm */; };
+		ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FrameExtractor.h; sourceTree = "<group>"; };
 		AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FrameExtractor.m; sourceTree = "<group>"; };
 		AC043D331F9BB9AB006CF7F0 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
-		AC3C5EBA1FBC942000BB8B4F /* Ocv.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Ocv.mm; sourceTree = "<group>"; };
-		AC3C5EBB1FBC942000BB8B4F /* Ocv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Ocv.h; sourceTree = "<group>"; };
+		AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Ocv.cpp; sourceTree = "<group>"; };
+		AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Ocv.hpp; sourceTree = "<group>"; };
 		AC5540731F9BE6AD00922557 /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = SOURCE_ROOT; };
-		AC5540751F9BE71800922557 /* GrabFuncs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GrabFuncs.h; sourceTree = "<group>"; };
-		AC5540761F9BE71800922557 /* GrabFuncs.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GrabFuncs.mm; sourceTree = "<group>"; };
-		AC61AD551FBCCB0B00DEBCDA /* Common_cpp.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Common_cpp.mm; sourceTree = "<group>"; };
-		AC61AD561FBCCB0B00DEBCDA /* Common_cpp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common_cpp.h; sourceTree = "<group>"; };
+		AC5540751F9BE71800922557 /* CppInterface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CppInterface.h; sourceTree = "<group>"; };
+		AC5540761F9BE71800922557 /* CppInterface.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CppInterface.mm; sourceTree = "<group>"; };
+		AC61AD551FBCCB0B00DEBCDA /* Common.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Common.cpp; sourceTree = "<group>"; };
+		AC61AD561FBCCB0B00DEBCDA /* Common.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Common.hpp; sourceTree = "<group>"; };
 		AC628C131F9A7D3F0043FCEE /* sgfgrabber.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = sgfgrabber.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC628C171F9A7D3F0043FCEE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AC628C191F9A7D3F0043FCEE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -43,7 +43,7 @@
 		AC8040091FA92604000088D2 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		AC9702171FBC87DF0057C4C2 /* Globals.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Globals.m; sourceTree = "<group>"; };
 		AC9702191FBC88050057C4C2 /* Globals.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Globals.h; sourceTree = "<group>"; };
-		ACA69E4B1F9D077B00F5E068 /* Common.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Common.mm; sourceTree = "<group>"; };
+		ACA69E4B1F9D077B00F5E068 /* Common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Common.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,19 +83,19 @@
 				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
 				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
-				ACA69E4B1F9D077B00F5E068 /* Common.mm */,
-				AC61AD551FBCCB0B00DEBCDA /* Common_cpp.mm */,
-				AC61AD561FBCCB0B00DEBCDA /* Common_cpp.h */,
+				ACA69E4B1F9D077B00F5E068 /* Common.m */,
+				AC61AD551FBCCB0B00DEBCDA /* Common.cpp */,
+				AC61AD561FBCCB0B00DEBCDA /* Common.hpp */,
+				AC5540751F9BE71800922557 /* CppInterface.h */,
+				AC5540761F9BE71800922557 /* CppInterface.mm */,
 				AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */,
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC9702191FBC88050057C4C2 /* Globals.h */,
 				AC9702171FBC87DF0057C4C2 /* Globals.m */,
-				AC5540751F9BE71800922557 /* GrabFuncs.h */,
-				AC5540761F9BE71800922557 /* GrabFuncs.mm */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
 				AC628C331F9A80150043FCEE /* MainVC.m */,
-				AC3C5EBA1FBC942000BB8B4F /* Ocv.mm */,
-				AC3C5EBB1FBC942000BB8B4F /* Ocv.h */,
+				AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */,
+				AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
 				AC628C271F9A7D3F0043FCEE /* Info.plist */,
 				AC628C161F9A7D3F0043FCEE /* Supporting Files */,
@@ -197,10 +197,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AC3C5EBC1FBC942000BB8B4F /* Ocv.mm in Sources */,
-				ACA69E4C1F9D077B00F5E068 /* Common.mm in Sources */,
-				AC61AD571FBCCB0B00DEBCDA /* Common_cpp.mm in Sources */,
-				AC5540771F9BE71900922557 /* GrabFuncs.mm in Sources */,
+				AC3C5EBC1FBC942000BB8B4F /* Ocv.cpp in Sources */,
+				ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */,
+				AC61AD571FBCCB0B00DEBCDA /* Common.cpp in Sources */,
+				AC5540771F9BE71900922557 /* CppInterface.mm in Sources */,
 				AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */,
 				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
 				AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */,

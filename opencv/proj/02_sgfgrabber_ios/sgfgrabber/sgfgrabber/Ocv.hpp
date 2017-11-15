@@ -16,12 +16,12 @@
 
 #ifdef __cplusplus
 
-#import <opencv2/opencv.hpp>
-#import <opencv2/imgcodecs/ios.h>
-#import <iostream>
-#import <vector>
+#include <opencv2/opencv.hpp>
+//#include <opencv2/imgcodecs/ios.h>
+#include <iostream>
+#include <vector>
 
-#import "Common.h"
+#include "Common.hpp"
 
 typedef cv::Point2f Point2f;
 typedef std::vector<std::vector<cv::Point> > Contours;

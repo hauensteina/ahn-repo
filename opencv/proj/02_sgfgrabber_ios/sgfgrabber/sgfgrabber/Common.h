@@ -6,13 +6,11 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-//==============================================================================
 // Generally useful convenience funcs to be included by Obj-C and Obj-C++ files.
 // Pure C++ files should not include this
-//==============================================================================
 
 #import <UIKit/UIKit.h>
-#import "Common_cpp.h"
+#import "Common.hpp"
 
 #ifdef __cplusplus
 extern "C" {

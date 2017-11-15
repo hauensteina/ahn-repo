@@ -6,10 +6,7 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-//======================================
 // Generally useful convenience funcs
-//======================================
-
 
 #import <UIKit/UIKit.h>
 #import "Common.h"

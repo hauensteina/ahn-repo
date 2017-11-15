@@ -12,8 +12,8 @@
 //=========================================================================
 
 
-#ifndef Common_cpp_hpp
-#define Common_cpp_hpp
+#ifndef Common_hpp
+#define Common_hpp
 
 //=================================
 // Common between C++ and Obj C
@@ -247,4 +247,4 @@ void print_vec( std::vector<T> v)
 
 
 #endif /* __cplusplus */
-#endif /* Common_cpp_hpp */
+#endif /* Common_hpp */

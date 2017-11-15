@@ -12,8 +12,8 @@
 
 
 
-#import "Ocv.h"
-#import "Common.h"
+#include "Ocv.hpp"
+#include "Common.hpp"
 
 cv::RNG rng(12345); // random number generator
 
@@ -581,23 +581,23 @@ void test_segment2polar()
     line = cv::Vec4f( 0, 1, 2, 1.1);
     segment2polar( line, hline);
     if (hline[0] < 0) {
-        NSLog(@"Oops 1");
+        std::cerr << "Oops 1\n";
     }
     line = cv::Vec4f( 0, 1, 2, 0.9);
     segment2polar( line, hline);
     if (hline[0] < 0) {
-        NSLog(@"Oops 2");
+        std::cerr << "Oops 2\n";
     }
     // vertical down up
     line = cv::Vec4f( 1, 1, 1.1, 3);
     segment2polar( line, hline);
     if (hline[0] < 0) {
-        NSLog(@"Oops 3");
+        std::cerr << "Oops 3\n";
     }
     line = cv::Vec4f( 1, 1 , 0.9, 3);
     segment2polar( line, hline);
     if (hline[0] < 0) {
-        NSLog(@"Oops 4");
+        std::cerr << "Oops 4\n";
     }
 }
 

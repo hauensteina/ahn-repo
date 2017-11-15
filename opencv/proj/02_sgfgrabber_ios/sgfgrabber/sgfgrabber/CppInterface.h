@@ -6,9 +6,12 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+// This class is the only place where Objective-C and C++ mix.
+// All other files are either pure Obj-C or pure C++.
+
 #import <Foundation/Foundation.h>
 
-@interface GrabFuncs : NSObject
+@interface CppInterface : NSObject
 
 //----------------------------
 // Individual steps for debugging
