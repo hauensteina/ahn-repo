@@ -125,6 +125,34 @@ void draw_contours( const Contours cont, cv::Mat &dst)
 // Line
 //=========
 
+// Stretch a line by factor, on both ends
+//--------------------------------------------------
+Points stretch_line(Points line, float factor )
+{
+    cv::Point p0 = line[0];
+    cv::Point p1 = line[1];
+    float length = line_len( p0, p1);
+    cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
+    Points res = {p0-v , p1+v};
+    return res;
+}
+
+// Stretch a line by factor, on both ends
+//----------------------------------------------------
+cv::Vec4f stretch_line(cv::Vec4f line, float factor )
+{
+    const cv::Point p0( line[0], line[1]);
+    const cv::Point p1( line[2], line[3]);
+    float length = line_len( p0, p1);
+    const cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
+    cv::Vec4f res;
+    res[0] = (p0-v).x;
+    res[1] = (p0-v).y;
+    res[2] = (p1+v).x;
+    res[3] = (p1+v).y;
+    return res;
+}
+
 //----------------------------------------------------
 float angle_between_lines( cv::Point pa, cv::Point pe,
                           cv::Point qa, cv::Point qe)
@@ -152,8 +180,8 @@ Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
 Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
 {
     cv::Vec4f seg1, seg2;
-    polarToSegment( line1, seg1);
-    polarToSegment( line2, seg2);
+    polar2segment( line1, seg1);
+    polar2segment( line2, seg2);
     return intersection( seg1, seg2);
 }
 
@@ -193,7 +221,7 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines )
         pline = plines[i];
         pline[0] = 0;
         cv::Vec4f seg;
-        polarToSegment( pline, seg);
+        polar2segment( pline, seg);
         segs.push_back(seg);
     }
     return avg_lines( segs);
@@ -201,7 +229,7 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines )
 
 // Get a line segment representation of a polar line (rho, theta)
 //----------------------------------------------------------------
-void polarToSegment( const cv::Vec2f &pline, cv::Vec4f &result)
+void polar2segment( const cv::Vec2f &pline, cv::Vec4f &result)
 {
     float rho = pline[0], theta = pline[1];
     double a = cos(theta), b = sin(theta);
@@ -214,7 +242,7 @@ void polarToSegment( const cv::Vec2f &pline, cv::Vec4f &result)
 
 // Line segment to polar, with positive rho
 //-----------------------------------------------------------------
-void segmentToPolar( const cv::Vec4f &line_, cv::Vec2f &pline)
+void segment2polar( const cv::Vec4f &line_, cv::Vec2f &pline)
 {
     cv::Vec4f line = line_;
     // Always go left to right
@@ -276,9 +304,81 @@ float dist_point_line( cv::Point p, const cv::Vec4f &line)
 float dist_point_line( cv::Point p, const cv::Vec2f &pline)
 {
     cv::Vec4f line;
-    polarToSegment( pline, line);
+    polar2segment( pline, line);
     return dist_point_line( p, line);
 }
+
+// Quad
+//=======
+// Stretch quadrangle by factor
+//--------------------------------------------------
+Points2f stretch_quad( Points quad, float factor)
+{
+    quad = order_points( quad);
+    Points diag1_stretched = stretch_line( { quad[0],quad[2] }, factor);
+    Points diag2_stretched = stretch_line( { quad[1],quad[3] }, factor);
+    Points2f res = { diag1_stretched[0], diag2_stretched[0], diag1_stretched[1], diag2_stretched[1] };
+    return res;
+}
+// Zoom into a quadrangle
+//--------------------------------------------------------
+cv::Mat zoom_quad( const cv::Mat &img, cv::Mat &warped, Points2f pts)
+{
+    Points2f rect = order_points(pts);
+    Points2f dst = {
+        cv::Point(0,0),
+        cv::Point(img.cols - 1, 0),
+        cv::Point(img.cols - 1, img.cols - 1),
+        cv::Point(0, img.cols - 1) };
+    
+    cv::Mat M = cv::getPerspectiveTransform(rect, dst);
+    cv::Mat res;
+    cv::warpPerspective(img, warped, M, cv::Size(img.cols, img.rows));
+    return M;
+}
+// Return whole image as a quad
+//---------------------------------------------
+Points whole_img_quad( const cv::Mat &img)
+{
+    Points res = { cv::Point(1,1), cv::Point(img.cols-2,1),
+        cv::Point(img.cols-2,img.rows-2), cv::Point(1,img.rows-2) };
+    return res;
+}
+
+// Find smallest quad among a few
+//--------------------------------------------
+Points smallest_quad( std::vector<Points> quads)
+{
+    Points res(4);
+    int minidx=0;
+    float minArea = 1E9;
+    ILOOP (quads.size()) {
+        Points b = quads[i];
+        float area = cv::contourArea(b);
+        if (area < minArea) { minArea = area; minidx = i;}
+    }
+    return quads[minidx];
+}
+
+// Average the corners of quads
+//---------------------------------------------------
+Points avg_quad( std::vector<Points> quads)
+{
+    Points res(4);
+    ILOOP (quads.size()) {
+        Points b = quads[i];
+        res[0] += b[0];
+        res[1] += b[1];
+        res[2] += b[2];
+        res[3] += b[3];
+    }
+    res[0] /= (float)quads.size();
+    res[1] /= (float)quads.size();
+    res[2] /= (float)quads.size();
+    res[3] /= (float)quads.size();
+    return res;
+}
+
 
 // Image
 //=========
@@ -319,21 +419,59 @@ void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type)
 // Drawing
 //==========
 
-// Draw a point on an image
+// Draw a point
 //--------------------------------------------------------------------
 void draw_point( cv::Point p, cv::Mat &img, int r, cv::Scalar col)
 {
     cv::circle( img, p, r, col, -1);
 }
 
-// Draw several points on an image
+// Draw several points
 //----------------------------------------------------------------
 void draw_points( Points p, cv::Mat &img, int r, cv::Scalar col)
 {
     ISLOOP( p) draw_point( p[i], img, r, col);
 }
 
+// Draw a line segment
+//-------------------------------------------------------------------------------------------
+void draw_line( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col)
+{
+    cv::Point pt1, pt2;
+    pt1.x = cvRound(line[0]);
+    pt1.y = cvRound(line[1]);
+    pt2.x = cvRound(line[2]);
+    pt2.y = cvRound(line[3]);
+    cv::line( dst, pt1, pt2, col, 1, CV_AA);
+}
 
+// Draw several line segments
+//--------------------------------------------------------------------
+void draw_lines( const std::vector<cv::Vec4f> &lines, cv::Mat &dst,
+                cv::Scalar col)
+{
+    ISLOOP (lines) draw_line( lines[i], dst, col);
+}
+
+
+// Draw a polar line (rho, theta)
+//----------------------------------------------------------
+void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
+                     cv::Scalar col)
+{
+    cv::Vec4f seg;
+    polar2segment( pline, seg);
+    cv::Point pt1( seg[0], seg[1]), pt2( seg[2], seg[3]);
+    cv::line( dst, pt1, pt2, col, 1, CV_AA);
+}
+
+// Draw several polar lines (rho, theta)
+//-------------------------------------------------------------------
+void draw_polar_lines( std::vector<cv::Vec2f> plines, cv::Mat &dst,
+                      cv::Scalar col)
+{
+    ISLOOP (plines) { draw_polar_line( plines[i], dst, col); }
+}
 
 
 // Type Conversions
@@ -397,6 +535,38 @@ void test_mcluster()
     }
     return;
 }
+
+// How to use segmentToPolar()
+//------------------------------
+void test_segment2polar()
+{
+    cv::Vec4f line;
+    cv::Vec2f hline;
+    
+    // horizontal
+    line = cv::Vec4f( 0, 1, 2, 1.1);
+    segment2polar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 1");
+    }
+    line = cv::Vec4f( 0, 1, 2, 0.9);
+    segment2polar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 2");
+    }
+    // vertical down up
+    line = cv::Vec4f( 1, 1, 1.1, 3);
+    segment2polar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 3");
+    }
+    line = cv::Vec4f( 1, 1 , 0.9, 3);
+    segment2polar( line, hline);
+    if (hline[0] < 0) {
+        NSLog(@"Oops 4");
+    }
+}
+
 
 
 // Debuggging

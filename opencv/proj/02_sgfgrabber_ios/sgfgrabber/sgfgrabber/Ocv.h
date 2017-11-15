@@ -60,6 +60,10 @@ void draw_contours( const Contours cont, cv::Mat &dst);
 
 // Line
 //=======
+// Stretch a line by factor, on both ends
+Points stretch_line(Points line, float factor );
+// Stretch a line by factor, on both ends
+cv::Vec4f stretch_line(cv::Vec4f line, float factor );
 // Angle between line segments
 float angle_between_lines( cv::Point pa, cv::Point pe,
                           cv::Point qa, cv::Point qe);
@@ -72,9 +76,9 @@ cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines );
 // Average polar lines after setting rho to zero and conv to seg
 cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)
-void polarToSegment( const cv::Vec2f &pline, cv::Vec4f &result);
+void polar2segment( const cv::Vec2f &pline, cv::Vec4f &result);
 // Line segment to polar, with positive rho
-void segmentToPolar( const cv::Vec4f &line_, cv::Vec2f &pline);
+void segment2polar( const cv::Vec4f &line_, cv::Vec2f &pline);
 // Fit a line through points, L2 norm
 cv::Vec4f fit_line( const Points &p);
 // Length of a line segment
@@ -83,6 +87,19 @@ float line_len( cv::Point p, cv::Point q);
 float dist_point_line( cv::Point p, const cv::Vec4f &line);
 // Distance between point and polar line
 float dist_point_line( cv::Point p, const cv::Vec2f &pline);
+
+// Quad
+//========
+// Stretch quadrangle by factor
+Points2f stretch_quad( Points quad, float factor);
+cv::Mat zoom_quad( const cv::Mat &img, cv::Mat &warped, Points2f pts);
+// Return whole image as a quad
+Points whole_img_quad( const cv::Mat &img);
+// Find smallest quad among a few
+Points smallest_quad( std::vector<Points> quads);
+// Average the corners of quads
+Points avg_quad( std::vector<Points> quads);
+
 
 // Image
 //========
@@ -99,6 +116,20 @@ void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORP
 void draw_point( cv::Point p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
 // Draw several points on an image
 void draw_points( Points p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
+// Draw a line segment
+void draw_line( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0));
+// Draw several line segments
+void draw_lines( const std::vector<cv::Vec4f> &lines, cv::Mat &dst,
+                cv::Scalar col = cv::Scalar(255,0,0));
+
+
+// Draw a polar line (rho, theta)
+void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
+                     cv::Scalar col = cv::Scalar(255,0,0));
+// Draw several polar lines (rho, theta)
+void draw_polar_lines( std::vector<cv::Vec2f> plines, cv::Mat &dst,
+                      cv::Scalar col = cv::Scalar(255,0,0));
+
 
 // Type Conversions
 //====================
@@ -120,7 +151,7 @@ void printMatF( const cv::Mat &m);
 //========
 std::string opencvVersion();
 void test_mcluster();
-
+void test_segment2polar();
 
 //===================
 // Templates below

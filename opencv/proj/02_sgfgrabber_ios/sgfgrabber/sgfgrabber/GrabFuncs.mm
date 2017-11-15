@@ -132,206 +132,12 @@ void flood_from_center( cv::Mat &m)
 }
 
 
-// Stretch a line by factor, on both ends
-//--------------------------------------------------
-Points stretch_line(Points line, float factor )
-{
-    cv::Point p0 = line[0];
-    cv::Point p1 = line[1];
-    float length = line_len( p0, p1);
-    cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
-    Points res = {p0-v , p1+v};
-    return res;
-}
-
-//----------------------------------------------------
-cv::Vec4f stretch_line(cv::Vec4f line, float factor )
-{
-    const cv::Point p0( line[0], line[1]);
-    const cv::Point p1( line[2], line[3]);
-    float length = line_len( p0, p1);
-    const cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
-    cv::Vec4f res;
-    res[0] = (p0-v).x;
-    res[1] = (p0-v).y;
-    res[2] = (p1+v).x;
-    res[3] = (p1+v).y;
-    return res;
-}
-
-//--------------------------------------------------
-Points2f scale_board( Points board, float factor)
-{
-    board = order_points( board);
-    Points diag1_stretched = stretch_line( { board[0],board[2] }, factor);
-    Points diag2_stretched = stretch_line( { board[1],board[3] }, factor);
-    Points2f res = { diag1_stretched[0], diag2_stretched[0], diag1_stretched[1], diag2_stretched[1] };
-    return res;
-}
 
 // Make our 4-polygon a little larger
 //-------------------------------------
 Points2f enlarge_board( Points board)
 {
-    return scale_board( board, STRETCH_FACTOR);
-}
-
-// Zoom into an image area where pts are the four corners.
-// From pyimagesearch by Adrian Rosebrock
-//--------------------------------------------------------
-cv::Mat four_point_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
-{
-    Points2f rect = order_points(pts);
-    cv::Point tl = pts[0];
-    cv::Point tr = pts[1];
-    cv::Point br = pts[2];
-    cv::Point bl = pts[3];
-    // compute the width of the new image, which will be the
-    // maximum distance between bottom-right and bottom-left
-    // x-coordiates or the top-right and top-left x-coordinates
-    float widthA = sqrt(((br.x - bl.x)*(br.x - bl.x)) + ((br.y - bl.y)*(br.y - bl.y)));
-    float widthB = sqrt(((tr.x - tl.x)*(tr.x - tl.x)) + ((tr.y - tl.y)*(tr.y - tl.y)));
-    int maxWidth = fmax(int(widthA), int(widthB));
-    // compute the height of the new image, which will be the
-    // maximum distance between the top-right and bottom-right
-    // y-coordinates or the top-left and bottom-left y-coordinates
-    float heightA = sqrt(((tr.x - br.x)*(tr.x - br.x)) + ((tr.y - br.y)*(tr.y - br.y)));
-    float heightB = sqrt(((tl.x - bl.x)*(tl.x - bl.x)) + ((tl.y - bl.y)*(tl.y - bl.y)));
-    int maxHeight = fmax(int(heightA), int(heightB));
-    // now that we have the dimensions of the new image, construct
-    // the set of destination points to obtain a "birds eye view",
-    // (i.e. top-down view) of the image, again specifying points
-    // in the top-left, top-right, bottom-right, and bottom-left
-    // order
-    
-    Points2f dst = {
-        cv::Point(0,0),
-        cv::Point(maxWidth - 1, 0),
-        cv::Point(maxWidth - 1, maxHeight - 1),
-        cv::Point(0, maxHeight - 1) };
-
-    cv::Mat M = cv::getPerspectiveTransform(rect, dst);
-    cv::Mat res;
-    cv::warpPerspective(img, warped, M, cv::Size(maxWidth,maxHeight));
-    return M;
-} // four_point_transform()
-
-// Linear map of four corners to whole screen width
-//--------------------------------------------------------
-cv::Mat board_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
-{
-    Points2f rect = order_points(pts);
-    Points2f dst = {
-        cv::Point(0,0),
-        cv::Point(img.cols - 1, 0),
-        cv::Point(img.cols - 1, img.cols - 1),
-        cv::Point(0, img.cols - 1) };
-    
-    cv::Mat M = cv::getPerspectiveTransform(rect, dst);
-    cv::Mat res;
-    cv::warpPerspective(img, warped, M, cv::Size(img.cols, img.rows));
-    return M;
-} // board_transform()
-
-
-
-//---------------------------
-void testSegmentToPolar()
-{
-    cv::Vec4f line;
-    cv::Vec2f hline;
-
-    // horizontal
-    line = cv::Vec4f( 0, 1, 2, 1.1);
-    segmentToPolar( line, hline);
-    if (hline[0] < 0) {
-        NSLog(@"Oops 1");
-    }
-    line = cv::Vec4f( 0, 1, 2, 0.9);
-    segmentToPolar( line, hline);
-    if (hline[0] < 0) {
-        NSLog(@"Oops 2");
-    }
-    // vertical down up
-    line = cv::Vec4f( 1, 1, 1.1, 3);
-    segmentToPolar( line, hline);
-    if (hline[0] < 0) {
-        NSLog(@"Oops 3");
-    }
-    line = cv::Vec4f( 1, 1 , 0.9, 3);
-    segmentToPolar( line, hline);
-    if (hline[0] < 0) {
-        NSLog(@"Oops 4");
-    }
-}
-
-// Draw a Hough line (rho, theta)
-//-------------------------------------------------------
-void drawPolarLine( cv::Vec2f line, cv::Mat &dst,
-                   cv::Scalar col = cv::Scalar(255,0,0))
-{
-    cv::Vec4f seg;
-    polarToSegment( line, seg);
-    cv::Point pt1( seg[0], seg[1]), pt2( seg[2], seg[3]);
-    cv::line( dst, pt1, pt2, col, 1, CV_AA);
-}
-
-//--------------------------------------------------------------
-void drawPolarLines( std::vector<cv::Vec2f> lines, cv::Mat &dst,
-                    cv::Scalar col = cv::Scalar(255,0,0))
-{
-    ISLOOP (lines) { drawPolarLine( lines[i], dst, col); }
-}
-
-// Get the middle screen x val for a somewhat vertical Hough line.
-// Used to find leftmost, rightmost lines.
-//----------------------------------------------------------------------------------
-float polarMiddleValV( const cv::Vec2f &hline, int rows)
-{
-    float rho = hline[0];
-    float theta = hline[1];
-    float y = rows / 2.0;
-    float x = (rho - y * sin(theta)) / cos(theta);
-    return x;
-}
-
-// Get the middle screen y val for a somewhat horizontal Hough line.
-// Used to find top, bottom lines.
-//----------------------------------------------------------------------------------
-float polarMiddleValH( const cv::Vec2f &hline, int cols)
-{
-    float rho = hline[0];
-    float theta = hline[1];
-    float x = cols / 2.0;
-    float y = (rho - x * cos(theta)) / sin(theta);
-    return y;
-}
-
-//-----------------------------------------------------------------------------------------
-void drawLine( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0))
-{
-    cv::Point pt1, pt2;
-    pt1.x = cvRound(line[0]);
-    pt1.y = cvRound(line[1]);
-    pt2.x = cvRound(line[2]);
-    pt2.y = cvRound(line[3]);
-    cv::line( dst, pt1, pt2, col, 1, CV_AA);
-}
-
-//--------------------------------------------------------------
-void drawLines( const std::vector<cv::Vec4f> &lines, cv::Mat &dst,
-               cv::Scalar col = cv::Scalar(255,0,0))
-{
-    ISLOOP (lines) drawLine( lines[i], dst, col);
-}
-
-// Return whole screen as board
-//-----------------------------------------
-Points whole_screen( const cv::Mat &img)
-{
-    Points res = { cv::Point(1,1), cv::Point(img.cols-2,1),
-        cv::Point(img.cols-2,img.rows-2), cv::Point(1,img.rows-2) };
-    return res;
+    return stretch_quad( board, STRETCH_FACTOR);
 }
 
 // Find board in binary image (after threshold or canny)
@@ -343,7 +149,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     // only keep the biggest one
     std::sort( conts.begin(), conts.end(), [](Contour a, Contour b){ return cv::contourArea(a) > cv::contourArea(b); });
     //conts.erase( conts.begin()+1, conts.end());
-    if (!conts.size()) return whole_screen( binImg);
+    if (!conts.size()) return whole_img_quad( binImg);
     boardImg = cv::Mat::zeros( binImg.size(), CV_8UC1 );
     cv::drawContours( boardImg, conts, 0, cv::Scalar(255), 3);
     // Find lines
@@ -364,14 +170,14 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
                                [](cv::Vec4f &line) {
                                    return (line[1] + line[3]) / 2.0;
                                });
-    if (!top_bottom_lines.size()) return whole_screen( binImg);
+    if (!top_bottom_lines.size()) return whole_img_quad( binImg);
     // Separate left from right
     std::vector<std::vector<cv::Vec4f> > left_right_lines;
     left_right_lines = cluster( vert_lines, 2,
                                [](cv::Vec4f &line) {
                                    return (line[0] + line[2]) / 2.0;
                                });
-    if (!left_right_lines.size()) return whole_screen( binImg);
+    if (!left_right_lines.size()) return whole_img_quad( binImg);
 
     // Average vertical lines
     cv::Vec4f vert_1 = avg_lines( left_right_lines[0]);
@@ -387,42 +193,10 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     cv::Point2f c4 = intersection( vert_2, horiz_2);
     Points corners = { cv::Point(c1), cv::Point(c2), cv::Point(c3), cv::Point(c4) };
     Points board = order_points( corners);
-    if (board.size() != 4) return whole_screen( binImg);
+    if (board.size() != 4) return whole_img_quad( binImg);
     return board;
 } // find_board()
 
-// Make a better board estimate from several
-//--------------------------------------------
-Points smallest_board( std::vector<Points> boards)
-{
-    Points res(4);
-    int minidx=0;
-    float minArea = 1E9;
-    ILOOP (boards.size()) {
-        Points b = boards[i];
-        float area = cv::contourArea(b);
-        if (area < minArea) { minArea = area; minidx = i;}
-    }
-    return boards[minidx];
-}
-
-//---------------------------------------------------
-Points avg_board( std::vector<Points> boards)
-{
-    Points res(4);
-    ILOOP (boards.size()) {
-        Points b = boards[i];
-        res[0] += b[0];
-        res[1] += b[1];
-        res[2] += b[2];
-        res[3] += b[3];
-    }
-    res[0] /= (float)boards.size();
-    res[1] /= (float)boards.size();
-    res[2] /= (float)boards.size();
-    res[3] /= (float)boards.size();
-    return res;
-}
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -478,7 +252,7 @@ Points avg_board( std::vector<Points> boards)
     if (!_board.size()) { return MatToUIImage( _m); }
     // Zoom out a little
     Points2f board_stretched = enlarge_board( _board);
-    cv::Mat transform = board_transform( _gray, _gray, board_stretched);
+    cv::Mat transform = zoom_quad( _gray, _gray, board_stretched);
     cv::warpPerspective( _small, _small, transform, cv::Size(_small.cols, _small.rows));
     Points2f b,tt;
     points2float( _board, b);
@@ -724,7 +498,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
     find_empty_places( _gray, pts); // , crosses); // has to be first
     find_stones( _gray, pts);
     // Use only inner ones
-    Points2f innerboard = scale_board( _board_zoomed, 1.01);
+    Points2f innerboard = stretch_quad( _board_zoomed, 1.01);
     _stone_or_empty = Points();
     ISLOOP (pts) {
         cv::Point2f p( pts[i]);
@@ -935,7 +709,7 @@ void find_lines( int max_rho,
     // convert to segments
     ISLOOP (hlines) {
         cv::Vec4f line;
-        polarToSegment( hlines[i], line);
+        polar2segment( hlines[i], line);
         lines.push_back( line);
     }
 }
@@ -1025,7 +799,7 @@ void find_lines( int max_rho,
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (_horizontal_lines) { drawLine( _horizontal_lines[i], drawing, cv::Scalar(0,0,255)); }
+    ISLOOP (_horizontal_lines) { draw_line( _horizontal_lines[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1047,7 +821,7 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     std::vector<cv::Vec2f> chlines;
     ISLOOP (clines) {
         cv::Vec2f hline;
-        segmentToPolar( clines[i], hline);
+        segment2polar( clines[i], hline);
         chlines.push_back( hline);
     }
     // Sort by rho
@@ -1057,7 +831,7 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     std::vector<cv::Vec2f> hlines;
     ISLOOP (lines_in) {
         cv::Vec2f hline;
-        segmentToPolar( lines_in[i], hline);
+        segment2polar( lines_in[i], hline);
         hlines.push_back( hline);
     }
     // Sort by rho
@@ -1138,7 +912,7 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     // Convert back to segment
     ISLOOP (hlines) {
         cv::Vec4f line;
-        polarToSegment( hlines[i], line);
+        polar2segment( hlines[i], line);
         lines_out.push_back( line);
     }
 } // clean_lines()
@@ -1163,7 +937,7 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (_vertical_lines) { drawLine( _vertical_lines[i], drawing, cv::Scalar(0,0,255)); }
+    ISLOOP (_vertical_lines) { draw_line( _vertical_lines[i], drawing, cv::Scalar(0,0,255)); }
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1472,11 +1246,11 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     // Find Hough lines and construct the board from them
     cv::Mat boardImg;
     _board = find_board( _m, boardImg);
-    if ( board_valid( _board, cv::contourArea(whole_screen(_small)))) {
+    if ( board_valid( _board, cv::contourArea(whole_img_quad(_small)))) {
         boards.push_back( _board);
         if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
         //_board = smallest_board( boards);
-        _board = avg_board( boards);
+        _board = avg_quad( boards);
         draw_contour( _small, _board, cv::Scalar(255,0,0,255));
 //        _cont = std::vector<Points>( 1, _board);
 //        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
