@@ -90,6 +90,7 @@
     [self.captureSession addOutput:videoOutput];
     AVCaptureConnection *connection = [videoOutput connectionWithMediaType:AVMediaTypeVideo];
     [connection setVideoOrientation:AVCaptureVideoOrientationPortrait];
+    connection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeStandard;
 }
 
 //-----------------------------------------

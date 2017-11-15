@@ -33,13 +33,40 @@ typedef std::vector<cv::Point2f> Points2f;
 
 extern cv::RNG rng;
 
+// Point
+//=========
+// Get average x of a bunch of points
+float avg_x (const Points &p);
+// Get average y of a bunch of points
+float avg_y (const Points &p);
+// Return unit vector of p
+cv::Point2f unit_vector( cv::Point p);
+
 // Matrix
 //==========
 // Get the type string of a matrix
 std::string mat_typestr( const cv::Mat &m);
+// Calculate the median value of a single channel
+int channel_median( cv::Mat channel );
 
-// Lines
+
+
+// Contour
+//=========
+// Enclose a contour with an n edge polygon
+Points approx_poly( Points cont, int n);
+// Draw contour in random colors
+void draw_contours( const Contours cont, cv::Mat &dst);
+
+// Line
 //=======
+// Angle between line segments
+float angle_between_lines( cv::Point pa, cv::Point pe,
+                          cv::Point qa, cv::Point qe);
+// Intersection of two lines defined by point pairs
+Point2f intersection( cv::Vec4f line1, cv::Vec4f line2);
+// Intersection of polar lines (rho, theta)
+Point2f intersection( cv::Vec2f line1, cv::Vec2f line2);
 // Average line segs by fitting a line thu the endpoints
 cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines );
 // Average polar lines after setting rho to zero and conv to seg
@@ -56,6 +83,22 @@ float line_len( cv::Point p, cv::Point q);
 float dist_point_line( cv::Point p, const cv::Vec4f &line);
 // Distance between point and polar line
 float dist_point_line( cv::Point p, const cv::Vec2f &pline);
+
+// Image
+//========
+// Resize image such that min(width,height) = sz
+void resize(const cv::Mat &src, cv::Mat &dst, int sz);
+// Automatic edge detection without parameters (from PyImageSearch)
+void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33);
+// Dilate then erode for some iterations
+void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORPH_RECT );
+
+// Drawing
+//==========
+// Draw a point on an image
+void draw_point( cv::Point p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
+// Draw several points on an image
+void draw_points( Points p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
 
 // Type Conversions
 //====================
@@ -83,6 +126,37 @@ void test_mcluster();
 // Templates below
 //===================
 
+// Point
+//=========
+
+// Intersection of two line segments AB CD
+//-----------------------------------------------------------------
+template <typename Point_>
+Point2f intersection( Point_ A, Point_ B, Point_ C, Point_ D)
+{
+    // Line AB represented as a1x + b1y = c1
+    double a1 = B.y - A.y;
+    double b1 = A.x - B.x;
+    double c1 = a1*(A.x) + b1*(A.y);
+    
+    // Line CD represented as a2x + b2y = c2
+    double a2 = D.y - C.y;
+    double b2 = C.x - D.x;
+    double c2 = a2*(C.x)+ b2*(C.y);
+    
+    double determinant = a1*b2 - a2*b1;
+    
+    if (determinant == 0) { // The lines are parallel.
+        return Point_(10E9, 10E9);
+    }
+    else
+    {
+        double x = (b2*c1 - b1*c2)/determinant;
+        double y = (a1*c2 - a2*c1)/determinant;
+        return Point_( x, y);
+    }
+}
+
 // Contours
 //=============
 
@@ -97,6 +171,22 @@ void draw_contour( cv::Mat &img, const Points_ &cont,
 
 // Clustering
 //=============
+
+// Order four points clockwise
+//----------------------------------------
+template <typename POINTS>
+POINTS order_points( POINTS &points)
+{
+    POINTS top_bottom = points;
+    std::sort( top_bottom.begin(), top_bottom.end(), [](cv::Point2f a, cv::Point2f b){ return a.y < b.y; });
+    POINTS top( top_bottom.begin(), top_bottom.begin()+2 );
+    POINTS bottom( top_bottom.end()-2, top_bottom.end());
+    std::sort( top.begin(), top.end(), [](cv::Point2f a, cv::Point2f b){ return a.x < b.x; });
+    std::sort( bottom.begin(), bottom.end(), [](cv::Point2f a, cv::Point2f b){ return b.x < a.x; });
+    POINTS res = top;
+    res.insert(res.end(), bottom.begin(), bottom.end());
+    return res;
+}
 
 // Cluster a vector of elements by func.
 // Return clusters as vec of vec.

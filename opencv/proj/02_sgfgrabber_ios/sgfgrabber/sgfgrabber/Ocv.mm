@@ -17,6 +17,35 @@
 
 cv::RNG rng(12345); // random number generator
 
+// Point
+//========
+
+// Get average x of a bunch of points
+//-----------------------------------------
+float avg_x (const Points &p)
+{
+    double ssum = 0.0;
+    ISLOOP (p) { ssum += p[i].x; }
+    return ssum / p.size();
+}
+
+// Get average y of a bunch of points
+//-----------------------------------------
+float avg_y (const Points &p)
+{
+    double ssum = 0.0;
+    ISLOOP (p) { ssum += p[i].y; }
+    return ssum / p.size();
+}
+
+// Return unit vector of p
+//------------------------------------
+cv::Point2f unit_vector( cv::Point p)
+{
+    float norm = cv::norm(p);
+    return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
+}
+
 // Matrix
 //===========
 
@@ -47,8 +76,87 @@ std::string mat_typestr( const cv::Mat &m)
     return r;
 }
 
-// Lines
+// Calculate the median value of a single channel
+//---------------------------------------------------
+int channel_median( cv::Mat channel )
+{
+    cv::Mat flat = channel.reshape(1,1);
+    cv::Mat sorted;
+    cv::sort(flat, sorted, cv::SORT_ASCENDING);
+    double res = sorted.at<uchar>(sorted.size() / 2);
+    return res;
+}
+
+// Contour
+//===========
+
+// Enclose a contour with an n edge polygon
+//--------------------------------------------
+Points approx_poly( Points cont, int n)
+{
+    Points hull = cont;
+    //cv::convexHull( cont, hull);
+    float peri = cv::arcLength( hull, true);
+    float epsilon = bisect(
+                           [hull,peri](float x) {
+                               Points approx;
+                               cv::approxPolyDP( hull, approx, x*peri, true);
+                               return -approx.size();
+                           },
+                           0.0, 1.0, -n);
+    Points res;
+    cv::approxPolyDP( hull, res, epsilon*peri, true);
+    return res;
+}
+
+// Draw contour in random colors
+//-------------------------------------------------------
+void draw_contours( const Contours cont, cv::Mat &dst)
+{
+    // Draw contours
+    for( int i = 0; i< cont.size(); i++ )
+    {
+        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
+        drawContours( dst, cont, i, color, 2, 8);
+    }
+} // draw_contours()
+
+
+// Line
 //=========
+
+//----------------------------------------------------
+float angle_between_lines( cv::Point pa, cv::Point pe,
+                          cv::Point qa, cv::Point qe)
+{
+    cv::Point2f v1 = unit_vector( cv::Point( pe - pa) );
+    cv::Point2f v2 = unit_vector( cv::Point( qe - qa) );
+    float dot = v1.x * v2.x + v1.y * v2.y;
+    if (dot < -1) dot = -1;
+    if (dot > 1) dot = 1;
+    return std::acos(dot);
+}
+
+// Intersection of two lines defined by point pairs
+//----------------------------------------------------------
+Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
+{
+    return intersection( cv::Point2f( line1[0], line1[1]),
+                        cv::Point2f( line1[2], line1[3]),
+                        cv::Point2f( line2[0], line2[1]),
+                        cv::Point2f( line2[2], line2[3]));
+}
+
+// Intersection of polar lines (rho, theta)
+//---------------------------------------------------------
+Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
+{
+    cv::Vec4f seg1, seg2;
+    polarToSegment( line1, seg1);
+    polarToSegment( line2, seg2);
+    return intersection( seg1, seg2);
+}
+
 
 // Average a bunch of line segments by
 // fitting a line through all the endpoints
@@ -171,6 +279,62 @@ float dist_point_line( cv::Point p, const cv::Vec2f &pline)
     polarToSegment( pline, line);
     return dist_point_line( p, line);
 }
+
+// Image
+//=========
+// Automatic edge detection without parameters (from PyImageSearch)
+//--------------------------------------------------------------------
+void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma)
+{
+    double v = channel_median(src);
+    int lower = int(fmax(0, (1.0 - sigma) * v));
+    int upper = int(fmin(255, (1.0 + sigma) * v));
+    cv::Canny( src, dst, lower, upper);
+}
+
+// Resize image such that min(width,height) = sz
+//------------------------------------------------------
+void resize(const cv::Mat &src, cv::Mat &dst, int sz)
+{
+    //cv::Size s;
+    int width  = src.cols;
+    int height = src.rows;
+    float scale;
+    if (width < height) scale = sz / (float) width;
+    else scale = sz / (float) height;
+    cv::resize( src, dst, cv::Size(int(width*scale),int(height*scale)), 0, 0, cv::INTER_AREA);
+}
+
+// Dilate then erode for some iterations
+//---------------------------------------------------------------------------------------
+void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type)
+{
+    cv::Mat element = cv::getStructuringElement( type, sz);
+    for (int i=0; i<iterations; i++) {
+        cv::dilate( m, m, element );
+        cv::erode( m, m, element );
+    }
+}
+
+// Drawing
+//==========
+
+// Draw a point on an image
+//--------------------------------------------------------------------
+void draw_point( cv::Point p, cv::Mat &img, int r, cv::Scalar col)
+{
+    cv::circle( img, p, r, col, -1);
+}
+
+// Draw several points on an image
+//----------------------------------------------------------------
+void draw_points( Points p, cv::Mat &img, int r, cv::Scalar col)
+{
+    ISLOOP( p) draw_point( p[i], img, r, col);
+}
+
+
+
 
 // Type Conversions
 //===================
