@@ -6,17 +6,19 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+//======================================
+// Generally useful convenience funcs
+//======================================
+
+
 #import <UIKit/UIKit.h>
 #import "Common.h"
 
-UIFont *g_fntBtn;
+cplx I(0.0, 1.0);
 
-// Init globals. Called from Appdelegate.
-//----------------------------------------
-void g_init()
-{
-    g_fntBtn = [UIFont fontWithName:@"HelveticaNeue" size: 20];
-}
+//===============
+// String Stuff
+//===============
 
 // Replacement for annoying [NSString stringWithFormat ...
 //---------------------------------------------------------
@@ -36,6 +38,10 @@ NSString *nscat (id a, id b)
     return [NSString stringWithFormat:@"%@%@",a,b];
 }
 
+//=============
+// File Stuff
+//=============
+
 // Prepend path to our documents folder
 //---------------------------------------------
 NSString* getFullPath( NSString *fname)
@@ -46,4 +52,30 @@ NSString* getFullPath( NSString *fname)
     return filePath;
 }
 
+//======
+// Math
+//======
 
+//---------------------------------------------------
+void _fft(cplx buf[], cplx out[], int n, int step)
+{
+    if (step < n) {
+        _fft( out, buf, n, step * 2);
+        _fft( out + step, buf + step, n, step * 2);
+        
+        for (int i = 0; i < n; i += 2 * step) {
+            cplx t = exp( -I * PI * (cplx(i) / cplx(n))) * out[ i + step];
+            buf[ i / 2]     = out[i] + t;
+            buf[ (i + n)/2] = out[i] - t;
+        }
+    }
+}
+
+//---------------------------
+void fft(cplx buf[], int n)
+{
+    cplx out[n];
+    for (int i = 0; i < n; i++) out[i] = buf[i];
+    
+    _fft( buf, out, n, 1);
+}

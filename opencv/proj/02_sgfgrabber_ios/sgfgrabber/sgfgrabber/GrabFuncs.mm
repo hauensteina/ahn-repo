@@ -15,17 +15,6 @@
 #import "Common.h"
 #import "GrabFuncs.h"
 
-#define ILOOP(n) for (int i=0; i < (n); i++ )
-#define JLOOP(n) for (int j=0; j < (n); j++ )
-#define KLOOP(n) for (int k=0; k < (n); k++ )
-#define RLOOP(n) for (int r=0; r < (n); r++ )
-#define CLOOP(n) for (int c=0; c < (n); c++ )
-
-#define ISLOOP(n) for (int i=0; i < ((n).size()); i++ )
-#define JSLOOP(n) for (int j=0; j < ((n).size()); j++ )
-#define KSLOOP(n) for (int k=0; k < ((n).size()); k++ )
-#define RSLOOP(n) for (int r=0; r < ((n).size()); r++ )
-#define CSLOOP(n) for (int c=0; c < ((n).size()); c++ )
 
 
 typedef std::vector<std::vector<cv::Point> > Contours;
@@ -34,9 +23,8 @@ typedef std::vector<cv::Point> Points;
 typedef cv::Point Line[2];
 typedef std::vector<cv::Point2f> Points2f;
 static cv::RNG rng(12345);
-double PI = M_PI;
-typedef std::complex<double> cplx;
-cplx I(0.0, 1.0);
+
+
 const cv::Size TMPL_SZ(16,16);
 
 #define STRETCH_FACTOR 1.1
@@ -107,16 +95,6 @@ const cv::Size TMPL_SZ(16,16);
     return self;
 }
 
-//----------------------------------
-template <typename T>
-void print_vec( std::vector<T> v)
-{
-    std::cout << "( ";
-    ISLOOP (v) {
-        std::cout << v[i] << ' ';
-    }
-    std::cout << ")";
-}
 
 //------------------------------------------
 std::string mat_typestr( const cv::Mat &m)
@@ -242,36 +220,6 @@ double cmpTmpl( const cv::Mat &m1, const cv::Mat &m2)
     return [NSString stringWithFormat:@"OpenCV version: %s", CV_VERSION];
 }
 
-// Flatten a vector of vectors into a vector
-// [[1,2,3],[4,5,6],...] -> [1,2,3,4,5,6,...]
-//--------------------------------------------
-template <typename T>
-std::vector<T> flatten(const std::vector<std::vector<T>>& v)
-{
-    std::size_t total_size = 0;
-    for (const auto& sub : v)
-        total_size += sub.size(); // I wish there was a transform_accumulate
-    std::vector<T> result;
-    result.reserve(total_size);
-    for (const auto& sub : v)
-        result.insert(result.end(), sub.begin(), sub.end());
-    return result;
-}
-
-// Partition a vector of elements by class func.
-// Return parts as vec of vec
-//---------------------------------------------------------------------
-template<typename Func, typename T>
-std::vector<std::vector<T> >
-partition( std::vector<T> elts, int nof_classes, Func getClass)
-{
-    // Extract parts
-    std::vector<std::vector<T> > res( nof_classes);
-    ILOOP (elts.size()) {
-        res[getClass( elts[i])].push_back( elts[i]);
-    }
-    return res;
-} // partition()
 
 // Cluster a vector of elements by func.
 // Return clusters as vec of vec.
@@ -404,22 +352,7 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &hlines )
     return avg_lines( segs);
 }
 
-//# Find x where f(x) = target where f is an increasing func.
-//------------------------------------------------------------
-template<typename Func>
-float bisect( Func f, float lower, float upper, int target, int maxiter=10)
-{
-    int n=0;
-    float res=0.0;
-    while (n++ < maxiter) {
-        res = (upper + lower) / 2.0;
-        int val = int(f(res));
-        if (val > target) upper = res;
-        else if (val < target) lower = res;
-        else break;
-    } // while
-    return res;
-}
+
 
 // Order four points clockwise
 //----------------------------------------
@@ -612,83 +545,15 @@ int channel_median( cv::Mat channel )
     return res;
 }
 
-// Calculates the median value of a vector
-//----------------------------------------------
-template <typename T>
-T vec_median( std::vector<T> vec)
-{
-    if (!vec.size()) return T(0);
-    std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
-    return vec[vec.size() / 2];
-}
-
-// Gets the min value of a vector
-//----------------------------------------------
-template <typename T>
-T vec_min( std::vector<T> vec )
-{
-    T res = *(std::min_element(vec.begin(), vec.end()));
-    return res;
-}
-
-// Gets the max value of a vector
-//----------------------------------------------
-template <typename T>
-T vec_max( std::vector<T> vec )
-{
-    T res = *(std::max_element(vec.begin(), vec.end()));
-    return res;
-}
 
 
-// Calculates the avg value of a vector
-//----------------------------------------------
-template <typename T>
-T vec_avg( std::vector<T> vec)
-{
-    if (!vec.size()) return T(0);
-    double ssum = 0;
-    ISLOOP (vec) { ssum += vec[i]; }
-    return T(ssum / vec.size());
-}
-
-// Calculates the avg value of a vector, with acces func
-//----------------------------------------------------------
-template <typename T, typename Func>
-float vec_avg( std::vector<T> vec, Func at)
-{
-    if (!vec.size()) return 0;
-    double ssum = 0;
-    ISLOOP (vec) { ssum += at(vec, i); }
-    return ssum / vec.size();
-}
 
 
-// Calculates the avg delta of a vector
-//----------------------------------------------
-template <typename T>
-T vec_avg_delta( const std::vector<T> &vec)
-{
-    std::vector<T> deltas;
-    ISLOOP (vec) {
-        if (!i) continue;
-        deltas.push_back( vec[i] - vec[i-1]);
-    }
-    return vec_avg( deltas);
-}
 
-// Calculates the median delta of a vector
-//----------------------------------------------
-template <typename T>
-T vec_median_delta( const std::vector<T> &vec)
-{
-    std::vector<T> deltas;
-    ISLOOP (vec) {
-        if (!i) continue;
-        deltas.push_back( vec[i] - vec[i-1]);
-    }
-    return vec_median( deltas);
-}
+
+
+
+
 
 //-------------------------------------------------------
 void draw_contours( const Contours cont, cv::Mat &dst)
@@ -895,29 +760,6 @@ cv::Mat board_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
 } // board_transform()
 
 
-//---------------------------------------------------
-void _fft(cplx buf[], cplx out[], int n, int step)
-{
-    if (step < n) {
-        _fft( out, buf, n, step * 2);
-        _fft( out + step, buf + step, n, step * 2);
-        
-        for (int i = 0; i < n; i += 2 * step) {
-            cplx t = exp( -I * PI * (cplx(i) / cplx(n))) * out[ i + step];
-            buf[ i / 2]     = out[i] + t;
-            buf[ (i + n)/2] = out[i] - t;
-        }
-    }
-}
-
-//---------------------------
-void fft(cplx buf[], int n)
-{
-    cplx out[n];
-    for (int i = 0; i < n; i++) out[i] = buf[i];
-    
-    _fft( buf, out, n, 1);
-}
 
 //--------------------------------------------------------------------
 int get_boardsize_by_fft( const cv::Mat &zoomed_img)
@@ -1587,29 +1429,6 @@ void get_intersections( const Points_ &corners, int boardsz,
 } // get_intersections()
 
 
-// Get MSE of the dots relative to the grid defined by corners and boardsize
-//-----------------------------------------------------------------------------
-template <typename Points_>
-float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
-{
-    Points_ gridpoints;
-    float delta_v, delta_h;
-    get_intersections( corners, boardsize, gridpoints, delta_v, delta_h);
-    double err = 0;
-    ILOOP (dots.size()) {
-        float mind = 10E9;
-        JLOOP (gridpoints.size()) {
-            float d = cv::norm( dots[i] - gridpoints[j]);
-            if (d < mind) {
-                mind = d;
-            }
-        }
-        //NSLog(@"mind:%f", mind);
-        err += mind * mind;
-    }
-    err = sqrt(err);
-    return err;
-}
 
 // Find phase, wavelength etc of a family of lines.
 // Each cluster has a bunch of points which are probably on the same line.
@@ -1982,27 +1801,6 @@ float get_brightness( const cv::Mat &img, float frac=4)
     return ssum / area;
 }
 
-//------------------------------------------------
-void logveci( NSString *str, std::vector<int> v)
-{
-    NSString *msg = nsprintf( @"%@", str);
-    ISLOOP (v) {
-        if (i%19 == 0) msg = nscat( msg, @"\n");
-        msg = nscat( msg, nsprintf( @"%5d ", v[i]));
-    }
-    NSLog(@"%@\n", msg);
-}
-
-//------------------------------------------------
-void logvecf( NSString *str, std::vector<float> v)
-{
-    NSString *msg = nsprintf( @"%@", str);
-    ISLOOP (v) {
-        if (i%19 == 0) msg = nscat( msg, @"\n");
-        msg = nscat( msg, nsprintf( @"%7.2f ", v[i]));
-    }
-    NSLog(@"%@\n", msg);
-}
 
 // Type to hold a feature vector at a board position
 //=====================================================
@@ -2155,74 +1953,50 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
 
     std::vector<Feat> subgrid; cv::Point2f center;
     get_subgrid_features( minr, minc, _board_sz, features, subgrid, center);
-    std::vector<std::vector<Feat> > clusters;
-    double compactness;
-    clusters = mcluster( subgrid,
-                        2, // clusters
-                        3, // feature dims
-                        compactness,
-                        [](Feat f) { return f.features; });
-    NSLog( @"%ld %ld clusters at %d %d compact %6.2f",
-          clusters[0].size(), clusters[1].size(),
-          minr, minc, compactness);
-    NSLog( @"==================");
-    float avg0 = vec_avg( clusters[0], [](std::vector<Feat> c, int i) { return c[i].features[0]; });
-    float avg1 = vec_avg( clusters[1], [](std::vector<Feat> c, int i) { return c[i].features[0]; });
-    int black_cluster = 0;
-    if (avg1 < avg0) black_cluster = 1;
 
-//
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     drawing = _small.clone();
-    for (const auto &f : subgrid) {
-        //std::string key = x.first;
-        cv::Point p( f.x, f.y);
-        cv::Rect rect( p.x - cvRound(_wavelen_h/4.0), p.y - cvRound(_wavelen_v/4.0), cvRound(_wavelen_h/2.0), cvRound(_wavelen_v/2.0) );
-        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
-    } // for subgrid
-    ISLOOP (clusters[black_cluster]) {
-        cv::Point p(clusters[black_cluster][i].x, clusters[black_cluster][i].y);
-        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+
+    
+    // Contour image of the zoomed board
+    cv::Mat zoomed_edges;
+    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
+    cv::Canny( _gray, zoomed_edges, 30, 70);
+    //auto_canny( _gray, zoomed_edges);
+    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+    // Cut out areas around the intersections
+    std::vector<float> brightness;
+    std::vector<float> crossness;
+    std::vector<int> isempty;
+    ILOOP( _intersections.size()) {
+        float x = _intersections[i].x;
+        float y = _intersections[i].y;
+        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
+        if (0 <= rect.x &&
+            0 <= rect.width &&
+            rect.x + rect.width <= _gray.cols &&
+            0 <= rect.y &&
+            0 <= rect.height &&
+            rect.y + rect.height <= _gray.rows)
+        {
+            cv::Mat hood = cv::Mat( _gray, rect);
+            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
+            brightness.push_back( get_brightness( hood));
+            crossness.push_back( get_brightness(contour_hood,6));
+            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
+            
+            //            // Template approach
+            //            templify(hood);
+            //            double sim_white = cmpTmpl(hood,_tmpl_white);
+            //            double sim_inner = cmpTmpl(hood,_tmpl_inner);
+            //            if (sim_inner > sim_white) { isempty.push_back(2); }
+            //            else { isempty.push_back(0); }
+        }
     }
-//    // Contour image of the zoomed board
-//    cv::Mat zoomed_edges;
-//    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
-//    cv::Canny( _gray, zoomed_edges, 30, 70);
-//    //auto_canny( _gray, zoomed_edges);
-//    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-//    // Cut out areas around the intersections
-//    std::vector<float> brightness;
-//    std::vector<float> crossness;
-//    std::vector<int> isempty;
-//    ILOOP( _intersections.size()) {
-//        float x = _intersections[i].x;
-//        float y = _intersections[i].y;
-//        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
-//        if (0 <= rect.x &&
-//            0 <= rect.width &&
-//            rect.x + rect.width <= _gray.cols &&
-//            0 <= rect.y &&
-//            0 <= rect.height &&
-//            rect.y + rect.height <= _gray.rows)
-//        {
-//            cv::Mat hood = cv::Mat( _gray, rect);
-//            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
-//            brightness.push_back( get_brightness( hood));
-//            crossness.push_back( get_brightness(contour_hood,6));
-//            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
-//
-////            // Template approach
-////            templify(hood);
-////            double sim_white = cmpTmpl(hood,_tmpl_white);
-////            double sim_inner = cmpTmpl(hood,_tmpl_inner);
-////            if (sim_inner > sim_white) { isempty.push_back(2); }
-////            else { isempty.push_back(0); }
-//        }
-//    }
-//    //logvecf( @"brightness:", brightness);
-//    //logvecf( @"crossness:",  crossness);
-//
+    //logvecf( @"brightness:", brightness);
+    //logvecf( @"crossness:",  crossness);
+    
 //    // Black stones
 //    float thresh = *(std::min_element( brightness.begin(), brightness.end())) * 4;
 //    std::vector<int> isblack( brightness.size(), 0);
@@ -2243,8 +2017,8 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
 //        else if (isempty[i]) board.push_back(0);
 //        else board.push_back(2);
 //    }
-//    logveci(<#NSString *str#>, <#std::vector<int> v#>)( @"board:", board);
-
+//
+//    
 //    // Empty places
 //    std::vector<int> isempty( crossness.size(), 0);
 //    ILOOP (crossness.size()) {
@@ -2253,20 +2027,30 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
 //            draw_point( _intersections[i], drawing, 1);
 //        }
 //    }
-
+//    
 //# Empty intersections
 //    print('crossness')
 //    print(crossness.reshape((boardsize,boardsize)).astype('int'))
 //    isempty = np.array([ 1 if x > 5 else 0 for x in crossness ])
-//
+//    
 //# White stones
 //    iswhite = np.array([ 2 if not isempty[i] + isblack[i] else 0  for i,x in enumerate( isempty) ])
-//
+//    
 //    print('position')
 //    position = iswhite + isblack
 //    print(position.reshape((boardsize,boardsize)))
-    
-    
+//    
+//    for (const auto &f : subgrid) {
+//        //std::string key = x.first;
+//        cv::Point p( f.x, f.y);
+//        cv::Rect rect( p.x - cvRound(_wavelen_h/4.0), p.y - cvRound(_wavelen_v/4.0), cvRound(_wavelen_h/2.0), cvRound(_wavelen_v/2.0) );
+//        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+//    } // for subgrid
+//    ISLOOP (clusters[black_cluster]) {
+//        cv::Point p(clusters[black_cluster][i].x, clusters[black_cluster][i].y);
+//        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+//    }
+
     UIImage *res = MatToUIImage( drawing);
     //UIImage *res = MatToUIImage( zoomed_edges);
     return res;

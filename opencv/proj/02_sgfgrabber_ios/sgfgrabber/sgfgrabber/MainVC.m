@@ -7,6 +7,8 @@
 //
 
 #import "MainVC.h"
+
+#import "Globals.h"
 #import "GrabFuncs.h"
 
 #define DDEBUG
