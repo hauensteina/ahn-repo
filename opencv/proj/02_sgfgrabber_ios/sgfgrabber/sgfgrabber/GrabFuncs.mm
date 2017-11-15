@@ -588,29 +588,6 @@ void get_intersections( const Points_ &corners, int boardsz,
 } // get_intersections()
 
 
-// Get MSE of the dots relative to the grid defined by corners and boardsize
-//-----------------------------------------------------------------------------
-template <typename Points_>
-float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
-{
-    Points_ gridpoints;
-    float delta_v, delta_h;
-    get_intersections( corners, boardsize, gridpoints, delta_v, delta_h);
-    double err = 0;
-    ILOOP (dots.size()) {
-        float mind = 10E9;
-        JLOOP (gridpoints.size()) {
-            float d = cv::norm( dots[i] - gridpoints[j]);
-            if (d < mind) {
-                mind = d;
-            }
-        }
-        //NSLog(@"mind:%f", mind);
-        err += mind * mind;
-    }
-    err = sqrt(err);
-    return err;
-}
 
 // Find phase, wavelength etc of a family of lines.
 // Each cluster has a bunch of points which are probably on the same line.
@@ -943,19 +920,6 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     return res;
 }
 
-// Get a center crop of an image
-//-------------------------------------------------------------------
-int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4)
-{
-    float cx = img.cols / 2.0;
-    float cy = img.rows / 2.0;
-    float dx = img.cols / frac;
-    float dy = img.rows / frac;
-    dst = cv::Mat( img, cv::Rect( round(cx-dx), round(cy-dy), round(2*dx), round(2*dy)));
-    int area = dst.rows * dst.cols;
-    return area;
-}
-
 // Sum brightness at the center, normalize
 //------------------------------------------------------
 float get_brightness( const cv::Mat &img, float frac=4)
@@ -1048,26 +1012,6 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
     return true;
 }
 
-// Normalize mean and variance, per channel
-//========================================================
-void normalize_image( const cv::Mat &src, cv::Mat &dst)
-{
-    cv::Mat planes[4];
-    cv::split( src, planes);
-    cv::Scalar mmean, sstddev;
-    
-    cv::meanStdDev( planes[0], mmean, sstddev);
-    planes[0].convertTo( planes[0], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
-    
-    cv::meanStdDev( planes[1], mmean, sstddev);
-    planes[1].convertTo( planes[1], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
-    
-    cv::meanStdDev( planes[2], mmean, sstddev);
-    planes[2].convertTo( planes[2], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
-    
-    // ignore channel 4, that's alpha
-    cv::merge( planes, 3, dst);
-}
 
 
 // Classify intersections into b,w,empty

@@ -416,6 +416,40 @@ void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type)
     }
 }
 
+// Get a center crop of an image
+//-------------------------------------------------------------------
+int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac)
+{
+    float cx = img.cols / 2.0;
+    float cy = img.rows / 2.0;
+    float dx = img.cols / frac;
+    float dy = img.rows / frac;
+    dst = cv::Mat( img, cv::Rect( round(cx-dx), round(cy-dy), round(2*dx), round(2*dy)));
+    int area = dst.rows * dst.cols;
+    return area;
+}
+
+// Normalize mean and variance, per channel
+//--------------------------------------------------------
+void normalize_image( const cv::Mat &src, cv::Mat &dst)
+{
+    cv::Mat planes[4];
+    cv::split( src, planes);
+    cv::Scalar mmean, sstddev;
+    
+    cv::meanStdDev( planes[0], mmean, sstddev);
+    planes[0].convertTo( planes[0], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    
+    cv::meanStdDev( planes[1], mmean, sstddev);
+    planes[1].convertTo( planes[1], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    
+    cv::meanStdDev( planes[2], mmean, sstddev);
+    planes[2].convertTo( planes[2], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    
+    // ignore channel 4, that's alpha
+    cv::merge( planes, 3, dst);
+}
+
 // Drawing
 //==========
 
@@ -566,8 +600,6 @@ void test_segment2polar()
         NSLog(@"Oops 4");
     }
 }
-
-
 
 // Debuggging
 //=============

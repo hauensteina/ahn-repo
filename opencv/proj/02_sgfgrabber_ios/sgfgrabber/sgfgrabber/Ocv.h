@@ -49,8 +49,6 @@ std::string mat_typestr( const cv::Mat &m);
 // Calculate the median value of a single channel
 int channel_median( cv::Mat channel );
 
-
-
 // Contour
 //=========
 // Enclose a contour with an n edge polygon
@@ -100,7 +98,6 @@ Points smallest_quad( std::vector<Points> quads);
 // Average the corners of quads
 Points avg_quad( std::vector<Points> quads);
 
-
 // Image
 //========
 // Resize image such that min(width,height) = sz
@@ -109,6 +106,10 @@ void resize(const cv::Mat &src, cv::Mat &dst, int sz);
 void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33);
 // Dilate then erode for some iterations
 void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORPH_RECT );
+// Get a center crop of an image
+int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4);
+// Normalize mean and variance, per channel
+void normalize_image( const cv::Mat &src, cv::Mat &dst);
 
 // Drawing
 //==========
@@ -121,8 +122,6 @@ void draw_line( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col = cv::Scalar
 // Draw several line segments
 void draw_lines( const std::vector<cv::Vec4f> &lines, cv::Mat &dst,
                 cv::Scalar col = cv::Scalar(255,0,0));
-
-
 // Draw a polar line (rho, theta)
 void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
                      cv::Scalar col = cv::Scalar(255,0,0));
