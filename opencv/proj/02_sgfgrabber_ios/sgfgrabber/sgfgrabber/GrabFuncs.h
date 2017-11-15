@@ -11,7 +11,6 @@
 @interface GrabFuncs : NSObject
 
 //----------------------------
-+ (NSString *) opencvVersion;
 // Individual steps for debugging
 - (UIImage *) f00_adaptive_thresh:(UIImage *)img;
 - (UIImage *) f01_closing;

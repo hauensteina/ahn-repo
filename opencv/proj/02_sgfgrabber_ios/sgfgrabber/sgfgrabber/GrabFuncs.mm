@@ -6,24 +6,14 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+#import "Ocv.h"
 //#include <math.h>
 #include <type_traits>
-#import <opencv2/opencv.hpp>
+
 //#import <opencv2/core/ptr.inl.hpp>
-#import <opencv2/imgcodecs/ios.h>
 //#import <opencv2/imgproc/imgproc.hpp>
 #import "Common.h"
 #import "GrabFuncs.h"
-
-
-
-typedef std::vector<std::vector<cv::Point> > Contours;
-typedef std::vector<cv::Point> Contour;
-typedef std::vector<cv::Point> Points;
-typedef cv::Point Line[2];
-typedef std::vector<cv::Point2f> Points2f;
-static cv::RNG rng(12345);
-
 
 const cv::Size TMPL_SZ(16,16);
 
@@ -79,278 +69,13 @@ const cv::Size TMPL_SZ(16,16);
 {
     self = [super init];
     if (self) {
-        [self jpg:@"black.jpg" toTmpl:_tmpl_black];
-        [self jpg:@"white.jpg" toTmpl:_tmpl_white];
-        [self jpg:@"top_left.jpg" toTmpl:_tmpl_top_left];
-        [self jpg:@"top_right.jpg" toTmpl:_tmpl_top_right];
-        [self jpg:@"bot_right.jpg" toTmpl:_tmpl_bot_right];
-        [self jpg:@"bot_left.jpg" toTmpl:_tmpl_bot_left];
-        [self jpg:@"top.jpg" toTmpl:_tmpl_top];
-        [self jpg:@"right.jpg" toTmpl:_tmpl_right];
-        [self jpg:@"bot.jpg" toTmpl:_tmpl_bot];
-        [self jpg:@"left.jpg" toTmpl:_tmpl_left];
-        [self jpg:@"inner.jpg" toTmpl:_tmpl_inner];
-        [self jpg:@"hoshi.jpg" toTmpl:_tmpl_hoshi];
     }
     return self;
 }
 
 
-//------------------------------------------
-std::string mat_typestr( const cv::Mat &m)
-{
-    int type = m.type();
-    std::string r;
-    
-    uchar depth = type & CV_MAT_DEPTH_MASK;
-    uchar chans = 1 + (type >> CV_CN_SHIFT);
-    
-    switch ( depth ) {
-        case CV_8U:  r = "8U"; break;
-        case CV_8S:  r = "8S"; break;
-        case CV_16U: r = "16U"; break;
-        case CV_16S: r = "16S"; break;
-        case CV_32S: r = "32S"; break;
-        case CV_32F: r = "32F"; break;
-        case CV_64F: r = "64F"; break;
-        default:     r = "User"; break;
-    }
-    
-    r += "C";
-    r += (chans+'0');
-    
-    return r;
-}
-
-//---------------------------------------
-void print_mat_type( const cv::Mat &m)
-{
-    std::cout << mat_typestr( m) << std::endl;
-    printf("\n========================\n");
-}
-
-//---------------------------------
-void printMatU( const cv::Mat &m)
-{
-    RLOOP (m.rows) {
-        printf("\n");
-        CLOOP (m.cols) {
-            printf("%4d",m.at<uint8_t>(r,c) );
-        }
-    }
-    printf("\n========================\n");
-}
-
-//---------------------------------
-void printMatF( const cv::Mat &m)
-{
-    RLOOP (m.rows) {
-        printf("\n");
-        CLOOP (m.cols) {
-            printf("%8.2f",m.at<float>(r,c) );
-        }
-    }
-    printf("\n========================\n");
-}
-
-
-//--------------------------------------------------
-void PointsToFloat( const Points &pi, Points2f &pf)
-{
-    pf = Points2f( pi.begin(), pi.end());
-}
-
-//--------------------------------------------------
-void PointsToInt( const Points2f &pf, Points &pi)
-{
-    pi = Points( pf.begin(), pf.end());
-}
-
-// Draw one contour (e.g. the board)
-//------------------------------------
-template <typename Points_>
-void drawContour( cv::Mat &img, const Points_ &cont,
-                 cv::Scalar color = cv::Scalar(255,0,0), int thickness = 1)
-{
-    cv::drawContours( img, std::vector<Points_>( 1, cont), -1, color, thickness, 8);
-}
-
-// Prepare image for use as a similarity template
-//-------------------------------------------------
-void templify( cv::Mat &m)
-{
-    cv::resize(m,m,TMPL_SZ);
-    cv::normalize( m, m, 0 , 255, CV_MINMAX, CV_8UC1);
-    //m.convertTo( m, CV_64FC1);
-    //m.convertTo( m, CV_8UC1);
-    //cv::Mat sq = m.mul(m);
-    //double ssum = cv::sum(sq)[0];
-    //ssum = sqrt(ssum);
-    //m /= ssum;
-}
-
-// Compare two templified images of same size
-//-------------------------------------------------------
-double cmpTmpl( const cv::Mat &m1, const cv::Mat &m2)
-{
-//    cv::Mat prod = m1.mul(m2);
-//    double d = cv::sum(prod)[0];
-//    return d;
-    cv::Mat diff = m1 - m2;
-    cv::Mat sq = diff.mul(diff);
-    double d = cv::sum(sq)[0];
-    return -d;
-}
-
-// Convert jpg file to 16x16 template cv::Mat
-//-------------------------------------------------
-- (void) jpg:(NSString *)fname toTmpl:(cv::Mat&)m
-{
-    UIImage *img = [UIImage imageNamed:fname];
-    UIImageToMat(img, m);
-    templify( m);
-}
-
 #pragma mark - General utility funcs
 //======================================
-
-//----------------------------
-+ (NSString *) opencvVersion
-{
-    return [NSString stringWithFormat:@"OpenCV version: %s", CV_VERSION];
-}
-
-
-// Cluster a vector of elements by func.
-// Return clusters as vec of vec.
-// Assumes feature is a single float.
-//---------------------------------------------------------------------
-template<typename Func, typename T>
-std::vector<std::vector<T> >
-cluster (std::vector<T> elts, int nof_clust, Func getFeature)
-{
-    if (elts.size() < 2) return std::vector<std::vector<T> >();
-    std::vector<float> features;
-    std::vector<float> centers;
-    ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
-    std::vector<int> labels;
-    cv::kmeans( features, nof_clust, labels,
-               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
-               3, cv::KMEANS_PP_CENTERS, centers);
-    // Extract parts
-    std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
-    ILOOP (elts.size()) {
-        res[labels[i]].push_back( elts[i]);
-    }
-    return res;
-} // cluster()
-
-// Cluster a vector of elements by func.
-// Return clusters as vec of vec.
-// Assumes feature is a vec of float.
-//-----------------------------------------------------------------------
-template<typename Func, typename T>
-std::vector<std::vector<T> >
-mcluster (std::vector<T> elts, int nof_clust, int ndims, double &compactness, Func getFeatVec)
-{
-    if (elts.size() < 2) return std::vector<std::vector<T> >();
-    std::vector<float> featVec;
-    // Append all vecs into one large one
-    ILOOP (elts.size()) {
-        //size_t n1 = featVec.size();
-        vapp( featVec, getFeatVec( elts[i]));
-        //size_t n2 = featVec.size();
-    }
-    // Reshape into a matrix with one row per feature vector
-    //cv::Mat m = cv::Mat(featVec).reshape( 0, sizeof(elts) );
-    //assert (featVec.size() == 361*ndims);
-    cv::Mat m = cv::Mat(featVec).reshape( 0, int(elts.size()));
-
-    // Cluster
-    std::vector<int> labels;
-    cv::Mat centers;
-    compactness = cv::kmeans( m, nof_clust, labels,
-                             cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 100, 1.0),
-                             3, cv::KMEANS_PP_CENTERS, centers);
-    // Extract parts
-    std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
-    ILOOP (elts.size()) {
-        res[labels[i]].push_back( elts[i]);
-    }
-    return res;
-} // mcluster()
-
-//------------------------
-void test_mcluster()
-{
-    std::vector<float> v1 = { 1, 2 };
-    std::vector<float> v2 = { 3, 4  };
-    std::vector<float> v3 = { 10, 20 };
-    std::vector<float> v4 = { 11, 21 };
-    std::vector<float> v5 = { 30, 40 };
-    std::vector<float> v6 = { 31, 41 };
-    std::vector<std::vector<float> > samples;
-    samples.push_back( v1);
-    samples.push_back( v2);
-    samples.push_back( v3);
-    samples.push_back( v4);
-    samples.push_back( v5);
-    samples.push_back( v6);
-
-    double compactness;
-    auto res = mcluster( samples, 3, 2, compactness,
-                        [](std::vector<float>s) {return s;} );
-    CSLOOP (res) {
-        std::cout << "Cluster " << c << ":\n";
-        std::vector<std::vector<float> > clust = res[c];
-        ISLOOP (clust) {
-            print_vec( clust[i]);
-        }
-        std::cout << "\n";
-    }
-    return;
-}
-
-// Average a bunch of line segments.
-// Put a line through all the endpoints.
-//---------------------------------------------------------
-cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines )
-{
-    // Get the points
-    Points2f points;
-    ILOOP (lines.size()) {
-        cv::Point2f p1(lines[i][0], lines[i][1]);
-        cv::Point2f p2(lines[i][2], lines[i][3]);
-        points.push_back( p1);
-        points.push_back( p2);
-    }
-    // Put a line through them
-    cv::Vec4f lparms;
-    cv::fitLine( points, lparms, CV_DIST_L2, 0.0, 0.01, 0.01);
-    cv::Vec4f res;
-    res[0] = lparms[2];
-    res[1] = lparms[3];
-    res[2] = lparms[2] + lparms[0];
-    res[3] = lparms[3] + lparms[1];
-    return res;
-} // avg_lines()
-
-// Take a bunch of Hough lines, set rho to zero, turn into
-// segments, return avg line segment
-//-----------------------------------------------------------
-cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &hlines )
-{
-    std::vector<cv::Vec4f> segs;
-    cv::Vec2f hline;
-    ISLOOP (hlines) {
-        hline = hlines[i];
-        hline[0] = 0;
-        cv::Vec4f seg;
-        polarToSegment( hline, seg);
-        segs.push_back(seg);
-    }
-    return avg_lines( segs);
-}
 
 
 
@@ -370,49 +95,7 @@ POINTS order_points( POINTS &points)
     return res;
 }
 
-// Fit a line through points, L2 norm
-//--------------------------------------
-cv::Vec4f fit_line( const Points &p)
-{
-    cv::Vec4f res,tt;
-    cv::fitLine( p, tt, CV_DIST_L2, 0.0, 0.01, 0.01);
-    res[0] = tt[2];
-    res[1] = tt[3];
-    res[2] = tt[2] + tt[0];
-    res[3] = tt[3] + tt[1];
-    return res;
-}
 
-// Length of a line segment
-//---------------------------------------------------------
-float line_len( cv::Point p, cv::Point q)
-{
-    return cv::norm( q-p);
-}
-
-// Distance between point and line segment
-//----------------------------------------------------------
-float dist_point_line( cv::Point p, const cv::Vec4f &line)
-{
-    float x = p.x;
-    float y = p.y;
-    float x0 = line[0];
-    float y0 = line[1];
-    float x1 = line[2];
-    float y1 = line[3];
-    float num = (y0-y1)*x + (x1-x0)*y + (x0*y1 - x1*y0);
-    float den = sqrt( (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
-    return num / den;
-}
-
-// Distance between point and Hough line
-//----------------------------------------------------------
-float dist_point_line( cv::Point p, const cv::Vec2f &hline)
-{
-    cv::Vec4f line;
-    polarToSegment( hline, line);
-    return dist_point_line( p, line);
-}
 
 // Get average x of a bunch of points
 //-----------------------------------------
@@ -761,95 +444,6 @@ cv::Mat board_transform( const cv::Mat &img, cv::Mat &warped, Points2f pts)
 
 
 
-//--------------------------------------------------------------------
-int get_boardsize_by_fft( const cv::Mat &zoomed_img)
-{
-    cv::Mat flimg;
-    zoomed_img.convertTo( flimg, CV_64FC1);
-    int width = zoomed_img.cols;
-    int height = zoomed_img.rows;
-    cplx crow[width];
-    double magsum[width];
-    ILOOP (width) { magsum[i]=0; }
-    // Sum the ffts of each row
-    ILOOP (height) {
-        double *row = flimg.ptr<double>(i);
-        KLOOP (width) { crow[k] = cplx( row[k],0); }
-        fft( crow, width);
-        KLOOP (width) { magsum[k] += std::abs(crow[k]); }
-    }
-    double ssum = 0;
-    ILOOP (50) { ssum += magsum[width/2-i-1]; }
-    // Smooth
-    double old = magsum[0];
-    double alpha = 0.2;
-    ILOOP (width) { magsum[i] = (1-alpha)*magsum[i] + alpha*old; old = magsum[i]; }
-    
-    // Find max
-    old = magsum[7];
-    std::vector<int> argmaxes;
-    std::vector<float> maxes;
-    for (int i = 7; i < 30; i++ ) {
-        double cur = magsum[i];
-        double nnext = magsum[i+1];
-        if (cur > old && cur > nnext) {
-            argmaxes.push_back(i);
-            maxes.push_back(cur);
-        }
-        old = magsum[i];
-    }
-    if (!argmaxes.size()) { return 9;}
-    ILOOP (argmaxes.size()) {
-        if (argmaxes[i] < 16 && maxes[i] > 50000) {
-            return 9;
-        }
-        if ((argmaxes[i] >= 18 && argmaxes[i] <= 20)
-            && maxes[i] > 50000) {
-            return 19;
-        }
-    }
-    return 9;
-    
-} // get_boardsize_by_fft
-
-// Get a line segment representation of a Hough line (rho, theta)
-//----------------------------------------------------------------
-void polarToSegment( const cv::Vec2f &hline, cv::Vec4f &result)
-{
-    float rho = hline[0], theta = hline[1];
-    double a = cos(theta), b = sin(theta);
-    double x0 = a*rho, y0 = b*rho;
-    result[0] = cvRound(x0 + 1000*(-b));
-    result[1] = cvRound(y0 + 1000*(a));
-    result[2] = cvRound(x0 - 1000*(-b));
-    result[3] = cvRound(y0 - 1000*(a));
-}
-
-
-// Line segment to polar, with positive rho
-//-----------------------------------------------------------------
-void segmentToPolar( const cv::Vec4f &line_, cv::Vec2f &result)
-{
-    cv::Vec4f line = line_;
-    // Always go left to right
-    if (line[2] < line[0]) {
-        swap( line[0], line[2]);
-        swap( line[1], line[3]);
-    }
-    float dx = line[2] - line[0];
-    float dy = line[3] - line[1];
-    if (fabs(dx) > fabs(dy)) { // horizontal
-        if (dx < 0) { dx *= -1; dy *= -1; }
-    }
-    else { // vertical
-        if (dy > 0) { dx *= -1; dy *= -1; }
-    }
-    float theta = atan2( dy, dx) + CV_PI/2;
-    float rho = fabs(dist_point_line( cv::Point(0,0), line));
-    result[0] = rho;
-    result[1] = theta;
-}
-
 //---------------------------
 void testSegmentToPolar()
 {
@@ -1096,9 +690,9 @@ Points avg_board( std::vector<Points> boards)
     cv::Mat transform = board_transform( _gray, _gray, board_stretched);
     cv::warpPerspective( _small, _small, transform, cv::Size(_small.cols, _small.rows));
     Points2f b,tt;
-    PointsToFloat( _board, b);
+    points2float( _board, b);
     cv::perspectiveTransform( b, tt, transform);
-    PointsToInt( tt, _board_zoomed);
+    points2int( tt, _board_zoomed);
     
     UIImage *res = MatToUIImage( _gray);
     return res;
@@ -1429,6 +1023,29 @@ void get_intersections( const Points_ &corners, int boardsz,
 } // get_intersections()
 
 
+// Get MSE of the dots relative to the grid defined by corners and boardsize
+//-----------------------------------------------------------------------------
+template <typename Points_>
+float grid_err( const Points_ &corners, const Points_ &dots, int boardsize)
+{
+    Points_ gridpoints;
+    float delta_v, delta_h;
+    get_intersections( corners, boardsize, gridpoints, delta_v, delta_h);
+    double err = 0;
+    ILOOP (dots.size()) {
+        float mind = 10E9;
+        JLOOP (gridpoints.size()) {
+            float d = cv::norm( dots[i] - gridpoints[j]);
+            if (d < mind) {
+                mind = d;
+            }
+        }
+        //NSLog(@"mind:%f", mind);
+        err += mind * mind;
+    }
+    err = sqrt(err);
+    return err;
+}
 
 // Find phase, wavelength etc of a family of lines.
 // Each cluster has a bunch of points which are probably on the same line.
@@ -1761,23 +1378,6 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     return res;
 }
 
-//------------------------------------
-- (UIImage *) fxx_get_intersections
-{
-    if (!_board.size()) { return MatToUIImage( _m); }
-    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    
-    Points intersections;
-    float delta_v, delta_h;
-    get_intersections( _board_zoomed, _board_sz, intersections, delta_v, delta_h);
-    ILOOP (intersections.size()) {
-        draw_point( intersections[i], drawing, 1);
-    }
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-} // f06_get_intersections()
-
 // Get a center crop of an image
 //-------------------------------------------------------------------
 int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4)
@@ -1800,7 +1400,6 @@ float get_brightness( const cv::Mat &img, float frac=4)
     float ssum = cv::sum(crop)[0];
     return ssum / area;
 }
-
 
 // Type to hold a feature vector at a board position
 //=====================================================
@@ -2087,7 +1686,7 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
         if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
         //_board = smallest_board( boards);
         _board = avg_board( boards);
-        drawContour( _small, _board, cv::Scalar(255,0,0,255));
+        draw_contour( _small, _board, cv::Scalar(255,0,0,255));
 //        _cont = std::vector<Points>( 1, _board);
 //        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
     }

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */ = {isa = PBXBuildFile; fileRef = AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */; };
+		AC3C5EBC1FBC942000BB8B4F /* Ocv.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC3C5EBA1FBC942000BB8B4F /* Ocv.mm */; };
 		AC5540741F9BE6AD00922557 /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC5540731F9BE6AD00922557 /* opencv2.framework */; };
 		AC5540771F9BE71900922557 /* GrabFuncs.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC5540761F9BE71800922557 /* GrabFuncs.mm */; };
 		AC628C181F9A7D3F0043FCEE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AC628C171F9A7D3F0043FCEE /* main.m */; };
@@ -17,24 +18,14 @@
 		AC80400A1FA92613000088D2 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC8040091FA92604000088D2 /* Accelerate.framework */; };
 		AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */ = {isa = PBXBuildFile; fileRef = AC9702171FBC87DF0057C4C2 /* Globals.m */; };
 		ACA69E4C1F9D077B00F5E068 /* Common.mm in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.mm */; };
-		ACD9EB211FAD0B3D0049BBDE /* black.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB171FAD0B3C0049BBDE /* black.jpg */; };
-		ACD9EB221FAD0B3D0049BBDE /* right.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB181FAD0B3C0049BBDE /* right.jpg */; };
-		ACD9EB231FAD0B3D0049BBDE /* bot.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB191FAD0B3C0049BBDE /* bot.jpg */; };
-		ACD9EB241FAD0B3D0049BBDE /* top.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB1A1FAD0B3C0049BBDE /* top.jpg */; };
-		ACD9EB251FAD0B3D0049BBDE /* bot_right.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB1B1FAD0B3C0049BBDE /* bot_right.jpg */; };
-		ACD9EB261FAD0B3D0049BBDE /* white.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB1C1FAD0B3C0049BBDE /* white.jpg */; };
-		ACD9EB271FAD0B3D0049BBDE /* top_left.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB1D1FAD0B3C0049BBDE /* top_left.jpg */; };
-		ACD9EB281FAD0B3D0049BBDE /* top_right.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB1E1FAD0B3C0049BBDE /* top_right.jpg */; };
-		ACD9EB291FAD0B3D0049BBDE /* bot_left.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB1F1FAD0B3D0049BBDE /* bot_left.jpg */; };
-		ACD9EB2A1FAD0B3D0049BBDE /* left.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB201FAD0B3D0049BBDE /* left.jpg */; };
-		ACD9EB2D1FAD12000049BBDE /* inner.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB2B1FAD12000049BBDE /* inner.jpg */; };
-		ACD9EB2E1FAD12000049BBDE /* hoshi.jpg in Resources */ = {isa = PBXBuildFile; fileRef = ACD9EB2C1FAD12000049BBDE /* hoshi.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FrameExtractor.h; sourceTree = "<group>"; };
 		AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FrameExtractor.m; sourceTree = "<group>"; };
 		AC043D331F9BB9AB006CF7F0 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
+		AC3C5EBA1FBC942000BB8B4F /* Ocv.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Ocv.mm; sourceTree = "<group>"; };
+		AC3C5EBB1FBC942000BB8B4F /* Ocv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Ocv.h; sourceTree = "<group>"; };
 		AC5540731F9BE6AD00922557 /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = SOURCE_ROOT; };
 		AC5540751F9BE71800922557 /* GrabFuncs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GrabFuncs.h; sourceTree = "<group>"; };
 		AC5540761F9BE71800922557 /* GrabFuncs.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = GrabFuncs.mm; sourceTree = "<group>"; };
@@ -50,18 +41,6 @@
 		AC9702171FBC87DF0057C4C2 /* Globals.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Globals.m; sourceTree = "<group>"; };
 		AC9702191FBC88050057C4C2 /* Globals.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Globals.h; sourceTree = "<group>"; };
 		ACA69E4B1F9D077B00F5E068 /* Common.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Common.mm; sourceTree = "<group>"; };
-		ACD9EB171FAD0B3C0049BBDE /* black.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = black.jpg; sourceTree = "<group>"; };
-		ACD9EB181FAD0B3C0049BBDE /* right.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = right.jpg; sourceTree = "<group>"; };
-		ACD9EB191FAD0B3C0049BBDE /* bot.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = bot.jpg; sourceTree = "<group>"; };
-		ACD9EB1A1FAD0B3C0049BBDE /* top.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = top.jpg; sourceTree = "<group>"; };
-		ACD9EB1B1FAD0B3C0049BBDE /* bot_right.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = bot_right.jpg; sourceTree = "<group>"; };
-		ACD9EB1C1FAD0B3C0049BBDE /* white.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = white.jpg; sourceTree = "<group>"; };
-		ACD9EB1D1FAD0B3C0049BBDE /* top_left.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = top_left.jpg; sourceTree = "<group>"; };
-		ACD9EB1E1FAD0B3C0049BBDE /* top_right.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = top_right.jpg; sourceTree = "<group>"; };
-		ACD9EB1F1FAD0B3D0049BBDE /* bot_left.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = bot_left.jpg; sourceTree = "<group>"; };
-		ACD9EB201FAD0B3D0049BBDE /* left.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = left.jpg; sourceTree = "<group>"; };
-		ACD9EB2B1FAD12000049BBDE /* inner.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = inner.jpg; sourceTree = "<group>"; };
-		ACD9EB2C1FAD12000049BBDE /* hoshi.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = hoshi.jpg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,10 +85,12 @@
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC9702191FBC88050057C4C2 /* Globals.h */,
 				AC9702171FBC87DF0057C4C2 /* Globals.m */,
-				AC628C321F9A80150043FCEE /* MainVC.h */,
-				AC628C331F9A80150043FCEE /* MainVC.m */,
 				AC5540751F9BE71800922557 /* GrabFuncs.h */,
 				AC5540761F9BE71800922557 /* GrabFuncs.mm */,
+				AC628C321F9A80150043FCEE /* MainVC.h */,
+				AC628C331F9A80150043FCEE /* MainVC.m */,
+				AC3C5EBA1FBC942000BB8B4F /* Ocv.mm */,
+				AC3C5EBB1FBC942000BB8B4F /* Ocv.h */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
 				AC628C271F9A7D3F0043FCEE /* Info.plist */,
 				AC628C161F9A7D3F0043FCEE /* Supporting Files */,
@@ -137,18 +118,6 @@
 		ACD9EB161FAD0B160049BBDE /* Assets */ = {
 			isa = PBXGroup;
 			children = (
-				ACD9EB2C1FAD12000049BBDE /* hoshi.jpg */,
-				ACD9EB2B1FAD12000049BBDE /* inner.jpg */,
-				ACD9EB171FAD0B3C0049BBDE /* black.jpg */,
-				ACD9EB1F1FAD0B3D0049BBDE /* bot_left.jpg */,
-				ACD9EB1B1FAD0B3C0049BBDE /* bot_right.jpg */,
-				ACD9EB191FAD0B3C0049BBDE /* bot.jpg */,
-				ACD9EB201FAD0B3D0049BBDE /* left.jpg */,
-				ACD9EB181FAD0B3C0049BBDE /* right.jpg */,
-				ACD9EB1D1FAD0B3C0049BBDE /* top_left.jpg */,
-				ACD9EB1E1FAD0B3C0049BBDE /* top_right.jpg */,
-				ACD9EB1A1FAD0B3C0049BBDE /* top.jpg */,
-				ACD9EB1C1FAD0B3C0049BBDE /* white.jpg */,
 			);
 			path = Assets;
 			sourceTree = "<group>";
@@ -212,19 +181,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ACD9EB2A1FAD0B3D0049BBDE /* left.jpg in Resources */,
-				ACD9EB271FAD0B3D0049BBDE /* top_left.jpg in Resources */,
-				ACD9EB221FAD0B3D0049BBDE /* right.jpg in Resources */,
 				AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */,
-				ACD9EB251FAD0B3D0049BBDE /* bot_right.jpg in Resources */,
-				ACD9EB291FAD0B3D0049BBDE /* bot_left.jpg in Resources */,
-				ACD9EB211FAD0B3D0049BBDE /* black.jpg in Resources */,
-				ACD9EB241FAD0B3D0049BBDE /* top.jpg in Resources */,
-				ACD9EB2E1FAD12000049BBDE /* hoshi.jpg in Resources */,
-				ACD9EB2D1FAD12000049BBDE /* inner.jpg in Resources */,
-				ACD9EB261FAD0B3D0049BBDE /* white.jpg in Resources */,
-				ACD9EB281FAD0B3D0049BBDE /* top_right.jpg in Resources */,
-				ACD9EB231FAD0B3D0049BBDE /* bot.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +192,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC3C5EBC1FBC942000BB8B4F /* Ocv.mm in Sources */,
 				ACA69E4C1F9D077B00F5E068 /* Common.mm in Sources */,
 				AC5540771F9BE71900922557 /* GrabFuncs.mm in Sources */,
 				AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */,
