@@ -11,14 +11,36 @@
 #include "LineFinder.hpp"
 
 //----------------------------------------------------------------------
-void LineFinder::find_lines( std::vector<cv::Vec4f> &horizontal_lines,
+void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
                             std::vector<cv::Vec4f> &vertical_lines)
 {
     cv::Vec4f hslope, vslope;
+    // Find predominant slopes
     find_slopes( hslope, vslope);
-    ISLOOP (m_cloud) {
-        std::cout << "xx";
-    }
+    // Cluster points into board_size clusters by dist from hslope, vslope
+    m_horizontal_clusters = cluster( m_cloud, m_boardsize,
+                                    [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
+    m_vertical_clusters = cluster( m_cloud, m_boardsize,
+                                  [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
+    
+    float wavelen_h, delta_wavelen_h, slope_h, median_rho_h;
+    find_rhythm( m_horizontal_clusters,
+                wavelen_h,
+                delta_wavelen_h,
+                slope_h,
+                median_rho_h);
+
+    float wavelen_v, delta_wavelen_v, slope_v, median_rho_v;
+    find_rhythm( m_vertical_clusters,
+                wavelen_v,
+                delta_wavelen_v,
+                slope_v,
+                median_rho_v);
+    
+    std::vector<cv::Vec4f> lines;
+    find_lines( m_imgSize.height, wavelen_h, delta_wavelen_h, slope_h, median_rho_h, horizontal_lines);
+    find_lines( m_imgSize.width , wavelen_v, delta_wavelen_v, slope_v, median_rho_v, vertical_lines);
+
 }
 
 // Find two line segments representing the typical slope of horiz and vert
@@ -60,3 +82,108 @@ void LineFinder::find_slopes( cv::Vec4f &hslope, cv::Vec4f &vslope)
     hslope = avg_slope_line( hlines);
     vslope = avg_slope_line( vlines);
 }
+
+// Find phase, wavelength etc of a family of lines.
+// Each cluster has a bunch of points which are probably on the same line.
+//----------------------------------------------------------------------------
+void LineFinder::find_rhythm( const std::vector<Points> &clusters,
+                             float &wavelength,
+                             float &delta_wavelength,
+                             float &slope,
+                             float &median_rho
+                             )
+{
+    typedef struct { float dist; float slope; } DistSlope;
+    std::vector<cv::Vec4f> lines;
+    // Lines through the clusters
+    ISLOOP (clusters) {
+        lines.push_back( fit_line( clusters[i]));
+    }
+    // Slopes of the lines
+    std::vector<float> slopes;
+    ISLOOP( lines) {
+        cv::Vec4f line = lines[i];
+        float dx = line[2] - line[0];
+        float dy = line[3] - line[1];
+        if (fabs(dx) > fabs(dy)) { // horizontal
+            if (dx < 0) { dx *= -1; dy *= -1; }
+        }
+        else { // vertical
+            if (dy > 0) { dx *= -1; dy *= -1; }
+        }
+        float theta = atan2( dy, dx);
+        //NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
+        slopes.push_back( theta);
+    }
+    //NSLog(@"==========");
+    slope = vec_median( slopes);
+    // A polar line with the median slope
+    cv::Vec2f median_hline(0, slope + CV_PI/2.0);
+    
+    // For each cluster, get the median dist from the median slope line
+    std::vector<DistSlope> distSlopes( clusters.size());
+    ISLOOP (clusters) {
+        std::vector<float> ds;
+        JSLOOP (clusters[i]) {
+            cv::Point p = clusters[i][j];
+            float d = dist_point_line( p, median_hline);
+            ds.push_back( d);
+        }
+        float dist = vec_median( ds);
+        distSlopes[i].dist = dist;
+        distSlopes[i].slope = slopes[i];
+    }
+    
+    // Get the rhythm (wavelength of line distances)
+    std::sort( distSlopes.begin(), distSlopes.end(), [](DistSlope a, DistSlope b){ return a.dist < b.dist; });
+    median_rho = distSlopes[distSlopes.size() / 2].dist;
+    std::vector<float> delta_dists;
+    ISLOOP (distSlopes) {
+        if (!i) continue;
+        delta_dists.push_back( distSlopes[i].dist - distSlopes[i-1].dist);
+    }
+    delta_wavelength = vec_median_delta( delta_dists);
+    wavelength = vec_median( delta_dists);
+} // find_rhythm()
+
+// Start in the middle with the medians, expand to both sides
+// while adjusting with delta_slope and delta_rho.
+//---------------------------------------------------------------
+void LineFinder::find_lines( int max_rho,
+                            float wavelength_,
+                            float delta_wavelength,
+                            float slope,
+                            float median_rho,
+                            std::vector<cv::Vec4f> &lines)
+{
+    float theta, rho, wavelength;
+    std::vector<cv::Vec2f> hlines;
+    
+    // center to lower rho
+    wavelength = wavelength_;
+    theta = slope + CV_PI/2;
+    rho = median_rho - wavelength;
+    while (rho > 0) {
+        hlines.push_back( cv::Vec2f ( rho, theta));
+        rho -= wavelength;
+        wavelength -= delta_wavelength;
+    }
+    // center to higher rho
+    wavelength = wavelength_;
+    theta = slope + CV_PI/2;
+    rho = median_rho;
+    while (rho < max_rho) {
+        hlines.push_back( cv::Vec2f ( rho, theta));
+        rho += wavelength;
+        wavelength += delta_wavelength;
+    }
+    // convert to segments
+    lines.clear();
+    ISLOOP (hlines) {
+        cv::Vec4f line;
+        polar2segment( hlines[i], line);
+        lines.push_back( line);
+    }
+} // find_lines()
+
+

@@ -261,24 +261,29 @@
                 break;
             case 6:
                 state++;
-                img = [self.grabFuncs f06_hough_grid];
+                img = [self.grabFuncs f06_find_lines];
                 [self.cameraView setImage:img];
                 break;
             case 7:
                 state++;
-                img = [self.grabFuncs f07_clean_grid_h];
+                img = [self.grabFuncs f07_show_horiz_lines];
                 [self.cameraView setImage:img];
                 break;
             case 8:
                 state++;
-                img = [self.grabFuncs f08_clean_grid_v];
+                img = [self.grabFuncs f08_show_vert_lines];
                 [self.cameraView setImage:img];
                 break;
             case 9:
                 state++;
-                img = [self.grabFuncs f09_classify];
+                img = [self.grabFuncs f09_clean_lines];
                 [self.cameraView setImage:img];
                 break;
+//            case 9:
+//                state++;
+//                img = [self.grabFuncs f09_classify];
+//                [self.cameraView setImage:img];
+//                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;

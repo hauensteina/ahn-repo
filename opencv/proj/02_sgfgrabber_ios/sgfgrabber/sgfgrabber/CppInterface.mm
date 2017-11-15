@@ -49,6 +49,7 @@ const cv::Size TMPL_SZ(16,16);
 @property float slope_v;
 @property float delta_slope_v;
 @property float median_rho_v;
+@property LineFinder finder;
 
 @property cv::Mat tmpl_black;
 @property cv::Mat tmpl_white;
@@ -510,17 +511,6 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
         }
     }
     _board_sz = 19;
-//    Points inner_empty;
-//    ISLOOP (crosses) {
-//        cv::Point2f p( crosses[i]);
-//        if (cv::pointPolygonTest( innerboard, p, false) > 0) {
-//            inner_empty.push_back( p);
-//        }
-//    }
-//    size_t n = _stone_or_empty.size() + inner_empty.size();
-//    _board_sz = 19;
-//    if (n <= 9*9) { _board_sz = 9; }
-//    else if (n <= 250) { _board_sz = 13; }
     // Show results
     cv::Mat canvas;
     cv::cvtColor( _gray, canvas, cv::COLOR_GRAY2RGB);
@@ -590,160 +580,64 @@ void get_intersections( const Points_ &corners, int boardsz,
     }
 } // get_intersections()
 
-
-
-// Find phase, wavelength etc of a family of lines.
-// Each cluster has a bunch of points which are probably on the same line.
-//----------------------------------------------------------------------------
-void find_rhythm( const std::vector<Points> &clusters,
-                 float &wavelength,
-                 float &delta_wavelength,
-                 float &slope,
-                 float &median_rho
-                 )
-{
-    typedef struct { float dist; float slope; } DistSlope;
-    std::vector<cv::Vec4f> lines;
-    // Lines through the clusters
-    ISLOOP (clusters) {
-        lines.push_back( fit_line( clusters[i]));
-    }
-    // Slopes of the lines
-    std::vector<float> slopes;
-    ISLOOP( lines) {
-        cv::Vec4f line = lines[i];
-        float dx = line[2] - line[0];
-        float dy = line[3] - line[1];
-        if (fabs(dx) > fabs(dy)) { // horizontal
-            if (dx < 0) { dx *= -1; dy *= -1; }
-        }
-        else { // vertical
-            if (dy > 0) { dx *= -1; dy *= -1; }
-        }
-        float theta = atan2( dy, dx);
-        //NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
-        slopes.push_back( theta);
-    }
-    //NSLog(@"==========");
-    slope = vec_median( slopes);
-    // A polar line with the median slope
-    cv::Vec2f median_hline(0, slope + CV_PI/2.0);
-
-    // For each cluster, get the median dist from the median slope line
-    std::vector<DistSlope> distSlopes( clusters.size());
-    ISLOOP (clusters) {
-        std::vector<float> ds;
-        JSLOOP (clusters[i]) {
-            cv::Point p = clusters[i][j];
-            float d = dist_point_line( p, median_hline);
-            ds.push_back( d);
-        }
-        float dist = vec_median( ds);
-        distSlopes[i].dist = dist;
-        distSlopes[i].slope = slopes[i];
-    }
-    
-    // Get the rhythm (wavelength of line distances)
-    std::sort( distSlopes.begin(), distSlopes.end(), [](DistSlope a, DistSlope b){ return a.dist < b.dist; });
-    median_rho = distSlopes[distSlopes.size() / 2].dist;
-    std::vector<float> delta_dists;
-    ISLOOP (distSlopes) {
-        if (!i) continue;
-        delta_dists.push_back( distSlopes[i].dist - distSlopes[i-1].dist);
-    }
-    delta_wavelength = vec_median_delta( delta_dists);
-    wavelength = vec_median( delta_dists);
-} // find_rhythm()
-
-// Start in the middle with the medians, expand to both sides
-// while adjusting with delta_slope and delta_rho.
-//---------------------------------------------------------------
-void find_lines( int max_rho,
-                float wavelength_,
-                float delta_wavelength,
-                float slope,
-                float median_rho,
-                std::vector<cv::Vec4f> &lines)
-{
-    float theta, rho, wavelength;
-    std::vector<cv::Vec2f> hlines;
-
-    // center to lower rho
-    wavelength = wavelength_;
-    theta = slope + CV_PI/2;
-    rho = median_rho - wavelength;
-    while (rho > 0) {
-        hlines.push_back( cv::Vec2f ( rho, theta));
-        rho -= wavelength;
-        wavelength -= delta_wavelength;
-    }
-    // center to higher rho
-    wavelength = wavelength_;
-    theta = slope + CV_PI/2;
-    rho = median_rho;
-    while (rho < max_rho) {
-        hlines.push_back( cv::Vec2f ( rho, theta));
-        rho += wavelength;
-        wavelength += delta_wavelength;
-    }
-    // convert to segments
-    ISLOOP (hlines) {
-        cv::Vec4f line;
-        polar2segment( hlines[i], line);
-        lines.push_back( line);
-    }
-}
-
-// Find grid by putting lines through detected stones and intersections
+// Find line candidates from stones and intersections
 //------------------------------------------------------------------------
-- (UIImage *) f06_hough_grid
+- (UIImage *) f06_find_lines
 {
-    NSString *func = @"f06_hough_grid()";
+    NSString *func = @"f06_find_h_lines()";
     if (_stone_or_empty.size() < _board_sz) {
         NSLog( @"%@: not enough points", func);
         return MatToUIImage( _gray);
     }
-    LineFinder finder( _stone_or_empty, _board_sz, _gray.size() );
-    cv::Vec4f hslope, vslope;
-    finder.find_slopes( hslope, vslope);
-    // Cluster points into board_size clusters by dist from hslope, vslope
-    _horizontal_clusters = cluster( _stone_or_empty, _board_sz,
-                                  [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
-    _vertical_clusters = cluster( _stone_or_empty, _board_sz,
-                                  [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
-    
+    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+    //cv::Vec4f hslope, vslope;
+    _finder.get_lines( _horizontal_lines, _vertical_lines);
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-//    drawLine(topline, drawing);
-//    drawPolarLine( topline, drawing);
-//    ISLOOP (_intersections) { draw_point( _intersections[i], drawing, 2, cv::Scalar(0,255,0)); }
-    ISLOOP( _horizontal_clusters) {
-        Points cl = _horizontal_clusters[i];
+    ISLOOP( _finder.m_horizontal_clusters) {
+        Points cl = _finder.m_horizontal_clusters[i];
         cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
         draw_points( cl, drawing, 2, color);
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f06_hough_grid()
+} // f06_find_lines()
 
-// Find wavelength and phase of the grid, remove outliers.
+// Show the lines we found
 //------------------------------------------------------------------------
-- (UIImage *) f07_clean_grid_h
+- (UIImage *) f07_show_horiz_lines
 {
-    // Find the rhythm
-    find_rhythm( _horizontal_clusters, // in
-                _wavelen_h, _delta_wavelen_h,
-                _slope_h, _median_rho_h);
-    
-    // Generate lines from the rhythm
-    std::vector<cv::Vec4f> lines;
-    find_lines( _gray.rows, _wavelen_h, _delta_wavelen_h, _slope_h, _median_rho_h, lines);
-    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f07_show_horiz_lines()
+
+// Show the lines we found
+//------------------------------------------------------------------------
+- (UIImage *) f08_show_vert_lines
+{
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    draw_lines( _vertical_lines, drawing, cv::Scalar(0,0,255));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f08_show_vert_lines()
+
+
+// Improve line candidates by interpolation
+//--------------------------------------------
+- (UIImage *) f09_clean_lines
+{
     // Fix generated lines using cluster lines
     std::vector<cv::Vec4f> lines_out;
-    _horizontal_lines.clear();
-    clean_lines( lines, _horizontal_clusters, _horizontal_lines );
+    //_horizontal_lines.clear();
+    clean_lines( _horizontal_lines, _horizontal_clusters, _horizontal_lines );
+    clean_lines( _vertical_lines, _vertical_clusters, _vertical_lines );
 
     // Show results
     cv::Mat drawing;
@@ -761,6 +655,8 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
                     std::vector<cv::Vec4f> &lines_out)
 {
     NSString *func = @"clean_lines()";
+    std::vector<cv::Vec4f> res_lines;
+    
     // Lines through the clusters
     std::vector<cv::Vec4f> clines;
     ISLOOP (clusters) {
@@ -862,35 +758,10 @@ void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Poin
     ISLOOP (hlines) {
         cv::Vec4f line;
         polar2segment( hlines[i], line);
-        lines_out.push_back( line);
+        res_lines.push_back( line);
     }
+    lines_out = res_lines;
 } // clean_lines()
-
-//------------------------------------------------------------------------
-- (UIImage *) f08_clean_grid_v
-{
-    // Find the rhythm
-    find_rhythm( _vertical_clusters, // in
-                _wavelen_v, _delta_wavelen_v,
-                _slope_v, _median_rho_v);
-
-    // Generate lines from the rhythm
-    std::vector<cv::Vec4f> lines;
-    find_lines( _gray.cols, _wavelen_v, _delta_wavelen_v, _slope_v, _median_rho_v, lines);
-    
-    // Fix generated lines using cluster lines
-    std::vector<cv::Vec4f> lines_out;
-    _vertical_lines.clear();
-    clean_lines( lines, _vertical_clusters, _vertical_lines );
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (_vertical_lines) { draw_line( _vertical_lines[i], drawing, cv::Scalar(0,0,255)); }
-    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
 
 // Sum brightness at the center, normalize
 //------------------------------------------------------

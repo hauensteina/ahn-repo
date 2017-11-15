@@ -21,9 +21,10 @@
 - (UIImage *) f03_find_board;
 - (UIImage *) f04_zoom_in;
 - (UIImage *) f05_find_intersections;
-- (UIImage *) f06_hough_grid;
-- (UIImage *) f07_clean_grid_h;
-- (UIImage *) f08_clean_grid_v;
+- (UIImage *) f06_find_lines;
+- (UIImage *) f07_show_horiz_lines;
+- (UIImage *) f08_show_vert_lines;
+- (UIImage *) f09_clean_lines;
 - (UIImage *) f09_classify;
 //- (int) f05_get_boardsize;
 //- (UIImage *) f06_get_intersections;
