@@ -115,6 +115,17 @@ float bisect( Func f, float lower, float upper, int target, int maxiter=10)
 // Vector
 //==========
 
+// Append elt to vector, remove elts from front until length <= N
+//------------------------------------------------------------------
+template <typename T>
+void ringpush( std::vector<T>& v, const T &elt, int N)
+{
+    v.push_back( elt);
+    while (v.size() > N) {
+        v.erase( 0);
+    }
+}
+
 // Flatten a vector of vectors into a vector
 // [[1,2,3],[4,5,6],...] -> [1,2,3,4,5,6,...]
 //--------------------------------------------

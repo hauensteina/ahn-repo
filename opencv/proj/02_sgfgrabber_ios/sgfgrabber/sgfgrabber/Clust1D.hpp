@@ -21,7 +21,7 @@ public:
     // One dim clustering. Return the cutting points.
     //---------------------------------------------------------------------------
     template <typename T, typename G>
-    static std::vector<float> cluster( const std::vector<T> &seq_, float width, G getter)
+    static inline std::vector<float> cluster( const std::vector<T> &seq_, float width, G getter)
     {
         const float SMOOTH = 3.0;
         typedef float(*WinFunc)(float,float,float);
@@ -75,7 +75,7 @@ public:
     // Use the cuts returned by cluster() to classify new samples
     //---------------------------------------------------------------------------
     template <typename T, typename G>
-    static void classify( std::vector<T> samples, const std::vector<float> &cuts, int minsz,
+    static inline void classify( std::vector<T> samples, const std::vector<float> &cuts, int minsz,
                    G getter,
                    std::vector<std::vector<T> > &parts)
     {
@@ -113,7 +113,7 @@ public:
 private:
     // Smooth
     //---------
-    static std::vector<float> smooth( const std::vector<float> &seq, float width = 3)
+    static inline std::vector<float> smooth( const std::vector<float> &seq, float width = 3)
     {
         std::vector<float> res( seq.size());
         ISLOOP (seq) {
@@ -133,7 +133,7 @@ private:
     //=========================================
     // Triangle, 1.0 at the center, falling to both sides
     //----------------------------------------------------------
-    static float triang( float val, float center, float width)
+    static inline float triang( float val, float center, float width)
     {
         float d = fabs( center-val);
         float res = (1.0 - d / width);
@@ -141,7 +141,7 @@ private:
     }
     // Rectangle, 1.0 at the center, extends by width both sides
     //-----------------------------------------------------------
-    static float rect( float val, float center, float width)
+    static inline float rect( float val, float center, float width)
     {
         float d = fabs( center-val);
         float res = (1.0 - d / width);
@@ -149,7 +149,7 @@ private:
     }
     // Bell (Gaussian)
     //-----------------------------------------------------------
-    static float bell( float val, float center, float sigma)
+    static inline float bell( float val, float center, float sigma)
     {
         float d = center-val;
         float bell = exp(-(d*d) / 2*sigma);

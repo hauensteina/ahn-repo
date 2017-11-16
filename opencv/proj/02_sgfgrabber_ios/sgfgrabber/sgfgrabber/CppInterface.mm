@@ -18,6 +18,7 @@
 #import "CppInterface.h"
 #import "LineFinder.hpp"
 #import "LineFixer.hpp"
+#import "BlackWhiteEmpty.hpp"
 
 const cv::Size TMPL_SZ(16,16);
 
@@ -701,37 +702,7 @@ std::string rc_key (int r, int c)
     return std::string (buf);
 }
 
-// Get a list of features for the intersections in a subgrid
-// with r,c as upper left corner.
-//------------------------------------------------------------
-bool get_subgrid_features( int top_row, int left_col, int boardsize,
-                          std::map<std::string, Feat> &features,
-                          std::vector<Feat> &subgrid,
-                          cv::Point2f &center)
-{
-    double avg_x, avg_y;
-    avg_x = 0; avg_y = 0;
-    //NSLog( @"get_subgrid_features for %d %d", top_row, left_col);
-    RLOOP (boardsize) {
-        CLOOP (boardsize) {
-            std::string key = rc_key( top_row + r, left_col + c);
-            if (!features.count( key)) {
-                //NSLog( @"no intersection at %d %d", top_row + r, left_col + c);
-                return false;
-            }
-            if (!features[key].features.size()) {
-                //NSLog( @"no features at %d %d", top_row + r, left_col + c);
-                return false;
-            }
-            subgrid.push_back( features[key]);
-            avg_x += features[key].x;
-            avg_y += features[key].y;
-        }
-    }
-    center.x = avg_x / (boardsize*boardsize);
-    center.y = avg_y / (boardsize*boardsize);
-    return true;
-}
+
 
 
 
@@ -739,53 +710,15 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 //----------------------------------------
 - (UIImage *) f11_classify
 {
-    // Get pixel pos for each potential board intersection
-    std::map<std::string, cv::Point> intersections;
-    RSLOOP (_horizontal_lines) {
-        CSLOOP (_vertical_lines) {
-            intersections[rc_key(r,c)] = intersection( _horizontal_lines[r], _vertical_lines[c]);
-        }
-    }
-    
-    // Normalize color image
-    //cv::Mat img;
-    //normalize_image( _small, img);
-    cv::Mat &img(_gray);
+    Points intersections;
+    std::vector<int> diagram =
+    BlackWhiteEmpty::get_diagram( _small,
+                                 _horizontal_lines, _finder.m_wavelen_h,
+                                 _vertical_lines, _finder.m_wavelen_v,
+                                 _board_sz,
+                                 _board_zoomed,
+                                 intersections);
 
-    // Compute features for each potential board intersection
-    std::map<std::string, Feat> features;
-    NSLog( @"getting features for intersections...");
-    for (const auto &x : intersections) {
-        std::string key = x.first;
-        cv::Point p = x.second;
-        Feat f;
-        get_features( img, p, _finder.m_wavelen_h, _finder.m_wavelen_v, key, f);
-        features[key] = f;
-    }
-    // Find the best grid
-    cv::Point2f bcenter = get_center( _board_zoomed);
-    double mindist = 1E9;
-    int minr = -1, minc = -1;
-    RSLOOP (_horizontal_lines) {
-        CSLOOP (_vertical_lines) {
-            //NSLog(@">>>>>>>>>>> %d %d", r, c);
-            cv::Point2f gridcenter;
-            std::vector<Feat> subgrid;
-            if (!get_subgrid_features( r, c, _board_sz, features, subgrid, gridcenter)) continue;
-            double d = cv::norm( bcenter - gridcenter);
-            if (d < mindist) {
-                mindist = d;
-                minr = r; minc = c;
-            }
-        }
-    }
-
-    std::vector<Feat> subgrid; cv::Point2f center;
-    get_subgrid_features( minr, minc, _board_sz, features, subgrid, center);
-
-    cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
-    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    drawing = _small.clone();
     
 //    // Contour image of the zoomed board
 //    cv::Mat zoomed_edges;
@@ -825,67 +758,22 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 //    logvecf( @"brightness:", brightness);
 //    logvecf( @"crossness:",  crossness);
     
+    cv::Mat drawing;
+    drawing = _small.clone();
+    int dx = round(_finder.m_wavelen_h/4.0);
+    int dy = round(_finder.m_wavelen_h/4.0);
     // Black stones //@@@
-    if (subgrid.size()) {
-        Feat minelt = *(std::min_element( subgrid.begin(), subgrid.end(),
-                                         [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
-        float thresh = minelt.features[0] * 4;
-        std::vector<int> isblack( subgrid.size(), 0);
-        ISLOOP( subgrid)
-        {
-            Feat &f(subgrid[i]);
-            if (f.features[0] < thresh) {
-                isblack[i] = 1;
-                draw_point( cv::Point(f.x, f.y), drawing, 1, cv::Scalar(255,255,255,255));
-            }
-        }
-    }
-//    logveci( @"isblack:", isblack);
-//    ILOOP (isempty.size()) {
-//        if (isblack[i]) isempty[i] = 0;
-//    }
-//    logveci( @"isempty:", isempty);
-//    std::vector<int> board;
-//    ILOOP (isblack.size()) {
-//        if (isblack[i]) board.push_back(1);
-//        else if (isempty[i]) board.push_back(0);
-//        else board.push_back(2);
-//    }
-//
-//    
-//    // Empty places
-//    std::vector<int> isempty( crossness.size(), 0);
-//    ILOOP (crossness.size()) {
-//        if (crossness[i] > 5) {
-//            isempty[i] = 1;
-//            draw_point( _intersections[i], drawing, 1);
-//        }
-//    }
-//    
-//# Empty intersections
-//    print('crossness')
-//    print(crossness.reshape((boardsize,boardsize)).astype('int'))
-//    isempty = np.array([ 1 if x > 5 else 0 for x in crossness ])
-//    
-//# White stones
-//    iswhite = np.array([ 2 if not isempty[i] + isblack[i] else 0  for i,x in enumerate( isempty) ])
-//    
-//    print('position')
-//    position = iswhite + isblack
-//    print(position.reshape((boardsize,boardsize)))
-//    
-    for (const auto &f : subgrid) {
-        //std::string key = x.first;
-        cv::Point p( f.x, f.y);
-        int dx = round(_finder.m_wavelen_h/4.0);
-        int dy = round(_finder.m_wavelen_h/4.0);
+    ISLOOP (diagram) {
+        cv::Point p = intersections[i];
         cv::Rect rect( p.x - dx,
                       p.y - dy,
                       2*dx+1,
                       2*dy+1);
         cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
-        //draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
-    } // for subgrid
+        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+            draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+        }
+    }
 
     UIImage *res = MatToUIImage( drawing);
     //UIImage *res = MatToUIImage( zoomed_edges);
