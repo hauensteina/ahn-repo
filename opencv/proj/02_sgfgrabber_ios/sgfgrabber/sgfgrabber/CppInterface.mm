@@ -737,7 +737,7 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 
 // Classify intersections into b,w,empty
 //----------------------------------------
-- (UIImage *) f11_classify //@@@
+- (UIImage *) f11_classify
 {
     // Get pixel pos for each potential board intersection
     std::map<std::string, cv::Point> intersections;
@@ -786,7 +786,6 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
     cv::Mat drawing; // = cv::Mat::zeros( _gray.size(), CV_8UC3 );
     //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     drawing = _small.clone();
-
     
 //    // Contour image of the zoomed board
 //    cv::Mat zoomed_edges;
@@ -798,9 +797,9 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 //    std::vector<float> brightness;
 //    std::vector<float> crossness;
 //    std::vector<int> isempty;
-//    ILOOP( _intersections.size()) {
-//        float x = _intersections[i].x;
-//        float y = _intersections[i].y;
+//    for (const auto &f : subgrid) {
+//        float x = f.x;
+//        float y = f.y;
 //        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
 //        if (0 <= rect.x &&
 //            0 <= rect.width &&
@@ -823,18 +822,22 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 //            //            else { isempty.push_back(0); }
 //        }
 //    }
-    //logvecf( @"brightness:", brightness);
-    //logvecf( @"crossness:",  crossness);
+//    logvecf( @"brightness:", brightness);
+//    logvecf( @"crossness:",  crossness);
     
-//    // Black stones
-//    float thresh = *(std::min_element( brightness.begin(), brightness.end())) * 4;
-//    std::vector<int> isblack( brightness.size(), 0);
-//    ILOOP (brightness.size()) {
-//        if (brightness[i] < thresh) {
-//            isblack[i] = 1;
-//            draw_point( _intersections[i], drawing, 1);
-//        }
-//    }
+    // Black stones //@@@
+    Feat minelt = *(std::min_element( subgrid.begin(), subgrid.end(),
+                                     [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
+    float thresh = minelt.features[0] * 4;
+    std::vector<int> isblack( subgrid.size(), 0);
+    ISLOOP( subgrid)
+    {
+        Feat &f(subgrid[i]);
+        if (f.features[0] < thresh) {
+            isblack[i] = 1;
+            draw_point( cv::Point(f.x, f.y), drawing, 1, cv::Scalar(255,255,255,255));
+        }
+    }
 //    logveci( @"isblack:", isblack);
 //    ILOOP (isempty.size()) {
 //        if (isblack[i]) isempty[i] = 0;
@@ -879,12 +882,8 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
                       2*dx+1,
                       2*dy+1);
         cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
-        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+        //draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
     } // for subgrid
-//    ISLOOP (clusters[black_cluster]) {
-//        cv::Point p(clusters[black_cluster][i].x, clusters[black_cluster][i].y);
-//        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
-//    }
 
     UIImage *res = MatToUIImage( drawing);
     //UIImage *res = MatToUIImage( zoomed_edges);
