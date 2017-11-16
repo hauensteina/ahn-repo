@@ -585,8 +585,8 @@ void get_intersections( const Points_ &corners, int boardsz,
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP( _finder.m_horizontal_clusters) {
-        Points cl = _finder.m_horizontal_clusters[i];
+    ISLOOP( _finder.m_vertical_clusters) {
+        Points cl = _finder.m_vertical_clusters[i];
         cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
         draw_points( cl, drawing, 2, color);
     }
@@ -826,16 +826,18 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 //    logvecf( @"crossness:",  crossness);
     
     // Black stones //@@@
-    Feat minelt = *(std::min_element( subgrid.begin(), subgrid.end(),
-                                     [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
-    float thresh = minelt.features[0] * 4;
-    std::vector<int> isblack( subgrid.size(), 0);
-    ISLOOP( subgrid)
-    {
-        Feat &f(subgrid[i]);
-        if (f.features[0] < thresh) {
-            isblack[i] = 1;
-            draw_point( cv::Point(f.x, f.y), drawing, 1, cv::Scalar(255,255,255,255));
+    if (subgrid.size()) {
+        Feat minelt = *(std::min_element( subgrid.begin(), subgrid.end(),
+                                         [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
+        float thresh = minelt.features[0] * 4;
+        std::vector<int> isblack( subgrid.size(), 0);
+        ISLOOP( subgrid)
+        {
+            Feat &f(subgrid[i]);
+            if (f.features[0] < thresh) {
+                isblack[i] = 1;
+                draw_point( cv::Point(f.x, f.y), drawing, 1, cv::Scalar(255,255,255,255));
+            }
         }
     }
 //    logveci( @"isblack:", isblack);

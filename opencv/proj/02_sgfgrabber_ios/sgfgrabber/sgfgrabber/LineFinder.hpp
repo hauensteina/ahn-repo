@@ -49,6 +49,8 @@ public:
     cv::Size m_imgSize;
     std::vector<Points> m_horizontal_clusters;
     std::vector<Points> m_vertical_clusters;
+//    std::vector<float> m_horizontal_cuts;
+//    std::vector<float> m_vertical_cuts;
     float m_wavelen_h, m_wavelen_v;
 }; // class LineFinder
 

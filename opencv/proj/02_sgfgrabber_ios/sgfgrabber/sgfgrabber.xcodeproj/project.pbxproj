@@ -50,6 +50,7 @@
 		ACEF73591FBCDD6A00DA4AD8 /* LineFinder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LineFinder.hpp; sourceTree = "<group>"; };
 		ACEF735B1FBD03CA00DA4AD8 /* LineFixer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LineFixer.cpp; sourceTree = "<group>"; };
 		ACEF735C1FBD03CA00DA4AD8 /* LineFixer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LineFixer.hpp; sourceTree = "<group>"; };
+		ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Clust1D.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +89,7 @@
 			children = (
 				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
 				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
+				ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */,
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
 				ACA69E4B1F9D077B00F5E068 /* Common.m */,
 				AC61AD551FBCCB0B00DEBCDA /* Common.cpp */,

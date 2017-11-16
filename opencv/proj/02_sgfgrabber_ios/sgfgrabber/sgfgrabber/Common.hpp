@@ -32,6 +32,7 @@
 #define CSLOOP(n) for (int c=0; c < ((n).size()); c++ )
 
 #define SIGN(x) (x)>=0?1:-1
+#define ROUND(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
 #define PI M_PI
 
 #define RGB(rgbValue) [UIColor \
@@ -235,15 +236,15 @@ partition( std::vector<T> elts, int nof_classes, Func getClass)
 //======================
 
 // Print a vector
-//----------------------------------
-template <typename T>
-void print_vec( std::vector<T> v)
+//--------------------------------------------
+inline void print_vecf( std::vector<float> v)
 {
-    std::cout << "( ";
+    printf("(\n");
     ISLOOP (v) {
-        std::cout << v[i] << ' ';
+        //printf( "%5d %8.2f\n", i, v[i]);
+        printf( "%8.2f\n", v[i]);
     }
-    std::cout << ")";
+    printf(")\n");
 }
 
 

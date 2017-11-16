@@ -9,7 +9,10 @@
 // Class to find horizontal and vertical lines in a cloud of points.
 
 #include "LineFinder.hpp"
+#include "Clust1D.hpp"
 
+// Use a model to find out whereabouts we expect the lines to be.
+// Later, use the result to cluster points and fix lines in LineFixer.
 //----------------------------------------------------------------------
 void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
                             std::vector<cv::Vec4f> &vertical_lines)
@@ -17,12 +20,28 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
     cv::Vec4f hslope, vslope;
     // Find predominant slopes
     find_slopes( hslope, vslope);
-    // Cluster points into board_size clusters by dist from hslope, vslope
-    m_horizontal_clusters = cluster( m_cloud, m_boardsize,
-                                    [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
-    m_vertical_clusters = cluster( m_cloud, m_boardsize,
-                                  [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
+    // Cluster points by distance from predominant slope lines.
+//    m_horizontal_clusters = cluster( m_cloud, m_boardsize,
+//                                    [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
+//    m_vertical_clusters = cluster( m_cloud, m_boardsize,
+//                                  [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
+    //const float wwidth = 5.0;
+    //const float wwidth = 2.5;
+    //const float wwidth = 100;
+    const float wwidth = 1.0;
+    const int min_points = 4;
+    std::vector<float> horizontal_cuts = Clust1D::cluster( m_cloud, wwidth,
+                                                          [hslope](cv::Point p) { return fabs(dist_point_line(p, hslope)); });
+    Clust1D::classify( m_cloud, horizontal_cuts, min_points,
+                      [hslope](cv::Point p) { return dist_point_line(p, hslope); },
+                      m_horizontal_clusters);
     
+    std::vector<float> vertical_cuts   = Clust1D::cluster( m_cloud, wwidth,
+                                                          [vslope](cv::Point p) { return fabs(dist_point_line(p, vslope)); });
+    Clust1D::classify( m_cloud, vertical_cuts, min_points,
+                      [vslope](cv::Point p) { return dist_point_line(p, vslope); },
+                      m_vertical_clusters);
+
     float delta_wavelen_h, slope_h, median_rho_h;
     find_rhythm( m_horizontal_clusters,
                 m_wavelen_h,
@@ -81,7 +100,7 @@ void LineFinder::find_slopes( cv::Vec4f &hslope, cv::Vec4f &vslope)
     std::vector<cv::Vec2f> &vlines = horiz_vert_other_lines[1];
     hslope = avg_slope_line( hlines);
     vslope = avg_slope_line( vlines);
-}
+} // find_slopes()
 
 // Find phase, wavelength etc of a family of lines.
 // Each cluster has a bunch of points which are probably on the same line.
@@ -115,7 +134,6 @@ void LineFinder::find_rhythm( const std::vector<Points> &clusters,
         //NSLog(@"dx dy theta %.2f %.2f %.2f", dx, dy, theta );
         slopes.push_back( theta);
     }
-    //NSLog(@"==========");
     slope = vec_median( slopes);
     // A polar line with the median slope
     cv::Vec2f median_hline(0, slope + CV_PI/2.0);
@@ -156,6 +174,9 @@ void LineFinder::find_lines( int max_rho,
                             float median_rho,
                             std::vector<cv::Vec4f> &lines)
 {
+    if (wavelength_ < 5) {
+        PLOG( "find_lines(): Wavelen %.2f too low", wavelength_);
+        return; }
     float theta, rho, wavelength;
     std::vector<cv::Vec2f> hlines;
     
@@ -163,7 +184,7 @@ void LineFinder::find_lines( int max_rho,
     wavelength = wavelength_;
     theta = slope + CV_PI/2;
     rho = median_rho - wavelength;
-    while (rho > 0) {
+    while (rho > 0 && wavelength > 0) {
         hlines.push_back( cv::Vec2f ( rho, theta));
         rho -= wavelength;
         wavelength -= delta_wavelength;
@@ -172,7 +193,7 @@ void LineFinder::find_lines( int max_rho,
     wavelength = wavelength_;
     theta = slope + CV_PI/2;
     rho = median_rho;
-    while (rho < max_rho) {
+    while (rho < max_rho && wavelength > 0) {
         hlines.push_back( cv::Vec2f ( rho, theta));
         rho += wavelength;
         wavelength += delta_wavelength;

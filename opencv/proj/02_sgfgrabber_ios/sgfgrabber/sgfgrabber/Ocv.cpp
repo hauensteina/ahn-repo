@@ -573,7 +573,7 @@ void test_mcluster()
         std::cout << "Cluster " << c << ":\n";
         std::vector<std::vector<float> > clust = res[c];
         ISLOOP (clust) {
-            print_vec( clust[i]);
+            print_vecf( clust[i]);
         }
         std::cout << "\n";
     }
