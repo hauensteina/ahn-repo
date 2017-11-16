@@ -32,24 +32,24 @@ const cv::Size TMPL_SZ(16,16);
 @property Points board;  // Current hypothesis on where the board is
 @property Points board_zoomed; // board corners after zooming in
 @property int board_sz; // board size, 9 or 19
-@property Points intersections; // locations of line intersections (81,361)
-@property int delta_v; // approx vertical line dist
-@property int delta_h; // approx horiz line dist
+//@property Points intersections; // locations of line intersections (81,361)
+//@property int delta_v; // approx vertical line dist
+//@property int delta_h; // approx horiz line dist
 @property Points stone_or_empty; // places where we suspect stones or empty
-@property std::vector<Points> horizontal_clusters; // Result of Hough lines and clustering
-@property std::vector<Points> vertical_clusters;
+//@property std::vector<Points> horizontal_clusters; // Result of Hough lines and clustering
+//@property std::vector<Points> vertical_clusters;
 @property std::vector<cv::Vec4f> horizontal_lines;
-@property float wavelen_h;
-@property float delta_wavelen_h;
-@property float slope_h;
-@property float delta_slope_h;
-@property float median_rho_h;
+//@property float wavelen_h;
+//@property float delta_wavelen_h;
+//@property float slope_h;
+//@property float delta_slope_h;
+//@property float median_rho_h;
 @property std::vector<cv::Vec4f> vertical_lines;
-@property float wavelen_v;
-@property float delta_wavelen_v;
-@property float slope_v;
-@property float delta_slope_v;
-@property float median_rho_v;
+//@property float wavelen_v;
+//@property float delta_wavelen_v;
+//@property float slope_v;
+//@property float delta_slope_v;
+//@property float median_rho_v;
 @property LineFinder finder;
 
 @property cv::Mat tmpl_black;
@@ -271,13 +271,14 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 // Save small crops around intersections for use as template
 //-------------------------------------------------------------------------------
 void save_intersections( const cv::Mat img,
-                        const Points2f &intersections, int delta_v, int delta_h)
+                        const Points &intersections, int delta_v, int delta_h)
 {
     ILOOP( intersections.size())
     {
-        float x = intersections[i].x;
-        float y = intersections[i].y;
-        cv::Rect rect( x - delta_h/2.0, y - delta_v/2.0, delta_h, delta_v );
+        int x = intersections[i].x;
+        int y = intersections[i].y;
+        int dx = round(delta_h/2.0); int dy = round(delta_v/2.0);
+        cv::Rect rect( x - dx, y - dy, 2*dx+1, 2*dy+1 );
         if (0 <= rect.x &&
             0 <= rect.width &&
             rect.x + rect.width <= img.cols &&
@@ -522,18 +523,6 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
     return res;
 }
 
-// Get center of a bunch of points
-//--------------------------------------------------------------------------------
-template <typename Points_>
-cv::Point2f get_center( const Points_ ps)
-{
-    double avg_x = 0, avg_y = 0;
-    ISLOOP (ps) {
-        avg_x += ps[i].x;
-        avg_y += ps[i].y;
-    }
-    return cv::Point2f( avg_x / ps.size(), avg_y / ps.size());
-}
 
 // Find all intersections from corners and boardsize
 //--------------------------------------------------------------------------------
@@ -634,7 +623,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 - (UIImage *) f09_clean_horiz_lines
 {
     LineFixer fixer;
-    fixer.fix( _horizontal_lines, _horizontal_clusters, _horizontal_lines );
+    fixer.fix( _horizontal_lines, _finder.m_horizontal_clusters, _horizontal_lines );
     
     // Show results
     cv::Mat drawing;
@@ -648,7 +637,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 - (UIImage *) f10_clean_vert_lines
 {
     LineFixer fixer;
-    fixer.fix( _vertical_lines, _vertical_clusters, _vertical_lines );
+    fixer.fix( _vertical_lines, _finder.m_vertical_clusters, _vertical_lines );
     
     // Show results
     cv::Mat drawing;
@@ -659,15 +648,7 @@ void get_intersections( const Points_ &corners, int boardsz,
     return res;
 }
 
-// Sum brightness at the center, normalize
-//------------------------------------------------------
-float get_brightness( const cv::Mat &img, float frac=4)
-{
-    cv::Mat crop;
-    int area = get_center_crop( img, crop, frac);
-    float ssum = cv::sum(crop)[0];
-    return ssum / area;
-}
+
 
 // Type to hold a feature vector at a board position
 //=====================================================
@@ -682,7 +663,8 @@ typedef struct feat {
 void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavelen_v,
                   std::string key, Feat &f)
 {
-    cv::Rect rect( p.x - wavelen_h/4.0, p.y - wavelen_v/4.0, wavelen_h/2.0, wavelen_v/2.0 );
+    int dx = round(wavelen_h/4.0); int dy = round(wavelen_v/4.0);
+    cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
     if (0 <= rect.x &&
         0 <= rect.width &&
         rect.x + rect.width <= img.cols &&
@@ -755,7 +737,7 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 
 // Classify intersections into b,w,empty
 //----------------------------------------
-- (UIImage *) f09_classify //@@@
+- (UIImage *) f11_classify //@@@
 {
     // Get pixel pos for each potential board intersection
     std::map<std::string, cv::Point> intersections;
@@ -777,7 +759,7 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
         std::string key = x.first;
         cv::Point p = x.second;
         Feat f;
-        get_features( img, p, _wavelen_h, _wavelen_v, key, f);
+        get_features( img, p, _finder.m_wavelen_h, _finder.m_wavelen_v, key, f);
         features[key] = f;
     }
     // Find the best grid
@@ -806,41 +788,41 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
     drawing = _small.clone();
 
     
-    // Contour image of the zoomed board
-    cv::Mat zoomed_edges;
-    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
-    cv::Canny( _gray, zoomed_edges, 30, 70);
-    //auto_canny( _gray, zoomed_edges);
-    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-    // Cut out areas around the intersections
-    std::vector<float> brightness;
-    std::vector<float> crossness;
-    std::vector<int> isempty;
-    ILOOP( _intersections.size()) {
-        float x = _intersections[i].x;
-        float y = _intersections[i].y;
-        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
-        if (0 <= rect.x &&
-            0 <= rect.width &&
-            rect.x + rect.width <= _gray.cols &&
-            0 <= rect.y &&
-            0 <= rect.height &&
-            rect.y + rect.height <= _gray.rows)
-        {
-            cv::Mat hood = cv::Mat( _gray, rect);
-            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
-            brightness.push_back( get_brightness( hood));
-            crossness.push_back( get_brightness(contour_hood,6));
-            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
-            
-            //            // Template approach
-            //            templify(hood);
-            //            double sim_white = cmpTmpl(hood,_tmpl_white);
-            //            double sim_inner = cmpTmpl(hood,_tmpl_inner);
-            //            if (sim_inner > sim_white) { isempty.push_back(2); }
-            //            else { isempty.push_back(0); }
-        }
-    }
+//    // Contour image of the zoomed board
+//    cv::Mat zoomed_edges;
+//    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
+//    cv::Canny( _gray, zoomed_edges, 30, 70);
+//    //auto_canny( _gray, zoomed_edges);
+//    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
+//    // Cut out areas around the intersections
+//    std::vector<float> brightness;
+//    std::vector<float> crossness;
+//    std::vector<int> isempty;
+//    ILOOP( _intersections.size()) {
+//        float x = _intersections[i].x;
+//        float y = _intersections[i].y;
+//        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
+//        if (0 <= rect.x &&
+//            0 <= rect.width &&
+//            rect.x + rect.width <= _gray.cols &&
+//            0 <= rect.y &&
+//            0 <= rect.height &&
+//            rect.y + rect.height <= _gray.rows)
+//        {
+//            cv::Mat hood = cv::Mat( _gray, rect);
+//            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
+//            brightness.push_back( center_avg( hood));
+//            crossness.push_back( center_avg(contour_hood,6));
+//            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
+//
+//            //            // Template approach
+//            //            templify(hood);
+//            //            double sim_white = cmpTmpl(hood,_tmpl_white);
+//            //            double sim_inner = cmpTmpl(hood,_tmpl_inner);
+//            //            if (sim_inner > sim_white) { isempty.push_back(2); }
+//            //            else { isempty.push_back(0); }
+//        }
+//    }
     //logvecf( @"brightness:", brightness);
     //logvecf( @"crossness:",  crossness);
     
@@ -887,12 +869,18 @@ bool get_subgrid_features( int top_row, int left_col, int boardsize,
 //    position = iswhite + isblack
 //    print(position.reshape((boardsize,boardsize)))
 //    
-//    for (const auto &f : subgrid) {
-//        //std::string key = x.first;
-//        cv::Point p( f.x, f.y);
-//        cv::Rect rect( p.x - cvRound(_wavelen_h/4.0), p.y - cvRound(_wavelen_v/4.0), cvRound(_wavelen_h/2.0), cvRound(_wavelen_v/2.0) );
-//        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
-//    } // for subgrid
+    for (const auto &f : subgrid) {
+        //std::string key = x.first;
+        cv::Point p( f.x, f.y);
+        int dx = round(_finder.m_wavelen_h/4.0);
+        int dy = round(_finder.m_wavelen_h/4.0);
+        cv::Rect rect( p.x - dx,
+                      p.y - dy,
+                      2*dx+1,
+                      2*dy+1);
+        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+    } // for subgrid
 //    ISLOOP (clusters[black_cluster]) {
 //        cv::Point p(clusters[black_cluster][i].x, clusters[black_cluster][i].y);
 //        draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));

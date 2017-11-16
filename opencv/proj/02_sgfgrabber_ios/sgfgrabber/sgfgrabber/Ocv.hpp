@@ -108,6 +108,8 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33);
 void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORPH_RECT );
 // Get a center crop of an image
 int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4);
+// Average over a center crop of img
+float center_avg( const cv::Mat &img, float frac=4);
 // Normalize mean and variance, per channel
 void normalize_image( const cv::Mat &src, cv::Mat &dst);
 
@@ -185,6 +187,19 @@ Point2f intersection( Point_ A, Point_ B, Point_ C, Point_ D)
         double y = (a1*c2 - a2*c1)/determinant;
         return Point_( x, y);
     }
+}
+
+// Get center of a bunch of points
+//-----------------------------------------------------------------
+template <typename Points_>
+cv::Point2f get_center( const Points_ ps)
+{
+    double avg_x = 0, avg_y = 0;
+    ISLOOP (ps) {
+        avg_x += ps[i].x;
+        avg_y += ps[i].y;
+    }
+    return cv::Point2f( avg_x / ps.size(), avg_y / ps.size());
 }
 
 // Contours

@@ -284,11 +284,11 @@
                 img = [self.grabFuncs f10_clean_vert_lines];
                 [self.cameraView setImage:img];
                 break;
-//            case 9:
-//                state++;
-//                img = [self.grabFuncs f09_classify];
-//                [self.cameraView setImage:img];
-//                break;
+            case 11:
+                state++;
+                img = [self.grabFuncs f11_classify];
+                [self.cameraView setImage:img];
+                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;

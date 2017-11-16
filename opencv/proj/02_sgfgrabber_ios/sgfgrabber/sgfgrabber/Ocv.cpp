@@ -429,6 +429,16 @@ int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac)
     return area;
 }
 
+// Average over a center crop of img
+//------------------------------------------------------
+float center_avg( const cv::Mat &img, float frac)
+{
+    cv::Mat crop;
+    int area = get_center_crop( img, crop, frac);
+    double ssum = cv::sum(crop)[0];
+    return ssum / area;
+}
+
 // Normalize mean and variance, per channel
 //--------------------------------------------------------
 void normalize_image( const cv::Mat &src, cv::Mat &dst)

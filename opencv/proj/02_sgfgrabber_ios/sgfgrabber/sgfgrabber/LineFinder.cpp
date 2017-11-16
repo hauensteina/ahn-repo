@@ -23,23 +23,23 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
     m_vertical_clusters = cluster( m_cloud, m_boardsize,
                                   [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
     
-    float wavelen_h, delta_wavelen_h, slope_h, median_rho_h;
+    float delta_wavelen_h, slope_h, median_rho_h;
     find_rhythm( m_horizontal_clusters,
-                wavelen_h,
+                m_wavelen_h,
                 delta_wavelen_h,
                 slope_h,
                 median_rho_h);
 
-    float wavelen_v, delta_wavelen_v, slope_v, median_rho_v;
+    float delta_wavelen_v, slope_v, median_rho_v;
     find_rhythm( m_vertical_clusters,
-                wavelen_v,
+                m_wavelen_v,
                 delta_wavelen_v,
                 slope_v,
                 median_rho_v);
     
     std::vector<cv::Vec4f> lines;
-    find_lines( m_imgSize.height, wavelen_h, delta_wavelen_h, slope_h, median_rho_h, horizontal_lines);
-    find_lines( m_imgSize.width , wavelen_v, delta_wavelen_v, slope_v, median_rho_v, vertical_lines);
+    find_lines( m_imgSize.height, m_wavelen_h, delta_wavelen_h, slope_h, median_rho_h, horizontal_lines);
+    find_lines( m_imgSize.width , m_wavelen_v, delta_wavelen_v, slope_v, median_rho_v, vertical_lines);
 
 }
 
