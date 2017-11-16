@@ -24,8 +24,11 @@
 - (UIImage *) f06_find_lines;
 - (UIImage *) f07_show_horiz_lines;
 - (UIImage *) f08_show_vert_lines;
-- (UIImage *) f09_clean_lines;
-- (UIImage *) f09_classify;
+- (UIImage *) f09_clean_horiz_lines;
+- (UIImage *) f10_clean_vert_lines;
+
+//- (UIImage *) f09_clean_lines;
+//- (UIImage *) f09_classify;
 //- (int) f05_get_boardsize;
 //- (UIImage *) f06_get_intersections;
 //- (UIImage *) f07_classify;

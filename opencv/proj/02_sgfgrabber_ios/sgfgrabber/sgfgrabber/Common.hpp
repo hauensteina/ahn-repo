@@ -62,6 +62,7 @@ r = int(rr * 255); g = int(gg * 255); b = int(bb * 255); \
 #define DARKGREEN  RGB(0x007000)
 #define DARKBLUE   RGB(0x4481A7)
 
+#define PLOG(format,args...) printf("" format "",## args)
 
 //=================
 // C++ only below

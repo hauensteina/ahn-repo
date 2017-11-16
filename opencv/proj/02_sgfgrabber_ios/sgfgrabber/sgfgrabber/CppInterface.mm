@@ -17,6 +17,7 @@
 #import "Common.h"
 #import "CppInterface.h"
 #import "LineFinder.hpp"
+#import "LineFixer.hpp"
 
 const cv::Size TMPL_SZ(16,16);
 
@@ -628,140 +629,35 @@ void get_intersections( const Points_ &corners, int boardsz,
     return res;
 } // f08_show_vert_lines()
 
-
 // Improve line candidates by interpolation
 //--------------------------------------------
-- (UIImage *) f09_clean_lines
+- (UIImage *) f09_clean_horiz_lines
 {
-    // Fix generated lines using cluster lines
-    std::vector<cv::Vec4f> lines_out;
-    //_horizontal_lines.clear();
-    clean_lines( _horizontal_lines, _horizontal_clusters, _horizontal_lines );
-    clean_lines( _vertical_lines, _vertical_clusters, _vertical_lines );
-
+    LineFixer fixer;
+    fixer.fix( _horizontal_lines, _horizontal_clusters, _horizontal_lines );
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP (_horizontal_lines) { draw_line( _horizontal_lines[i], drawing, cv::Scalar(0,0,255)); }
+    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
-
-// Replace each synthetic line with a close cluster line.
-// If none found, interpolate rho and theta from predecessor.
-//-------------------------------------------------------------------------------------------------
-void clean_lines( const std::vector<cv::Vec4f> &lines_in, const std::vector<Points> &clusters,
-                    std::vector<cv::Vec4f> &lines_out)
+//--------------------------------------------
+- (UIImage *) f10_clean_vert_lines
 {
-    NSString *func = @"clean_lines()";
-    std::vector<cv::Vec4f> res_lines;
+    LineFixer fixer;
+    fixer.fix( _vertical_lines, _vertical_clusters, _vertical_lines );
     
-    // Lines through the clusters
-    std::vector<cv::Vec4f> clines;
-    ISLOOP (clusters) {
-        clines.push_back( fit_line( clusters[i]));
-    }
-    // Convert cluster lines to polar
-    std::vector<cv::Vec2f> chlines;
-    ISLOOP (clines) {
-        cv::Vec2f hline;
-        segment2polar( clines[i], hline);
-        chlines.push_back( hline);
-    }
-    // Sort by rho
-    std::sort( chlines.begin(), chlines.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
-
-    // Convert our synthetic lines to polar
-    std::vector<cv::Vec2f> hlines;
-    ISLOOP (lines_in) {
-        cv::Vec2f hline;
-        segment2polar( lines_in[i], hline);
-        hlines.push_back( hline);
-    }
-    // Sort by rho
-    std::sort( hlines.begin(), hlines.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
-    
-    const float EPS = 7.0; // Could take the median dist here
-    float delta_rho = -1;
-    int takenj = -1;
-    std::vector<bool> match(hlines.size(), false);
-    // Replace each hline with a close chline, if you find one
-    ISLOOP (hlines) {
-        cv::Vec2f hline = hlines[i];
-        int minidx = -1;
-        float mindist = 1E9;
-        JSLOOP (chlines) {
-            cv::Vec2f chline = chlines[j];
-            if (fabs( chline[0] - hline[0]) < mindist && takenj < j) {
-                mindist = fabs( chline[0] - hline[0]);
-                minidx = j;
-            }
-        } // for chlines
-        NSLog( @"mindist: %.0f", mindist);
-        if (mindist < EPS) {
-            takenj = minidx;
-            NSLog( @"%@: replaced line %d with %d", func, i, minidx );
-            hlines[i] = chlines[minidx];
-            match[i] = true;
-        }
-    } // for hlines
-    
-    // Interpolate whoever didn't find a match, low to high rho
-    bool init = false;
-    float theta = 0;
-    delta_rho = -1;
-    float old_rho = 0;
-    ISLOOP (match) {
-        if (i > 0 && match[i] && match[i-1]) {
-            init = true;
-            theta = hlines[i][1];
-            delta_rho = hlines[i][0] - hlines[i-1][0];
-            old_rho = hlines[i][0];
-            continue;
-        }
-        if (!init) continue;
-        if (!match[i]) {
-            NSLog( @"Forward interpolated line %d", i);
-            hlines[i][1] = theta;
-            hlines[i][0] = old_rho + delta_rho;
-            match[i] = true;
-        }
-        old_rho = hlines[i][0];
-    }
-    
-    // Interpolate whoever didn't find a match, high to low rho
-    init = false;
-    theta = 0;
-    delta_rho = -1;
-    old_rho = 0;
-    const int lim = (int)match.size()-1;
-    for (int i = lim; i >= 0; i--) {
-        if (i < lim && match[i] && match[i+1]) {
-            init = true;
-            theta = hlines[i][1];
-            delta_rho = hlines[i+1][0] - hlines[i][0];
-            old_rho = hlines[i][0];
-            continue;
-        }
-        if (!init) continue;
-        if (!match[i]) {
-            NSLog( @"Backward interpolated line %d", i);
-            hlines[i][1] = theta;
-            hlines[i][0] = old_rho - delta_rho;
-            match[i] = true;
-        }
-        old_rho = hlines[i][0];
-    }
-    
-    // Convert back to segment
-    ISLOOP (hlines) {
-        cv::Vec4f line;
-        polar2segment( hlines[i], line);
-        res_lines.push_back( line);
-    }
-    lines_out = res_lines;
-} // clean_lines()
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    draw_lines( _vertical_lines, drawing, cv::Scalar(0,0,255));
+    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
 
 // Sum brightness at the center, normalize
 //------------------------------------------------------

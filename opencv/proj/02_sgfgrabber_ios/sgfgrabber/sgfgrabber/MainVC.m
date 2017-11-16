@@ -276,7 +276,12 @@
                 break;
             case 9:
                 state++;
-                img = [self.grabFuncs f09_clean_lines];
+                img = [self.grabFuncs f09_clean_horiz_lines];
+                [self.cameraView setImage:img];
+                break;
+            case 10:
+                state++;
+                img = [self.grabFuncs f10_clean_vert_lines];
                 [self.cameraView setImage:img];
                 break;
 //            case 9:

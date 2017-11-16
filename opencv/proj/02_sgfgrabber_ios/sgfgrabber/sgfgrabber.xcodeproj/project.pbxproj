@@ -20,6 +20,7 @@
 		AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */ = {isa = PBXBuildFile; fileRef = AC9702171FBC87DF0057C4C2 /* Globals.m */; };
 		ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.m */; };
 		ACEF735A1FBCDD6A00DA4AD8 /* LineFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACEF73581FBCDD6A00DA4AD8 /* LineFinder.cpp */; };
+		ACEF735D1FBD03CA00DA4AD8 /* LineFixer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACEF735B1FBD03CA00DA4AD8 /* LineFixer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,8 @@
 		ACA69E4B1F9D077B00F5E068 /* Common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Common.m; sourceTree = "<group>"; };
 		ACEF73581FBCDD6A00DA4AD8 /* LineFinder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LineFinder.cpp; sourceTree = "<group>"; };
 		ACEF73591FBCDD6A00DA4AD8 /* LineFinder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LineFinder.hpp; sourceTree = "<group>"; };
+		ACEF735B1FBD03CA00DA4AD8 /* LineFixer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LineFixer.cpp; sourceTree = "<group>"; };
+		ACEF735C1FBD03CA00DA4AD8 /* LineFixer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LineFixer.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +100,8 @@
 				AC9702171FBC87DF0057C4C2 /* Globals.m */,
 				ACEF73581FBCDD6A00DA4AD8 /* LineFinder.cpp */,
 				ACEF73591FBCDD6A00DA4AD8 /* LineFinder.hpp */,
+				ACEF735B1FBD03CA00DA4AD8 /* LineFixer.cpp */,
+				ACEF735C1FBD03CA00DA4AD8 /* LineFixer.hpp */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
 				AC628C331F9A80150043FCEE /* MainVC.m */,
 				AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */,
@@ -205,6 +210,7 @@
 				AC3C5EBC1FBC942000BB8B4F /* Ocv.cpp in Sources */,
 				ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */,
 				AC61AD571FBCCB0B00DEBCDA /* Common.cpp in Sources */,
+				ACEF735D1FBD03CA00DA4AD8 /* LineFixer.cpp in Sources */,
 				AC5540771F9BE71900922557 /* CppInterface.mm in Sources */,
 				AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */,
 				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
