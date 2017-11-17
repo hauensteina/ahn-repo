@@ -703,9 +703,6 @@ std::string rc_key (int r, int c)
 }
 
 
-
-
-
 // Classify intersections into b,w,empty
 //----------------------------------------
 - (UIImage *) f11_classify
@@ -719,45 +716,6 @@ std::string rc_key (int r, int c)
                                  _board_zoomed,
                                  intersections);
 
-    
-//    // Contour image of the zoomed board
-//    cv::Mat zoomed_edges;
-//    //cv::Canny( _gray, zoomed_edges, _canny_low, _canny_hi);
-//    cv::Canny( _gray, zoomed_edges, 30, 70);
-//    //auto_canny( _gray, zoomed_edges);
-//    //cv::findContours( zoomed_edges, _cont, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-//    // Cut out areas around the intersections
-//    std::vector<float> brightness;
-//    std::vector<float> crossness;
-//    std::vector<int> isempty;
-//    for (const auto &f : subgrid) {
-//        float x = f.x;
-//        float y = f.y;
-//        cv::Rect rect( x -_delta_h/2.0, y - _delta_v/2.0, _delta_h, _delta_v );
-//        if (0 <= rect.x &&
-//            0 <= rect.width &&
-//            rect.x + rect.width <= _gray.cols &&
-//            0 <= rect.y &&
-//            0 <= rect.height &&
-//            rect.y + rect.height <= _gray.rows)
-//        {
-//            cv::Mat hood = cv::Mat( _gray, rect);
-//            cv::Mat contour_hood = cv::Mat( zoomed_edges, rect);
-//            brightness.push_back( center_avg( hood));
-//            crossness.push_back( center_avg(contour_hood,6));
-//            cv::rectangle( drawing, rect, cv::Scalar(255,0,0));
-//
-//            //            // Template approach
-//            //            templify(hood);
-//            //            double sim_white = cmpTmpl(hood,_tmpl_white);
-//            //            double sim_inner = cmpTmpl(hood,_tmpl_inner);
-//            //            if (sim_inner > sim_white) { isempty.push_back(2); }
-//            //            else { isempty.push_back(0); }
-//        }
-//    }
-//    logvecf( @"brightness:", brightness);
-//    logvecf( @"crossness:",  crossness);
-    
     cv::Mat drawing;
     drawing = _small.clone();
     int dx = round(_finder.m_wavelen_h/4.0);
@@ -772,6 +730,9 @@ std::string rc_key (int r, int c)
         cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
         if (diagram[i] == BlackWhiteEmpty::BBLACK) {
             draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+        }
+        else if (diagram[i] != BlackWhiteEmpty::EEMPTY) {
+            draw_point( p, drawing, 2, cv::Scalar(0,0,0,255));
         }
     }
 

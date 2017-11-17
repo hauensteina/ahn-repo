@@ -18,17 +18,17 @@
 class BlackWhiteEmpty
 //=====================
 {
-    
     // Type to hold a feature vector at a board position
     typedef struct feat {
-        std::string key;
+        std::string key; // "r_c"
         int x,y;     // Pixel pos
         std::vector<float> features;
     } Feat;
     
 public:
-    enum {BBLACK=-1, EEMPTY=0, WWHITE=1 }; // Black Empty White
-    //---------------------------------------------------------------------------
+    enum { BBLACK=-1, EEMPTY=0, WWHITE=1, DONTKNOW=2 };
+    
+    //----------------------------------------------------------------------------------
     static inline std::vector<int> get_diagram( const cv::Mat &img, // small, color
                                                std::vector<cv::Vec4f> horizontal_lines, // sorted cleaned lines (by LineFixer)
                                                float wavelen_h, // approximate dist between lines
@@ -38,7 +38,7 @@ public:
                                                Points board_corners,
                                                Points &diagram_intersections) // out
     {
-        std::vector<int> diagram(boardsize*boardsize, EEMPTY);
+        std::vector<int> diagram(boardsize*boardsize, DONTKNOW);
         diagram_intersections = Points(boardsize*boardsize);
         cv::Mat gray;
         cv::cvtColor( img, gray, cv::COLOR_BGR2GRAY);
@@ -55,6 +55,8 @@ public:
         // Compute features for each potential board intersection
         std::map<std::string, Feat> black_features;
         get_black_features( gray, intersections, wavelen_h, wavelen_v, black_features);
+        std::map<std::string, Feat> empty_features;
+        get_empty_features( gray, intersections, wavelen_h, wavelen_v, empty_features);
 
         // Find the best grid
         cv::Point2f bcenter = get_center( board_corners);
@@ -73,7 +75,9 @@ public:
         }
         std::vector<Feat> black_features_subgrid;
         get_subgrid_features( minr, minc, boardsize, black_features, black_features_subgrid);
-        
+        std::vector<Feat> empty_features_subgrid;
+        get_subgrid_features( minr, minc, boardsize, empty_features, empty_features_subgrid);
+
         // Black stones
         if (black_features_subgrid.size()) {
             Feat minelt = *(std::min_element( black_features_subgrid.begin(), black_features_subgrid.end(),
@@ -87,19 +91,34 @@ public:
                 }
             }
         } // if black_features
+        
+        // Empty places
+        if (empty_features_subgrid.size()) {
+            Feat maxelt = *(std::max_element( empty_features_subgrid.begin(), empty_features_subgrid.end(),
+                                             [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
+            float thresh = maxelt.features[0] / 2.0;
+            ISLOOP( empty_features_subgrid) {
+                Feat &f(empty_features_subgrid[i]);
+                diagram_intersections[i] = cv::Point(f.x, f.y);
+                if (f.features[0] > thresh && diagram[i] != BBLACK) {
+                    diagram[i] = EEMPTY;
+                }
+            }
+        } // if empty_features_subgrid
         return diagram;
     }
     
 private:
     // Average pixel value around center of each intersection is black indicator.
     //--------------------------------------------------------------------------------------
-    inline static void get_black_features( const cv::Mat &img, std::map<std::string, cv::Point> intersections,
+    inline static void get_black_features( const cv::Mat &img,
+                                          std::map<std::string, cv::Point> intersections,
                                           int wavelen_h, int wavelen_v,
                                           std::map<std::string, Feat> &res )
     {
         int dx = ROUND( wavelen_h/4.0);
         int dy = ROUND( wavelen_v/4.0);
-
+        
         for (auto &inter: intersections)
         {
             std::string key = inter.first;
@@ -107,7 +126,6 @@ private:
             Feat f;
             f.key = key; f.x = p.x; f.y = p.y;
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            f.features.clear();
             if (0 <= rect.x &&
                 0 <= rect.width &&
                 rect.x + rect.width <= img.cols &&
@@ -124,7 +142,43 @@ private:
             }
         } // for intersections
     } // get_black_features()
-    
+
+    // If there are contours, it's probably empty
+    //-----------------------------------------------------------------------------------------
+    inline static void get_empty_features( const cv::Mat &img,
+                                          std::map<std::string, cv::Point> intersections,
+                                          int wavelen_h, int wavelen_v,
+                                          std::map<std::string, Feat> &res )
+    {
+        int dx = ROUND( wavelen_h/4.0);
+        int dy = ROUND( wavelen_v/4.0);
+        cv::Mat edges;
+        cv::Canny( img, edges, 30, 70);
+        
+        for (auto &inter: intersections)
+        {
+            std::string key = inter.first;
+            cv::Point p = inter.second;
+            Feat f;
+            f.key = key; f.x = p.x; f.y = p.y;
+            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+            if (0 <= rect.x &&
+                0 <= rect.width &&
+                rect.x + rect.width <= img.cols &&
+                0 <= rect.y &&
+                0 <= rect.height &&
+                rect.y + rect.height <= img.rows)
+            {
+                cv::Mat hood = cv::Mat( edges, rect);
+                float area = hood.rows * hood.cols;
+                cv::Scalar ssum = cv::sum( hood);
+                float crossness = ssum[0] / area;
+                f.features.push_back( crossness);
+                res[key] = f;
+            }
+        } // for intersections
+    } // get_empty_features()
+
     // Dictionary key for r,c
     //----------------------------------------------
     inline static std::string rc_key (int r, int c)
