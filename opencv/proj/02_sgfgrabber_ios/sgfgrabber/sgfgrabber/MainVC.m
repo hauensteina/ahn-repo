@@ -25,7 +25,7 @@
 @property UISlider *sldCannyLow;
 @property UISlider *sldCannyHi;
 @property UISwitch *swiDbg;
-@property UILabel *lbDbg;
+
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 @property BOOL debug_mode;
@@ -100,15 +100,17 @@
     [s addTarget:self action:@selector(sldCannyLow:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
+    self.sldCannyLow.hidden = true;
 
     // Canny high slider
     s = [UISlider new];
+    self.sldCannyHi = s;
     s.minimumValue = 0;
     s.maximumValue = 255;
-    self.sldCannyHi = s;
     [s addTarget:self action:@selector(sldCannyHi:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
+    self.sldCannyHi.hidden = true;
 }
 
 //----------------------------------------------------------------------

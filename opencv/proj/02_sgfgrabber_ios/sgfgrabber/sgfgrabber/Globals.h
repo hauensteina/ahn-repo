@@ -9,7 +9,10 @@
 #ifndef Globals_h
 #define Globals_h
 
+#import "AppDelegate.h"
+
 extern UIFont *g_fntBtn;
+extern AppDelegate *g_app;
 
 #ifdef __cplusplus
 extern "C" {

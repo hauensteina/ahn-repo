@@ -15,6 +15,8 @@
 #import <opencv2/imgcodecs/ios.h>
 
 #import "Common.h"
+#import "AppDelegate.h"
+#import "Globals.h"
 #import "CppInterface.h"
 #import "LineFinder.hpp"
 #import "LineFixer.hpp"
@@ -209,6 +211,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 
 - (UIImage *) f00_adaptive_thresh:(UIImage *)img
 {
+    g_app.mainVC.lbDbg.text = @"00";
     UIImageToMat( img, _m);
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
@@ -223,6 +226,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 //--------------------------
 - (UIImage *) f01_closing
 {
+    g_app.mainVC.lbDbg.text = @"01";
     //int erosion_size = 2;
     int iterations = 1;
     morph_closing( _m, cv::Size(3,1), iterations);
@@ -235,6 +239,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 //----------------------
 - (UIImage *) f02_flood
 {
+    g_app.mainVC.lbDbg.text = @"02";
     flood_from_center( _m);
     UIImage *res = MatToUIImage( _m);
     return res;
@@ -243,6 +248,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 //-----------------------------
 - (UIImage *) f03_find_board
 {
+    g_app.mainVC.lbDbg.text = @"03";
     cv::Mat drawing, boardImg;
     _board = find_board( _m, boardImg);
     if (!_board.size()) { return MatToUIImage( _m); }
@@ -255,6 +261,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 //----------------------------
 - (UIImage *) f04_zoom_in
 {
+    g_app.mainVC.lbDbg.text = @"04";
     if (!_board.size()) { return MatToUIImage( _m); }
     // Zoom out a little
     Points2f board_stretched = enlarge_board( _board);
@@ -501,6 +508,7 @@ void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, do
 //------------------------------------------------------
 - (UIImage *) f05_find_intersections
 {
+    g_app.mainVC.lbDbg.text = @"05";
     Points pts, crosses;
     find_empty_places( _gray, pts); // , crosses); // has to be first
     find_stones( _gray, pts);
@@ -575,6 +583,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 //------------------------------------------------------------------------
 - (UIImage *) f06_find_lines
 {
+    g_app.mainVC.lbDbg.text = @"06";
     NSString *func = @"f06_find_h_lines()";
     if (_stone_or_empty.size() < _board_sz) {
         NSLog( @"%@: not enough points", func);
@@ -599,6 +608,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 //------------------------------------------------------------------------
 - (UIImage *) f07_show_horiz_lines
 {
+    g_app.mainVC.lbDbg.text = @"07";
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -611,6 +621,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 //------------------------------------------------------------------------
 - (UIImage *) f08_show_vert_lines
 {
+    g_app.mainVC.lbDbg.text = @"08";
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -623,6 +634,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 //--------------------------------------------
 - (UIImage *) f09_clean_horiz_lines
 {
+    g_app.mainVC.lbDbg.text = @"09";
     LineFixer fixer;
     fixer.fix( _horizontal_lines, _finder.m_horizontal_clusters, _horizontal_lines );
     
@@ -637,6 +649,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 //--------------------------------------------
 - (UIImage *) f10_clean_vert_lines
 {
+    g_app.mainVC.lbDbg.text = @"10";
     LineFixer fixer;
     fixer.fix( _vertical_lines, _finder.m_vertical_clusters, _vertical_lines );
     
@@ -707,6 +720,7 @@ std::string rc_key (int r, int c)
 //----------------------------------------
 - (UIImage *) f11_classify
 {
+    g_app.mainVC.lbDbg.text = @"11";
     Points intersections;
     std::vector<int> diagram =
     BlackWhiteEmpty::get_diagram( _small,

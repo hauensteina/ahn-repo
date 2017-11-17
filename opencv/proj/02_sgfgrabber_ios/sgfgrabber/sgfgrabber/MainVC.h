@@ -11,5 +11,5 @@
 #import "FrameExtractor.h"
 
 @interface MainVC : UIViewController <FrameExtractorDelegate>
-
+@property UILabel *lbDbg; // label for debug output
 @end
