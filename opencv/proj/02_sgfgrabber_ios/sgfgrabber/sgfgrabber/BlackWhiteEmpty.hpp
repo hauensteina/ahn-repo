@@ -36,7 +36,7 @@ public:
                                                float wavelen_v,
                                                int boardsize, // 9,13,19
                                                Points board_corners,
-                                               Points &diagram_intersections)
+                                               Points &diagram_intersections) // out
     {
         std::vector<int> diagram(boardsize*boardsize, EEMPTY);
         diagram_intersections = Points(boardsize*boardsize);
@@ -63,7 +63,7 @@ public:
         RSLOOP (horizontal_lines) {
             CSLOOP (vertical_lines) {
                 cv::Point2f gridcenter;
-                if (!subgrid_center( r, c, boardsize, black_features, gridcenter)) continue;
+                if (!subgrid_center( r, c, boardsize, intersections, gridcenter)) continue;
                 double d = cv::norm( bcenter - gridcenter);
                 if (d < mindist) {
                     mindist = d;
@@ -171,7 +171,7 @@ private:
     // Try to get subgrid center with r,c as upper left corner.
     //------------------------------------------------------------
     inline static bool subgrid_center( int top_row, int left_col, int boardsize,
-                                      std::map<std::string, Feat> &features,
+                                      std::map<std::string, cv::Point> &intersections,
                                       cv::Point2f &center)
     {
         double avg_x, avg_y;
@@ -179,11 +179,11 @@ private:
         RLOOP (boardsize) {
             CLOOP (boardsize) {
                 std::string key = rc_key( top_row + r, left_col + c);
-                if (!features.count( key)) {
+                if (!intersections.count( key)) {
                     return false;
                 }
-                avg_x += features[key].x;
-                avg_y += features[key].y;
+                avg_x += intersections[key].x;
+                avg_y += intersections[key].y;
             }
         }
         center.x = avg_x / (boardsize*boardsize);

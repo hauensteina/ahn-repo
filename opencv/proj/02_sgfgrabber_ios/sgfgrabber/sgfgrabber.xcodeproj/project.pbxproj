@@ -21,7 +21,6 @@
 		ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.m */; };
 		ACEF735A1FBCDD6A00DA4AD8 /* LineFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACEF73581FBCDD6A00DA4AD8 /* LineFinder.cpp */; };
 		ACEF735D1FBD03CA00DA4AD8 /* LineFixer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACEF735B1FBD03CA00DA4AD8 /* LineFixer.cpp */; };
-		ACEF73631FBE3BA200DA4AD8 /* BlackWhiteEmpty.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACEF73611FBE3BA200DA4AD8 /* BlackWhiteEmpty.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,7 +51,6 @@
 		ACEF735B1FBD03CA00DA4AD8 /* LineFixer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LineFixer.cpp; sourceTree = "<group>"; };
 		ACEF735C1FBD03CA00DA4AD8 /* LineFixer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LineFixer.hpp; sourceTree = "<group>"; };
 		ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Clust1D.hpp; sourceTree = "<group>"; };
-		ACEF73611FBE3BA200DA4AD8 /* BlackWhiteEmpty.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BlackWhiteEmpty.cpp; sourceTree = "<group>"; };
 		ACEF73621FBE3BA200DA4AD8 /* BlackWhiteEmpty.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BlackWhiteEmpty.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -92,7 +90,6 @@
 			children = (
 				AC628C191F9A7D3F0043FCEE /* AppDelegate.h */,
 				AC628C1A1F9A7D3F0043FCEE /* AppDelegate.m */,
-				ACEF73611FBE3BA200DA4AD8 /* BlackWhiteEmpty.cpp */,
 				ACEF73621FBE3BA200DA4AD8 /* BlackWhiteEmpty.hpp */,
 				ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */,
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
@@ -223,7 +220,6 @@
 				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,
 				AC628C1B1F9A7D3F0043FCEE /* AppDelegate.m in Sources */,
 				ACEF735A1FBCDD6A00DA4AD8 /* LineFinder.cpp in Sources */,
-				ACEF73631FBE3BA200DA4AD8 /* BlackWhiteEmpty.cpp in Sources */,
 				AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */,
 				AC628C181F9A7D3F0043FCEE /* main.m in Sources */,
 			);
