@@ -33,13 +33,14 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
     std::vector<float> horizontal_cuts = Clust1D::cluster( m_cloud, wwidth,
                                                           [hslope](cv::Point p) { return fabs(dist_point_line(p, hslope)); });
     Clust1D::classify( m_cloud, horizontal_cuts, min_points,
-                      [hslope](cv::Point p) { return dist_point_line(p, hslope); },
+                      [hslope](cv::Point p) { return fabs(dist_point_line(p, hslope)); },
                       m_horizontal_clusters);
-    
+
     std::vector<float> vertical_cuts   = Clust1D::cluster( m_cloud, wwidth,
                                                           [vslope](cv::Point p) { return fabs(dist_point_line(p, vslope)); });
+    
     Clust1D::classify( m_cloud, vertical_cuts, min_points,
-                      [vslope](cv::Point p) { return dist_point_line(p, vslope); },
+                      [vslope](cv::Point p) { return fabs(dist_point_line(p, vslope)); },
                       m_vertical_clusters);
 
     float delta_wavelen_h, slope_h, median_rho_h;

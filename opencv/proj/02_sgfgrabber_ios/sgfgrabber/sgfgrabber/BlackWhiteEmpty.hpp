@@ -82,7 +82,7 @@ public:
         if (black_features_subgrid.size()) {
             Feat minelt = *(std::min_element( black_features_subgrid.begin(), black_features_subgrid.end(),
                                              [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
-            float thresh = minelt.features[0] * 4;
+            float thresh = minelt.features[0] * 4; // larger means more Black stones
             ISLOOP( black_features_subgrid) {
                 Feat &f(black_features_subgrid[i]);
                 diagram_intersections[i] = cv::Point(f.x, f.y);
@@ -96,7 +96,7 @@ public:
         if (empty_features_subgrid.size()) {
             Feat maxelt = *(std::max_element( empty_features_subgrid.begin(), empty_features_subgrid.end(),
                                              [](Feat &a, Feat &b){ return a.features[0] < b.features[0]; } )) ;
-            float thresh = maxelt.features[0] / 2.0;
+            float thresh = maxelt.features[0] / 2.25; // larger denom means less White stones
             ISLOOP( empty_features_subgrid) {
                 Feat &f(empty_features_subgrid[i]);
                 diagram_intersections[i] = cv::Point(f.x, f.y);
