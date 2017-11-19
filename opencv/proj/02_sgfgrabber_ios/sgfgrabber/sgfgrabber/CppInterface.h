@@ -15,8 +15,8 @@
 
 //----------------------------
 // Individual steps for debugging
-- (UIImage *) f00_adaptive_thresh:(UIImage *)img;
-- (UIImage *) f01_closing;
+- (UIImage *) f00_blobs:(UIImage *)img;
+- (UIImage *) f01_outliers;
 - (UIImage *) f02_flood;
 - (UIImage *) f03_find_board;
 - (UIImage *) f04_zoom_in;

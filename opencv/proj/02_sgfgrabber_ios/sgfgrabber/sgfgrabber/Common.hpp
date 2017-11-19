@@ -150,7 +150,18 @@ void vapp( std::vector<T> &v1, const std::vector<T> &v2)
     v1.insert( v1.end(), v2.begin(), v2.end());
 }
 
-// Calculate the median value of a vector
+// Median value of a vector
+//----------------------------------------------
+template <typename T, typename Func>
+T vec_median( std::vector<T> vec, Func at)
+{
+    if (!vec.size()) return T();
+    std::sort( vec.begin(), vec.end(),
+              [at](T a, T b) { return at(a) < at(b); });
+    return vec[vec.size() / 2];
+}
+
+// Median value of a vector, with acces func
 //----------------------------------------------
 template <typename T>
 T vec_median( std::vector<T> vec)
@@ -160,7 +171,7 @@ T vec_median( std::vector<T> vec)
     return vec[vec.size() / 2];
 }
 
-// Calculates the avg value of a vector
+// Avg value of a vector
 //----------------------------------------------
 template <typename T>
 T vec_avg( std::vector<T> vec)
@@ -171,7 +182,7 @@ T vec_avg( std::vector<T> vec)
     return T(ssum / vec.size());
 }
 
-// Calculates the avg value of a vector, with acces func
+// Avg value of a vector, with acces func
 //----------------------------------------------------------
 template <typename T, typename Func>
 float vec_avg( std::vector<T> vec, Func at)

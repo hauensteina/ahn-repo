@@ -233,64 +233,64 @@
                 //state=100;
                 self.frame_grabber_on = NO;
                 [self.frameExtractor suspend];
-                img = [self.grabFuncs f00_adaptive_thresh:self.img];
+                img = [self.grabFuncs f00_blobs:self.img];
                 [self.cameraView setImage:img];
                 break;
             case 1:
                 state++;
-                img = [self.grabFuncs f01_closing];
+                img = [self.grabFuncs f01_outliers];
                 [self.cameraView setImage:img];
                 break;
-            case 2:
-                state++;
-                img = [self.grabFuncs f02_flood];
-                [self.cameraView setImage:img];
-                break;
-            case 3:
-                state++;
-                img = [self.grabFuncs f03_find_board];
-                [self.cameraView setImage:img];
-                break;
-            case 4:
-                state++;
-                img = [self.grabFuncs f04_zoom_in];
-                [self.cameraView setImage:img];
-                break;
-            case 5:
-                state++;
-                img = [self.grabFuncs f05_find_intersections];
-                [self.cameraView setImage:img];
-                break;
-            case 6:
-                state++;
-                img = [self.grabFuncs f06_find_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 7:
-                state++;
-                img = [self.grabFuncs f07_show_horiz_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 8:
-                state++;
-                img = [self.grabFuncs f08_show_vert_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 9:
-                state++;
-                img = [self.grabFuncs f09_clean_horiz_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 10:
-                state++;
-                img = [self.grabFuncs f10_clean_vert_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 11:
-                state++;
-                img = [self.grabFuncs f11_classify];
-                [self.cameraView setImage:img];
-                break;
+//            case 2:
+//                state++;
+//                img = [self.grabFuncs f02_flood];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 3:
+//                state++;
+//                img = [self.grabFuncs f03_find_board];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 4:
+//                state++;
+//                img = [self.grabFuncs f04_zoom_in];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 5:
+//                state++;
+//                img = [self.grabFuncs f05_find_intersections];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 6:
+//                state++;
+//                img = [self.grabFuncs f06_find_lines];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 7:
+//                state++;
+//                img = [self.grabFuncs f07_show_horiz_lines];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 8:
+//                state++;
+//                img = [self.grabFuncs f08_show_vert_lines];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 9:
+//                state++;
+//                img = [self.grabFuncs f09_clean_horiz_lines];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 10:
+//                state++;
+//                img = [self.grabFuncs f10_clean_vert_lines];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 11:
+//                state++;
+//                img = [self.grabFuncs f11_classify];
+//                [self.cameraView setImage:img];
+//                break;
             default:
                 state=0;
                 self.frame_grabber_on = YES;

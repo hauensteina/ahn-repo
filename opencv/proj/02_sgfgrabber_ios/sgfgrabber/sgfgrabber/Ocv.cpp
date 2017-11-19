@@ -38,6 +38,26 @@ float avg_y (const Points &p)
     return ssum / p.size();
 }
 
+// Get average x of a bunch of points
+//-----------------------------------------
+float median_x (const Points &p)
+{
+    std::vector<float> v(p.size());
+    ISLOOP (p) { v[i] = p[i].x; }
+    std::sort( v.begin(), v.end(), [](float a, float b) { return a < b; });
+    return v[v.size()/2];
+}
+
+// Get average x of a bunch of points
+//-----------------------------------------
+float median_y (const Points &p)
+{
+    std::vector<float> v(p.size());
+    ISLOOP (p) { v[i] = p[i].y; }
+    std::sort( v.begin(), v.end(), [](float a, float b) { return a < b; });
+    return v[v.size()/2];
+}
+
 // Return unit vector of p
 //------------------------------------
 cv::Point2f unit_vector( cv::Point p)
@@ -45,6 +65,7 @@ cv::Point2f unit_vector( cv::Point p)
     float norm = cv::norm(p);
     return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
 }
+
 
 // Matrix
 //===========
@@ -94,8 +115,8 @@ int channel_median( cv::Mat channel )
 //--------------------------------------------
 Points approx_poly( Points cont, int n)
 {
-    Points hull = cont;
-    //cv::convexHull( cont, hull);
+    Points hull; // = cont;
+    cv::convexHull( cont, hull);
     float peri = cv::arcLength( hull, true);
     float epsilon = bisect(
                            [hull,peri](float x) {
@@ -379,9 +400,67 @@ Points avg_quad( std::vector<Points> quads)
     return res;
 }
 
-
 // Image
 //=========
+
+              
+//----------------------------------------------------------------
+void rot_img( const cv::Mat &image, float angle, cv::Mat &dst)
+{
+   // float h = //@@@
+//(h, w) = image.shape[:2]
+//(cX, cY) = (w // 2, h // 2)
+//
+//# grab the rotation matrix (applying the negative of the
+//# angle to rotate clockwise), then grab the sine and cosine
+//# (i.e., the rotation components of the matrix)
+//            M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
+//            cos = np.abs(M[0, 0])
+//            sin = np.abs(M[0, 1])
+//
+//# compute the new bounding dimensions of the image
+//            nW = int((h * sin) + (w * cos))
+//            nH = int((h * cos) + (w * sin))
+//
+//# adjust the rotation matrix to take into account translation
+//            M[0, 2] += (nW / 2) - cX
+//            M[1, 2] += (nH / 2) - cY
+//
+//# perform the actual rotation and return the image
+//            return cv2.warpAffine(image, M, (nW, nH))
+            }
+            
+            // Get main horizontal direction of a grid of points (in rad)
+//-------------------------------------------------------------
+float direction (const cv::Mat &img, const Points &ps)
+{
+    // Draw the points
+    cv::Mat canvas = cv::Mat::zeros( cv::Size(img.cols, img.rows), CV_8UC1 );
+    ISLOOP (ps) {
+        draw_point( ps[i], canvas,1, cv::Scalar(255));
+    }
+    // Put lines through them
+    std::vector<cv::Vec2f> lines;
+    const int votes = 10;
+    HoughLines(canvas, lines, 1, CV_PI/180, votes, 0, 0 );
+    
+    // Separate horizontal, vertical, and other lines
+    std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
+    horiz_vert_other_lines = partition( lines, 3,
+                                       [](cv::Vec2f &line) {
+                                           const float thresh = 10.0;
+                                           float theta = line[1] * (180.0 / CV_PI);
+                                           if (fabs(theta - 180) < thresh) return 1;
+                                           else if (fabs(theta) < thresh) return 1;
+                                           else if (fabs(theta-90) < thresh) return 0;
+                                           else return 2;
+                                       });
+    // Find median theta of vertical lines
+    cv::Vec2f med = vec_median( horiz_vert_other_lines[0],
+                              [](cv::Vec2f &a) { return a[1]; } );
+    return med[1];
+}
+
 // Automatic edge detection without parameters (from PyImageSearch)
 //--------------------------------------------------------------------
 void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma)

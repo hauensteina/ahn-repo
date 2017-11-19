@@ -32,15 +32,16 @@ public:
         std::sort( vals.begin(), vals.end(), [](float a, float b) { return a<b; });
         std::vector<float> freq(vals.size());
         
+        // Distance weighted sum of number of samples to the left and to the right
         ISLOOP (vals) {
-            float sum = 0;
-            int j=i;
-            while( j < vals.size() && triang(vals[j], vals[i], width) > 0) {
+            float sum = 0; int j;
+            j=i;
+            while( j < vals.size() && winf( vals[j], vals[i], width) > 0) {
                 sum += winf( vals[j], vals[i], width);
                 j++;
             }
             j=i;
-            while( j >= 0 && triang(vals[j], vals[i], width) > 0) {
+            while( j >= 0 && winf( vals[j], vals[i], width) > 0) {
                 sum += winf( vals[j], vals[i], width);
                 j--;
             }
@@ -67,6 +68,9 @@ public:
         ISLOOP (maxes) {
             if (i==0) continue;
             cuts.push_back( (maxes[i] + maxes[i-1]) / 2.0);
+        }
+        if (cuts.size() >= 30) {
+            int tt=42;
         }
         return cuts;
         
