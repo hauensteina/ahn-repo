@@ -197,7 +197,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board01.jpg", _m);
+    load_img( @"board02.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -218,19 +218,17 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 }
 
 //--------------------------
-- (UIImage *) f01_outliers
+- (UIImage *) f01_straight
 {
     g_app.mainVC.lbDbg.text = @"01";
     // Get direction of grid. Should be around pi/2 for horizontals
-    float theta = direction( _gray, _stone_or_empty);
+    float theta = direction( _gray, _stone_or_empty) - PI/2;
     // Rotate to exactly pi/2
+    rot_img( _gray, theta, _gray);
     
-    
-
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_contour( drawing, _board, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }

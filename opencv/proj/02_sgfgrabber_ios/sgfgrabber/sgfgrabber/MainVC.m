@@ -238,7 +238,7 @@
                 break;
             case 1:
                 state++;
-                img = [self.grabFuncs f01_outliers];
+                img = [self.grabFuncs f01_straight];
                 [self.cameraView setImage:img];
                 break;
 //            case 2:

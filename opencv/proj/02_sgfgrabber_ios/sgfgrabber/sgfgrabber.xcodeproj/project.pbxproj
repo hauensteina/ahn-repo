@@ -19,6 +19,7 @@
 		AC80400A1FA92613000088D2 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC8040091FA92604000088D2 /* Accelerate.framework */; };
 		AC8ACF8C1FBF5553005D5722 /* BlobFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC8ACF8A1FBF5553005D5722 /* BlobFinder.cpp */; };
 		AC8ACF8E1FC1EC12005D5722 /* board01.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC8ACF8D1FC1EC12005D5722 /* board01.jpg */; };
+		AC8ACF901FC1F6E6005D5722 /* board02.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC8ACF8F1FC1F6E6005D5722 /* board02.jpg */; };
 		AC9702181FBC87DF0057C4C2 /* Globals.m in Sources */ = {isa = PBXBuildFile; fileRef = AC9702171FBC87DF0057C4C2 /* Globals.m */; };
 		ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */ = {isa = PBXBuildFile; fileRef = ACA69E4B1F9D077B00F5E068 /* Common.m */; };
 		ACEF735A1FBCDD6A00DA4AD8 /* LineFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACEF73581FBCDD6A00DA4AD8 /* LineFinder.cpp */; };
@@ -48,6 +49,7 @@
 		AC8ACF8A1FBF5553005D5722 /* BlobFinder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BlobFinder.cpp; sourceTree = "<group>"; };
 		AC8ACF8B1FBF5553005D5722 /* BlobFinder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BlobFinder.hpp; sourceTree = "<group>"; };
 		AC8ACF8D1FC1EC12005D5722 /* board01.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board01.jpg; sourceTree = "<group>"; };
+		AC8ACF8F1FC1F6E6005D5722 /* board02.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = board02.jpg; path = Assets/board02.jpg; sourceTree = SOURCE_ROOT; };
 		AC9702171FBC87DF0057C4C2 /* Globals.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Globals.m; sourceTree = "<group>"; };
 		AC9702191FBC88050057C4C2 /* Globals.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Globals.h; sourceTree = "<group>"; };
 		ACA69E4B1F9D077B00F5E068 /* Common.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Common.m; sourceTree = "<group>"; };
@@ -115,6 +117,7 @@
 				ACEF735C1FBD03CA00DA4AD8 /* LineFixer.hpp */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
 				AC628C331F9A80150043FCEE /* MainVC.m */,
+				AC8ACF8F1FC1F6E6005D5722 /* board02.jpg */,
 				AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */,
 				AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
@@ -210,6 +213,7 @@
 			files = (
 				AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */,
 				AC8ACF8E1FC1EC12005D5722 /* board01.jpg in Resources */,
+				AC8ACF901FC1F6E6005D5722 /* board02.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

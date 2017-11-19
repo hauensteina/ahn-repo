@@ -104,6 +104,8 @@ Points avg_quad( std::vector<Points> quads);
 
 // Image
 //========
+// Rotate image by angle. Does not adjust image size.
+void rot_img( const cv::Mat &img, float angle, cv::Mat &dst);
 // Resize image such that min(width,height) = sz
 void resize(const cv::Mat &src, cv::Mat &dst, int sz);
 // Automatic edge detection without parameters (from PyImageSearch)
@@ -154,6 +156,8 @@ void print_mat_type( const cv::Mat &m);
 void printMatU( const cv::Mat &m);
 // Print float matrix
 void printMatF( const cv::Mat &m);
+// Print double matrix
+void printMatD( const cv::Mat &m);
 
 // Misc
 //========

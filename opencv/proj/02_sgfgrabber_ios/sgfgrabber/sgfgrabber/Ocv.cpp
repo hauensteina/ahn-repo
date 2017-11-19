@@ -403,34 +403,32 @@ Points avg_quad( std::vector<Points> quads)
 // Image
 //=========
 
-              
+// Rotate image by angle. Adjusts image size.
+// From PyImageSearch.
 //----------------------------------------------------------------
-void rot_img( const cv::Mat &image, float angle, cv::Mat &dst)
+void rot_img( const cv::Mat &img, float angle, cv::Mat &dst)
 {
-   // float h = //@@@
-//(h, w) = image.shape[:2]
-//(cX, cY) = (w // 2, h // 2)
-//
-//# grab the rotation matrix (applying the negative of the
-//# angle to rotate clockwise), then grab the sine and cosine
-//# (i.e., the rotation components of the matrix)
-//            M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
-//            cos = np.abs(M[0, 0])
-//            sin = np.abs(M[0, 1])
-//
-//# compute the new bounding dimensions of the image
-//            nW = int((h * sin) + (w * cos))
-//            nH = int((h * cos) + (w * sin))
-//
-//# adjust the rotation matrix to take into account translation
-//            M[0, 2] += (nW / 2) - cX
-//            M[1, 2] += (nH / 2) - cY
-//
-//# perform the actual rotation and return the image
-//            return cv2.warpAffine(image, M, (nW, nH))
-            }
+    angle *= -1;
+    int h = img.rows;
+    int w = img.cols;
+    float cX = w / 2;
+    float cY = h / 2;
+    // Get ro mat
+    cv::Mat m = cv::getRotationMatrix2D( Point2f( cX, cY), -angle * 180/PI, 1.0);
+    //std::string ttype = mat_typestr( m);
+    // Get new img size
+    float ccos = fabs( m.at<double>( 0,0));
+    float ssin = fabs( m.at<double>( 0,1));
+    int nW = int( (h * ssin) + (w * ccos));
+    int nH = int( (h * ccos) + (w * ssin));
+    // Adjust rot mat for translation
+    m.at<double>(0, 2) += (nW / 2) - cX;
+    m.at<double>(1, 2) += (nH / 2) - cY;
+    // Rotate
+    cv::warpAffine( img, dst, m, cv::Size( nW, nH));
+}
             
-            // Get main horizontal direction of a grid of points (in rad)
+// Get main horizontal direction of a grid of points (in rad)
 //-------------------------------------------------------------
 float direction (const cv::Mat &img, const Points &ps)
 {
@@ -722,6 +720,19 @@ void printMatF( const cv::Mat &m)
         printf("\n");
         CLOOP (m.cols) {
             printf("%8.2f",m.at<float>(r,c) );
+        }
+    }
+    printf("\n========================\n");
+}
+
+// Print double matrix
+//---------------------------------
+void printMatD( const cv::Mat &m)
+{
+    RLOOP (m.rows) {
+        printf("\n");
+        CLOOP (m.cols) {
+            printf("%8.2f",m.at<double>(r,c) );
         }
     }
     printf("\n========================\n");
