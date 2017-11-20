@@ -241,21 +241,21 @@
                 img = [self.grabFuncs f01_straight];
                 [self.cameraView setImage:img];
                 break;
-//            case 2:
-//                state++;
-//                img = [self.grabFuncs f02_flood];
-//                [self.cameraView setImage:img];
-//                break;
-//            case 3:
-//                state++;
-//                img = [self.grabFuncs f03_find_board];
-//                [self.cameraView setImage:img];
-//                break;
-//            case 4:
-//                state++;
-//                img = [self.grabFuncs f04_zoom_in];
-//                [self.cameraView setImage:img];
-//                break;
+            case 2:
+                state++;
+                img = [self.grabFuncs f02_horizontals];
+                [self.cameraView setImage:img];
+                break;
+            case 3:
+                state++;
+                img = [self.grabFuncs f03_verticals];
+                [self.cameraView setImage:img];
+                break;
+            case 4:
+                state++;
+                img = [self.grabFuncs f04_clean_horiz_lines];
+                [self.cameraView setImage:img];
+                break;
 //            case 5:
 //                state++;
 //                img = [self.grabFuncs f05_find_intersections];

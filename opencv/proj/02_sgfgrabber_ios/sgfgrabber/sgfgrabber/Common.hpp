@@ -150,7 +150,7 @@ void vapp( std::vector<T> &v1, const std::vector<T> &v2)
     v1.insert( v1.end(), v2.begin(), v2.end());
 }
 
-// Median value of a vector
+// Median value of a vector, with acces func
 //----------------------------------------------
 template <typename T, typename Func>
 T vec_median( std::vector<T> vec, Func at)
@@ -161,8 +161,8 @@ T vec_median( std::vector<T> vec, Func at)
     return vec[vec.size() / 2];
 }
 
-// Median value of a vector, with acces func
-//----------------------------------------------
+// Median value of a vector
+//---------------------------------
 template <typename T>
 T vec_median( std::vector<T> vec)
 {
@@ -238,6 +238,31 @@ T vec_median_delta( const std::vector<T> &vec)
     return vec_median( deltas);
 }
 
+// The deltas of a vector
+//----------------------------------------------
+template <typename T>
+std::vector<T> vec_delta( const std::vector<T> &vec)
+{
+    std::vector<T> deltas;
+    ISLOOP (vec) {
+        if (!i) continue;
+        deltas.push_back( vec[i] - vec[i-1]);
+    }
+    return deltas;
+}
+
+// The ratios of a vector
+//-------------------------------------------------
+template <typename T>
+std::vector<T> vec_rat( const std::vector<T> &vec)
+{
+    std::vector<T> rats;
+    ISLOOP (vec) {
+        if (!i) continue;
+        rats.push_back( vec[i-1] != 0 ? vec[i] / (float) vec[i-1] : 0);
+    }
+    return rats;
+}
 
 // Partition a vector of elements by class func.
 // Return parts as vec of vec.

@@ -66,6 +66,22 @@ cv::Point2f unit_vector( cv::Point p)
     return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
 }
 
+// Remove point if close to the previous
+//----------------------------------------
+void rem_dups( Points &pts, float tol)
+{
+    Points res;
+    res.push_back( pts[0]);
+    float d = 1E9;
+    ISLOOP (pts) {
+        if (i==0) continue;
+        d = cv::norm( pts[i] - pts[i-1]);
+        if (d > tol) {
+            res.push_back( pts[i]);
+        }
+    }
+    pts = res;
+}
 
 // Matrix
 //===========
@@ -246,6 +262,17 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines )
         segs.push_back(seg);
     }
     return avg_lines( segs);
+}
+
+// Return a line segment with median theta 
+//-----------------------------------------------------------
+cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines )
+{
+    cv::Vec2f med_theta = vec_median( plines, [](cv::Vec2f line) { return line[1]; });
+    //med_theta[0] = 0;
+    cv::Vec4f seg;
+    polar2segment( med_theta, seg);
+    return seg;
 }
 
 // Get a line segment representation of a polar line (rho, theta)
@@ -584,6 +611,23 @@ void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
     polar2segment( pline, seg);
     cv::Point pt1( seg[0], seg[1]), pt2( seg[2], seg[3]);
     cv::line( dst, pt1, pt2, col, 1, CV_AA);
+}
+
+// Get a changing color
+//----------------------
+cv::Scalar get_color( bool reset)
+{
+    static int idx = 0;
+    if (reset) { idx =0; return cv::Scalar(); }
+    cv::Scalar cols[] = {
+        cv::Scalar( 255,0,0),
+        cv::Scalar( 0,255,0),
+        cv::Scalar( 0,0,255),
+        cv::Scalar( 255,255,0),
+        cv::Scalar( 255,0,255),
+        cv::Scalar( 0,255,255)
+    };
+    return cols[idx++];
 }
 
 // Draw several polar lines (rho, theta)

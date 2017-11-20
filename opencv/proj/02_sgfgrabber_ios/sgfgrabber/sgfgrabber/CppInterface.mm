@@ -39,6 +39,8 @@ const cv::Size TMPL_SZ(16,16);
 @property Points stone_or_empty; // places where we suspect stones or empty
 @property std::vector<cv::Vec4f> horizontal_lines;
 @property std::vector<cv::Vec4f> vertical_lines;
+@property cv::Vec2f horiz_line;
+@property cv::Vec2f vert_line;
 @property LineFinder finder;
 
 @end
@@ -191,13 +193,14 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 //-----------------------------------------
 - (UIImage *) f00_blobs:(UIImage *)img
 {
+    _board_sz=19;
     g_app.mainVC.lbDbg.text = @"00";
     
     // Live Camera
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board02.jpg", _m);
+    load_img( @"board04.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -225,10 +228,95 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     float theta = direction( _gray, _stone_or_empty) - PI/2;
     // Rotate to exactly pi/2
     rot_img( _gray, theta, _gray);
+    rot_img( _small, theta, _small);
+    // Rerun the blob detection. We could just rotate the blobs for efficiency.
+    _stone_or_empty.clear();
+    BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
+    BlobFinder::find_stones( _gray, _stone_or_empty);
+    float tolerance = 3;
+    rem_dups( _stone_or_empty, tolerance);
+
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+//----------------------------
+- (UIImage *) f02_horizontals //@@@
+{
+    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+    _finder.get_lines( _horizontal_lines, _vertical_lines);
+    
+    int idx1, idx2;
+    float rho1, rho2, d1, d2;
+    cv::Vec4f line1, line2;
+    _finder.best_two_horiz_lines( idx1, idx2, line1, line2, rho1, rho2, d1, d2);
+    
+    float wavelength;
+    float delta_wavelength;
+    float slope;
+    float median_rho;
+    std::vector<cv::Vec4f> lines;
+    std::vector<float> dists;
+    
+    _finder.find_rhythm( _finder.m_horizontal_clusters,
+                        wavelength,
+                        delta_wavelength,
+                        slope,
+                        median_rho,
+                        lines,
+                        dists);
+    
+    std::vector<float> distrats = vec_rat( dists);
+    // The rate at which the horizontal distance gets wider fromm top to bottom
+    float distrat = vec_median( distrats);
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    get_color( true);
+    ISLOOP( _finder.m_horizontal_clusters) {
+        Points cl = _finder.m_horizontal_clusters[i];
+        cv::Scalar color = get_color();
+        draw_points( cl, drawing, 3, color);
+    }
+    draw_line( line1, drawing, cv::Scalar(0,0,255));
+    draw_line( line2, drawing, cv::Scalar(0,255,255));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+//----------------------------
+- (UIImage *) f03_verticals
+{
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    ISLOOP( _finder.m_vertical_clusters) {
+        Points cl = _finder.m_vertical_clusters[i];
+        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
+        draw_points( cl, drawing, 2, color);
+        draw_polar_line( _vert_line, drawing, cv::Scalar(0,0,255));
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+// Improve line candidates by interpolation
+//--------------------------------------------
+- (UIImage *) f04_clean_horiz_lines
+{
+    g_app.mainVC.lbDbg.text = @"09";
+    LineFixer fixer;
+    fixer.fix( _horizontal_lines, _finder.m_horizontal_clusters, _horizontal_lines );
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
+    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
@@ -374,30 +462,30 @@ void get_intersections( const Points_ &corners, int boardsz,
     }
 } // get_intersections()
 
-// Find line candidates from stones and intersections
-//------------------------------------------------------------------------
-- (UIImage *) f06_find_lines
-{
-    g_app.mainVC.lbDbg.text = @"06";
-    NSString *func = @"f06_find_h_lines()";
-    if (_stone_or_empty.size() < _board_sz) {
-        NSLog( @"%@: not enough points", func);
-        return MatToUIImage( _gray);
-    }
-    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
-    //cv::Vec4f hslope, vslope;
-    _finder.get_lines( _horizontal_lines, _vertical_lines);
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP( _finder.m_vertical_clusters) {
-        Points cl = _finder.m_vertical_clusters[i];
-        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
-        draw_points( cl, drawing, 2, color);
-    }
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-} // f06_find_lines()
+//// Find line candidates from stones and intersections
+////------------------------------------------------------------------------
+//- (UIImage *) f06_find_lines
+//{
+//    g_app.mainVC.lbDbg.text = @"06";
+//    NSString *func = @"f06_find_h_lines()";
+//    if (_stone_or_empty.size() < _board_sz) {
+//        NSLog( @"%@: not enough points", func);
+//        return MatToUIImage( _gray);
+//    }
+//    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+//    //cv::Vec4f hslope, vslope;
+//    _finder.get_lines( _horizontal_lines, _vertical_lines);
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    ISLOOP( _finder.m_vertical_clusters) {
+//        Points cl = _finder.m_vertical_clusters[i];
+//        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
+//        draw_points( cl, drawing, 2, color);
+//    }
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//} // f06_find_lines()
 
 // Show the lines we found
 //------------------------------------------------------------------------
@@ -425,22 +513,7 @@ void get_intersections( const Points_ &corners, int boardsz,
     return res;
 } // f08_show_vert_lines()
 
-// Improve line candidates by interpolation
-//--------------------------------------------
-- (UIImage *) f09_clean_horiz_lines
-{
-    g_app.mainVC.lbDbg.text = @"09";
-    LineFixer fixer;
-    fixer.fix( _horizontal_lines, _finder.m_horizontal_clusters, _horizontal_lines );
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
-    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
+
 //--------------------------------------------
 - (UIImage *) f10_clean_vert_lines
 {
@@ -528,7 +601,7 @@ std::string rc_key (int r, int c)
     drawing = _small.clone();
     int dx = round(_finder.m_wavelen_h/4.0);
     int dy = round(_finder.m_wavelen_h/4.0);
-    // Black stones //@@@
+    // Black stones
     ISLOOP (diagram) {
         cv::Point p = intersections[i];
         cv::Rect rect( p.x - dx,

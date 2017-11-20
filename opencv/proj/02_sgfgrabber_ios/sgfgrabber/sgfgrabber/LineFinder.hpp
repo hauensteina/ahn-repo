@@ -32,16 +32,25 @@ public:
     //---------
     void find_slopes( cv::Vec4f &hslope, cv::Vec4f &vslope);
     void find_rhythm( const std::vector<Points> &clusters,
-                     float &wavelength,
-                     float &delta_wavelength,
-                     float &slope,
-                     float &median_rho);
+                                 float &wavelength,
+                                 float &delta_wavelength,
+                                 float &slope,
+                                 float &median_rho,
+                                 std::vector<cv::Vec4f> &lines,
+                                 std::vector<float> &dists
+                                 );
     void find_lines( int max_rho,
                     float wavelength_,
                     float delta_wavelength,
                     float slope,
                     float median_rho,
                     std::vector<cv::Vec4f> &lines);
+    void best_two_horiz_lines( int &idx1, int &idx2,     // index in m_horizontal_clusters
+                              cv::Vec4f &line1,
+                              cv::Vec4f &line2,
+                              float &rho1, float &rho2,  // distance from top
+                              float &d1, float &d2);     // distance between intersections on that line
+    
     // Data
     //-------
     Points m_cloud;

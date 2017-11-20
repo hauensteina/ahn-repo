@@ -45,6 +45,8 @@ float median_x (const Points &p);
 float median_y (const Points &p);
 // Return unit vector of p
 cv::Point2f unit_vector( cv::Point p);
+// Remove if too close
+void rem_dups( Points &pts, float tol);
 
 // Matrix
 //==========
@@ -77,6 +79,8 @@ Point2f intersection( cv::Vec2f line1, cv::Vec2f line2);
 cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines );
 // Average polar lines after setting rho to zero and conv to seg
 cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines );
+// Median polar line bt theta
+cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)
 void polar2segment( const cv::Vec2f &pline, cv::Vec4f &result);
 // Line segment to polar, with positive rho
@@ -139,7 +143,8 @@ void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
 // Draw several polar lines (rho, theta)
 void draw_polar_lines( std::vector<cv::Vec2f> plines, cv::Mat &dst,
                       cv::Scalar col = cv::Scalar(255,0,0));
-
+// Get a changing color
+cv::Scalar get_color( bool reset=false);
 
 // Type Conversions
 //====================
