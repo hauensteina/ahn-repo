@@ -233,8 +233,10 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
-    float tolerance = 3;
-    rem_dups( _stone_or_empty, tolerance);
+    float tolerance = 16; // Increase to remove more
+    int tt = _stone_or_empty.size();
+    rem_dup_points( _stone_or_empty, tolerance);
+    int xx = _stone_or_empty.size();
 
     // Show results
     cv::Mat drawing;

@@ -31,7 +31,9 @@
 #define RSLOOP(n) for (int r=0; r < ((n).size()); r++ )
 #define CSLOOP(n) for (int c=0; c < ((n).size()); c++ )
 
-#define SIGN(x) (x)>=0?1:-1
+//#define ABS(x) (((x)>0)?(x):(-(x)))
+//#define AABS(A)    ({ __typeof__(A) __a = (A); __a < 0 ? -__a : __a; })
+#define SIGN(x) ((x)>=0?1:-1)
 #define ROUND(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
 #define PI M_PI
 

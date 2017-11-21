@@ -46,7 +46,7 @@ float median_y (const Points &p);
 // Return unit vector of p
 cv::Point2f unit_vector( cv::Point p);
 // Remove if too close
-void rem_dups( Points &pts, float tol);
+void rem_dup_points( Points &pts, float tol);
 
 // Matrix
 //==========

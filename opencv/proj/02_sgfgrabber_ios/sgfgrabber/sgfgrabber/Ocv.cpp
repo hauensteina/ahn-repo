@@ -66,9 +66,10 @@ cv::Point2f unit_vector( cv::Point p)
     return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
 }
 
-// Remove point if close to the previous
+// Remove point if close to the previous.
+// Make tol larger to remove more points.
 //----------------------------------------
-void rem_dups( Points &pts, float tol)
+void rem_dup_points( Points &pts, float tol)
 {
     Points res;
     res.push_back( pts[0]);
@@ -614,7 +615,7 @@ void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
 }
 
 // Get a changing color
-//----------------------
+//----------------------------------
 cv::Scalar get_color( bool reset)
 {
     static int idx = 0;
@@ -627,7 +628,9 @@ cv::Scalar get_color( bool reset)
         cv::Scalar( 255,0,255),
         cv::Scalar( 0,255,255)
     };
-    return cols[idx++];
+    cv::Scalar res = cols[idx];
+    idx++; idx %= 6;
+    return res;
 }
 
 // Draw several polar lines (rho, theta)

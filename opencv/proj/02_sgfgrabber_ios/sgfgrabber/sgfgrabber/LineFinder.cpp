@@ -244,13 +244,23 @@ void LineFinder::best_two_horiz_lines( int &idx1, int &idx2,     // index in m_h
     }
     // Sort indexes by number of points matching board size
     //int bs = m_boardsize;
-    //std::vector<Points> &hc(m_horizontal_clusters);
+    auto &hc(m_horizontal_clusters);
+    int bs = m_boardsize;
+    // size() is evil. Need to cast to int.
     std::sort( indexes.begin(), indexes.end(),
-              [this](int a, int b)
+              [hc,bs](int a, int b)
     {
-        return fabs( m_boardsize - m_horizontal_clusters[a].size()) <
-        fabs( m_boardsize - m_horizontal_clusters[b].size());
+        return (fabs( bs - (int)hc[a].size()) <
+        fabs( bs - (int)hc[b].size()));
     });
+    
+    PLOG( "cluster sizes");
+    ISLOOP (indexes) {
+        PLOG( "%ld\n", m_horizontal_clusters[indexes[i]].size());
+        PLOG( "%f\n", fabs( bs - (int)hc[indexes[i]].size()));
+    }
+    PLOG("========");
+    
     idx1 = indexes[0];
     idx2 = indexes[1];
     Points &cl1( m_horizontal_clusters[idx1]);
