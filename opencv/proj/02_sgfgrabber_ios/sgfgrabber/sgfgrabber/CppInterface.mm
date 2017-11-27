@@ -200,7 +200,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board03.jpg", _m);
+    load_img( @"board01.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -366,7 +366,7 @@ cv::Point walk_the_line( cv::Vec2f line, cv::Point p, float d)
 {
     cv::Point res;
     float dx = d * sin( line[1]);
-    float dy = d * cos( line[1]);
+    float dy = -d * cos( line[1]);
     res = { int(round(p.x + dx)), int(round(p.y + dy)) };
     return res;
 }
@@ -414,29 +414,30 @@ float median_dx( Points pts)
     //cv::Vec2f vline = best_vline( _finder.m_vertical_lines);
     cv::Vec2f vline = _finder.m_vertical_lines[SZ(_finder.m_vertical_lines)/2];
 
+    const int winsize = 3;
     float dx = median_dx( _finder.m_horizontal_clusters[rat_idx]);
     // Try to find points on the ratline
     cv::Point seed = intersection( ratline, vline);
     // Points to the right on ratline
     //cv::Point right1 = walk_the_line( ratline, seed, dx);
     //cv::Point right2 = walk_the_line( ratline, seed, 2*dx);
-    cv::Point right = walk_the_line( ratline, seed, 5*dx);
+    cv::Point right = walk_the_line( ratline, seed, winsize*dx);
     // Points to the left on ratline
     //cv::Point left1 = walk_the_line( ratline, seed, -dx);
     //cv::Point left2 = walk_the_line( ratline, seed, -2*dx);
-    cv::Point left = walk_the_line( ratline, seed, -5*dx);
+    cv::Point left = walk_the_line( ratline, seed, -winsize*dx);
     
-    cv::Vec2f upline = n_lines_up( _finder.m_horizontal_lines, ratline, 10);
-    float updx = dx / (dy_rat * dy_rat * dy_rat * dy_rat);
+    cv::Vec2f upline = n_lines_up( fixed_lines, ratline, 2 * winsize);
+    float updx = dx / pow( dy_rat, 2*winsize-1);
     cv::Point upseed = intersection( upline, vline);
     // Points to the right on upline
     //cv::Point upright1 = walk_the_line( upline, upseed, updx);
     //cv::Point upright2 = walk_the_line( upline, upseed, 2*updx);
-    cv::Point upright = walk_the_line( upline, upseed, 5*updx);
+    cv::Point upright = walk_the_line( upline, upseed, winsize*updx);
     // Points to the left on upline
     //cv::Point upleft1 = walk_the_line( upline, upseed, -updx);
     //cv::Point upleft2 = walk_the_line( upline, upseed, -2*updx);
-    cv::Point upleft = walk_the_line( upline, upseed, -5*updx);
+    cv::Point upleft = walk_the_line( upline, upseed, -winsize*updx);
     
     // This should be a square
     cv::Point tl = upleft;
@@ -449,11 +450,15 @@ float median_dx( Points pts)
     float right_x = MAX( tr.x, br.x);
     float bottom_y = MAX( bl.y, br.y);
     float top_y = MIN( tl.y, tr.y);
+    float width = right_x - left_x;
+    float height = bottom_y - top_y;
+    float s = MAX( width, height);
+    
     Points dst = {
         cv::Point( left_x, top_y),
-        cv::Point( right_x, top_y),
-        cv::Point( right_x, bottom_y),
-        cv::Point( left_x, bottom_y) };
+        cv::Point( left_x + s, top_y),
+        cv::Point( left_x + s, top_y + s),
+        cv::Point( left_x, top_y + s) };
 
     //@@@
     cv::Mat transform = cv::getPerspectiveTransform( points2float(src), points2float(dst));
@@ -462,11 +467,12 @@ float median_dx( Points pts)
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( warped, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
+    draw_polar_line( upline, drawing, cv::Scalar( 255,128,64));
     get_color( true);
     ISLOOP (fixed_lines) {
-        //draw_polar_line( fixed_lines[i], drawing, get_color());
+       // draw_polar_line( fixed_lines[i], drawing, get_color());
     }
 //    ISLOOP (_finder.m_vertical_lines) {
 //        draw_polar_line( _finder.m_vertical_lines[i], drawing, get_color());
