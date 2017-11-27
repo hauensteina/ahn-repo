@@ -271,6 +271,92 @@ int pixel_y( float dy_rat, int n, float dy_0 = 1.0)
 //    true_d_rho * exp( 1 - loss_ratio, 1 + cur_y /
 //}
 
+// Find closest line among a bunch of roughly horizontal lines,
+// using distance at x == width/2
+//---------------------------------------------------------------------------------------------
+cv::Vec2f closest_hline( const std::vector<cv::Vec2f> &lines, const cv::Vec2f line, int width,
+                        float &dy) // out //@@@
+{
+    float middle_x = width / 2.0;
+    float y_0 = y_from_x( middle_x, line);
+    
+    dy = 1E9;
+    cv::Vec2f res;
+    ISLOOP( lines) {
+        float y_line = y_from_x( middle_x, lines[i]);
+        float d = abs( y_0 - y_line);
+        if (d < dy) {
+            dy = d;
+            res = lines[i];
+        }
+    }
+    return res;
+}
+
+//------------------------------------------------------------------------
+void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
+                      const std::vector<cv::Vec2f> &h_lines, int boardsz, int width,
+                      std::vector<cv::Vec2f> &fixed_lines) // out
+{
+    //fixed_lines = h_lines; return;
+    
+    float THRESH_RAT = 1/4.0;
+    float THRESH_THETA = 100; //PI/180;
+    cv::Vec2f cur_line;
+    float cur_dy, d;
+    
+    // above ratline
+    PLOG(">>>>>above\n");
+    cur_line = ratline;
+    cur_dy = dy;
+    ILOOP (boardsz) {
+        cur_line[0] -= cur_dy;
+        cv::Vec2f nbor = closest_hline( h_lines, cur_line, width, d);
+        PLOG( "d:%.4f\n",d);
+        if (d < THRESH_RAT * cur_dy) {
+            PLOG( "fixed\n");
+            cur_line = nbor;
+        }
+        cur_dy /= dy_rat;
+        fixed_lines.push_back( cur_line);
+    }
+
+    // ratline and below
+    PLOG(">>>>>below\n");
+    cur_line = ratline;
+    cur_dy = dy;
+    ILOOP (boardsz) {
+        cv::Vec2f nbor = closest_hline( h_lines, cur_line, width, d);
+        float dtheta = fabs( nbor[1] - cur_line[1]);
+        PLOG( "cur_dy: %.4f d:%.4f dtheta:%.4f\n", cur_dy, d, dtheta);
+        if (d < THRESH_RAT * cur_dy && dtheta < THRESH_THETA) {
+            PLOG( "fixed\n");
+            cur_line = nbor;
+        }
+        if (i) fixed_lines.push_back( cur_line);
+        cur_dy *= dy_rat;
+        cur_line[0] += cur_dy;
+    }
+} // find_horiz_lines()
+
+// Find the most vertical line
+//------------------------------------------------------------
+cv::Vec2f best_vline( const std::vector<cv::Vec2f> &vlines) //@@@
+{
+    cv::Vec2f res = { 0, 1E9 };
+    float mindiff = 1E9;
+    ISLOOP (vlines) {
+        float theta = vlines[i][1];
+        float d = fabs( theta - PI/2);
+        PLOG( "theta, d: %.2f %.2f\n", theta, d);
+        if (d < mindiff) {
+            mindiff = d;
+            res = vlines[i];
+        }
+    }
+    return res;
+}
+
 //----------------------------
 - (UIImage *) f02_center
 {
@@ -280,25 +366,33 @@ int pixel_y( float dy_rat, int n, float dy_0 = 1.0)
     cv::Vec2f ratline;
     float dy;
     float dy_rat = _finder.dy_rat( ratline, dy);
-    
-//    
-//    int xx = pixel_y( dy_rat,0);
-//    xx = pixel_y( dy_rat,1);
-//    xx = pixel_y( dy_rat,2);
-//    xx = pixel_y( dy_rat,3);
-    int tt=42;
+    std::vector<cv::Vec2f> fixed_lines;
+    find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
+                     fixed_lines);
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
     get_color( true);
-    ISLOOP( _finder.m_horizontal_lines) {
-        Points cl = _finder.m_horizontal_clusters[i];
-        cv::Scalar color = get_color();
-        draw_points( cl, drawing, 3, color);
-        //draw_line( _finder.m_horizontal_lines[i], drawing, color);
+    ISLOOP (fixed_lines) {
+        draw_polar_line( fixed_lines[i], drawing, get_color());
     }
-    draw_polar_line( ratline, drawing, cv::Scalar( 255,127,63));
+//    cur_line = ratline;
+//    cur_dy = dy;
+//    ILOOP (20) {
+//        cur_dy *= dy_rat;
+//        cur_line[0] += cur_dy;
+//        draw_polar_line( cur_line, drawing, get_color());
+//    }
+
+//    get_color( true);
+//    ISLOOP( _finder.m_horizontal_lines) {
+//        Points cl = _finder.m_horizontal_clusters[i];
+//        cv::Scalar color = get_color();
+//        draw_points( cl, drawing, 3, color);
+//        //draw_line( _finder.m_horizontal_lines[i], drawing, color);
+//    }
 //    draw_point(center, drawing, 5, cv::Scalar(255,0,0));
 //    draw_points( hcl[upper_idx], drawing, 5, cv::Scalar(0,255,0));
 //    draw_points( hcl[lower_idx], drawing, 5, cv::Scalar(255,0,0));
