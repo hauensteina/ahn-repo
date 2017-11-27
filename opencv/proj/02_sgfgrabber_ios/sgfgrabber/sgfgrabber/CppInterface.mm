@@ -212,7 +212,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board04.jpg", _m);
+    load_img( @"board02.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -490,11 +490,11 @@ float median_dx( Points pts)
 //        draw_polar_line( _finder.m_vertical_lines[i], drawing, get_color());
 //    }
     draw_polar_line( vline, drawing, cv::Scalar(255,0,0));
-    draw_point( tl, drawing, 3, cv::Scalar(255,0,0));
-    draw_point( tr, drawing, 3, cv::Scalar(0,255,0));
-    draw_point( br, drawing, 3, cv::Scalar(0,0,255));
-    draw_point( bl, drawing, 3, cv::Scalar(255,255,0));
-    draw_points( dst, drawing, 3, cv::Scalar(255,0,255));
+    draw_point( seed, drawing, 3, cv::Scalar(255,0,0));
+//    draw_point( tr, drawing, 3, cv::Scalar(0,255,0));
+//    draw_point( br, drawing, 3, cv::Scalar(0,0,255));
+//    draw_point( bl, drawing, 3, cv::Scalar(255,255,0));
+//    draw_points( dst, drawing, 3, cv::Scalar(255,0,255));
 //    cur_line = ratline;
 //    cur_dy = dy;
 //    ILOOP (20) {
