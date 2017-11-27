@@ -20,16 +20,6 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
     cv::Vec4f hslope, vslope;
     hslope = PI/2;
     vslope = 0;
-    // Find predominant slopes
-    //find_slopes( hslope, vslope);
-    // Cluster points by distance from predominant slope lines.
-    //    m_horizontal_clusters = cluster( m_cloud, m_boardsize,
-    //                                    [hslope](cv::Point &p) { return dist_point_line(p, hslope); });
-    //    m_vertical_clusters = cluster( m_cloud, m_boardsize,
-    //                                  [vslope](cv::Point &p) { return dist_point_line(p, vslope); });
-    //const float wwidth = 5.0;
-    //const float wwidth = 2.5;
-    //const float wwidth = 100;
     const float wwidth = 1.0;
     const int min_points = 4;
     std::vector<float> horizontal_cuts = Clust1D::cluster( m_cloud, wwidth,
@@ -37,6 +27,9 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
     Clust1D::classify( m_cloud, horizontal_cuts, min_points,
                       [hslope](cv::Point p) { return fabs(dist_point_line(p, hslope)); },
                       m_horizontal_clusters);
+    ISLOOP (m_horizontal_clusters) {
+        rem_dups_x( m_horizontal_clusters[i], 5);
+    }
     
     std::vector<float> vertical_cuts   = Clust1D::cluster( m_cloud, wwidth,
                                                           [vslope](cv::Point p) { return fabs(dist_point_line(p, vslope)); });
@@ -91,13 +84,13 @@ void LineFinder::find_slopes( cv::Vec4f &hslope, cv::Vec4f &vslope)
     ISLOOP (vote_thresholds) {
         int votes = vote_thresholds[i];
         std::cerr << "trying " << votes << " hough line votes\n";
-        HoughLines(canvas, lines, 1, CV_PI/180, votes, 0, 0 );
+        HoughLines(canvas, lines, 1, PI/180, votes, 0, 0 );
         
         // Separate horizontal, vertical, and other lines
         horiz_vert_other_lines = partition( lines, 3,
                                            [](cv::Vec2f &line) {
                                                const float thresh = 10.0;
-                                               float theta = line[1] * (180.0 / CV_PI);
+                                               float theta = line[1] * (180.0 / PI);
                                                if (fabs(theta - 180) < thresh) return 1;
                                                else if (fabs(theta) < thresh) return 1;
                                                else if (fabs(theta-90) < thresh) return 0;
@@ -157,7 +150,7 @@ void LineFinder::find_rhythm( const std::vector<Points> &clusters,
     }
     slope = vec_median( slopes);
     // A polar line with the median slope
-    cv::Vec2f median_hline(0, slope + CV_PI/2.0);
+    cv::Vec2f median_hline(0, slope + PI/2.0);
     
     // For each cluster, get the median dist from the median slope line
     std::vector<DistSlope> distSlopes( clusters.size());
@@ -187,6 +180,60 @@ void LineFinder::find_rhythm( const std::vector<Points> &clusters,
     wavelength = vec_median( delta_dists);
 } // find_rhythm()
 
+// Get the ratio between successive horizontal line distances.
+// Should be > 1.0; closer line is the denominator.
+// Ratline is the line with the median ratio.
+// In dy, return the current line distance at the ratline.
+//----------------------------------------------------------------
+float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy)
+{
+    m_horizontal_lines.clear();
+    ISLOOP (m_horizontal_clusters) {
+        cv::Vec4f line =  fit_line( m_horizontal_clusters[i]);
+        cv::Vec2f pline; segment2polar(line,pline);
+        if (1 || fabs( PI/2 - fabs(pline[1])) < 0.025) { // only linea that are really horizontal
+            //PLOG( "pline[1]: %.6f\n" , pline[1]);
+            m_horizontal_lines.push_back( pline);
+        }
+    }
+    // Sort horizontal lines by y, just to be sure
+    float middle_x = m_imgSize.width / 2.0;
+    std::sort( m_horizontal_lines.begin(), m_horizontal_lines.end(),
+              [middle_x](cv::Vec2f a, cv::Vec2f b) { return y_from_x( middle_x, a) < y_from_x( middle_x, b); } );
+    
+    // Find distances from previous
+    typedef struct { int idx; float dist; } DistIdx;
+    std::vector<DistIdx> dists;
+    ISLOOP (m_horizontal_lines) {
+        if (i==0) continue;
+        DistIdx di = { i, y_from_x( middle_x, m_horizontal_lines[i]) - y_from_x( middle_x, m_horizontal_lines[i-1]) };
+        dists.push_back( di);
+    }
+    
+    // Find ratios
+    std::vector<DistIdx> rats;
+    ISLOOP (dists) {
+        if (i==0) continue;
+        float r = RAT( dists[i].dist, dists[i-1].dist);
+        DistIdx rat = { dists[i].idx, r};
+        rats.push_back( rat);
+    }
+    std::sort( rats.begin(), rats.end(), [](DistIdx a, DistIdx b){ return a.dist < b.dist; });
+    DistIdx med = vec_median( rats, [](DistIdx di) { return di.dist; });
+    ratline = m_horizontal_lines[med.idx];
+    dy = dists[med.idx-1].dist;
+    assert( dists[med.idx-1].idx == med.idx);
+    float res = med.dist;
+    return res;
+    // Next:
+    // Find the most vertical vertical line
+    // Find the intersection between ratline and vert line
+    // Find points above the intersection
+    // Find points below the intersection
+} // dy_rat()
+
+
+
 // Start in the middle with the medians, expand to both sides
 // while adjusting with delta_slope and delta_rho.
 //---------------------------------------------------------------
@@ -205,7 +252,7 @@ void LineFinder::find_lines( int max_rho,
     
     // center to lower rho
     wavelength = wavelength_;
-    theta = slope + CV_PI/2;
+    theta = slope + PI/2;
     rho = median_rho - wavelength;
     while (rho > 0 && wavelength > 0) {
         hlines.push_back( cv::Vec2f ( rho, theta));
@@ -214,7 +261,7 @@ void LineFinder::find_lines( int max_rho,
     }
     // center to higher rho
     wavelength = wavelength_;
-    theta = slope + CV_PI/2;
+    theta = slope + PI/2;
     rho = median_rho;
     while (rho < max_rho && wavelength > 0) {
         hlines.push_back( cv::Vec2f ( rho, theta));
@@ -253,7 +300,6 @@ void LineFinder::best_two_horiz_lines( int &idx1, int &idx2,     // index in m_h
         return (fabs( bs - (int)hc[a].size()) <
         fabs( bs - (int)hc[b].size()));
     });
-    
     PLOG( "cluster sizes");
     ISLOOP (indexes) {
         PLOG( "%ld\n", m_horizontal_clusters[indexes[i]].size());

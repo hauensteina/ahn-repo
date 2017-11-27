@@ -243,19 +243,19 @@
                 break;
             case 2:
                 state++;
-                img = [self.grabFuncs f02_horizontals];
+                img = [self.grabFuncs f02_center];
                 [self.cameraView setImage:img];
                 break;
-            case 3:
-                state++;
-                img = [self.grabFuncs f03_verticals];
-                [self.cameraView setImage:img];
-                break;
-            case 4:
-                state++;
-                img = [self.grabFuncs f04_clean_horiz_lines];
-                [self.cameraView setImage:img];
-                break;
+//            case 3:
+//                state++;
+//                img = [self.grabFuncs f03_verticals];
+//                [self.cameraView setImage:img];
+//                break;
+//            case 4:
+//                state++;
+//                img = [self.grabFuncs f04_clean_horiz_lines];
+//                [self.cameraView setImage:img];
+//                break;
 //            case 5:
 //                state++;
 //                img = [self.grabFuncs f05_find_intersections];

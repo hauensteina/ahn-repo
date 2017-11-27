@@ -17,7 +17,8 @@
 // Individual steps for debugging
 - (UIImage *) f00_blobs:(UIImage *)img;
 - (UIImage *) f01_straight;
-- (UIImage *) f02_horizontals;
+- (UIImage *) f02_center;
+//- (UIImage *) f02_horizontals;
 - (UIImage *) f03_verticals;
 - (UIImage *) f04_clean_horiz_lines;
 - (UIImage *) f03_find_board;

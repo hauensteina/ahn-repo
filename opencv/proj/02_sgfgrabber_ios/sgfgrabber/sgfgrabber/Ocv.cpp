@@ -66,17 +66,18 @@ cv::Point2f unit_vector( cv::Point p)
     return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
 }
 
-// Remove point if close to the previous.
-// Make tol larger to remove more points.
-//----------------------------------------
-void rem_dup_points( Points &pts, float tol)
+// Sort points by x coord and remove duplicates.
+//-------------------------------------------------
+void rem_dups_x( Points &pts, float tol)
 {
+    std::sort( pts.begin(), pts.end(),
+              [](cv::Point a, cv::Point b){ return a.x < b.x; } );
+    
     Points res;
     res.push_back( pts[0]);
-    float d = 1E9;
     ISLOOP (pts) {
         if (i==0) continue;
-        d = cv::norm( pts[i] - pts[i-1]);
+        float d = cv::norm( pts[i] - pts[i-1]);
         if (d > tol) {
             res.push_back( pts[i]);
         }
@@ -307,7 +308,7 @@ void segment2polar( const cv::Vec4f &line_, cv::Vec2f &pline)
     else { // vertical
         if (dy > 0) { dx *= -1; dy *= -1; }
     }
-    float theta = atan2( dy, dx) + CV_PI/2;
+    float theta = atan2( dy, dx) + PI/2;
     float rho = fabs(dist_point_line( cv::Point(0,0), line));
     pline[0] = rho;
     pline[1] = theta;
@@ -347,6 +348,23 @@ float dist_point_line( cv::Point p, const cv::Vec4f &line)
     float den = sqrt( (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
     return num / den;
 }
+
+// y given x for polar line
+//----------------------------------------
+float y_from_x( float x, cv::Vec2f pline)
+{
+    float res = (pline[0] - x * cos( pline[1])) / sin( pline[1]);
+    return res;
+}
+
+// x given y for polar line
+//----------------------------------------
+float x_from_y( float y, cv::Vec2f pline)
+{
+    float res = (pline[0] - y * sin( pline[1])) / cos( pline[1]);
+    return res;
+}
+
 
 // Distance between point and polar line
 //----------------------------------------------------------
@@ -468,14 +486,14 @@ float direction (const cv::Mat &img, const Points &ps)
     // Put lines through them
     std::vector<cv::Vec2f> lines;
     const int votes = 10;
-    HoughLines(canvas, lines, 1, CV_PI/180, votes, 0, 0 );
+    HoughLines(canvas, lines, 1, PI/180, votes, 0, 0 );
     
     // Separate horizontal, vertical, and other lines
     std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
     horiz_vert_other_lines = partition( lines, 3,
                                        [](cv::Vec2f &line) {
                                            const float thresh = 10.0;
-                                           float theta = line[1] * (180.0 / CV_PI);
+                                           float theta = line[1] * (180.0 / PI);
                                            if (fabs(theta - 180) < thresh) return 1;
                                            else if (fabs(theta) < thresh) return 1;
                                            else if (fabs(theta-90) < thresh) return 0;

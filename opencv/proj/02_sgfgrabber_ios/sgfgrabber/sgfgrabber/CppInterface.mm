@@ -143,7 +143,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     cv::drawContours( boardImg, conts, 0, cv::Scalar(255), 3);
     // Find lines
     std::vector<cv::Vec4f> lines;
-    HoughLinesP(boardImg, lines, 1, CV_PI/180, 150, 0, 0 );
+    HoughLinesP(boardImg, lines, 1, PI/180, 150, 0, 0 );
     // Find vertical and horizontal lines
     std::vector<std::vector<cv::Vec4f> > horiz_vert_lines;
     horiz_vert_lines = partition( lines, 2,
@@ -200,7 +200,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board04.jpg", _m);
+    load_img( @"board02.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -233,11 +233,6 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
-    float tolerance = 16; // Increase to remove more
-    int tt = _stone_or_empty.size();
-    rem_dup_points( _stone_or_empty, tolerance);
-    int xx = _stone_or_empty.size();
-
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -245,47 +240,68 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     return res;
 }
 
+// Given the dy ratio, and the baseline vertical distance dy_0,
+// compute pixel y coord for gridpoint n horizontal lines up.
+//-----------------------------------------------------------------
+int pixel_y( float dy_rat, int n, float dy_0 = 1.0)
+{
+    float f = exp( n * log( dy_rat));
+    float res = (1.0 / log( dy_rat)) * (1.0 - f);
+    return ROUND( -res);
+}
+
+//// Convert diatance in x direction to what it would have been
+//// if viewed straight from the top. cur_d_rho is the delta x on
+//// the current horizontal line, treu_d_rho is the delta x on
+//// the horizontal we want to remain unchanged.
+////---------------------------------------------------------------
+//float true_x( float true_d_rho, float cur_d_rho, float cur_x)
+//{
+//    return cur_x * (true_d_rho / cur_d_rho);
+//}
+//
+//// Convert duistance in y direction to what it would have been
+//// if viewed strsight from the top. true_d_rho is the distance
+//// between the unchanged horizontal line and the next horizontal
+//// line above. loss_ratio is the ratio between adjacent horizontal
+//// line distances. The true distance is a geometric sum.
+////-----------------------------------------------------------------
+//float true_y( float true_d_rho, float loss_ratio, int cur_h_line)
+//{
+//    true_d_rho * exp( 1 - loss_ratio, 1 + cur_y /
+//}
+
 //----------------------------
-- (UIImage *) f02_horizontals //@@@
+- (UIImage *) f02_center
 {
     _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+    // This also removes dups from the points in _finder.horizontal_clusters
     _finder.get_lines( _horizontal_lines, _vertical_lines);
+    cv::Vec2f ratline;
+    float dy;
+    float dy_rat = _finder.dy_rat( ratline, dy);
     
-    int idx1, idx2;
-    float rho1, rho2, d1, d2;
-    cv::Vec4f line1, line2;
-    _finder.best_two_horiz_lines( idx1, idx2, line1, line2, rho1, rho2, d1, d2);
-    
-    float wavelength;
-    float delta_wavelength;
-    float slope;
-    float median_rho;
-    std::vector<cv::Vec4f> lines;
-    std::vector<float> dists;
-    
-    _finder.find_rhythm( _finder.m_horizontal_clusters,
-                        wavelength,
-                        delta_wavelength,
-                        slope,
-                        median_rho,
-                        lines,
-                        dists);
-    
-    std::vector<float> distrats = vec_rat( dists);
-    // The rate at which the horizontal distance gets wider fromm top to bottom
-    float distrat = vec_median( distrats);
+//    
+//    int xx = pixel_y( dy_rat,0);
+//    xx = pixel_y( dy_rat,1);
+//    xx = pixel_y( dy_rat,2);
+//    xx = pixel_y( dy_rat,3);
+    int tt=42;
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color( true);
-    ISLOOP( _finder.m_horizontal_clusters) {
+    ISLOOP( _finder.m_horizontal_lines) {
         Points cl = _finder.m_horizontal_clusters[i];
         cv::Scalar color = get_color();
         draw_points( cl, drawing, 3, color);
+        //draw_line( _finder.m_horizontal_lines[i], drawing, color);
     }
-    draw_line( line1, drawing, cv::Scalar(0,0,255));
-    draw_line( line2, drawing, cv::Scalar(0,255,255));
+    draw_polar_line( ratline, drawing, cv::Scalar( 255,127,63));
+//    draw_point(center, drawing, 5, cv::Scalar(255,0,0));
+//    draw_points( hcl[upper_idx], drawing, 5, cv::Scalar(0,255,0));
+//    draw_points( hcl[lower_idx], drawing, 5, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }

@@ -25,16 +25,18 @@
 #define RLOOP(n) for (int r=0; r < (n); r++ )
 #define CLOOP(n) for (int c=0; c < (n); c++ )
 
+// Make sure size is signed
+#define SZ(x) int((x).size())
+
 #define ISLOOP(n) for (int i=0; i < ((n).size()); i++ )
 #define JSLOOP(n) for (int j=0; j < ((n).size()); j++ )
 #define KSLOOP(n) for (int k=0; k < ((n).size()); k++ )
 #define RSLOOP(n) for (int r=0; r < ((n).size()); r++ )
 #define CSLOOP(n) for (int c=0; c < ((n).size()); c++ )
 
-//#define ABS(x) (((x)>0)?(x):(-(x)))
-//#define AABS(A)    ({ __typeof__(A) __a = (A); __a < 0 ? -__a : __a; })
 #define SIGN(x) ((x)>=0?1:-1)
 #define ROUND(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
+#define RAT(a,b) ((b)!=0?((a)/(b)):0)
 #define PI M_PI
 
 #define RGB(rgbValue) [UIColor \

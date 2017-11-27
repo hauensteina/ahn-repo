@@ -45,8 +45,8 @@ float median_x (const Points &p);
 float median_y (const Points &p);
 // Return unit vector of p
 cv::Point2f unit_vector( cv::Point p);
-// Remove if too close
-void rem_dup_points( Points &pts, float tol);
+// Sort points by x and remove dups
+void rem_dups_x( Points &pts, float tol);
 
 // Matrix
 //==========
@@ -93,6 +93,10 @@ float line_len( cv::Point p, cv::Point q);
 float dist_point_line( cv::Point p, const cv::Vec4f &line);
 // Distance between point and polar line
 float dist_point_line( cv::Point p, const cv::Vec2f &pline);
+// y given x for polar line
+float y_from_x( float x, cv::Vec2f pline);
+// x given y for polar line
+float x_from_y( float y, cv::Vec2f pline);
 
 // Quad
 //========

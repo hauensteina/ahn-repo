@@ -50,13 +50,16 @@ public:
                               cv::Vec4f &line2,
                               float &rho1, float &rho2,  // distance from top
                               float &d1, float &d2);     // distance between intersections on that line
-    
+    float dy_rat( cv::Vec2f &ratline, float &dy);
+
     // Data
     //-------
     Points m_cloud;
     int m_boardsize;
     cv::Size m_imgSize;
     std::vector<Points> m_horizontal_clusters;
+    std::vector<cv::Vec2f> m_horizontal_lines;
+    std::vector<cv::Vec2f> m_vertical_lines;
     std::vector<Points> m_vertical_clusters;
     float m_wavelen_h, m_wavelen_v;
 }; // class LineFinder
