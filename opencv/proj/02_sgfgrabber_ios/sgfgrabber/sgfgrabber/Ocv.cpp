@@ -349,6 +349,15 @@ float dist_point_line( cv::Point p, const cv::Vec4f &line)
     return num / den;
 }
 
+// Distance between point and polar line
+//----------------------------------------------------------
+float dist_point_line( cv::Point p, const cv::Vec2f &pline)
+{
+    cv::Vec4f line;
+    polar2segment( pline, line);
+    return dist_point_line( p, line);
+}
+
 // y given x for polar line
 //----------------------------------------
 float y_from_x( float x, cv::Vec2f pline)
@@ -366,14 +375,6 @@ float x_from_y( float y, cv::Vec2f pline)
 }
 
 
-// Distance between point and polar line
-//----------------------------------------------------------
-float dist_point_line( cv::Point p, const cv::Vec2f &pline)
-{
-    cv::Vec4f line;
-    polar2segment( pline, line);
-    return dist_point_line( p, line);
-}
 
 // Quad
 //=======
@@ -668,6 +669,10 @@ void draw_polar_lines( std::vector<cv::Vec2f> plines, cv::Mat &dst,
 void points2float( const Points &pi, Points2f &pf)
 {
     pf = Points2f( pi.begin(), pi.end());
+}
+Points2f points2float( const Points &pi)
+{
+    return Points2f( pi.begin(), pi.end());
 }
 
 // Vector of float points to int

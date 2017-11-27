@@ -154,6 +154,7 @@ cv::Scalar get_color( bool reset=false);
 //====================
 // Vector of int points to float
 void points2float( const Points &pi, Points2f &pf);
+Points2f points2float( const Points &pi);
 // Vector of float points to int
 void points2int( const Points2f &pf, Points &pi);
 

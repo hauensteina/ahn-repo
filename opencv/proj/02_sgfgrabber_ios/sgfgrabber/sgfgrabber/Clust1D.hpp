@@ -29,6 +29,7 @@ public:
         
         std::vector<float> vals;
         ISLOOP (seq_) { vals.push_back( getter(seq_[i] )); }
+        int tt = 42;
         std::sort( vals.begin(), vals.end(), [](float a, float b) { return a<b; });
         std::vector<float> freq(vals.size());
         

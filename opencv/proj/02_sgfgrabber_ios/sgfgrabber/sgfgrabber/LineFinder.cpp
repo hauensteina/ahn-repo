@@ -17,9 +17,9 @@
 void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
                            std::vector<cv::Vec4f> &vertical_lines)
 {
-    cv::Vec4f hslope, vslope;
-    hslope = PI/2;
-    vslope = 0;
+    cv::Vec2f hslope, vslope;
+    hslope = {0, PI/2};
+    vslope = {0, 0};
     const float wwidth = 1.0;
     const int min_points = 4;
     std::vector<float> horizontal_cuts = Clust1D::cluster( m_cloud, wwidth,
@@ -38,32 +38,32 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
                       [vslope](cv::Point p) { return fabs(dist_point_line(p, vslope)); },
                       m_vertical_clusters);
     
-    float delta_wavelen_h, slope_h, median_rho_h;
-    std::vector<cv::Vec4f> lines_h;
-    std::vector<float> dists_h;
-    find_rhythm( m_horizontal_clusters,
-                m_wavelen_h,
-                delta_wavelen_h,
-                slope_h,
-                median_rho_h,
-                lines_h,
-                dists_h);
-    
-    float delta_wavelen_v, slope_v, median_rho_v;
-    std::vector<cv::Vec4f> lines_v;
-    std::vector<float> dists_v;
-    find_rhythm( m_vertical_clusters,
-                m_wavelen_v,
-                delta_wavelen_v,
-                slope_v,
-                median_rho_v,
-                lines_v,
-                dists_v);
-    
-    std::vector<cv::Vec4f> lines;
-    find_lines( m_imgSize.height, m_wavelen_h, delta_wavelen_h, slope_h, median_rho_h, horizontal_lines);
-    find_lines( m_imgSize.width , m_wavelen_v, delta_wavelen_v, slope_v, median_rho_v, vertical_lines);
-    
+//    float delta_wavelen_h, slope_h, median_rho_h;
+//    std::vector<cv::Vec4f> lines_h;
+//    std::vector<float> dists_h;
+//    find_rhythm( m_horizontal_clusters,
+//                m_wavelen_h,
+//                delta_wavelen_h,
+//                slope_h,
+//                median_rho_h,
+//                lines_h,
+//                dists_h);
+//    
+//    float delta_wavelen_v, slope_v, median_rho_v;
+//    std::vector<cv::Vec4f> lines_v;
+//    std::vector<float> dists_v;
+//    find_rhythm( m_vertical_clusters,
+//                m_wavelen_v,
+//                delta_wavelen_v,
+//                slope_v,
+//                median_rho_v,
+//                lines_v,
+//                dists_v);
+//    
+//    std::vector<cv::Vec4f> lines;
+//    find_lines( m_imgSize.height, m_wavelen_h, delta_wavelen_h, slope_h, median_rho_h, horizontal_lines);
+//    find_lines( m_imgSize.width , m_wavelen_v, delta_wavelen_v, slope_v, median_rho_v, vertical_lines);
+//    
 } // get_lines()
 
 
@@ -185,21 +185,28 @@ void LineFinder::find_rhythm( const std::vector<Points> &clusters,
 // Ratline is the line with the median ratio.
 // In dy, return the current line distance at the ratline.
 //----------------------------------------------------------------
-float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy)
+float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy, int &idx)
 {
     m_horizontal_lines.clear();
     ISLOOP (m_horizontal_clusters) {
         cv::Vec4f line =  fit_line( m_horizontal_clusters[i]);
         cv::Vec2f pline; segment2polar(line,pline);
-        if (1 || fabs( PI/2 - fabs(pline[1])) < 0.025) { // only linea that are really horizontal
-            //PLOG( "pline[1]: %.6f\n" , pline[1]);
-            m_horizontal_lines.push_back( pline);
-        }
+//        if (1 || fabs( PI/2 - fabs(pline[1])) < 0.025) { // only linea that are really horizontal
+//            //PLOG( "pline[1]: %.6f\n" , pline[1]);
+        m_horizontal_lines.push_back( pline);
+//        }
     }
-    // Sort horizontal lines by y, just to be sure
     float middle_x = m_imgSize.width / 2.0;
-    std::sort( m_horizontal_lines.begin(), m_horizontal_lines.end(),
-              [middle_x](cv::Vec2f a, cv::Vec2f b) { return y_from_x( middle_x, a) < y_from_x( middle_x, b); } );
+//    // Sort horizontal lines by y, just to be sure
+//    std::sort( m_horizontal_lines.begin(), m_horizontal_lines.end(),
+//              [middle_x](cv::Vec2f a, cv::Vec2f b) { return y_from_x( middle_x, a) < y_from_x( middle_x, b); } );
+    
+    m_vertical_lines.clear();
+    ISLOOP (m_vertical_clusters) {
+        cv::Vec4f line =  fit_line( m_vertical_clusters[i]);
+        cv::Vec2f pline; segment2polar(line,pline);
+        m_vertical_lines.push_back( pline);
+    }
     
     // Find distances from previous
     typedef struct { int idx; float dist; } DistIdx;
@@ -224,6 +231,7 @@ float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy)
     dy = dists[med.idx-1].dist;
     assert( dists[med.idx-1].idx == med.idx);
     float res = med.dist;
+    idx = med.idx;
     return res;
     // Next:
     // Find the most vertical vertical line
@@ -231,7 +239,6 @@ float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy)
     // Find points above the intersection
     // Find points below the intersection
 } // dy_rat()
-
 
 
 // Start in the middle with the medians, expand to both sides

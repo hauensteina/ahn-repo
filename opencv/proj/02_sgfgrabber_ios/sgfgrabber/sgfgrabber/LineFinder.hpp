@@ -50,7 +50,7 @@ public:
                               cv::Vec4f &line2,
                               float &rho1, float &rho2,  // distance from top
                               float &d1, float &d2);     // distance between intersections on that line
-    float dy_rat( cv::Vec2f &ratline, float &dy);
+    float dy_rat( cv::Vec2f &ratline, float &dy, int &idx);
 
     // Data
     //-------
