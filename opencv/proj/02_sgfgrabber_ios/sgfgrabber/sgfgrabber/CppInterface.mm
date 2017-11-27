@@ -190,6 +190,18 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
 #pragma mark - Processing Pipeline for debugging
 //=================================================
 
+/*
+ For each point on ratline
+   for each line thru point with angle between -10 and +10 degrees
+     find the number of points on that line
+     keep the line with the most points
+ Sort the lines by x for y==middle
+ Interpolate any gaps (dx > 1.5 * median dx
+ Find the best grid position => corners.
+ Warp.
+ 
+ */
+
 //-----------------------------------------
 - (UIImage *) f00_blobs:(UIImage *)img
 {
@@ -200,7 +212,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board01.jpg", _m);
+    load_img( @"board04.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -472,7 +484,7 @@ float median_dx( Points pts)
     draw_polar_line( upline, drawing, cv::Scalar( 255,128,64));
     get_color( true);
     ISLOOP (fixed_lines) {
-       // draw_polar_line( fixed_lines[i], drawing, get_color());
+       draw_polar_line( fixed_lines[i], drawing, get_color());
     }
 //    ISLOOP (_finder.m_vertical_lines) {
 //        draw_polar_line( _finder.m_vertical_lines[i], drawing, get_color());
