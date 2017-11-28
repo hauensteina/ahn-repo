@@ -99,6 +99,19 @@ void swap( T &x1, T &x2)
     T tmp = x1; x1 = x2; x2 = tmp;
 }
 
+// Count inversions in a vector of int
+//-----------------------------------------------
+inline int count_inversions ( std::vector<int> a)
+{
+    int count = 0;
+    ISLOOP (a) {
+        for (int j = i+1; j < SZ(a); j++) {
+            if (a[i] > a[j]) count++;
+        }
+    }
+    return count;
+}
+
 //# Find x where f(x) = target where f is an increasing func.
 //------------------------------------------------------------
 template<typename Func>
@@ -173,6 +186,26 @@ T vec_median( std::vector<T> vec)
     if (!vec.size()) return T(0);
     std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
     return vec[vec.size() / 2];
+}
+
+// Variance (sigma**2) of a vector.
+// Welford's algorithm.
+//-------------------------------------
+template <typename T>
+T vec_var( std::vector<T> samples)
+{
+    double M = 0;
+    double oldM = 0;
+    double S = 0;
+    int N = SZ(samples);
+    if (!N) return 0;
+    for (int k=1; k <= N; k++) {
+        double x = samples[k-1];
+        oldM = M;
+        M += (x-M) / k;
+        S += (x-M)*(x-oldM);
+    }
+    return S / N;
 }
 
 // Avg value of a vector

@@ -14,8 +14,7 @@
 // Use a model to find out whereabouts we expect the lines to be.
 // Later, use the result to cluster points and fix lines in LineFixer.
 //----------------------------------------------------------------------
-void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
-                           std::vector<cv::Vec4f> &vertical_lines)
+void LineFinder::cluster()
 {
     cv::Vec2f hslope, vslope;
     hslope = {0, PI/2};
@@ -37,33 +36,6 @@ void LineFinder::get_lines( std::vector<cv::Vec4f> &horizontal_lines,
     Clust1D::classify( m_cloud, vertical_cuts, min_points,
                       [vslope](cv::Point p) { return fabs(dist_point_line(p, vslope)); },
                       m_vertical_clusters);
-    
-//    float delta_wavelen_h, slope_h, median_rho_h;
-//    std::vector<cv::Vec4f> lines_h;
-//    std::vector<float> dists_h;
-//    find_rhythm( m_horizontal_clusters,
-//                m_wavelen_h,
-//                delta_wavelen_h,
-//                slope_h,
-//                median_rho_h,
-//                lines_h,
-//                dists_h);
-//    
-//    float delta_wavelen_v, slope_v, median_rho_v;
-//    std::vector<cv::Vec4f> lines_v;
-//    std::vector<float> dists_v;
-//    find_rhythm( m_vertical_clusters,
-//                m_wavelen_v,
-//                delta_wavelen_v,
-//                slope_v,
-//                median_rho_v,
-//                lines_v,
-//                dists_v);
-//    
-//    std::vector<cv::Vec4f> lines;
-//    find_lines( m_imgSize.height, m_wavelen_h, delta_wavelen_h, slope_h, median_rho_h, horizontal_lines);
-//    find_lines( m_imgSize.width , m_wavelen_v, delta_wavelen_v, slope_v, median_rho_v, vertical_lines);
-//    
 } // get_lines()
 
 

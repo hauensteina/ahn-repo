@@ -243,14 +243,14 @@
                 break;
             case 2:
                 state++;
-                img = [self.grabFuncs f02_center];
+                img = [self.grabFuncs f02_horiz_lines];
                 [self.cameraView setImage:img];
                 break;
-//            case 3:
-//                state++;
-//                img = [self.grabFuncs f03_verticals];
-//                [self.cameraView setImage:img];
-//                break;
+            case 3:
+                //state++;
+                img = [self.grabFuncs f03_vert_lines];
+                [self.cameraView setImage:img];
+                break;
 //            case 4:
 //                state++;
 //                img = [self.grabFuncs f04_clean_horiz_lines];

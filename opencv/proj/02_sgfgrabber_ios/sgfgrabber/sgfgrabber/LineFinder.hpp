@@ -26,7 +26,7 @@ public:
         m_boardsize = boardsize;
         m_imgSize = imgSize;
     }
-    void get_lines( std::vector<cv::Vec4f> &horizontal_lines, std::vector<cv::Vec4f> &vertical_lines);
+    void cluster();
 //private:
     // Methods
     //---------

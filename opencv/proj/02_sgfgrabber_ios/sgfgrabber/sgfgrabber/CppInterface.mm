@@ -37,8 +37,8 @@ const cv::Size TMPL_SZ(16,16);
 @property Points board_zoomed; // board corners after zooming in
 @property int board_sz; // board size, 9 or 19
 @property Points stone_or_empty; // places where we suspect stones or empty
-@property std::vector<cv::Vec4f> horizontal_lines;
-@property std::vector<cv::Vec4f> vertical_lines;
+@property std::vector<cv::Vec2f> horizontal_lines;
+@property std::vector<cv::Vec2f> vertical_lines;
 @property cv::Vec2f horiz_line;
 @property cv::Vec2f vert_line;
 @property LineFinder finder;
@@ -411,144 +411,218 @@ float median_dx( Points pts)
     return res.x;
 }
 
+// Get the variance in dx in the middle for a bunch of lines.
+// Maybe skip one of them.
+//---------------------------------------------------------------------------
+float x_line_var( std::vector<cv::Vec2f> lines, int height, int skip = -1)
+{
+    std::vector<float> vals;
+    float middle = height / 2.0;
+    ISLOOP (lines) {
+        if (i == skip) continue;
+        auto line = lines[i];
+        float x = x_from_y( middle, line);
+        vals.push_back( x);
+    }
+    std::sort( vals.begin(), vals.end(), [](float v1, float v2) { return v1 < v2; });
+    std::vector<float> deltas = vec_delta( vals);
+    float res = vec_var( deltas);
+    return res;
+}
+
+// Get the variance in x at the top for a bunch of lines.
+// Maybe skip one of them.
+//---------------------------------------------------------------------------
+float top_x_line_var( std::vector<cv::Vec2f> lines, int height, int skip = -1)
+{
+    std::vector<float> vals;
+    ISLOOP (lines) {
+        if (i == skip) continue;
+        auto line = lines[i];
+        float x = x_from_y( 1, line);
+        vals.push_back( x);
+    }
+    float res = vec_var( vals);
+    return res;
+}
+
+
 //----------------------------
-- (UIImage *) f02_center
+- (UIImage *) f02_horiz_lines
 {
     _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
     // This also removes dups from the points in _finder.horizontal_clusters
-    _finder.get_lines( _horizontal_lines, _vertical_lines);
+    _finder.cluster();
     cv::Vec2f ratline;
     float dy; int rat_idx;
     float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-    std::vector<cv::Vec2f> fixed_lines;
+    
     find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
-                     fixed_lines);
-    //cv::Vec2f vline = best_vline( _finder.m_vertical_lines);
-    cv::Vec2f vline = _finder.m_vertical_lines[SZ(_finder.m_vertical_lines)/2];
-
-    const int winsize = 3;
-    float dx = median_dx( _finder.m_horizontal_clusters[rat_idx]);
-    // Try to find points on the ratline
-    cv::Point seed = intersection( ratline, vline);
-    // Points to the right on ratline
-    //cv::Point right1 = walk_the_line( ratline, seed, dx);
-    //cv::Point right2 = walk_the_line( ratline, seed, 2*dx);
-    cv::Point right = walk_the_line( ratline, seed, winsize*dx);
-    // Points to the left on ratline
-    //cv::Point left1 = walk_the_line( ratline, seed, -dx);
-    //cv::Point left2 = walk_the_line( ratline, seed, -2*dx);
-    cv::Point left = walk_the_line( ratline, seed, -winsize*dx);
-    
-    cv::Vec2f upline = n_lines_up( fixed_lines, ratline, 2 * winsize);
-    float updx = dx / pow( dy_rat, 2*winsize-1);
-    cv::Point upseed = intersection( upline, vline);
-    // Points to the right on upline
-    //cv::Point upright1 = walk_the_line( upline, upseed, updx);
-    //cv::Point upright2 = walk_the_line( upline, upseed, 2*updx);
-    cv::Point upright = walk_the_line( upline, upseed, winsize*updx);
-    // Points to the left on upline
-    //cv::Point upleft1 = walk_the_line( upline, upseed, -updx);
-    //cv::Point upleft2 = walk_the_line( upline, upseed, -2*updx);
-    cv::Point upleft = walk_the_line( upline, upseed, -winsize*updx);
-    
-    // This should be a square
-    cv::Point tl = upleft;
-    cv::Point tr = upright;
-    cv::Point br = right;
-    cv::Point bl = left;
-    Points src = { tl,tr,br,bl };
-    
-    float left_x  = MIN( tl.x, bl.x);
-    float right_x = MAX( tr.x, br.x);
-    float bottom_y = MAX( bl.y, br.y);
-    float top_y = MIN( tl.y, tr.y);
-    float width = right_x - left_x;
-    float height = bottom_y - top_y;
-    float s = MAX( width, height);
-    
-    Points dst = {
-        cv::Point( left_x, top_y),
-        cv::Point( left_x + s, top_y),
-        cv::Point( left_x + s, top_y + s),
-        cv::Point( left_x, top_y + s) };
-
-    //@@@
-    cv::Mat transform = cv::getPerspectiveTransform( points2float(src), points2float(dst));
-    cv::Mat warped;
-    cv::warpPerspective( _gray, warped, transform, cv::Size(_gray.cols, _gray.rows));
+                     _horizontal_lines);
+    _vertical_lines.clear();
+//    //cv::Vec2f vline = best_vline( _finder.m_vertical_lines);
+//    cv::Vec2f vline = _finder.m_vertical_lines[SZ(_finder.m_vertical_lines)/2];
+//
+//    const int winsize = 3;
+//    float dx = median_dx( _finder.m_horizontal_clusters[rat_idx]);
+//    // Try to find points on the ratline
+//    cv::Point seed = intersection( ratline, vline);
+//    // Points to the right on ratline
+//    //cv::Point right1 = walk_the_line( ratline, seed, dx);
+//    //cv::Point right2 = walk_the_line( ratline, seed, 2*dx);
+//    cv::Point right = walk_the_line( ratline, seed, winsize*dx);
+//    // Points to the left on ratline
+//    //cv::Point left1 = walk_the_line( ratline, seed, -dx);
+//    //cv::Point left2 = walk_the_line( ratline, seed, -2*dx);
+//    cv::Point left = walk_the_line( ratline, seed, -winsize*dx);
+//
+//    cv::Vec2f upline = n_lines_up( fixed_lines, ratline, 2 * winsize);
+//    float updx = dx / pow( dy_rat, 2*winsize-1);
+//    cv::Point upseed = intersection( upline, vline);
+//    // Points to the right on upline
+//    //cv::Point upright1 = walk_the_line( upline, upseed, updx);
+//    //cv::Point upright2 = walk_the_line( upline, upseed, 2*updx);
+//    cv::Point upright = walk_the_line( upline, upseed, winsize*updx);
+//    // Points to the left on upline
+//    //cv::Point upleft1 = walk_the_line( upline, upseed, -updx);
+//    //cv::Point upleft2 = walk_the_line( upline, upseed, -2*updx);
+//    cv::Point upleft = walk_the_line( upline, upseed, -winsize*updx);
+//
+//    // This should be a square
+//    cv::Point tl = upleft;
+//    cv::Point tr = upright;
+//    cv::Point br = right;
+//    cv::Point bl = left;
+//    Points src = { tl,tr,br,bl };
+//
+//    float left_x  = MIN( tl.x, bl.x);
+//    float right_x = MAX( tr.x, br.x);
+//    float bottom_y = MAX( bl.y, br.y);
+//    float top_y = MIN( tl.y, tr.y);
+//    float width = right_x - left_x;
+//    float height = bottom_y - top_y;
+//    float s = MAX( width, height);
+//
+//    Points dst = {
+//        cv::Point( left_x, top_y),
+//        cv::Point( left_x + s, top_y),
+//        cv::Point( left_x + s, top_y + s),
+//        cv::Point( left_x, top_y + s) };
+//
+//
+//    cv::Mat transform = cv::getPerspectiveTransform( points2float(src), points2float(dst));
+//    cv::Mat warped;
+//    cv::warpPerspective( _gray, warped, transform, cv::Size(_gray.cols, _gray.rows));
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
-    draw_polar_line( upline, drawing, cv::Scalar( 255,128,64));
     get_color( true);
-    ISLOOP (fixed_lines) {
-       draw_polar_line( fixed_lines[i], drawing, get_color());
+    ISLOOP (_horizontal_lines) {
+       draw_polar_line( _horizontal_lines[i], drawing, get_color());
     }
-//    ISLOOP (_finder.m_vertical_lines) {
-//        draw_polar_line( _finder.m_vertical_lines[i], drawing, get_color());
-//    }
-    draw_polar_line( vline, drawing, cv::Scalar(255,0,0));
-    draw_point( seed, drawing, 3, cv::Scalar(255,0,0));
-//    draw_point( tr, drawing, 3, cv::Scalar(0,255,0));
-//    draw_point( br, drawing, 3, cv::Scalar(0,0,255));
-//    draw_point( bl, drawing, 3, cv::Scalar(255,255,0));
-//    draw_points( dst, drawing, 3, cv::Scalar(255,0,255));
-//    cur_line = ratline;
-//    cur_dy = dy;
-//    ILOOP (20) {
-//        cur_dy *= dy_rat;
-//        cur_line[0] += cur_dy;
-//        draw_polar_line( cur_line, drawing, get_color());
-//    }
-
-//    get_color( true);
-//    ISLOOP( _finder.m_horizontal_lines) {
-//        Points cl = _finder.m_horizontal_clusters[i];
-//        cv::Scalar color = get_color();
-//        draw_points( cl, drawing, 3, color);
-//        //draw_line( _finder.m_horizontal_lines[i], drawing, color);
-//    }
-//    draw_point(center, drawing, 5, cv::Scalar(255,0,0));
-//    draw_points( hcl[upper_idx], drawing, 5, cv::Scalar(0,255,0));
-//    draw_points( hcl[lower_idx], drawing, 5, cv::Scalar(255,0,0));
+    draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
+
+// Return Kendall tau distance between two permutations
+//------------------------------------------------------------------------
+int kendall_tau (std::vector<int> &a, std::vector<int> &b)
+{
+    assert( SZ(a) == SZ(b));
+    // Find index from value
+    std::vector<int> ainv(SZ(a));
+    ISLOOP (a) {
+        ainv[a[i]] = i;
+    }
+    
+    std::vector<int> bnew(SZ(a));
+    ISLOOP (a) {
+        bnew[i] = ainv[b[i]];
+    }
+    
+    int res = count_inversions( bnew);
+    int tt=42;
+    return res;
+}
+
 
 //----------------------------
-- (UIImage *) f03_verticals
+- (UIImage *) f03_vert_lines //@@@
 {
-    // Show results
+    std::vector<cv::Vec2f> lines;
+    if (!SZ(_vertical_lines)) {
+        cv::Mat canvas = cv::Mat::zeros( _gray.rows, _gray.cols, CV_8UC1);
+        ISLOOP (_stone_or_empty) {
+            draw_point( _stone_or_empty[i], canvas,2, cv::Scalar(255));
+        }
+        std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
+        HoughLines(canvas, lines, 1, PI/180, 10, 0, 0 );
+        lines.resize(500);
+        //int n = SZ(lines);
+        
+        // Separate horizontal, vertical, and other lines
+        horiz_vert_other_lines = partition( lines, 3,
+                                           [](cv::Vec2f &line) {
+                                               const float thresh = 25.0;
+                                               float theta = line[1] * (180.0 / PI);
+                                               if (fabs(theta - 180) < thresh) return 1;
+                                               else if (fabs(theta) < thresh) return 1;
+                                               else if (fabs(theta-90) < thresh) return 0;
+                                               else return 2;
+                                           });
+        _vertical_lines = horiz_vert_other_lines[1];
+    }
+    
+    float middle_var_base = x_line_var( _vertical_lines, _gray.rows);
+    float top_var_base = top_x_line_var( _vertical_lines, _gray.rows);
+    float min_loss = 1E9;
+    int min_idx = 0;
+    ISLOOP( _vertical_lines) {
+        float middle_var = x_line_var( _vertical_lines, _gray.rows, i);
+        float top_var = top_x_line_var( _vertical_lines, _gray.rows, i);
+        float middle_loss = middle_var - middle_var_base;
+        float top_loss = top_var - top_var_base;
+        float loss = middle_loss + top_loss;
+        PLOG("top_loss: %.2f middle_loss: %.2f \n", top_loss, middle_loss);
+        if (loss < min_loss) {
+            min_loss = loss;
+            min_idx = i;
+        }
+    }
+    _vertical_lines.erase( _vertical_lines.begin() + min_idx);
+    
+//    static std::vector<cv::Vec2f> vlines;
+//    HoughLines(canvas, lines, 1, PI/180, votes, 0, 0 );
+//    // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP( _finder.m_vertical_clusters) {
-        Points cl = _finder.m_vertical_clusters[i];
-        cv::Scalar color = cv::Scalar( rng.uniform(50, 255), rng.uniform(50,255), rng.uniform(50,255) );
-        draw_points( cl, drawing, 2, color);
-        draw_polar_line( _vert_line, drawing, cv::Scalar(0,0,255));
+    get_color(true);
+    ISLOOP( _vertical_lines) {
+        //if (i<400) continue;
+        draw_polar_line( _vertical_lines[i], drawing, cv::Scalar(255,0,0));
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
 
-// Improve line candidates by interpolation
-//--------------------------------------------
-- (UIImage *) f04_clean_horiz_lines
-{
-    g_app.mainVC.lbDbg.text = @"09";
-    LineFixer fixer;
-    fixer.fix( _horizontal_lines, _finder.m_horizontal_clusters, _horizontal_lines );
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
-    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
+//// Improve line candidates by interpolation
+////--------------------------------------------
+//- (UIImage *) f04_clean_horiz_lines
+//{
+//    g_app.mainVC.lbDbg.text = @"09";
+//    LineFixer fixer;
+//    fixer.fix( _horizontal_lines, _finder.m_horizontal_clusters, _horizontal_lines );
+//
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
+//    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//}
 
 //----------------------
 - (UIImage *) f02_flood
@@ -716,48 +790,48 @@ void get_intersections( const Points_ &corners, int boardsz,
 //    return res;
 //} // f06_find_lines()
 
-// Show the lines we found
-//------------------------------------------------------------------------
-- (UIImage *) f07_show_horiz_lines
-{
-    g_app.mainVC.lbDbg.text = @"07";
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-} // f07_show_horiz_lines()
-
-// Show the lines we found
-//------------------------------------------------------------------------
-- (UIImage *) f08_show_vert_lines
-{
-    g_app.mainVC.lbDbg.text = @"08";
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_lines( _vertical_lines, drawing, cv::Scalar(0,0,255));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-} // f08_show_vert_lines()
-
-
-//--------------------------------------------
-- (UIImage *) f10_clean_vert_lines
-{
-    g_app.mainVC.lbDbg.text = @"10";
-    LineFixer fixer;
-    fixer.fix( _vertical_lines, _finder.m_vertical_clusters, _vertical_lines );
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_lines( _vertical_lines, drawing, cv::Scalar(0,0,255));
-    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
+//// Show the lines we found
+////------------------------------------------------------------------------
+//- (UIImage *) f07_show_horiz_lines
+//{
+//    g_app.mainVC.lbDbg.text = @"07";
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    draw_lines( _horizontal_lines, drawing, cv::Scalar(0,0,255));
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//} // f07_show_horiz_lines()
+//
+//// Show the lines we found
+////------------------------------------------------------------------------
+//- (UIImage *) f08_show_vert_lines
+//{
+//    g_app.mainVC.lbDbg.text = @"08";
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    draw_lines( _vertical_lines, drawing, cv::Scalar(0,0,255));
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//} // f08_show_vert_lines()
+//
+//
+////--------------------------------------------
+//- (UIImage *) f10_clean_vert_lines
+//{
+//    g_app.mainVC.lbDbg.text = @"10";
+//    LineFixer fixer;
+//    fixer.fix( _vertical_lines, _finder.m_vertical_clusters, _vertical_lines );
+//
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    draw_lines( _vertical_lines, drawing, cv::Scalar(0,0,255));
+//    draw_points( _stone_or_empty, drawing, 2, cv::Scalar(0,255,0));
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//}
 
 
 
@@ -812,45 +886,45 @@ std::string rc_key (int r, int c)
     return std::string (buf);
 }
 
-// Classify intersections into b,w,empty
-//----------------------------------------
-- (UIImage *) f11_classify
-{
-    g_app.mainVC.lbDbg.text = @"11";
-    Points intersections;
-    std::vector<int> diagram =
-    BlackWhiteEmpty::get_diagram( _small,
-                                 _horizontal_lines, _finder.m_wavelen_h,
-                                 _vertical_lines, _finder.m_wavelen_v,
-                                 _board_sz,
-                                 _board_zoomed,
-                                 intersections);
-
-    cv::Mat drawing;
-    drawing = _small.clone();
-    int dx = round(_finder.m_wavelen_h/4.0);
-    int dy = round(_finder.m_wavelen_h/4.0);
-    // Black stones
-    ISLOOP (diagram) {
-        cv::Point p = intersections[i];
-        cv::Rect rect( p.x - dx,
-                      p.y - dy,
-                      2*dx+1,
-                      2*dy+1);
-        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
-        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-            draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
-        }
-        else if (diagram[i] != BlackWhiteEmpty::EEMPTY) {
-            draw_point( p, drawing, 2, cv::Scalar(0,0,0,255));
-        }
-    }
-
-    UIImage *res = MatToUIImage( drawing);
-    //UIImage *res = MatToUIImage( zoomed_edges);
-    return res;
-
-} // f07_classify()
+//// Classify intersections into b,w,empty
+////----------------------------------------
+//- (UIImage *) f11_classify
+//{
+//    g_app.mainVC.lbDbg.text = @"11";
+//    Points intersections;
+//    std::vector<int> diagram =
+//    BlackWhiteEmpty::get_diagram( _small,
+//                                 _horizontal_lines, _finder.m_wavelen_h,
+//                                 _vertical_lines, _finder.m_wavelen_v,
+//                                 _board_sz,
+//                                 _board_zoomed,
+//                                 intersections);
+//
+//    cv::Mat drawing;
+//    drawing = _small.clone();
+//    int dx = round(_finder.m_wavelen_h/4.0);
+//    int dy = round(_finder.m_wavelen_h/4.0);
+//    // Black stones
+//    ISLOOP (diagram) {
+//        cv::Point p = intersections[i];
+//        cv::Rect rect( p.x - dx,
+//                      p.y - dy,
+//                      2*dx+1,
+//                      2*dy+1);
+//        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+//        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+//            draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+//        }
+//        else if (diagram[i] != BlackWhiteEmpty::EEMPTY) {
+//            draw_point( p, drawing, 2, cv::Scalar(0,0,0,255));
+//        }
+//    }
+//
+//    UIImage *res = MatToUIImage( drawing);
+//    //UIImage *res = MatToUIImage( zoomed_edges);
+//    return res;
+//
+//} // f07_classify()
 
 #pragma mark - Real time implementation
 //========================================
