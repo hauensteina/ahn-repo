@@ -411,10 +411,33 @@ float median_dx( Points pts)
     return res.x;
 }
 
+// Various loss functions to remove one line at a time
+//=========================================================
+
+// Kendall tau distance between two permutations
+//-----------------------------------------------------------
+int kendall_tau (std::vector<int> &a, std::vector<int> &b)
+{
+    assert( SZ(a) == SZ(b));
+    // Find index from value
+    std::vector<int> ainv(SZ(a));
+    ISLOOP (a) {
+        ainv[a[i]] = i;
+    }
+    
+    std::vector<int> bnew(SZ(a));
+    ISLOOP (a) {
+        bnew[i] = ainv[b[i]];
+    }
+    
+    int res = count_inversions( bnew);
+    return res;
+}
+
 // Get the variance in dx in the middle for a bunch of lines.
 // Maybe skip one of them.
-//---------------------------------------------------------------------------
-float x_line_var( std::vector<cv::Vec2f> lines, int height, int skip = -1)
+//--------------------------------------------------------------------------------
+float x_line_var( const std::vector<cv::Vec2f> &lines, int height, int skip = -1)
 {
     std::vector<float> vals;
     float middle = height / 2.0;
@@ -427,27 +450,67 @@ float x_line_var( std::vector<cv::Vec2f> lines, int height, int skip = -1)
     std::sort( vals.begin(), vals.end(), [](float v1, float v2) { return v1 < v2; });
     std::vector<float> deltas = vec_delta( vals);
     float res = vec_var( deltas);
+    //float res = vec_var_med( deltas);
     return res;
 }
 
-// Get the variance in x at the top for a bunch of lines.
-// Maybe skip one of them.
-//---------------------------------------------------------------------------
-float top_x_line_var( std::vector<cv::Vec2f> lines, int height, int skip = -1)
+//// Get the variance in x at the top for a bunch of lines.
+//// Maybe skip one of them.
+////---------------------------------------------------------------------------
+//float top_x_line_var( const std::vector<cv::Vec2f> &lines, int skip = -1)
+//{
+//    std::vector<float> vals;
+//    ISLOOP (lines) {
+//        if (i == skip) continue;
+//        auto line = lines[i];
+//        float x = x_from_y( 1, line);
+//        vals.push_back( x);
+//    }
+//    float res = vec_var( vals);
+//    return res;
+//}
+
+// Sort lines by x in the screen middle, then get variance of dx nearer the top.
+// Maybe skip one.
+// The idea is that the order at the top should be the same as in the middle,
+// and the lines should be equidistant for a given y.
+//------------------------------------------------------------------------------------
+float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = -1)
 {
-    std::vector<float> vals;
+    assert( skip < 0 || skip < SZ(lines));
+    typedef struct { int idx; float val; } IdxVal;
+    int res_len = SZ( lines);
+    if (skip >= 0) res_len--;
+    std::vector<IdxVal> topvals( res_len);
+    std::vector<IdxVal> midvals( res_len);
+    const float middle = height / 2.0;
+    int k = 0;
     ISLOOP (lines) {
         if (i == skip) continue;
         auto line = lines[i];
-        float x = x_from_y( 1, line);
-        vals.push_back( x);
+        //IdxVal top = { k, x_from_y( 20, line) };
+        IdxVal top = { k, x_from_y( middle/12, line) };
+        //IdxVal top = { k, x_from_y( 1, line) };
+        IdxVal mid = { k, x_from_y( middle, line) };
+        topvals[k] = top;
+        midvals[k] = mid;
+        k++;
     }
-    float res = vec_var( vals);
+    std::sort( topvals.begin(), topvals.end(),
+              [midvals](IdxVal iv1, IdxVal iv2) {
+                  return midvals[iv1.idx].val < midvals[iv2.idx].val;
+              });
+    auto vals = vec_extract( topvals, [](IdxVal iv){return iv.val;});
+    auto deltas = vec_delta( vals);
+    //PLOG( "deltas:\n");
+    //ISLOOP( deltas) { PLOG( "%.2f\n", deltas[i]); }
+    float res = vec_var( deltas);
+    //float res = vec_var_med( deltas);
+    //PLOG( "AVG:%.2f\n", vec_avg( deltas));
     return res;
 }
 
-
-//----------------------------
+//-----------------------------
 - (UIImage *) f02_horiz_lines
 {
     _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
@@ -526,28 +589,6 @@ float top_x_line_var( std::vector<cv::Vec2f> lines, int height, int skip = -1)
     return res;
 }
 
-// Return Kendall tau distance between two permutations
-//------------------------------------------------------------------------
-int kendall_tau (std::vector<int> &a, std::vector<int> &b)
-{
-    assert( SZ(a) == SZ(b));
-    // Find index from value
-    std::vector<int> ainv(SZ(a));
-    ISLOOP (a) {
-        ainv[a[i]] = i;
-    }
-    
-    std::vector<int> bnew(SZ(a));
-    ISLOOP (a) {
-        bnew[i] = ainv[b[i]];
-    }
-    
-    int res = count_inversions( bnew);
-    int tt=42;
-    return res;
-}
-
-
 //----------------------------
 - (UIImage *) f03_vert_lines //@@@
 {
@@ -559,8 +600,7 @@ int kendall_tau (std::vector<int> &a, std::vector<int> &b)
         }
         std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
         HoughLines(canvas, lines, 1, PI/180, 10, 0, 0 );
-        lines.resize(500);
-        //int n = SZ(lines);
+        lines.resize(500); // Only keep the best ones
         
         // Separate horizontal, vertical, and other lines
         horiz_vert_other_lines = partition( lines, 3,
@@ -574,28 +614,29 @@ int kendall_tau (std::vector<int> &a, std::vector<int> &b)
                                            });
         _vertical_lines = horiz_vert_other_lines[1];
     }
-    
-    float middle_var_base = x_line_var( _vertical_lines, _gray.rows);
-    float top_var_base = top_x_line_var( _vertical_lines, _gray.rows);
-    float min_loss = 1E9;
-    int min_idx = 0;
-    ISLOOP( _vertical_lines) {
-        float middle_var = x_line_var( _vertical_lines, _gray.rows, i);
-        float top_var = top_x_line_var( _vertical_lines, _gray.rows, i);
-        float middle_loss = middle_var - middle_var_base;
-        float top_loss = top_var - top_var_base;
-        float loss = middle_loss + top_loss;
-        PLOG("top_loss: %.2f middle_loss: %.2f \n", top_loss, middle_loss);
-        if (loss < min_loss) {
-            min_loss = loss;
-            min_idx = i;
+
+    //_vertical_lines.resize(100);
+    float base_cost;
+    do {
+        base_cost = top_x_var_by_middle( _vertical_lines, _gray.rows);
+        //float base_cost = x_line_var( _vertical_lines, _gray.rows);
+        float min_loss = 1E9;
+        int min_idx = 0;
+        ISLOOP( _vertical_lines) {
+            float cost = top_x_var_by_middle( _vertical_lines, _gray.rows, i);
+            //float cost = x_line_var( _vertical_lines, _gray.rows, i);
+            float loss = cost - base_cost;
+            //PLOG("%5d base_cost: %.2f cost: %.2f loss: %.2f \n", i, base_cost, cost, loss);
+            if (loss < min_loss) {
+                min_loss = loss;
+                min_idx = i;
+            }
         }
-    }
-    _vertical_lines.erase( _vertical_lines.begin() + min_idx);
+        PLOG("base_cost %.0f with %d lines\n", base_cost, SZ(_vertical_lines));
+        _vertical_lines.erase( _vertical_lines.begin() + min_idx);
+    } while (SZ(_vertical_lines) > _board_sz );
     
-//    static std::vector<cv::Vec2f> vlines;
-//    HoughLines(canvas, lines, 1, PI/180, votes, 0, 0 );
-//    // Show results
+    // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color(true);

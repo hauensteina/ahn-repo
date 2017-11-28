@@ -190,7 +190,7 @@ T vec_median( std::vector<T> vec)
 
 // Variance (sigma**2) of a vector.
 // Welford's algorithm.
-//-------------------------------------
+//----------------------------------
 template <typename T>
 T vec_var( std::vector<T> samples)
 {
@@ -208,8 +208,39 @@ T vec_var( std::vector<T> samples)
     return S / N;
 }
 
+// Variance (sigma**2) of a vector.
+//-------------------------------------
+template <typename T>
+T vec_var_ref( std::vector<T> samples)
+{
+    double mean = 0;
+    double sqmean = 0;
+    ISLOOP (samples) {
+        mean += samples[i];
+        sqmean += samples[i] * samples[i];
+    }
+    mean /= SZ(samples);
+    sqmean /= SZ(samples);
+    return sqmean - mean;
+}
+
+// Sum of square dist from median
+//-------------------------------------
+template <typename T>
+T vec_var_med( std::vector<T> samples)
+{
+    double med = vec_median( samples);
+    double sqmean = 0;
+    ISLOOP (samples) {
+        double tt = samples[i] - med;
+        sqmean += tt*tt;
+    }
+    sqmean /= SZ(samples);
+    return sqmean;
+}
+
 // Avg value of a vector
-//----------------------------------------------
+//------------------------------
 template <typename T>
 T vec_avg( std::vector<T> vec)
 {
@@ -220,7 +251,7 @@ T vec_avg( std::vector<T> vec)
 }
 
 // Avg value of a vector, with acces func
-//----------------------------------------------------------
+//---------------------------------------------
 template <typename T, typename Func>
 float vec_avg( std::vector<T> vec, Func at)
 {
@@ -299,6 +330,18 @@ std::vector<T> vec_rat( const std::vector<T> &vec)
         rats.push_back( vec[i-1] != 0 ? vec[i] / (float) vec[i-1] : 0);
     }
     return rats;
+}
+
+// Extract a vector of floats from a vector of some type
+//---------------------------------------------------------------------
+template <typename T, typename F>
+std::vector<float> vec_extract(  const std::vector<T> &vec, F getter)
+{
+    std::vector<float> res(SZ(vec));
+    ISLOOP (vec) {
+        res[i] = getter( vec[i]);
+    }
+    return res;
 }
 
 // Partition a vector of elements by class func.
