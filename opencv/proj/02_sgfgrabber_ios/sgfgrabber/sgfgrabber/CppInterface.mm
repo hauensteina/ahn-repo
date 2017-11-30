@@ -677,7 +677,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color(true);
-    ISLOOP( _vertical_lines) {
+    ISLOOP( lines) {
         draw_polar_line( lines[i], drawing, get_color());
     }
     UIImage *res = MatToUIImage( drawing);
