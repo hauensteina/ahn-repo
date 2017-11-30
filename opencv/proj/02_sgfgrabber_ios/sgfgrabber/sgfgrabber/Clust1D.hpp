@@ -50,6 +50,7 @@ public:
         
         // Convert to discrete pdf, missing values set to -1
         int mmax = ROUND( vec_max( vals)) + 1;
+        mmax += 10; // Padding to find the rightmost cluster
         std::vector<float> pdf(mmax,-1);
         ISLOOP (freq) {
             pdf[ROUND(vals[i])] = freq[i];

@@ -163,22 +163,9 @@ float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy, int &idx)
     ISLOOP (m_horizontal_clusters) {
         cv::Vec4f line =  fit_line( m_horizontal_clusters[i]);
         cv::Vec2f pline; segment2polar(line,pline);
-//        if (1 || fabs( PI/2 - fabs(pline[1])) < 0.025) { // only linea that are really horizontal
-//            //PLOG( "pline[1]: %.6f\n" , pline[1]);
         m_horizontal_lines.push_back( pline);
-//        }
     }
     float middle_x = m_imgSize.width / 2.0;
-//    // Sort horizontal lines by y, just to be sure
-//    std::sort( m_horizontal_lines.begin(), m_horizontal_lines.end(),
-//              [middle_x](cv::Vec2f a, cv::Vec2f b) { return y_from_x( middle_x, a) < y_from_x( middle_x, b); } );
-    
-    m_vertical_lines.clear();
-    ISLOOP (m_vertical_clusters) {
-        cv::Vec4f line =  fit_line( m_vertical_clusters[i]);
-        cv::Vec2f pline; segment2polar(line,pline);
-        m_vertical_lines.push_back( pline);
-    }
     
     // Find distances from previous
     typedef struct { int idx; float dist; } DistIdx;
@@ -205,11 +192,6 @@ float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy, int &idx)
     float res = med.dist;
     idx = med.idx;
     return res;
-    // Next:
-    // Find the most vertical vertical line
-    // Find the intersection between ratline and vert line
-    // Find points above the intersection
-    // Find points below the intersection
 } // dy_rat()
 
 

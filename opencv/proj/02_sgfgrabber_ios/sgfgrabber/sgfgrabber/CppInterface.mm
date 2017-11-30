@@ -213,7 +213,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board02.jpg", _m);
+    load_img( @"board04.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -521,69 +521,18 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     float dy; int rat_idx;
     float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
     
+    _horizontal_lines.clear();
     find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
                      _horizontal_lines);
     _vertical_lines.clear();
-//    //cv::Vec2f vline = best_vline( _finder.m_vertical_lines);
-//    cv::Vec2f vline = _finder.m_vertical_lines[SZ(_finder.m_vertical_lines)/2];
-//
-//    const int winsize = 3;
-//    float dx = median_dx( _finder.m_horizontal_clusters[rat_idx]);
-//    // Try to find points on the ratline
-//    cv::Point seed = intersection( ratline, vline);
-//    // Points to the right on ratline
-//    //cv::Point right1 = walk_the_line( ratline, seed, dx);
-//    //cv::Point right2 = walk_the_line( ratline, seed, 2*dx);
-//    cv::Point right = walk_the_line( ratline, seed, winsize*dx);
-//    // Points to the left on ratline
-//    //cv::Point left1 = walk_the_line( ratline, seed, -dx);
-//    //cv::Point left2 = walk_the_line( ratline, seed, -2*dx);
-//    cv::Point left = walk_the_line( ratline, seed, -winsize*dx);
-//
-//    cv::Vec2f upline = n_lines_up( fixed_lines, ratline, 2 * winsize);
-//    float updx = dx / pow( dy_rat, 2*winsize-1);
-//    cv::Point upseed = intersection( upline, vline);
-//    // Points to the right on upline
-//    //cv::Point upright1 = walk_the_line( upline, upseed, updx);
-//    //cv::Point upright2 = walk_the_line( upline, upseed, 2*updx);
-//    cv::Point upright = walk_the_line( upline, upseed, winsize*updx);
-//    // Points to the left on upline
-//    //cv::Point upleft1 = walk_the_line( upline, upseed, -updx);
-//    //cv::Point upleft2 = walk_the_line( upline, upseed, -2*updx);
-//    cv::Point upleft = walk_the_line( upline, upseed, -winsize*updx);
-//
-//    // This should be a square
-//    cv::Point tl = upleft;
-//    cv::Point tr = upright;
-//    cv::Point br = right;
-//    cv::Point bl = left;
-//    Points src = { tl,tr,br,bl };
-//
-//    float left_x  = MIN( tl.x, bl.x);
-//    float right_x = MAX( tr.x, br.x);
-//    float bottom_y = MAX( bl.y, br.y);
-//    float top_y = MIN( tl.y, tr.y);
-//    float width = right_x - left_x;
-//    float height = bottom_y - top_y;
-//    float s = MAX( width, height);
-//
-//    Points dst = {
-//        cv::Point( left_x, top_y),
-//        cv::Point( left_x + s, top_y),
-//        cv::Point( left_x + s, top_y + s),
-//        cv::Point( left_x, top_y + s) };
-//
-//
-//    cv::Mat transform = cv::getPerspectiveTransform( points2float(src), points2float(dst));
-//    cv::Mat warped;
-//    cv::warpPerspective( _gray, warped, transform, cv::Size(_gray.cols, _gray.rows));
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color( true);
     ISLOOP (_horizontal_lines) {
-       draw_polar_line( _horizontal_lines[i], drawing, get_color());
+        cv::Scalar col = get_color();
+        draw_polar_line( _horizontal_lines[i], drawing, col);
     }
     draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
     UIImage *res = MatToUIImage( drawing);
@@ -659,7 +608,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     // Cluster by x in the middle
     const float wwidth = 32.0;
     const float middle_y = _gray.rows / 2.0;
-    const int min_clust_size = 1;
+    const int min_clust_size = 0;
     auto Getter =  [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); };
     auto vert_line_cuts = Clust1D::cluster( _vertical_lines, wwidth, Getter);
     std::vector<std::vector<cv::Vec2f> > clusters;
@@ -756,10 +705,6 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     get_color(true);
     ISLOOP( _vertical_lines) {
         draw_polar_line( _vertical_lines[i], drawing, get_color());
-    }
-    get_color(true);
-    ISLOOP( _horizontal_lines) {
-        draw_polar_line( _horizontal_lines[i], drawing, get_color());
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
