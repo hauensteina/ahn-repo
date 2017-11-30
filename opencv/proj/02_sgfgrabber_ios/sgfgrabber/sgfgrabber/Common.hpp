@@ -343,6 +343,22 @@ std::vector<float> vec_extract(  const std::vector<T> &vec, F getter)
     return res;
 }
 
+// Find index of closest element in a vec
+//---------------------------------------------------------------------
+template <typename T>
+int vec_closest(  const std::vector<T> &vec, T num)
+{
+    float mindist = 1E9;
+    int minidx = -1;
+    ISLOOP (vec) {
+        if (fabs( vec[i] - num) < mindist) {
+            mindist = fabs( vec[i] - num);
+            minidx = i;
+        }
+    }
+    return minidx;
+}
+
 // Partition a vector of elements by class func.
 // Return parts as vec of vec.
 //---------------------------------------------------------------------

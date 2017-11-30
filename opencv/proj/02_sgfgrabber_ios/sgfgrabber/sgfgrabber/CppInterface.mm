@@ -603,7 +603,9 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
         std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
         HoughLines(canvas, lines, 1, PI/180, 10, 0, 0 );
         lines.resize(500); // Only keep the best ones
-        
+        for (auto& line: lines) {
+            if (line[0] < 0) { line[0] *= -1; line[1] -= PI; }
+        }
         // Separate horizontal, vertical, and other lines
         horiz_vert_other_lines = partition( lines, 3,
                                            [](cv::Vec2f &line) {
@@ -652,7 +654,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 
 // Cluster vertical Hough lines to remove close duplicates.
 //------------------------------------------------------------
-- (UIImage *) f04_vert_lines_2 //@@@
+- (UIImage *) f04_vert_lines_2
 {
     // Cluster by x in the middle
     const float wwidth = 32.0;
@@ -664,21 +666,100 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     Clust1D::classify( _vertical_lines, vert_line_cuts, min_clust_size, Getter, clusters);
 
     // Average the clusters into single lines
-    std::vector<cv::Vec2f> lines;
+    _vertical_lines.clear();
     ISLOOP (clusters) {
         auto &clust = clusters[i];
         double theta = vec_avg( clust, [](cv::Vec2f line){ return line[1]; });
         double rho   = vec_avg( clust, [](cv::Vec2f line){ return line[0]; });
         cv::Vec2f line( rho, theta);
-        lines.push_back( line);
+        _vertical_lines.push_back( line);
     }
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color(true);
-    ISLOOP( lines) {
-        draw_polar_line( lines[i], drawing, get_color());
+    ISLOOP( _vertical_lines) {
+        draw_polar_line( _vertical_lines[i], drawing, get_color());
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+// Find vertical line parameters
+//------------------------------------------------------------
+- (UIImage *) f05_vert_params //@@@
+{
+    const float middle_y = _gray.rows / 2.0;
+    const float width = _gray.cols;
+    
+    auto rhos   = vec_extract( _vertical_lines, [](cv::Vec2f line) { return line[0]; } );
+    auto thetas = vec_extract( _vertical_lines, [](cv::Vec2f line) { return line[1]; } );
+    auto xes    = vec_extract( _vertical_lines, [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); });
+    auto d_rhos   = vec_delta( rhos);
+    auto d_thetas = vec_delta( thetas);
+    auto d_rho   = vec_median( d_rhos);
+    //auto d_rho   = (rhos.back() - rhos.front()) / (SZ(rhos)-1);
+    auto d_theta = vec_median( d_thetas);
+    //auto d_theta  = (thetas.back() - thetas.front()) / (SZ(thetas)-1);
+
+    cv::Vec2f med_line = _vertical_lines[SZ(_vertical_lines)/2];
+    std::vector<cv::Vec2f> lines;
+    lines.push_back(med_line);
+    float rho, theta;
+    // If there is a close line, use it. Else interpolate.
+    float thresh = 6;
+    // Lines to the right
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        if (!i) continue;
+        rho += d_rho;
+        theta += d_theta;
+        float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
+        int close_idx = vec_closest( xes, x);
+        if (fabs( x - xes[close_idx]) < thresh) {
+            rho   = _vertical_lines[close_idx][0];
+            theta = _vertical_lines[close_idx][1];
+        }
+        cv::Vec2f line( rho,theta);
+        if (x_from_y( middle_y, line) > width) break;
+        lines.push_back( line);
+    }
+    // Lines to the left
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        if (!i) continue;
+        rho -= d_rho;
+        theta -= d_theta;
+        float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
+        int close_idx = vec_closest( xes, x);
+        if (fabs( x - xes[close_idx]) < thresh) {
+            rho   = _vertical_lines[close_idx][0];
+            theta = _vertical_lines[close_idx][1];
+        }
+        cv::Vec2f line( rho,theta);
+        if (x_from_y( middle_y, line) < 0) break;
+        lines.push_back( line);
+    }
+    std::sort( lines.begin(), lines.end(),
+              [middle_y](cv::Vec2f line1, cv::Vec2f line2) {
+                  return x_from_y( middle_y, line1) < x_from_y( middle_y, line2);
+              });
+        
+    _vertical_lines = lines;
+
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    get_color(true);
+    ISLOOP( _vertical_lines) {
+        draw_polar_line( _vertical_lines[i], drawing, get_color());
+    }
+    get_color(true);
+    ISLOOP( _horizontal_lines) {
+        draw_polar_line( _horizontal_lines[i], drawing, get_color());
     }
     UIImage *res = MatToUIImage( drawing);
     return res;

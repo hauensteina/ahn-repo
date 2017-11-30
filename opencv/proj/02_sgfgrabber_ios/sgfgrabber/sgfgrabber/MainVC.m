@@ -256,11 +256,11 @@
                 img = [self.grabFuncs f04_vert_lines_2];
                 [self.cameraView setImage:img];
                 break;
-//            case 5:
-//                state++;
-//                img = [self.grabFuncs f05_find_intersections];
-//                [self.cameraView setImage:img];
-//                break;
+            case 5:
+                state++;
+                img = [self.grabFuncs f05_vert_params];
+                [self.cameraView setImage:img];
+                break;
 //            case 6:
 //                state++;
 //                img = [self.grabFuncs f06_find_lines];
