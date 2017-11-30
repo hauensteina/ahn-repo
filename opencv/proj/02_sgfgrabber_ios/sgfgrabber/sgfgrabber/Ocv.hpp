@@ -48,6 +48,7 @@ cv::Point2f unit_vector( cv::Point p);
 // Sort points by x and remove dups
 void rem_dups_x( Points &pts, float tol);
 
+
 // Matrix
 //==========
 // Get the type string of a matrix
@@ -134,8 +135,9 @@ float direction (const cv::Mat &img, const Points &ps);
 //==========
 // Draw a point on an image
 void draw_point( cv::Point p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
+void draw_point( cv::Point2f p, cv::Mat &img, int r, cv::Scalar col);
 // Draw several points on an image
-void draw_points( Points p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
+//void draw_points( Points p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
 // Draw a line segment
 void draw_line( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0));
 // Draw several line segments
@@ -221,6 +223,14 @@ cv::Point2f get_center( const Points_ ps)
         avg_y += ps[i].y;
     }
     return cv::Point2f( avg_x / ps.size(), avg_y / ps.size());
+}
+
+// Draw several points
+//----------------------------------------------------------------
+template <typename T>
+void draw_points( T pts, cv::Mat &img, int r, cv::Scalar col)
+{
+    ISLOOP( pts) draw_point( pts[i], img, r, col);
 }
 
 // Contours

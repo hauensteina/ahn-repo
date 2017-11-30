@@ -593,12 +593,10 @@ void draw_point( cv::Point p, cv::Mat &img, int r, cv::Scalar col)
 {
     cv::circle( img, p, r, col, -1);
 }
-
-// Draw several points
-//----------------------------------------------------------------
-void draw_points( Points p, cv::Mat &img, int r, cv::Scalar col)
+void draw_point( cv::Point2f p, cv::Mat &img, int r, cv::Scalar col)
 {
-    ISLOOP( p) draw_point( p[i], img, r, col);
+    cv::Point ip( ROUND(p.x), ROUND(p.y));
+    cv::circle( img, ip, r, col, -1);
 }
 
 // Draw a line segment

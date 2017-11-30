@@ -40,6 +40,7 @@ const cv::Size TMPL_SZ(16,16);
 @property Points stone_or_empty; // places where we suspect stones or empty
 @property std::vector<cv::Vec2f> horizontal_lines;
 @property std::vector<cv::Vec2f> vertical_lines;
+@property Points2f corners;
 @property cv::Vec2f horiz_line;
 @property cv::Vec2f vert_line;
 @property LineFinder finder;
@@ -213,7 +214,7 @@ Points find_board( const cv::Mat &binImg, cv::Mat &boardImg)
     //UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board04.jpg", _m);
+    load_img( @"board03.jpg", _m);
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
@@ -589,7 +590,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
         }
         PLOG("base_cost %.0f with %d lines\n", base_cost, SZ(_vertical_lines));
         _vertical_lines.erase( _vertical_lines.begin() + min_idx);
-    } while (SZ(_vertical_lines) > _board_sz );
+    } while (SZ(_vertical_lines) > 2 * _board_sz );
     
     // Show results
     cv::Mat drawing;
@@ -777,6 +778,12 @@ int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, 
     cv::Vec2f left_line = _vertical_lines[max_idx];
     cv::Vec2f right_line = _vertical_lines[max_idx + _board_sz - 1];
     
+    Point2f tl = intersection( left_line,  top_line);
+    Point2f tr = intersection( right_line, top_line);
+    Point2f br = intersection( right_line, bot_line);
+    Point2f bl = intersection( left_line,  bot_line);
+    _corners = {tl, tr, br, bl};
+
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -785,6 +792,7 @@ int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, 
     draw_polar_line( bot_line, drawing, get_color());
     draw_polar_line( left_line, drawing, get_color());
     draw_polar_line( right_line, drawing, get_color());
+    draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
@@ -1115,37 +1123,74 @@ std::string rc_key (int r, int c)
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
-    const int N_BOARDS = 8;
+    //const int N_BOARDS = 8;
     static std::vector<Points> boards; // Some history for averaging
     UIImageToMat( img, _m, false);
     resize( _m, _small, 350);
-    //cv::cvtColor( small, small, cv::COLOR_BGR2RGB);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
-    cv::adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          3, // neighborhood_size
-                          4); // constant to add. 2 to 6 is the viable range
-    // Make sure the board in the center is in one piece
-    int iterations = 1;
-    morph_closing( _m, cv::Size(3,1), iterations);
-    morph_closing( _m, cv::Size(1,3), iterations);
-    // Find the biggest connected piece in the center
-    flood_from_center( _m);
-    // Find Hough lines and construct the board from them
-    cv::Mat boardImg;
-    _board = find_board( _m, boardImg);
-    if ( board_valid( _board, cv::contourArea(whole_img_quad(_small)))) {
-        boards.push_back( _board);
-        if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
-        //_board = smallest_board( boards);
-        _board = avg_quad( boards);
-        draw_contour( _small, _board, cv::Scalar(255,0,0,255));
-//        _cont = std::vector<Points>( 1, _board);
-//        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
+    
+    // Find stones and intersections
+    _stone_or_empty.clear();
+    BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
+    BlobFinder::find_stones( _gray, _stone_or_empty);
+    
+    // Find horiz lines
+    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+    _finder.cluster();
+    cv::Vec2f ratline;
+    float dy; int rat_idx;
+    float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+    _horizontal_lines.clear();
+    find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
+                     _horizontal_lines);
+
+
+    
+    for (auto line:_horizontal_lines) {
+        draw_polar_line( line, _small, cv::Scalar( 255,0,0,255));
+        //draw_point( _stone_or_empty[i], _small, 2, cv::Scalar( 255,0,0,255));
     }
+
     //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
     UIImage *res = MatToUIImage( _small);
     return res;
 } // findBoard()
+
+//// f00_*, f01_*, ... all in one go
+////--------------------------------------------
+//- (UIImage *) findBoard:(UIImage *) img
+//{
+//    const int N_BOARDS = 8;
+//    static std::vector<Points> boards; // Some history for averaging
+//    UIImageToMat( img, _m, false);
+//    resize( _m, _small, 350);
+//    //cv::cvtColor( small, small, cv::COLOR_BGR2RGB);
+//    cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+//    cv::adaptiveThreshold(_gray, _m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+//                          3, // neighborhood_size
+//                          4); // constant to add. 2 to 6 is the viable range
+//    // Make sure the board in the center is in one piece
+//    int iterations = 1;
+//    morph_closing( _m, cv::Size(3,1), iterations);
+//    morph_closing( _m, cv::Size(1,3), iterations);
+//    // Find the biggest connected piece in the center
+//    flood_from_center( _m);
+//    // Find Hough lines and construct the board from them
+//    cv::Mat boardImg;
+//    _board = find_board( _m, boardImg);
+//    if ( board_valid( _board, cv::contourArea(whole_img_quad(_small)))) {
+//        boards.push_back( _board);
+//        if (boards.size() > N_BOARDS) { boards.erase( boards.begin()); }
+//        //_board = smallest_board( boards);
+//        _board = avg_quad( boards);
+//        draw_contour( _small, _board, cv::Scalar(255,0,0,255));
+//        //        _cont = std::vector<Points>( 1, _board);
+//        //        cv::drawContours( small, _cont, -1, cv::Scalar(255,0,0,255));
+//    }
+//    //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
+//    UIImage *res = MatToUIImage( _small);
+//    return res;
+//} // findBoard()
 
 @end
 

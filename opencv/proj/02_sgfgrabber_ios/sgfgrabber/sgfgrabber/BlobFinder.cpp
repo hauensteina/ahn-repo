@@ -117,10 +117,10 @@ void BlobFinder::find_empty_places( const cv::Mat &img, Points &result)
     
     // Match
     double thresh = 90;
-    matchTemplate( mtmp, mright, result, thresh);
-    matchTemplate( mtmp, mleft, result, thresh);
-    matchTemplate( mtmp, mtop, result, thresh);
-    matchTemplate( mtmp, mbottom, result, thresh);
+    //matchTemplate( mtmp, mright, result, thresh);
+    //matchTemplate( mtmp, mleft, result, thresh);
+    //matchTemplate( mtmp, mtop, result, thresh);
+    //matchTemplate( mtmp, mbottom, result, thresh);
     matchTemplate( mtmp, mcross, result, thresh);
 } // find_empty_places()
 
