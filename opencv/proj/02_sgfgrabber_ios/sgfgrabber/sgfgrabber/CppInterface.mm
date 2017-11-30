@@ -514,6 +514,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 //-----------------------------
 - (UIImage *) f02_horiz_lines
 {
+    g_app.mainVC.lbDbg.text = @"02";
     _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
     // This also removes dups from the points in _finder.horizontal_clusters
     _finder.cluster();
@@ -543,6 +544,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 //----------------------------------
 - (UIImage *) f03_vert_lines
 {
+    g_app.mainVC.lbDbg.text = @"03";
     std::vector<cv::Vec2f> lines;
     if (!SZ(_vertical_lines)) {
         cv::Mat canvas = cv::Mat::zeros( _gray.rows, _gray.cols, CV_8UC1);
@@ -605,6 +607,7 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 //------------------------------------------------------------
 - (UIImage *) f04_vert_lines_2
 {
+    g_app.mainVC.lbDbg.text = @"04";
     // Cluster by x in the middle
     const float wwidth = 32.0;
     const float middle_y = _gray.rows / 2.0;
@@ -636,9 +639,10 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 }
 
 // Find vertical line parameters
-//------------------------------------------------------------
-- (UIImage *) f05_vert_params //@@@
+//---------------------------------
+- (UIImage *) f05_vert_params
 {
+    g_app.mainVC.lbDbg.text = @"05";
     const float middle_y = _gray.rows / 2.0;
     const float width = _gray.cols;
     
@@ -708,8 +712,82 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
+} // f05_vert_params()
+
+// Use y at the center to count points between two horizontal lines.
+//--------------------------------------------------------------------------------------------------------------
+int count_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line, Points points, int middle_x)
+{
+    int res = 0;
+    float top_y = y_from_x( middle_x, top_line);
+    float bot_y = y_from_x( middle_x, bot_line);
+    for (auto p: points) {
+        if (p.y > top_y && p.y < bot_y ) res++;
+    }
+    return res;
 }
 
+// Use x at the center to count points between two vertical lines.
+//--------------------------------------------------------------------------------------------------------------
+int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, Points points, int middle_y)
+{
+    int res = 0;
+    float left_x  = x_from_y( middle_y, left_line);
+    float right_x = x_from_y( middle_y, right_line);
+    for (auto p: points) {
+        if (p.x > left_x && p.x < right_x ) res++;
+    }
+    return res;
+}
+
+// Find the corners
+//----------------------------
+- (UIImage *) f06_corners //@@@
+{
+    g_app.mainVC.lbDbg.text = @"06";
+    int height = _gray.rows;
+    int width  = _gray.cols;
+    int max_n, max_idx;
+    
+    // Find bounding horiz lines
+    max_n = -1E9; max_idx = -1;
+    for (int i=0; i < SZ(_horizontal_lines) - _board_sz + 1; i++) {
+        cv::Vec2f top_line = _horizontal_lines[i];
+        cv::Vec2f bot_line = _horizontal_lines[i + _board_sz - 1];
+        int n = count_points_between_horiz_lines( top_line, bot_line, _stone_or_empty, width / 2);
+        if (n > max_n) {
+            max_n = n;
+            max_idx = i;
+        }
+    }
+    cv::Vec2f top_line = _horizontal_lines[max_idx];
+    cv::Vec2f bot_line = _horizontal_lines[max_idx + _board_sz - 1];
+    
+    // Find bounding vert lines
+    max_n = -1E9; max_idx = -1;
+    for (int i=0; i < SZ(_vertical_lines) - _board_sz + 1; i++) {
+        cv::Vec2f left_line = _vertical_lines[i];
+        cv::Vec2f right_line = _vertical_lines[i + _board_sz - 1];
+        int n = count_points_between_vert_lines( left_line, right_line, _stone_or_empty, height / 2);
+        if (n > max_n) {
+            max_n = n;
+            max_idx = i;
+        }
+    }
+    cv::Vec2f left_line = _vertical_lines[max_idx];
+    cv::Vec2f right_line = _vertical_lines[max_idx + _board_sz - 1];
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    get_color(true);
+    draw_polar_line( top_line, drawing, get_color());
+    draw_polar_line( bot_line, drawing, get_color());
+    draw_polar_line( left_line, drawing, get_color());
+    draw_polar_line( right_line, drawing, get_color());
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
 
 //// Improve line candidates by interpolation
 ////--------------------------------------------

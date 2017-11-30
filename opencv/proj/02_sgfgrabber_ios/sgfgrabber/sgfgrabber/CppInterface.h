@@ -22,6 +22,7 @@
 - (UIImage *) f03_vert_lines;
 - (UIImage *) f04_vert_lines_2;
 - (UIImage *) f05_vert_params;
+- (UIImage *) f06_corners;
 //- (UIImage *) f04_clean_horiz_lines;
 //- (UIImage *) f03_find_board;
 //- (UIImage *) f04_zoom_in;

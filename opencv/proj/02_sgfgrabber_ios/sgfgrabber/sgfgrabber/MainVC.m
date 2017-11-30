@@ -261,11 +261,11 @@
                 img = [self.grabFuncs f05_vert_params];
                 [self.cameraView setImage:img];
                 break;
-//            case 6:
-//                state++;
-//                img = [self.grabFuncs f06_find_lines];
-//                [self.cameraView setImage:img];
-//                break;
+            case 6:
+                state++;
+                img = [self.grabFuncs f06_corners];
+                [self.cameraView setImage:img];
+                break;
 //            case 7:
 //                state++;
 //                img = [self.grabFuncs f07_show_horiz_lines];
