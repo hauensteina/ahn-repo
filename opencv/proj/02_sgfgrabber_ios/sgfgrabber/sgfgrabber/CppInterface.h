@@ -20,6 +20,7 @@
 - (UIImage *) f02_horiz_lines;
 //- (UIImage *) f02_horizontals;
 - (UIImage *) f03_vert_lines;
+- (UIImage *) f04_vert_lines_2;
 //- (UIImage *) f04_clean_horiz_lines;
 //- (UIImage *) f03_find_board;
 //- (UIImage *) f04_zoom_in;

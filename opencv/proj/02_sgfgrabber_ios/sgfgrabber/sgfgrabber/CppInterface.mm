@@ -22,6 +22,7 @@
 #import "LineFixer.hpp"
 #import "BlackWhiteEmpty.hpp"
 #import "BlobFinder.hpp"
+#include "Clust1D.hpp"
 
 const cv::Size TMPL_SZ(16,16);
 
@@ -589,8 +590,9 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     return res;
 }
 
-//----------------------------
-- (UIImage *) f03_vert_lines //@@@
+// Thin down vertical Hough lines
+//----------------------------------
+- (UIImage *) f03_vert_lines
 {
     std::vector<cv::Vec2f> lines;
     if (!SZ(_vertical_lines)) {
@@ -646,7 +648,42 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
+} // f03_vert_lines()
+
+// Cluster vertical Hough lines to remove close duplicates.
+//------------------------------------------------------------
+- (UIImage *) f04_vert_lines_2 //@@@
+{
+    // Cluster by x in the middle
+    const float wwidth = 32.0;
+    const float middle_y = _gray.rows / 2.0;
+    const int min_clust_size = 1;
+    auto Getter =  [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); };
+    auto vert_line_cuts = Clust1D::cluster( _vertical_lines, wwidth, Getter);
+    std::vector<std::vector<cv::Vec2f> > clusters;
+    Clust1D::classify( _vertical_lines, vert_line_cuts, min_clust_size, Getter, clusters);
+
+    // Average the clusters into single lines
+    std::vector<cv::Vec2f> lines;
+    ISLOOP (clusters) {
+        auto &clust = clusters[i];
+        double theta = vec_avg( clust, [](cv::Vec2f line){ return line[1]; });
+        double rho   = vec_avg( clust, [](cv::Vec2f line){ return line[0]; });
+        cv::Vec2f line( rho, theta);
+        lines.push_back( line);
+    }
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    get_color(true);
+    ISLOOP( _vertical_lines) {
+        draw_polar_line( lines[i], drawing, get_color());
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
 }
+
 
 //// Improve line candidates by interpolation
 ////--------------------------------------------

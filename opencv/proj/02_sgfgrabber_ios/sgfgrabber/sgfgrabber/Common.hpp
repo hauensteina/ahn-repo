@@ -257,10 +257,9 @@ float vec_avg( std::vector<T> vec, Func at)
 {
     if (!vec.size()) return 0;
     double ssum = 0;
-    ISLOOP (vec) { ssum += at(vec, i); }
+    ISLOOP (vec) { ssum += at(vec[i]); }
     return ssum / vec.size();
 }
-
 
 // Get the min value of a vector
 //----------------------------------------------
