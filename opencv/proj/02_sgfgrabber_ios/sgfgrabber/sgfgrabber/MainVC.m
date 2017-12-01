@@ -305,23 +305,22 @@
 - (void)captured:(UIImage *)image
 {
     //self.cameraView.hidden = NO;
-    static int i = 0;
-    static bool active = true;
-    if (active && self.frame_grabber_on) {
-        i++;
-        PLOG("frame:%d\n",i);
+    //static int i = 0;
+    if (self.frame_grabber_on) {
+        //i++;
+        //PLOG("frame:%d\n",i);
         if (self.debug_mode) {
             [self.cameraView setImage:image];
             self.img = image;
         }
         else {
-            active = false;
             self.frame_grabber_on = NO;
+            [self.frameExtractor suspend];
             UIImage *processedImg = [self.grabFuncs findBoard:image];
             self.img = processedImg;
             [self.cameraView setImage:self.img];
             self.frame_grabber_on = YES;
-            active = true;
+            [self.frameExtractor resume];
         }
     }
 }

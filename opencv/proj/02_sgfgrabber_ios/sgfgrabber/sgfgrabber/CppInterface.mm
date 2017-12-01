@@ -1123,38 +1123,44 @@ std::string rc_key (int r, int c)
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
-    //const int N_BOARDS = 8;
-    static std::vector<Points> boards; // Some history for averaging
-    UIImageToMat( img, _m, false);
-    resize( _m, _small, 350);
-    cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
-    
-    // Find stones and intersections
-    _stone_or_empty.clear();
-    BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
-    BlobFinder::find_stones( _gray, _stone_or_empty);
-    
-    // Find horiz lines
-    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
-    _finder.cluster();
-    cv::Vec2f ratline;
-    float dy; int rat_idx;
-    float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-    _horizontal_lines.clear();
-    find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
-                     _horizontal_lines);
-
-
-    
-    for (auto line:_horizontal_lines) {
-        draw_polar_line( line, _small, cv::Scalar( 255,0,0,255));
-        //draw_point( _stone_or_empty[i], _small, 2, cv::Scalar( 255,0,0,255));
-    }
-
-    //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
-    UIImage *res = MatToUIImage( _small);
-    return res;
-} // findBoard()
+    _board_sz = 19;
+    do {
+        //const int N_BOARDS = 8;
+        static std::vector<Points> boards; // Some history for averaging
+        UIImageToMat( img, _m, false);
+        resize( _m, _small, 350);
+        cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+        
+        // Find stones and intersections
+        _stone_or_empty.clear();
+        BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
+        BlobFinder::find_stones( _gray, _stone_or_empty);
+        
+        if (SZ(_stone_or_empty) < 3) break;
+        
+        // Find horiz lines
+        _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+        _finder.cluster();
+        if (SZ(_finder.m_horizontal_clusters) < 3) break;
+        cv::Vec2f ratline;
+        float dy; int rat_idx;
+        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+        _horizontal_lines.clear();
+        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
+                         _horizontal_lines);
+        
+        
+        
+        for (auto line:_horizontal_lines) {
+            draw_polar_line( line, _small, cv::Scalar( 255,0,0,255));
+            //draw_point( _stone_or_empty[i], _small, 2, cv::Scalar( 255,0,0,255));
+        }
+    } while(0);
+        
+        //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
+        UIImage *res = MatToUIImage( _small);
+        return res;
+    } // findBoard()
 
 //// f00_*, f01_*, ... all in one go
 ////--------------------------------------------
