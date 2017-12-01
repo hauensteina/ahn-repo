@@ -474,7 +474,7 @@ float x_line_var( const std::vector<cv::Vec2f> &lines, int height, int skip = -1
 //}
 
 // Sort lines by x in the screen middle, then get variance of dx nearer the top.
-// Maybe skip one.
+// Maybe skip one line to see if removing it helps.
 // The idea is that the order at the top should be the same as in the middle,
 // and the lines should be equidistant for a given y.
 //------------------------------------------------------------------------------------
@@ -547,51 +547,10 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 - (UIImage *) f03_vert_lines
 {
     g_app.mainVC.lbDbg.text = @"03";
-    std::vector<cv::Vec2f> lines;
     if (!SZ(_vertical_lines)) {
-        cv::Mat canvas = cv::Mat::zeros( _gray.rows, _gray.cols, CV_8UC1);
-        ISLOOP (_stone_or_empty) {
-            draw_point( _stone_or_empty[i], canvas,2, cv::Scalar(255));
-        }
-        std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
-        HoughLines(canvas, lines, 1, PI/180, 10, 0, 0 );
-        lines.resize(500); // Only keep the best ones
-        for (auto& line: lines) {
-            if (line[0] < 0) { line[0] *= -1; line[1] -= PI; }
-        }
-        // Separate horizontal, vertical, and other lines
-        horiz_vert_other_lines = partition( lines, 3,
-                                           [](cv::Vec2f &line) {
-                                               const float thresh = 25.0;
-                                               float theta = line[1] * (180.0 / PI);
-                                               if (fabs(theta - 180) < thresh) return 1;
-                                               else if (fabs(theta) < thresh) return 1;
-                                               else if (fabs(theta-90) < thresh) return 0;
-                                               else return 2;
-                                           });
-        _vertical_lines = horiz_vert_other_lines[1];
+        get_vertical_hough_lines( _stone_or_empty, _gray, _vertical_lines);
     }
-
-    //_vertical_lines.resize(100);
-    float base_cost;
-    do {
-        base_cost = top_x_var_by_middle( _vertical_lines, _gray.rows);
-        //float base_cost = x_line_var( _vertical_lines, _gray.rows);
-        float min_loss = 1E9;
-        int min_idx = 0;
-        ISLOOP( _vertical_lines) {
-            float cost = top_x_var_by_middle( _vertical_lines, _gray.rows, i);
-            //float cost = x_line_var( _vertical_lines, _gray.rows, i);
-            float loss = cost - base_cost;
-            //PLOG("%5d base_cost: %.2f cost: %.2f loss: %.2f \n", i, base_cost, cost, loss);
-            if (loss < min_loss) {
-                min_loss = loss;
-                min_idx = i;
-            }
-        }
-        PLOG("base_cost %.0f with %d lines\n", base_cost, SZ(_vertical_lines));
-        _vertical_lines.erase( _vertical_lines.begin() + min_idx);
-    } while (SZ(_vertical_lines) > 2 * _board_sz );
+    thin_vertical_hough_lines( _vertical_lines, _gray);
     
     // Show results
     cv::Mat drawing;
@@ -605,29 +564,94 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     return res;
 } // f03_vert_lines()
 
-// Cluster vertical Hough lines to remove close duplicates.
-//------------------------------------------------------------
-- (UIImage *) f04_vert_lines_2
+// Get an initial set of vertical candidate lines
+//---------------------------------------------------------------------
+void get_vertical_hough_lines( const Points &pts, const cv::Mat &img,
+                              std::vector<cv::Vec2f> &out)
 {
-    g_app.mainVC.lbDbg.text = @"04";
+    // Find candidate Hough lines
+    std::vector<cv::Vec2f> lines;
+    cv::Mat canvas = cv::Mat::zeros( img.rows, img.cols, CV_8UC1);
+    ISLOOP (pts) {
+        draw_point( pts[i], canvas,2, cv::Scalar(255));
+    }
+    std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
+    HoughLines(canvas, lines, 1, PI/180, 10, 0, 0 );
+    lines.resize(500); // Only keep the best ones
+    for (auto& line: lines) {
+        if (line[0] < 0) { line[0] *= -1; line[1] -= PI; }
+    }
+    
+    // Get the vertical lines
+    horiz_vert_other_lines = partition( lines, 3,
+                                       [](cv::Vec2f &line) {
+                                           const float thresh = 25.0;
+                                           float theta = line[1] * (180.0 / PI);
+                                           if (fabs(theta - 180) < thresh) return 1;
+                                           else if (fabs(theta) < thresh) return 1;
+                                           else if (fabs(theta-90) < thresh) return 0;
+                                           else return 2;
+                                       });
+    out = horiz_vert_other_lines[1];
+}
+
+// Thin a bunch of vertical lines down to reduce crossings and variance.
+//---------------------------------------------------------------------------------
+void thin_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img,
+                               int board_sz = 19)
+{
+    // Thin the vertical lines down
+    float base_cost;
+    do {
+        base_cost = top_x_var_by_middle( lines, img.rows);
+        //float base_cost = x_line_var( _vertical_lines, _gray.rows);
+        float min_loss = 1E9;
+        int min_idx = 0;
+        ISLOOP( lines) {
+            float cost = top_x_var_by_middle( lines, img.rows, i);
+            //float cost = x_line_var( _vertical_lines, _gray.rows, i);
+            float loss = cost - base_cost;
+            //PLOG("%5d base_cost: %.2f cost: %.2f loss: %.2f \n", i, base_cost, cost, loss);
+            if (loss < min_loss) {
+                min_loss = loss;
+                min_idx = i;
+            }
+        }
+        //PLOG("base_cost %.0f with %d lines\n", base_cost, SZ(_vertical_lines));
+        lines.erase( lines.begin() + min_idx);
+    } while (SZ(lines) > board_sz );
+}
+
+// Replace close clusters of vert lines by their average.
+//-----------------------------------------------------------------------------------
+void dedup_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+{
     // Cluster by x in the middle
     const float wwidth = 32.0;
-    const float middle_y = _gray.rows / 2.0;
+    const float middle_y = img.rows / 2.0;
     const int min_clust_size = 0;
     auto Getter =  [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); };
-    auto vert_line_cuts = Clust1D::cluster( _vertical_lines, wwidth, Getter);
+    auto vert_line_cuts = Clust1D::cluster( lines, wwidth, Getter);
     std::vector<std::vector<cv::Vec2f> > clusters;
-    Clust1D::classify( _vertical_lines, vert_line_cuts, min_clust_size, Getter, clusters);
-
+    Clust1D::classify( lines, vert_line_cuts, min_clust_size, Getter, clusters);
+    
     // Average the clusters into single lines
-    _vertical_lines.clear();
+    lines.clear();
     ISLOOP (clusters) {
         auto &clust = clusters[i];
         double theta = vec_avg( clust, [](cv::Vec2f line){ return line[1]; });
         double rho   = vec_avg( clust, [](cv::Vec2f line){ return line[0]; });
         cv::Vec2f line( rho, theta);
-        _vertical_lines.push_back( line);
+        lines.push_back( line);
     }
+}
+
+// Cluster vertical Hough lines to remove close duplicates.
+//------------------------------------------------------------
+- (UIImage *) f04_vert_lines_2
+{
+    g_app.mainVC.lbDbg.text = @"04";
+    dedup_vertical_hough_lines( _vertical_lines, _gray);
     
     // Show results
     cv::Mat drawing;
@@ -640,27 +664,27 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
     return res;
 }
 
-// Find vertical line parameters
-//---------------------------------
-- (UIImage *) f05_vert_params
+// Find the change per line in rho and theta and synthesize the whole bunch
+// starting at the middle. Replace synthesized lines with real ones if close enough.
+//----------------------------------------------------------------------------------
+void fix_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
-    g_app.mainVC.lbDbg.text = @"05";
-    const float middle_y = _gray.rows / 2.0;
-    const float width = _gray.cols;
+    const float middle_y = img.rows / 2.0;
+    const float width = img.cols;
     
-    auto rhos   = vec_extract( _vertical_lines, [](cv::Vec2f line) { return line[0]; } );
-    auto thetas = vec_extract( _vertical_lines, [](cv::Vec2f line) { return line[1]; } );
-    auto xes    = vec_extract( _vertical_lines, [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); });
+    auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
+    auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
+    auto xes    = vec_extract( lines, [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); });
     auto d_rhos   = vec_delta( rhos);
     auto d_thetas = vec_delta( thetas);
     auto d_rho   = vec_median( d_rhos);
     //auto d_rho   = (rhos.back() - rhos.front()) / (SZ(rhos)-1);
     auto d_theta = vec_median( d_thetas);
     //auto d_theta  = (thetas.back() - thetas.front()) / (SZ(thetas)-1);
-
-    cv::Vec2f med_line = _vertical_lines[SZ(_vertical_lines)/2];
-    std::vector<cv::Vec2f> lines;
-    lines.push_back(med_line);
+    
+    cv::Vec2f med_line = lines[SZ(lines)/2];
+    std::vector<cv::Vec2f> synth_lines;
+    synth_lines.push_back(med_line);
     float rho, theta;
     // If there is a close line, use it. Else interpolate.
     float thresh = 6;
@@ -674,12 +698,12 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
         float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
         int close_idx = vec_closest( xes, x);
         if (fabs( x - xes[close_idx]) < thresh) {
-            rho   = _vertical_lines[close_idx][0];
-            theta = _vertical_lines[close_idx][1];
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
         }
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) > width) break;
-        lines.push_back( line);
+        synth_lines.push_back( line);
     }
     // Lines to the left
     rho = med_line[0];
@@ -691,20 +715,29 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
         float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
         int close_idx = vec_closest( xes, x);
         if (fabs( x - xes[close_idx]) < thresh) {
-            rho   = _vertical_lines[close_idx][0];
-            theta = _vertical_lines[close_idx][1];
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
         }
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) < 0) break;
-        lines.push_back( line);
+        synth_lines.push_back( line);
     }
-    std::sort( lines.begin(), lines.end(),
+    std::sort( synth_lines.begin(), synth_lines.end(),
               [middle_y](cv::Vec2f line1, cv::Vec2f line2) {
                   return x_from_y( middle_y, line1) < x_from_y( middle_y, line2);
               });
-        
-    _vertical_lines = lines;
+    
+    lines = synth_lines;
+} // fix_vertical_hough_lines()
 
+
+// Find vertical line parameters
+//---------------------------------
+- (UIImage *) f05_vert_params
+{
+    g_app.mainVC.lbDbg.text = @"05";
+    fix_vertical_hough_lines( _vertical_lines, _gray);
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -1153,9 +1186,14 @@ std::string rc_key (int r, int c)
         find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
                          _horizontal_lines);
         
+        // Find vertical lines
+        get_vertical_hough_lines( _stone_or_empty, _gray, _vertical_lines);
+        thin_vertical_hough_lines( _vertical_lines, _gray);
+        dedup_vertical_hough_lines( _vertical_lines, _gray);
+        fix_vertical_hough_lines( _vertical_lines, _gray);
         
         // show results
-        for (auto line:_horizontal_lines) {
+        for (auto line:_vertical_lines) {
             draw_polar_line( line, _small, cv::Scalar( 255,0,0,255));
             //draw_point( _stone_or_empty[i], _small, 2, cv::Scalar( 255,0,0,255));
         }
