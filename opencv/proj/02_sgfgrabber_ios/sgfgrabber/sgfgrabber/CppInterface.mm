@@ -315,20 +315,21 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
     //fixed_lines = h_lines; return;
     
     float THRESH_RAT = 1/4.0;
-    float THRESH_THETA = 100; //PI/180;
+    float THRESH_THETA = PI/180;
     cv::Vec2f cur_line;
     float cur_dy, d;
     
     // above ratline
-    PLOG(">>>>>above\n");
+    //PLOG(">>>>>above\n");
     cur_line = ratline;
     cur_dy = dy;
     ILOOP (boardsz) {
         cur_line[0] -= cur_dy;
         cv::Vec2f nbor = closest_hline( h_lines, cur_line, width, d);
-        PLOG( "d:%.4f\n",d);
-        if (d < THRESH_RAT * cur_dy) {
-            PLOG( "fixed\n");
+        float dtheta = fabs( nbor[1] - cur_line[1]);
+        //PLOG( "d:%.4f\n",d);
+        if (d < THRESH_RAT * cur_dy && dtheta < THRESH_THETA ) {
+            //PLOG( "fixed\n");
             cur_line = nbor;
         }
         cur_dy /= dy_rat;
@@ -336,15 +337,15 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
     }
 
     // ratline and below
-    PLOG(">>>>>below\n");
+    //PLOG(">>>>>below\n");
     cur_line = ratline;
     cur_dy = dy;
     ILOOP (boardsz) {
         cv::Vec2f nbor = closest_hline( h_lines, cur_line, width, d);
         float dtheta = fabs( nbor[1] - cur_line[1]);
-        PLOG( "cur_dy: %.4f d:%.4f dtheta:%.4f\n", cur_dy, d, dtheta);
-        if (d < THRESH_RAT * cur_dy && dtheta < THRESH_THETA) {
-            PLOG( "fixed\n");
+        //PLOG( "cur_dy: %.4f d:%.4f dtheta:%.4f\n", cur_dy, d, dtheta);
+        if (d < THRESH_RAT * cur_dy && dtheta < THRESH_THETA  ) {
+            //PLOG( "fixed\n");
             cur_line = nbor;
         }
         fixed_lines.push_back( cur_line);
@@ -1135,8 +1136,11 @@ std::string rc_key (int r, int c)
         _stone_or_empty.clear();
         BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
         BlobFinder::find_stones( _gray, _stone_or_empty);
-        
         if (SZ(_stone_or_empty) < 3) break;
+
+        // Find dominant direction
+        float theta = direction( _gray, _stone_or_empty) - PI/2;
+        if (fabs(theta) > 0.02) break;
         
         // Find horiz lines
         _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
@@ -1150,7 +1154,7 @@ std::string rc_key (int r, int c)
                          _horizontal_lines);
         
         
-        
+        // show results
         for (auto line:_horizontal_lines) {
             draw_polar_line( line, _small, cv::Scalar( 255,0,0,255));
             //draw_point( _stone_or_empty[i], _small, 2, cv::Scalar( 255,0,0,255));

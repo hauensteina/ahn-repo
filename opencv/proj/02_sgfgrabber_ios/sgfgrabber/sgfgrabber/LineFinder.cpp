@@ -195,8 +195,8 @@ float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy, int &idx)
 } // dy_rat()
 
 
-// Start in the middle with the medians, expand to both sides
-// while adjusting with delta_slope and delta_rho.
+// Start in the middle with the median, expand to both sides
+// while adjusting with delta_wavelength.
 //---------------------------------------------------------------
 void LineFinder::find_lines( int max_rho,
                             float wavelength_,
