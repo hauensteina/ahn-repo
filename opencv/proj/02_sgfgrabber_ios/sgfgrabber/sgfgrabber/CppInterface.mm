@@ -417,45 +417,25 @@ float median_dx( Points pts)
 // Various loss functions to remove one line at a time
 //=========================================================
 
-// Kendall tau distance between two permutations
-//-----------------------------------------------------------
-int kendall_tau (std::vector<int> &a, std::vector<int> &b)
-{
-    assert( SZ(a) == SZ(b));
-    // Find index from value
-    std::vector<int> ainv(SZ(a));
-    ISLOOP (a) {
-        ainv[a[i]] = i;
-    }
-    
-    std::vector<int> bnew(SZ(a));
-    ISLOOP (a) {
-        bnew[i] = ainv[b[i]];
-    }
-    
-    int res = count_inversions( bnew);
-    return res;
-}
-
-// Get the variance in dx in the middle for a bunch of lines.
-// Maybe skip one of them.
-//--------------------------------------------------------------------------------
-float x_line_var( const std::vector<cv::Vec2f> &lines, int height, int skip = -1)
-{
-    std::vector<float> vals;
-    float middle = height / 2.0;
-    ISLOOP (lines) {
-        if (i == skip) continue;
-        auto line = lines[i];
-        float x = x_from_y( middle, line);
-        vals.push_back( x);
-    }
-    std::sort( vals.begin(), vals.end(), [](float v1, float v2) { return v1 < v2; });
-    std::vector<float> deltas = vec_delta( vals);
-    float res = vec_var( deltas);
-    //float res = vec_var_med( deltas);
-    return res;
-}
+//// Get the variance in dx in the middle for a bunch of lines.
+//// Maybe skip one of them.
+////--------------------------------------------------------------------------------
+//float x_line_var( const std::vector<cv::Vec2f> &lines, int height, int skip = -1)
+//{
+//    std::vector<float> vals;
+//    float middle = height / 2.0;
+//    ISLOOP (lines) {
+//        if (i == skip) continue;
+//        auto line = lines[i];
+//        float x = x_from_y( middle, line);
+//        vals.push_back( x);
+//    }
+//    std::sort( vals.begin(), vals.end(), [](float v1, float v2) { return v1 < v2; });
+//    std::vector<float> deltas = vec_delta( vals);
+//    float res = vec_var( deltas);
+//    //float res = vec_var_med( deltas);
+//    return res;
+//}
 
 //// Get the variance in x at the top for a bunch of lines.
 //// Maybe skip one of them.
@@ -730,7 +710,6 @@ void fix_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img
     lines = synth_lines;
 } // fix_vertical_hough_lines()
 
-
 // Find vertical line parameters
 //---------------------------------
 - (UIImage *) f05_vert_params
@@ -754,10 +733,13 @@ void fix_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img
 int count_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line, Points points, int middle_x)
 {
     int res = 0;
-    float top_y = y_from_x( middle_x, top_line);
-    float bot_y = y_from_x( middle_x, bot_line);
+    const float EPS = 5;
     for (auto p: points) {
-        if (p.y > top_y && p.y < bot_y ) res++;
+        float tdist = dist_point_line( p, top_line);
+        float bdist = dist_point_line( p, bot_line);
+        if ((tdist > 0 || fabs( tdist) < EPS) && (bdist < 0 || fabs( bdist) < EPS) ) {
+            res++;
+        }
     }
     return res;
 }
@@ -775,57 +757,61 @@ int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, 
     return res;
 }
 
-// Find the corners
-//----------------------------
-- (UIImage *) f06_corners //@@@
+// Use horizontal and vertical lines to find corners such that the board best matches the points we found
+//-----------------------------------------------------------------------------------------------------------
+Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
+                     const Points &pts, const cv::Mat &img, int board_sz = 19)
 {
-    g_app.mainVC.lbDbg.text = @"06";
-    int height = _gray.rows;
-    int width  = _gray.cols;
+    int height = img.rows;
+    int width  = img.cols;
     int max_n, max_idx;
     
     // Find bounding horiz lines
     max_n = -1E9; max_idx = -1;
-    for (int i=0; i < SZ(_horizontal_lines) - _board_sz + 1; i++) {
-        cv::Vec2f top_line = _horizontal_lines[i];
-        cv::Vec2f bot_line = _horizontal_lines[i + _board_sz - 1];
-        int n = count_points_between_horiz_lines( top_line, bot_line, _stone_or_empty, width / 2);
+    for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
+        cv::Vec2f top_line = horiz_lines[i];
+        cv::Vec2f bot_line = horiz_lines[i + board_sz - 1];
+        int n = count_points_between_horiz_lines( top_line, bot_line, pts, width / 2);
         if (n > max_n) {
             max_n = n;
             max_idx = i;
         }
     }
-    cv::Vec2f top_line = _horizontal_lines[max_idx];
-    cv::Vec2f bot_line = _horizontal_lines[max_idx + _board_sz - 1];
+    cv::Vec2f top_line = horiz_lines[max_idx];
+    cv::Vec2f bot_line = horiz_lines[max_idx + board_sz - 1];
     
     // Find bounding vert lines
     max_n = -1E9; max_idx = -1;
-    for (int i=0; i < SZ(_vertical_lines) - _board_sz + 1; i++) {
-        cv::Vec2f left_line = _vertical_lines[i];
-        cv::Vec2f right_line = _vertical_lines[i + _board_sz - 1];
-        int n = count_points_between_vert_lines( left_line, right_line, _stone_or_empty, height / 2);
+    for (int i=0; i < SZ(vert_lines) - board_sz + 1; i++) {
+        cv::Vec2f left_line = vert_lines[i];
+        cv::Vec2f right_line = vert_lines[i + board_sz - 1];
+        int n = count_points_between_vert_lines( left_line, right_line, pts, height / 2);
         if (n > max_n) {
             max_n = n;
             max_idx = i;
         }
     }
-    cv::Vec2f left_line = _vertical_lines[max_idx];
-    cv::Vec2f right_line = _vertical_lines[max_idx + _board_sz - 1];
+    cv::Vec2f left_line = vert_lines[max_idx];
+    cv::Vec2f right_line = vert_lines[max_idx + board_sz - 1];
     
     Point2f tl = intersection( left_line,  top_line);
     Point2f tr = intersection( right_line, top_line);
     Point2f br = intersection( right_line, bot_line);
     Point2f bl = intersection( left_line,  bot_line);
-    _corners = {tl, tr, br, bl};
+    Points2f corners = {tl, tr, br, bl};
+    return corners;
+}
 
+// Find the corners
+//----------------------------
+- (UIImage *) f06_corners //@@@
+{
+    g_app.mainVC.lbDbg.text = @"06";
+    _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color(true);
-    draw_polar_line( top_line, drawing, get_color());
-    draw_polar_line( bot_line, drawing, get_color());
-    draw_polar_line( left_line, drawing, get_color());
-    draw_polar_line( right_line, drawing, get_color());
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1192,17 +1178,24 @@ std::string rc_key (int r, int c)
         dedup_vertical_hough_lines( _vertical_lines, _gray);
         fix_vertical_hough_lines( _vertical_lines, _gray);
         
-        // show results
-        for (auto line:_vertical_lines) {
-            draw_polar_line( line, _small, cv::Scalar( 255,0,0,255));
-            //draw_point( _stone_or_empty[i], _small, 2, cv::Scalar( 255,0,0,255));
-        }
+        // Find corners
+        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+        draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
+                  _small, cv::Scalar( 255,0,0,255));
+        //draw_line( cv::Vec4f( _corners[1].x, _corners[1].y, _corners[2].x, _corners[2].y),
+        //          _small, cv::Scalar( 255,0,0,255));
+        draw_line( cv::Vec4f( _corners[2].x, _corners[2].y, _corners[3].x, _corners[3].y),
+                  _small, cv::Scalar( 255,0,0,255));
+        //draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
+        //          _small, cv::Scalar( 255,0,0,255));
+        draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
+
     } while(0);
         
-        //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
-        UIImage *res = MatToUIImage( _small);
-        return res;
-    } // findBoard()
+    //cv::cvtColor( small, small, cv::COLOR_RGB2BGR);
+    UIImage *res = MatToUIImage( _small);
+    return res;
+} // findBoard()
 
 //// f00_*, f01_*, ... all in one go
 ////--------------------------------------------
