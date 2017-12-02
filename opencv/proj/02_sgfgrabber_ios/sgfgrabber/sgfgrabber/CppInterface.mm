@@ -749,10 +749,13 @@ int count_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line, Po
 int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, Points points, int middle_y)
 {
     int res = 0;
-    float left_x  = x_from_y( middle_y, left_line);
-    float right_x = x_from_y( middle_y, right_line);
+    const float EPS = 5;
     for (auto p: points) {
-        if (p.x > left_x && p.x < right_x ) res++;
+        float ldist = dist_point_line( p, left_line);
+        float rdist = dist_point_line( p, right_line);
+        if ((ldist > 0 || fabs( ldist) < EPS) && (rdist < 0 || fabs( rdist) < EPS) ) {
+            res++;
+        }
     }
     return res;
 }
@@ -1180,14 +1183,14 @@ std::string rc_key (int r, int c)
         
         // Find corners
         _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
-        draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
-                  _small, cv::Scalar( 255,0,0,255));
-        //draw_line( cv::Vec4f( _corners[1].x, _corners[1].y, _corners[2].x, _corners[2].y),
+        //draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
         //          _small, cv::Scalar( 255,0,0,255));
-        draw_line( cv::Vec4f( _corners[2].x, _corners[2].y, _corners[3].x, _corners[3].y),
+        draw_line( cv::Vec4f( _corners[1].x, _corners[1].y, _corners[2].x, _corners[2].y),
                   _small, cv::Scalar( 255,0,0,255));
-        //draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
+        //draw_line( cv::Vec4f( _corners[2].x, _corners[2].y, _corners[3].x, _corners[3].y),
         //          _small, cv::Scalar( 255,0,0,255));
+        draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
+                  _small, cv::Scalar( 255,0,0,255));
         draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
 
     } while(0);
