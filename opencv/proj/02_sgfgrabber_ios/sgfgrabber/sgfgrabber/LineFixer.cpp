@@ -26,8 +26,7 @@ void LineFixer::fix( const std::vector<cv::Vec4f> &lines, const std::vector<Poin
     // Convert cluster lines to polar
     std::vector<cv::Vec2f> chlines;
     ISLOOP (clines) {
-        cv::Vec2f hline;
-        segment2polar( clines[i], hline);
+        cv::Vec2f hline = segment2polar( clines[i]);
         chlines.push_back( hline);
     }
     // Sort by rho
@@ -36,8 +35,7 @@ void LineFixer::fix( const std::vector<cv::Vec4f> &lines, const std::vector<Poin
     // Convert our synthetic lines to polar
     std::vector<cv::Vec2f> hlines;
     ISLOOP (lines) {
-        cv::Vec2f hline;
-        segment2polar( lines[i], hline);
+        cv::Vec2f hline = segment2polar( lines[i]);
         hlines.push_back( hline);
     }
     // Sort by rho
@@ -117,8 +115,7 @@ void LineFixer::fix( const std::vector<cv::Vec4f> &lines, const std::vector<Poin
     
     // Convert back to segment
     ISLOOP (hlines) {
-        cv::Vec4f line;
-        polar2segment( hlines[i], line);
+        cv::Vec4f line = polar2segment( hlines[i]);
         res_lines.push_back( line);
     }
     lines_out = res_lines;

@@ -219,8 +219,8 @@ Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
 Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
 {
     cv::Vec4f seg1, seg2;
-    polar2segment( line1, seg1);
-    polar2segment( line2, seg2);
+    seg1 = polar2segment( line1);
+    seg2 = polar2segment( line2);
     return intersection( seg1, seg2);
 }
 
@@ -259,8 +259,7 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines )
     ISLOOP (plines) {
         pline = plines[i];
         pline[0] = 0;
-        cv::Vec4f seg;
-        polar2segment( pline, seg);
+        cv::Vec4f seg = polar2segment( pline);
         segs.push_back(seg);
     }
     return avg_lines( segs);
@@ -272,15 +271,15 @@ cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines )
 {
     cv::Vec2f med_theta = vec_median( plines, [](cv::Vec2f line) { return line[1]; });
     //med_theta[0] = 0;
-    cv::Vec4f seg;
-    polar2segment( med_theta, seg);
+    cv::Vec4f seg = polar2segment( med_theta);
     return seg;
 }
 
 // Get a line segment representation of a polar line (rho, theta)
-//----------------------------------------------------------------
-void polar2segment( const cv::Vec2f &pline, cv::Vec4f &result)
+//-------------------------------------------------------------------
+cv::Vec4f polar2segment( const cv::Vec2f &pline)
 {
+    cv::Vec4f result;
     float rho = pline[0], theta = pline[1];
     double a = cos(theta), b = sin(theta);
     double x0 = a*rho, y0 = b*rho;
@@ -288,12 +287,14 @@ void polar2segment( const cv::Vec2f &pline, cv::Vec4f &result)
     result[1] = cvRound(y0 + 1000*(a));
     result[2] = cvRound(x0 - 1000*(-b));
     result[3] = cvRound(y0 - 1000*(a));
+    return result;
 }
 
 // Line segment to polar, with positive rho
 //-----------------------------------------------------------------
-void segment2polar( const cv::Vec4f &line_, cv::Vec2f &pline)
+cv::Vec2f segment2polar( const cv::Vec4f &line_)
 {
+    cv::Vec2f pline;
     cv::Vec4f line = line_;
     // Always go left to right
     if (line[2] < line[0]) {
@@ -312,20 +313,9 @@ void segment2polar( const cv::Vec4f &line_, cv::Vec2f &pline)
     float rho = fabs(dist_point_line( cv::Point(0,0), line));
     pline[0] = rho;
     pline[1] = theta;
+    return pline;
 }
 
-// Fit a line through points, L2 norm
-//--------------------------------------
-cv::Vec4f fit_line( const Points &p)
-{
-    cv::Vec4f res,tt;
-    cv::fitLine( p, tt, CV_DIST_L2, 0.0, 0.01, 0.01);
-    res[0] = tt[2];
-    res[1] = tt[3];
-    res[2] = tt[2] + tt[0];
-    res[3] = tt[3] + tt[1];
-    return res;
-}
 
 // Length of a line segment
 //---------------------------------------------------------
@@ -353,8 +343,7 @@ float dist_point_line( cv::Point p, const cv::Vec4f &line)
 //----------------------------------------------------------
 float dist_point_line( cv::Point p, const cv::Vec2f &pline)
 {
-    cv::Vec4f line;
-    polar2segment( pline, line);
+    cv::Vec4f line = polar2segment( pline);
     return dist_point_line( p, line);
 }
 
@@ -625,8 +614,7 @@ void draw_lines( const std::vector<cv::Vec4f> &lines, cv::Mat &dst,
 void draw_polar_line( cv::Vec2f pline, cv::Mat &dst,
                      cv::Scalar col)
 {
-    cv::Vec4f seg;
-    polar2segment( pline, seg);
+    cv::Vec4f seg = polar2segment( pline);
     cv::Point pt1( seg[0], seg[1]), pt2( seg[2], seg[3]);
     cv::line( dst, pt1, pt2, col, 1, CV_AA);
 }
@@ -734,23 +722,23 @@ void test_segment2polar()
     
     // horizontal
     line = cv::Vec4f( 0, 1, 2, 1.1);
-    segment2polar( line, hline);
+    hline = segment2polar( line);
     if (hline[0] < 0) {
         std::cerr << "Oops 1\n";
     }
     line = cv::Vec4f( 0, 1, 2, 0.9);
-    segment2polar( line, hline);
+    hline = segment2polar( line);
     if (hline[0] < 0) {
         std::cerr << "Oops 2\n";
     }
     // vertical down up
     line = cv::Vec4f( 1, 1, 1.1, 3);
-    segment2polar( line, hline);
+    hline = segment2polar( line);
     if (hline[0] < 0) {
         std::cerr << "Oops 3\n";
     }
     line = cv::Vec4f( 1, 1 , 0.9, 3);
-    segment2polar( line, hline);
+    hline = segment2polar( line);
     if (hline[0] < 0) {
         std::cerr << "Oops 4\n";
     }

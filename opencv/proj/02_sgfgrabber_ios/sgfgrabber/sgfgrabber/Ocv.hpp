@@ -83,11 +83,11 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines );
 // Median polar line bt theta
 cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)
-void polar2segment( const cv::Vec2f &pline, cv::Vec4f &result);
+cv::Vec4f polar2segment( const cv::Vec2f &pline);
 // Line segment to polar, with positive rho
-void segment2polar( const cv::Vec4f &line_, cv::Vec2f &pline);
+cv::Vec2f segment2polar( const cv::Vec4f &line);
 // Fit a line through points, L2 norm
-cv::Vec4f fit_line( const Points &p);
+//cv::Vec4f fit_line( const Points &p);
 // Length of a line segment
 float line_len( cv::Point p, cv::Point q);
 // Distance between point and line segment
@@ -243,6 +243,32 @@ void draw_contour( cv::Mat &img, const Points_ &cont,
                  cv::Scalar color = cv::Scalar(255,0,0), int thickness = 1)
 {
     cv::drawContours( img, std::vector<Points_>( 1, cont), -1, color, thickness, 8);
+}
+
+// Line
+//=========
+
+// Fit a line segment through points, L2 norm
+//-----------------------------------------------
+template <typename Points_>
+cv::Vec4f fit_line( const Points_ &p)
+{
+    cv::Vec4f res,tt;
+    cv::fitLine( p, tt, CV_DIST_L2, 0.0, 0.01, 0.01);
+    res[0] = tt[2];
+    res[1] = tt[3];
+    res[2] = tt[2] + tt[0];
+    res[3] = tt[3] + tt[1];
+    return res;
+}
+
+// Fit a polar through points, L2 norm
+//---------------------------------------------
+template <typename Points_>
+cv::Vec2f fit_pline( const Points_ &p)
+{
+    cv::Vec4f line = fit_line( p);
+    return segment2polar( line);
 }
 
 // Clustering

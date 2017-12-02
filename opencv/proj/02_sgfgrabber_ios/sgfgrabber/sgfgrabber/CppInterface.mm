@@ -22,7 +22,7 @@
 #import "LineFixer.hpp"
 #import "BlackWhiteEmpty.hpp"
 #import "BlobFinder.hpp"
-#include "Clust1D.hpp"
+#import "Clust1D.hpp"
 
 const cv::Size TMPL_SZ(16,16);
 
@@ -527,10 +527,11 @@ float top_x_var_by_middle( std::vector<cv::Vec2f> lines, int height, int skip = 
 - (UIImage *) f03_vert_lines
 {
     g_app.mainVC.lbDbg.text = @"03";
-    if (!SZ(_vertical_lines)) {
-        get_vertical_hough_lines( _stone_or_empty, _gray, _vertical_lines);
-    }
-    thin_vertical_hough_lines( _vertical_lines, _gray);
+//    if (!SZ(_vertical_lines)) {
+//        get_vertical_hough_lines( _stone_or_empty, _gray, _vertical_lines);
+//    }
+//    thin_vertical_hough_lines( _vertical_lines, _gray);
+    _vertical_lines = homegrown_vert_lines( _stone_or_empty);
     
     // Show results
     cv::Mat drawing;
@@ -749,7 +750,7 @@ int count_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line, Po
 int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, Points points, int middle_y)
 {
     int res = 0;
-    const float EPS = 5;
+    const float EPS = 2;
     for (auto p: points) {
         float ldist = dist_point_line( p, left_line);
         float rdist = dist_point_line( p, right_line);
@@ -759,6 +760,65 @@ int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, 
     }
     return res;
 }
+
+//--------------------------------------------------------
+int count_points_on_line( cv::Vec2f line, Points pts)
+{
+    int res = 0;
+    for (auto p:pts) {
+        float d = fabs(dist_point_line( p, line));
+        if (d < 0.75) {
+            res++;
+        }
+    }
+    return res;
+}
+
+
+// Find a vertical line thru pt which hits a lot of other points
+// WARNING: allpoints must be sorted by y
+//------------------------------------------------------------------
+cv::Vec2f find_line_thru_point( const Points &allpoints, cv::Point pt)
+{
+    // Find next point below.
+    //const float RHO_EPS = 10;
+    const float THETA_EPS = 10 * PI / 180;
+    int maxhits = -1;
+    cv::Vec2f res;
+    for (auto p: allpoints) {
+        if (p.y <= pt.y) continue;
+        Points pts = { pt, p };
+        cv::Vec2f newline = fit_pline( pts);
+        if (fabs(newline[1]) < THETA_EPS ) {
+            int nhits = count_points_on_line( newline, allpoints);
+            if (nhits > maxhits) {
+                maxhits = nhits;
+                res = newline;
+            }
+        }
+    }
+    PLOG( "maxhits:%d\n", maxhits);
+    //int tt = count_points_on_line( res, allpoints);
+    return res;
+} // find_line_thru_point()
+
+// Homegrown method to find vertical line candidates, as a replacement
+// for thinning Hough lines.
+//-----------------------------------------------------------------------------
+std::vector<cv::Vec2f> homegrown_vert_lines( Points pts)
+{
+    std::vector<cv::Vec2f> res;
+    // Find points in quartile with lowest y
+    std::sort( pts.begin(), pts.end(), [](Point2f p1, Point2f p2) { return p1.y < p2.y; } );
+    Points top_points( SZ(pts)/4);
+    std::copy_n ( pts.begin(), SZ(pts)/4, top_points.begin() );
+    // For each point, find a line that hits many other points
+    for (auto tp: top_points) {
+        cv::Vec2f newline = find_line_thru_point( pts, tp);
+        res.push_back( newline);
+    }
+    return res;
+} // homegrown_vert_lines()
 
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------

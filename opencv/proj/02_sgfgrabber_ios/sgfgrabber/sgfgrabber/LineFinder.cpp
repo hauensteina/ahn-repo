@@ -100,8 +100,8 @@ void LineFinder::find_rhythm( const std::vector<Points> &clusters,
     ISLOOP (clusters) {
         cv::Vec4f line =  fit_line( m_horizontal_clusters[i]);
         cv::Vec2f pline;
-        segment2polar(line,pline);        // Kludge to make the line long enough to see
-        polar2segment(pline, line);
+        pline = segment2polar(line);        // Kludge to make the line long enough to see
+        line  = polar2segment(pline);
         lines.push_back( line);
     }
     // Slopes of the lines
@@ -162,7 +162,7 @@ float LineFinder::dy_rat( cv::Vec2f &ratline, float &dy, int &idx)
     m_horizontal_lines.clear();
     ISLOOP (m_horizontal_clusters) {
         cv::Vec4f line =  fit_line( m_horizontal_clusters[i]);
-        cv::Vec2f pline; segment2polar(line,pline);
+        cv::Vec2f pline = segment2polar(line);
         m_horizontal_lines.push_back( pline);
     }
     float middle_x = m_imgSize.width / 2.0;
@@ -232,61 +232,60 @@ void LineFinder::find_lines( int max_rho,
     // convert to segments
     lines.clear();
     ISLOOP (hlines) {
-        cv::Vec4f line;
-        polar2segment( hlines[i], line);
+        cv::Vec4f line = polar2segment( hlines[i]);
         lines.push_back( line);
     }
 } // find_lines()
 
-// Get some characteristics of the best two horizontal lines
-//-----------------------------------------------------------------------------------------------------
-void LineFinder::best_two_horiz_lines( int &idx1, int &idx2,     // index in m_horizontal_clusters
-                                      cv::Vec4f &line1,
-                                      cv::Vec4f &line2,
-                                      float &rho1, float &rho2,  // distance from top
-                                      float &d1, float &d2)      // distance between intersections on that line
-{
-    std::vector<int> indexes;
-    ISLOOP (m_horizontal_clusters ) {
-        indexes.push_back(i);
-    }
-    // Sort indexes by number of points matching board size
-    //int bs = m_boardsize;
-    auto &hc(m_horizontal_clusters);
-    int bs = m_boardsize;
-    // size() is evil. Need to cast to int.
-    std::sort( indexes.begin(), indexes.end(),
-              [hc,bs](int a, int b)
-    {
-        return (fabs( bs - (int)hc[a].size()) <
-        fabs( bs - (int)hc[b].size()));
-    });
-    PLOG( "cluster sizes");
-    ISLOOP (indexes) {
-        PLOG( "%ld\n", m_horizontal_clusters[indexes[i]].size());
-        PLOG( "%f\n", fabs( bs - (int)hc[indexes[i]].size()));
-    }
-    PLOG("========");
-    
-    idx1 = indexes[0];
-    idx2 = indexes[1];
-    Points &cl1( m_horizontal_clusters[idx1]);
-    Points &cl2( m_horizontal_clusters[idx2]);
-    cv::Vec2f pl1, pl2;
-    line1 = fit_line( cl1);
-    segment2polar( line1, pl1);
-    polar2segment( pl1, line1);
-    line2 = fit_line( cl2);
-    segment2polar( line2, pl2);
-    polar2segment( pl2, line2);
-    rho1 = pl1[0];
-    rho2 = pl2[0];
-    std::vector<int> x1( cl1.size());
-    ISLOOP (cl1) { x1[i] = cl1[i].x; }
-    std::vector<int> x2( cl2.size());
-    ISLOOP (cl2) { x2[i] = cl2[i].x; }
-    d1 = vec_median( x1);
-    d2 = vec_median( x2);
-}
+//// Get some characteristics of the best two horizontal lines
+////-----------------------------------------------------------------------------------------------------
+//void LineFinder::best_two_horiz_lines( int &idx1, int &idx2,     // index in m_horizontal_clusters
+//                                      cv::Vec4f &line1,
+//                                      cv::Vec4f &line2,
+//                                      float &rho1, float &rho2,  // distance from top
+//                                      float &d1, float &d2)      // distance between intersections on that line
+//{
+//    std::vector<int> indexes;
+//    ISLOOP (m_horizontal_clusters ) {
+//        indexes.push_back(i);
+//    }
+//    // Sort indexes by number of points matching board size
+//    //int bs = m_boardsize;
+//    auto &hc(m_horizontal_clusters);
+//    int bs = m_boardsize;
+//    // size() is evil. Need to cast to int.
+//    std::sort( indexes.begin(), indexes.end(),
+//              [hc,bs](int a, int b)
+//    {
+//        return (fabs( bs - (int)hc[a].size()) <
+//        fabs( bs - (int)hc[b].size()));
+//    });
+//    PLOG( "cluster sizes");
+//    ISLOOP (indexes) {
+//        PLOG( "%ld\n", m_horizontal_clusters[indexes[i]].size());
+//        PLOG( "%f\n", fabs( bs - (int)hc[indexes[i]].size()));
+//    }
+//    PLOG("========");
+//    
+//    idx1 = indexes[0];
+//    idx2 = indexes[1];
+//    Points &cl1( m_horizontal_clusters[idx1]);
+//    Points &cl2( m_horizontal_clusters[idx2]);
+//    cv::Vec2f pl1, pl2;
+//    line1 = fit_line( cl1);
+//    segment2polar( line1, pl1);
+//    polar2segment( pl1, line1);
+//    line2 = fit_line( cl2);
+//    segment2polar( line2, pl2);
+//    polar2segment( pl2, line2);
+//    rho1 = pl1[0];
+//    rho2 = pl2[0];
+//    std::vector<int> x1( cl1.size());
+//    ISLOOP (cl1) { x1[i] = cl1[i].x; }
+//    std::vector<int> x2( cl2.size());
+//    ISLOOP (cl2) { x2[i] = cl2[i].x; }
+//    d1 = vec_median( x1);
+//    d2 = vec_median( x2);
+//}
 
 
