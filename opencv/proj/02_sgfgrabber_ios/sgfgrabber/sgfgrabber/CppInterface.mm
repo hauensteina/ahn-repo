@@ -460,7 +460,8 @@ cv::Vec2f find_line_thru_point( const Points &allpoints, cv::Point pt)
     for (auto p: allpoints) {
         if (p.y <= pt.y) continue;
         Points pts = { pt, p };
-        cv::Vec2f newline = fit_pline( pts);
+        //cv::Vec2f newline = fit_pline( pts);
+        cv::Vec2f newline = segment2polar( cv::Vec4f( pt.x, pt.y, p.x, p.y));
         if (fabs(newline[1]) < THETA_EPS ) {
             int nhits = count_points_on_line( newline, allpoints);
             if (nhits > maxhits) {
