@@ -271,11 +271,11 @@
                 img = [self.grabFuncs f07_zoom_in];
                 [self.cameraView setImage:img];
                 break;
-//            case 8:
-//                state++;
-//                img = [self.grabFuncs f08_show_vert_lines];
-//                [self.cameraView setImage:img];
-//                break;
+            case 8:
+                state++;
+                img = [self.grabFuncs f08_repeat_on_zoomed];
+                [self.cameraView setImage:img];
+                break;
 //            case 9:
 //                state++;
 //                img = [self.grabFuncs f09_clean_horiz_lines];

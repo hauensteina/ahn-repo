@@ -257,10 +257,6 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
 - (UIImage *) f03_vert_lines
 {
     g_app.mainVC.lbDbg.text = @"03";
-//    if (!SZ(_vertical_lines)) {
-//        get_vertical_hough_lines( _stone_or_empty, _gray, _vertical_lines);
-//    }
-//    thin_vertical_hough_lines( _vertical_lines, _gray);
     _vertical_lines = homegrown_vert_lines( _stone_or_empty);
     
     // Show results
@@ -278,7 +274,7 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
 
 // Replace close clusters of vert lines by their average.
 //-----------------------------------------------------------------------------------
-void dedup_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     // Cluster by x in the middle
     const float wwidth = 32.0;
@@ -305,7 +301,7 @@ void dedup_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &i
 - (UIImage *) f04_vert_lines_2
 {
     g_app.mainVC.lbDbg.text = @"04";
-    dedup_vertical_hough_lines( _vertical_lines, _gray);
+    dedup_vertical_lines( _vertical_lines, _gray);
     
     // Show results
     cv::Mat drawing;
@@ -321,7 +317,7 @@ void dedup_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &i
 // Find the change per line in rho and theta and synthesize the whole bunch
 // starting at the middle. Replace synthesized lines with real ones if close enough.
 //----------------------------------------------------------------------------------
-void fix_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     const float middle_y = img.rows / 2.0;
     const float width = img.cols;
@@ -382,14 +378,14 @@ void fix_vertical_hough_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img
               });
     
     lines = synth_lines;
-} // fix_vertical_hough_lines()
+} // fix_vertical_lines()
 
 // Find vertical line parameters
 //---------------------------------
 - (UIImage *) f05_vert_params
 {
     g_app.mainVC.lbDbg.text = @"05";
-    fix_vertical_hough_lines( _vertical_lines, _gray);
+    fix_vertical_lines( _vertical_lines, _gray);
     
     // Show results
     cv::Mat drawing;
@@ -556,7 +552,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 
 // Zoom in
 //----------------------------
-- (UIImage *) f07_zoom_in //@@@
+- (UIImage *) f07_zoom_in
 {
     g_app.mainVC.lbDbg.text = @"07";
     int marg = _small.cols / 20;
@@ -576,6 +572,50 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     return res;
 }
 
+// Repeat whole process 01 to 06 on the zoomed in version
+//-----------------------------------------------------------
+- (UIImage *) f08_repeat_on_zoomed //@@@
+{
+    g_app.mainVC.lbDbg.text = @"08";
+
+    // Blobs
+    _stone_or_empty.clear();
+    BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
+    BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
+
+    // Horizontals
+    _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
+    // This also removes dups from the points in _finder.horizontal_clusters
+    _finder.cluster();
+    cv::Vec2f ratline;
+    float dy; int rat_idx;
+    float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+    _horizontal_lines.clear();
+    find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
+                     _horizontal_lines);
+    
+    // Verticals
+    _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+    dedup_vertical_lines( _vertical_lines, _gray_zoomed);
+    fix_vertical_lines( _vertical_lines, _gray_zoomed);
+    
+    // Corners
+    _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
+    
+    //_vertical_lines.clear();
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    ISLOOP ( _stone_or_empty) {
+        draw_point( _stone_or_empty[i], drawing, 2);
+    }
+    draw_polar_lines( _horizontal_lines, drawing);
+    draw_polar_lines( _vertical_lines, drawing);
+     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f08_repeat_on_zoomed()
 
 
 // Save small crops around intersections for use as template
@@ -780,8 +820,8 @@ std::string rc_key (int r, int c)
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-        dedup_vertical_hough_lines( _vertical_lines, _gray);
-        fix_vertical_hough_lines( _vertical_lines, _gray);
+        dedup_vertical_lines( _vertical_lines, _gray);
+        fix_vertical_lines( _vertical_lines, _gray);
         
         // Find corners
         _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);

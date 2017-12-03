@@ -23,6 +23,7 @@
 - (UIImage *) f05_vert_params;
 - (UIImage *) f06_corners;
 - (UIImage *) f07_zoom_in;
+- (UIImage *) f08_repeat_on_zoomed;
 - (UIImage *) findBoard:(UIImage *)img;
 @property float sld_low;
 @property int canny_hi;
