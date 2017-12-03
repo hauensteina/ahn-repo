@@ -32,6 +32,7 @@ const cv::Size TMPL_SZ(16,16);
 //=======================
 @property cv::Mat small; // resized image, in color
 @property cv::Mat gray;  // Grayscale version of small
+@property cv::Mat gray_zoomed;  // Grayscale version of small, zoomed into the board
 @property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
 @property Points board;  // Current hypothesis on where the board is
@@ -540,7 +541,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 
 // Find the corners
 //----------------------------
-- (UIImage *) f06_corners //@@@
+- (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
     _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
@@ -552,6 +553,30 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
+
+// Zoom in
+//----------------------------
+- (UIImage *) f07_zoom_in //@@@
+{
+    g_app.mainVC.lbDbg.text = @"07";
+    int marg = _small.cols / 20;
+    // Target square for transform
+    Points2f dst = {
+        cv::Point( marg, marg),
+        cv::Point( _small.cols - marg, marg),
+        cv::Point( _small.cols - marg, _small.cols - 2*marg),
+        cv::Point( marg, _small.cols - 2*marg) };
+    cv::Mat M = cv::getPerspectiveTransform(_corners, dst);
+    cv::warpPerspective(_gray, _gray_zoomed, M, cv::Size( _small.cols, _small.rows));
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
+
+
 
 // Save small crops around intersections for use as template
 //-------------------------------------------------------------------------------
