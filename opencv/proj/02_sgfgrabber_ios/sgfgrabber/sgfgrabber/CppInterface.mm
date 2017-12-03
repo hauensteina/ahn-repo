@@ -42,8 +42,9 @@ const cv::Size TMPL_SZ(16,16);
 @property std::vector<cv::Vec2f> horizontal_lines;
 @property std::vector<cv::Vec2f> vertical_lines;
 @property Points2f corners;
-@property cv::Vec2f horiz_line;
-@property cv::Vec2f vert_line;
+@property Points2f intersections;
+//@property cv::Vec2f horiz_line;
+//@property cv::Vec2f vert_line;
 @property LineFinder finder;
 
 @end
@@ -574,7 +575,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 
 // Repeat whole process 01 to 06 on the zoomed in version
 //-----------------------------------------------------------
-- (UIImage *) f08_repeat_on_zoomed //@@@
+- (UIImage *) f08_repeat_on_zoomed
 {
     g_app.mainVC.lbDbg.text = @"08";
 
@@ -617,6 +618,22 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     return res;
 } // f08_repeat_on_zoomed()
 
+// Intersections on zoomed from corners
+//-----------------------------------------------------------
+- (UIImage *) f09_intersections //@@@
+{
+    g_app.mainVC.lbDbg.text = @"09";
+    
+    float delta_v, delta_h;
+    get_intersections( _corners, _board_sz, _intersections, delta_v, delta_h);
+
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    draw_points( _intersections, drawing, 1, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f09_intersections()
 
 // Save small crops around intersections for use as template
 //-------------------------------------------------------------------------------
