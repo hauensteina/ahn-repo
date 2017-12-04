@@ -119,11 +119,14 @@ std::string mat_typestr( const cv::Mat &m)
 //---------------------------------------------------
 int channel_median( cv::Mat channel )
 {
-    cv::Mat flat = channel.reshape(1,1);
-    cv::Mat sorted;
-    cv::sort(flat, sorted, cv::SORT_ASCENDING);
-    double res = sorted.at<uchar>(sorted.size() / 2);
-    return res;
+    std::vector<int> v(channel.rows*channel.cols);
+    int i=0;
+    RLOOP( channel.rows) {
+        CLOOP( channel.cols) {
+            v[i++] = channel.at<uint8_t>(r,c);
+        }
+    }
+    return vec_median( v);
 }
 
 // Contour

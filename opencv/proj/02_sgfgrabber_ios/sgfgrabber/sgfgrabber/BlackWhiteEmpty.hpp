@@ -54,7 +54,7 @@ public:
         get_black_features( planes[2], intersections, dx, dy, b_black_features);
 
         std::vector<float> empty_features;
-        get_empty_features( gray, intersections, dx, dy, empty_features);
+        get_empty_features( gray_normed, intersections, dx, dy, empty_features);
         
         int tt=42;
         
@@ -64,30 +64,29 @@ public:
 //                                          [](float a, float b){ return a < b; } )) ;
         float black_median = vec_median( black_features);
         //float bthresh = minelt * 2.5; // larger means more Black stones
-        float bthresh = black_median * 2.0/3.0; // larger means more Black stones
+        float bthresh = black_median * 0.66; // larger means more Black stones
         ISLOOP( black_features) {
             if (black_features[i] < bthresh) {
                 res[i] = BBLACK;
             }
         }
         
-        // Empty places
-        float maxelt = *(std::max_element( empty_features.begin(), empty_features.end(),
-                                         [](float a, float b){ return a < b; } )) ;
-        float ethresh = maxelt / 2.5; // Larger denom means more empty spaces
-        ISLOOP( empty_features) {
-            if (empty_features[i] > ethresh && res[i] != BBLACK) {
-                res[i] = EEMPTY;
-            }
-        }
         
         // White places
-        ISLOOP (res) {
-            if (res[i] != BBLACK && res[i] != EEMPTY) {
+        float wthresh = black_median * 1.3; // larger means less White stones
+        ISLOOP( black_features) {
+            if (black_features[i] > wthresh) {
                 res[i] = WWHITE;
             }
         }
-        
+
+        // Empty places
+        ISLOOP( res) {
+            if (res[i] != WWHITE && res[i] != BBLACK) {
+                res[i] = EEMPTY;
+            }
+        }
+
         return res;
     } // classify()
     
@@ -114,9 +113,10 @@ private:
                 rect.y + rect.height <= img.rows)
             {
                 cv::Mat hood = cv::Mat( img, rect);
-                float area = hood.rows * hood.cols;
-                cv::Scalar ssum = cv::sum( hood);
-                float brightness = ssum[0] / area;
+                float brightness = channel_median( hood);
+//                float area = hood.rows * hood.cols;
+//                cv::Scalar ssum = cv::sum( hood);
+//                float brightness = ssum[0] / area;
                 res.push_back( brightness);
             }
         } // for intersections
@@ -153,6 +153,7 @@ private:
             }
         } // for intersections
     } // get_empty_features()
+
 }; // class BlackWhiteEmpty
     
 
