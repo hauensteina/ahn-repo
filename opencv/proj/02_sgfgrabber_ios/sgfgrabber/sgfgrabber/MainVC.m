@@ -281,11 +281,11 @@
                 img = [self.grabFuncs f09_intersections];
                 [self.cameraView setImage:img];
                 break;
-//            case 10:
-//                state++;
-//                img = [self.grabFuncs f10_clean_vert_lines];
-//                [self.cameraView setImage:img];
-//                break;
+            case 10:
+                state++;
+                img = [self.grabFuncs f10_classify];
+                [self.cameraView setImage:img];
+                break;
 //            case 11:
 //                state++;
 //                img = [self.grabFuncs f11_classify];

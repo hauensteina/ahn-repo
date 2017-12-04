@@ -31,18 +31,21 @@ const cv::Size TMPL_SZ(16,16);
 @interface CppInterface()
 //=======================
 @property cv::Mat small; // resized image, in color
+@property cv::Mat small_zoomed;  // small, zoomed into the board
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_zoomed;  // Grayscale version of small, zoomed into the board
 @property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
-@property Points board;  // Current hypothesis on where the board is
-@property Points board_zoomed; // board corners after zooming in
+//@property Points board;  // Current hypothesis on where the board is
+//@property Points board_zoomed; // board corners after zooming in
 @property int board_sz; // board size, 9 or 19
 @property Points stone_or_empty; // places where we suspect stones or empty
 @property std::vector<cv::Vec2f> horizontal_lines;
 @property std::vector<cv::Vec2f> vertical_lines;
 @property Points2f corners;
 @property Points2f intersections;
+@property float dy;
+@property float dx;
 //@property cv::Vec2f horiz_line;
 //@property cv::Vec2f vert_line;
 @property LineFinder finder;
@@ -468,7 +471,7 @@ cv::Vec2f find_line_thru_point( const Points &allpoints, cv::Point pt)
             }
         }
     }
-    PLOG( "maxhits:%d\n", maxhits);
+    //PLOG( "maxhits:%d\n", maxhits);
     //int tt = count_points_on_line( res, allpoints);
     return res;
 } // find_line_thru_point()
@@ -565,7 +568,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         cv::Point( marg, _small.cols - 2*marg) };
     cv::Mat M = cv::getPerspectiveTransform(_corners, dst);
     cv::warpPerspective(_gray, _gray_zoomed, M, cv::Size( _small.cols, _small.rows));
-    
+    cv::warpPerspective(_small, _small_zoomed, M, cv::Size( _small.cols, _small.rows));
+
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
@@ -613,19 +617,18 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     }
     draw_polar_lines( _horizontal_lines, drawing);
     draw_polar_lines( _vertical_lines, drawing);
-     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
+    draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f08_repeat_on_zoomed()
 
 // Intersections on zoomed from corners
 //-----------------------------------------------------------
-- (UIImage *) f09_intersections //@@@
+- (UIImage *) f09_intersections
 {
     g_app.mainVC.lbDbg.text = @"09";
     
-    float delta_v, delta_h;
-    get_intersections( _corners, _board_sz, _intersections, delta_v, delta_h);
+    get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
 
     // Show results
     cv::Mat drawing;
@@ -634,6 +637,40 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f09_intersections()
+
+// Classify intersections into black, white, empty
+//-----------------------------------------------------------
+- (UIImage *) f10_classify //@@@
+{
+    g_app.mainVC.lbDbg.text = @"10";
+    
+    std::vector<int> diagram = BlackWhiteEmpty::classify( _small_zoomed,
+                                                         _intersections,
+                                                         _dx, _dy);
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+
+    int dx = ROUND( _dx/4.0);
+    int dy = ROUND( _dy/4.0);
+    ISLOOP (diagram) {
+        cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
+        cv::Rect rect( p.x - dx,
+                      p.y - dy,
+                      2*dx + 1,
+                      2*dy + 1);
+        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+            draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+        }
+        else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
+            draw_point( p, drawing, 2, cv::Scalar(0,0,255,255));
+        }
+    }
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f10_classify()
+
 
 // Save small crops around intersections for use as template
 //-------------------------------------------------------------------------------
@@ -665,7 +702,7 @@ void save_intersections( const cv::Mat img,
 //--------------------------------------------------------------------------------
 template <typename Points_>
 void get_intersections( const Points_ &corners, int boardsz,
-                       Points_ &result, float &delta_v, float &delta_h)
+                       Points_ &result, float &delta_h, float &delta_v)
 {
     if (corners.size() != 4) return;
     
@@ -694,8 +731,8 @@ void get_intersections( const Points_ &corners, int boardsz,
         bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(boardsz-1));
         bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(boardsz-1));
     }
-    delta_v = abs(int(round( 0.5 * (bot_y[0] - top_y[0]) / (boardsz -1))));
-    delta_h = abs(int(round( 0.5 * (right_x[0] - left_x[0]) / (boardsz -1))));
+    delta_v = (bot_y[0] - top_y[0]) / (boardsz -1);
+    delta_h = (right_x[0] - left_x[0]) / (boardsz -1);
     
     result = Points_();
     RLOOP (boardsz) {
@@ -759,45 +796,7 @@ std::string rc_key (int r, int c)
     return std::string (buf);
 }
 
-//// Classify intersections into b,w,empty
-////----------------------------------------
-//- (UIImage *) f11_classify
-//{
-//    g_app.mainVC.lbDbg.text = @"11";
-//    Points intersections;
-//    std::vector<int> diagram =
-//    BlackWhiteEmpty::get_diagram( _small,
-//                                 _horizontal_lines, _finder.m_wavelen_h,
-//                                 _vertical_lines, _finder.m_wavelen_v,
-//                                 _board_sz,
-//                                 _board_zoomed,
-//                                 intersections);
-//
-//    cv::Mat drawing;
-//    drawing = _small.clone();
-//    int dx = round(_finder.m_wavelen_h/4.0);
-//    int dy = round(_finder.m_wavelen_h/4.0);
-//    // Black stones
-//    ISLOOP (diagram) {
-//        cv::Point p = intersections[i];
-//        cv::Rect rect( p.x - dx,
-//                      p.y - dy,
-//                      2*dx+1,
-//                      2*dy+1);
-//        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
-//        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-//            draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
-//        }
-//        else if (diagram[i] != BlackWhiteEmpty::EEMPTY) {
-//            draw_point( p, drawing, 2, cv::Scalar(0,0,0,255));
-//        }
-//    }
-//
-//    UIImage *res = MatToUIImage( drawing);
-//    //UIImage *res = MatToUIImage( zoomed_edges);
-//    return res;
-//
-//} // f07_classify()
+
 
 #pragma mark - Real time implementation
 //========================================
