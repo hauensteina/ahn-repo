@@ -27,20 +27,44 @@ public:
                                             float dx, // approximate dist between lines
                                             float dy)
     {
-        std::vector<int> res(SZ(intersections), DONTKNOW);
+        
         cv::Mat gray;
         cv::cvtColor( img, gray, cv::COLOR_BGR2GRAY);
+        std::vector<int> res(SZ(intersections), DONTKNOW);
         
+        cv::Mat planes[4];
+        cv::split( img, planes); // Split into RGB
+
+        cv::Mat gray_normed;
+        normalize_plane( gray, gray_normed);
+        cv::Mat planes_normed[3];
+        normalize_plane( planes[0], planes_normed[0]);
+        normalize_plane( planes[1], planes_normed[1]);
+        normalize_plane( planes[2], planes_normed[2]);
+
+
         // Compute features for each board intersection
         std::vector<float> black_features;
-        get_black_features( gray, intersections, dx, dy, black_features);
+        get_black_features( gray_normed, intersections, dx, dy, black_features);
+        std::vector<float> r_black_features;
+        get_black_features( planes[0], intersections, dx, dy, r_black_features);
+        std::vector<float> g_black_features;
+        get_black_features( planes[1], intersections, dx, dy, g_black_features);
+        std::vector<float> b_black_features;
+        get_black_features( planes[2], intersections, dx, dy, b_black_features);
+
         std::vector<float> empty_features;
         get_empty_features( gray, intersections, dx, dy, empty_features);
+        
+        int tt=42;
+        
 
         // Black stones
-        float minelt = *(std::min_element( black_features.begin(), black_features.end(),
-                                          [](float a, float b){ return a < b; } )) ;
-        float bthresh = minelt * 2.5; // larger means more Black stones
+//        float minelt = *(std::min_element( black_features.begin(), black_features.end(),
+//                                          [](float a, float b){ return a < b; } )) ;
+        float black_median = vec_median( black_features);
+        //float bthresh = minelt * 2.5; // larger means more Black stones
+        float bthresh = black_median * 2.0/3.0; // larger means more Black stones
         ISLOOP( black_features) {
             if (black_features[i] < bthresh) {
                 res[i] = BBLACK;

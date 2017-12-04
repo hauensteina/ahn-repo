@@ -127,6 +127,8 @@ int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4);
 float center_avg( const cv::Mat &img, float frac=4);
 // Normalize mean and variance, per channel
 void normalize_image( const cv::Mat &src, cv::Mat &dst);
+// Normalize mean and variance for one uint channel, scale back to 0..255
+void normalize_plane( const cv::Mat &src, cv::Mat &dst);
 // Get main horizontal direction of a grid of points (in rad)
 float direction (const cv::Mat &img, const Points &ps);
 

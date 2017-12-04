@@ -745,59 +745,6 @@ void get_intersections( const Points_ &corners, int boardsz,
 } // get_intersections()
 
 
-// Type to hold a feature vector at a board position
-//=====================================================
-typedef struct feat {
-    std::string key;
-    int x,y;     // Pixel pos
-    std::vector<float> features;
-} Feat;
-
-// Compute features from a neighborhood of point
-//---------------------------------------------------------------------------------------------
-void get_features( const cv::Mat &img, cv::Point p, float wavelen_h, float wavelen_v,
-                  std::string key, Feat &f)
-{
-    int dx = round(wavelen_h/4.0); int dy = round(wavelen_v/4.0);
-    cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-    if (0 <= rect.x &&
-        0 <= rect.width &&
-        rect.x + rect.width <= img.cols &&
-        0 <= rect.y &&
-        0 <= rect.height &&
-        rect.y + rect.height <= img.rows)
-    {
-        cv::Mat hood = cv::Mat( img, rect);
-        float area = hood.rows * hood.cols;
-        cv::Scalar ssum = cv::sum( hood);
-        float brightness = ssum[0] / area;
-        //float brightness_g = ssum[1] / area;
-        //float brightness_b = ssum[2] / area;
-        //float v = sqrt (brightness_r*brightness_r + brightness_g*brightness_g + brightness_b*brightness_b);
-        f.features.push_back( brightness);
-        //f.features.push_back( brightness_g);
-        //f.features.push_back( brightness_b);
-        //std::cout << v << std::endl;
-    }
-    else {
-        NSLog( @"get_features failed at key %s", key.c_str());
-    }
-    f.key = key;
-    f.x = p.x;
-    f.y = p.y;
-    
-} // get_features()
-
-//----------------------------------
-std::string rc_key (int r, int c)
-{
-    char buf[100];
-    sprintf( buf, "%d_%d", r,c);
-    return std::string (buf);
-}
-
-
-
 #pragma mark - Real time implementation
 //========================================
 

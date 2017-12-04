@@ -573,6 +573,24 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     cv::merge( planes, 3, dst);
 }
 
+// Normalize mean and variance for one uint channel,
+// scale back to 0..255
+//--------------------------------------------------------
+void normalize_plane( const cv::Mat &src, cv::Mat &dst)
+{
+    cv::Mat normed;
+    cv::Scalar mmean, sstddev;
+    cv::meanStdDev( src, mmean, sstddev);
+    src.convertTo( normed, CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    double mmin, mmax;
+    cv::minMaxLoc( normed, &mmin, &mmax);
+    double delta = mmax - mmin;
+    double scale = 255.0 / delta;
+    double trans = -mmin * scale;
+    normed.convertTo( dst, CV_8UC1, scale , trans);
+}
+
+
 // Drawing
 //==========
 
