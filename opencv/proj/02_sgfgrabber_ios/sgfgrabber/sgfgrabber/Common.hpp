@@ -359,6 +359,15 @@ int vec_closest(  const std::vector<T> &vec, T num)
     return minidx;
 }
 
+// Index of larget element in vector
+//-----------------------------------------
+template <typename T>
+int argmax( const std::vector<T> &vec)
+{
+    auto maxiter = std::max_element( vec.begin(), vec.end());
+    return int(maxiter - vec.begin());
+}
+
 // Partition a vector of elements by class func.
 // Return parts as vec of vec.
 //---------------------------------------------------------------------
@@ -374,20 +383,12 @@ partition( std::vector<T> elts, int nof_classes, Func getClass)
     return res;
 } // partition()
 
-// Debugging Helpers
+// Debugger Helpers
 //======================
 
 // Print a vector
-//--------------------------------------------
-inline void print_vecf( std::vector<float> v)
-{
-    printf("(\n");
-    ISLOOP (v) {
-        //printf( "%5d %8.2f\n", i, v[i]);
-        printf( "%8.2f\n", v[i]);
-    }
-    printf(")\n");
-}
+void print_vecf( std::vector<float> v);
+void print_veci( std::vector<int> v);
 
 
 #endif /* __cplusplus */

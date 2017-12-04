@@ -19,7 +19,7 @@ class BlackWhiteEmpty
 //=====================
 {
 public:
-    enum { BBLACK=-1, EEMPTY=0, WWHITE=1, DONTKNOW=2 };
+    enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
     
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &img, // small, color
@@ -73,7 +73,7 @@ public:
         
         
         // White places
-        float wthresh = black_median * 1.3; // larger means less White stones
+        float wthresh = black_median * 1.2; // larger means less White stones
         ISLOOP( black_features) {
             if (black_features[i] > wthresh) {
                 res[i] = WWHITE;
@@ -98,6 +98,12 @@ private:
                                           float dx_, float dy_,
                                           std::vector<float> &res )
     {
+        // adaptive histogram equalization
+//        cv::Mat img;
+//        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+//        clahe->setClipLimit(1.0);
+//        clahe->apply(img_, img);
+        
         int dx = ROUND( dx_/4.0);
         int dy = ROUND( dy_/4.0);
         

@@ -112,14 +112,15 @@ bool board_valid( Points board, float screenArea)
     g_app.mainVC.lbDbg.text = @"00";
     
     // Live Camera
-    //UIImageToMat( img, _m);
+    UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board03.jpg", _m);
-    cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
+    //load_img( @"board03.jpg", _m);
+    //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+
     
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
@@ -638,15 +639,81 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     return res;
 } // f09_intersections()
 
+// Translate a bunch of points
+//----------------------------------------------------------------
+Points2f translate_points( const Points2f &pts, int dx, int dy)
+{
+    Points2f res(SZ(pts));
+    ISLOOP (pts) {
+        res[i] = Point2f( pts[i].x + dx, pts[i].y + dy);
+    }
+    return res;
+}
+
 // Classify intersections into black, white, empty
 //-----------------------------------------------------------
 - (UIImage *) f10_classify //@@@
 {
     g_app.mainVC.lbDbg.text = @"10";
     
-    std::vector<int> diagram = BlackWhiteEmpty::classify( _small_zoomed,
-                                                         _intersections,
-                                                         _dx, _dy);
+    // Wiggle the regions a little.
+    // Perspective tends to see stones with y too small (higher up).
+    // Therefore, look too pixels up, but never down.
+    Points2f intersections;
+    std::vector<std::vector<int> > diagrams;
+    intersections = translate_points( _intersections, 0, 0);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, -1, 0);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, 1, 0);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, 0, -1);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, -1, -1);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, 1, -1);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, 0, -2);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, -1, -2);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    intersections = translate_points( _intersections, 1, -2);
+    diagrams.push_back( BlackWhiteEmpty::classify( _small_zoomed,
+                                                  intersections,
+                                                  _dx, _dy));
+    //    intersections = translate_points( _intersections, 0, 1);
+    //    diagrams[4] = BlackWhiteEmpty::classify( _small_zoomed,
+    //                                            intersections,
+    //                                            _dx, _dy);
+    // Vote
+    std::vector<int> diagram; // vote result
+    ISLOOP( diagrams[0]) {
+        std::vector<int> votes(4,0);
+        for (auto d:diagrams) {
+            int idx = d[i];
+            votes[idx]++;
+        }
+        int winner = argmax( votes);
+        diagram.push_back( winner);
+    }
+    
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
@@ -670,7 +737,6 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f10_classify()
-
 
 // Save small crops around intersections for use as template
 //-------------------------------------------------------------------------------

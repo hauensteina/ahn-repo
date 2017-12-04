@@ -42,3 +42,28 @@ void fft(cplx buf[], int n)
     _fft( buf, out, n, 1);
 }
 
+// Debugger Helpers
+//======================
+
+// Print a vector
+//--------------------------------------------
+void print_vecf( std::vector<float> v)
+{
+    printf("(\n");
+    ISLOOP (v) {
+        printf( "%8.2f\n", v[i]);
+    }
+    printf(")\n");
+}
+
+//--------------------------------------------
+void print_veci( std::vector<int> v)
+{
+    printf("(\n");
+    ISLOOP (v) {
+        printf( "%d\n", v[i]);
+    }
+    printf(")\n");
+}
+
+
