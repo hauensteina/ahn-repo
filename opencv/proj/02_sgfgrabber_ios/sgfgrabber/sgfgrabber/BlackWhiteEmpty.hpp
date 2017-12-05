@@ -37,33 +37,39 @@ public:
         //equalizeHist( gray, gray_normed );
         
         // Compute features for each board intersection
-        std::vector<float> black_features;
-        get_black_features( gray, intersections, dx, dy, black_features);
+        std::vector<float> brightness;
+        get_brightness( gray, intersections, dx, dy, brightness);
 
-        std::vector<float> center_brightness;
-        center_bright( gray, intersections, dx, dy, center_brightness);
+        //std::vector<float> center_brightness;
+        //center_bright( gray, intersections, dx, dy, center_brightness);
+
+        std::vector<float> center_sum;
+        get_center_sum( gray, intersections, dx, dy, center_sum);
 
         // Black stones
-        float black_median = vec_median( black_features);
-        ISLOOP( black_features) {
+        float black_median = vec_median( brightness);
+        ISLOOP( brightness) {
             //float black_median = get_neighbor_med( i, 3, black_features);
             float bthresh = black_median * 0.66; // larger means more Black stones
-            if (black_features[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
+            if (brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
         // White places
-        ISLOOP( black_features) {
+        ISLOOP( brightness) {
             //float black_median = get_neighbor_med( i, 3, black_features);
             float wthresh = black_median * 1.2; // larger means less White stones
-            if (black_features[i] > wthresh  /* && black_features[i] - center_brightness[i] < 0 */  ) {
+//            if (brightness[i] > wthresh && center_sum[i] < 5 /* && black_features[i] - center_brightness[i] < 0 */  ) {
+            if (center_sum[i] <= 3 /* && black_features[i] - center_brightness[i] < 0 */  ) {
                 res[i] = WWHITE;
+                //PLOG( ">>>>>>> WHITE center sum %f\n", center_sum[i]);
             }
         }
         // Empty places
         ISLOOP( res) {
             if (res[i] != WWHITE && res[i] != BBLACK) {
                 res[i] = EEMPTY;
+                //PLOG( "######## EMPTY center sum %f\n", center_sum[i]);
             }
         }
         return res;
@@ -92,7 +98,7 @@ private:
     
     // Average pixel value around center of each intersection is black indicator.
     //---------------------------------------------------------------------------------
-    inline static void get_black_features( const cv::Mat &img, // gray
+    inline static void get_brightness( const cv::Mat &img, // gray
                                           const Points2f &intersections,
                                           float dx_, float dy_,
                                           std::vector<float> &res )
@@ -116,8 +122,42 @@ private:
                 res.push_back( brightness);
             }
         } // for intersections
-    } // get_black_features()
+    } // get_brightness()
 
+    // Inverse thresh hood by median, then sum center 9 pixels
+    //-------------------------------------------------------------------
+    inline static void get_center_sum( const cv::Mat &img, // gray
+                                  const Points2f &intersections,
+                                  float dx_, float dy_,
+                                  std::vector<float> &res )
+    {
+        int dx = ROUND(dx_/2);
+        int dy = ROUND(dy_/2);
+        
+        res.clear();
+        ISLOOP (intersections) {
+            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
+            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+            if (0 <= rect.x &&
+                0 <= rect.width &&
+                rect.x + rect.width <= img.cols &&
+                0 <= rect.y &&
+                0 <= rect.height &&
+                rect.y + rect.height <= img.rows)
+            {
+                cv::Mat hood = cv::Mat( img, rect);
+                cv::Mat threshed;
+                inv_thresh_median( hood, threshed);
+                const int rad = 1;
+                int cx = ROUND(threshed.cols / 2.0);
+                int cy = ROUND(threshed.rows / 2.0);
+                cv::Mat center = threshed( cv::Range (cy - rad, cy + rad + 1), cv::Range( cx - rad, cx + rad + 1));
+                float csum = cv::sum( center).val[0];
+                res.push_back( csum);
+            }
+        } // for intersections
+    } // get_center_sum()
+    
     // If there are contours, it's probably empty
     //----------------------------------------------------------------------------------------
     inline static void get_empty_features( const cv::Mat &img, // gray

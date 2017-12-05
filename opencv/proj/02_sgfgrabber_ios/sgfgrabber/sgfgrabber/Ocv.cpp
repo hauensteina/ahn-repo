@@ -498,6 +498,15 @@ float direction (const cv::Mat &img, const Points &ps)
     return med[1];
 }
 
+// Inverse threshold at median
+//-----------------------------------------------------------
+void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst)
+{
+    float med = channel_median( gray);
+    cv::threshold( gray, dst, med, 1, CV_THRESH_BINARY_INV);
+}
+
+
 // Automatic edge detection without parameters (from PyImageSearch)
 //--------------------------------------------------------------------
 void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma)

@@ -130,8 +130,9 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst);
 // Normalize mean and variance for one uint channel, scale back to 0..255
 void normalize_plane( const cv::Mat &src, cv::Mat &dst);
 // Get main horizontal direction of a grid of points (in rad)
-float direction (const cv::Mat &img, const Points &ps);
-
+float direction( const cv::Mat &img, const Points &ps);
+// Inverse threshold at median
+void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst);
 
 // Drawing
 //==========
