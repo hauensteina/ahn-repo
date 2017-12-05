@@ -872,7 +872,7 @@ void get_intersections( const Points_ &corners, int boardsz,
 
         // Find dominant direction
         float theta = direction( _gray, _stone_or_empty) - PI/2;
-        if (fabs(theta) > 0.02) break;
+        if (fabs(theta) > 0.03) break;
         
         // Find horiz lines
         _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );

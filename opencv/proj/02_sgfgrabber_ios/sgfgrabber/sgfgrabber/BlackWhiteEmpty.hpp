@@ -38,23 +38,25 @@ public:
         std::vector<float> black_features;
         get_black_features( gray_normed, intersections, dx, dy, black_features);
 
-        std::vector<float> tt_feat;
-        tt_feature( gray_normed, intersections, dx, dy, tt_feat);
+        std::vector<float> center_brightness;
+        center_bright( gray_normed, intersections, dx, dy, center_brightness);
 
         int tt=42;
     
         // Black stones
-        float black_median = vec_median( black_features);
-        float bthresh = black_median * 0.66; // larger means more Black stones
+        //float black_median = vec_median( black_features);
         ISLOOP( black_features) {
+            float black_median = get_neighbor_med( i, 4, black_features);
+            float bthresh = black_median * 0.66; // larger means more Black stones
             if (black_features[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
         // White places
-        float wthresh = black_median * 1.2; // larger means less White stones
         ISLOOP( black_features) {
-            if (black_features[i] > wthresh && tt_feat[i] > black_features[i] ) {
+            float black_median = get_neighbor_med( i, 4, black_features);
+            float wthresh = black_median * 1.2; // larger means less White stones
+            if (black_features[i] > wthresh  && black_features[i] - center_brightness[i] < 0 ) {
                 res[i] = WWHITE;
             }
         }
@@ -68,19 +70,33 @@ public:
     } // classify()
     
 private:
+    
+    // Get median of a neighborhood of size n around idx
+    //-------------------------------------------------------------------------------------------------
+    inline static float get_neighbor_med( int idx, int n, const std::vector<float> &feat )
+    {
+        int board_sz = sqrt(SZ(feat));
+        std::vector<float> vals;
+        int row = idx / board_sz;
+        int col = idx % board_sz;
+        for (int r = row-n; r <= row+n; r++) {
+            if (r < 0 || r >= board_sz) continue;
+            for (int c = col-n; c <= col+n; c++) {
+                if (c < 0 || c >= board_sz) continue;
+                int pos = r * board_sz + col;
+                vals.push_back( feat[pos]);
+            }
+        }
+        return vec_median( vals);
+    }
+    
     // Average pixel value around center of each intersection is black indicator.
     //---------------------------------------------------------------------------------
     inline static void get_black_features( const cv::Mat &img, // gray
                                           const Points2f &intersections,
                                           float dx_, float dy_,
                                           std::vector<float> &res )
-    {
-        // adaptive histogram equalization
-//        cv::Mat img;
-//        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-//        clahe->setClipLimit(1.0);
-//        clahe->apply(img_, img);
-        
+    {        
         int dx = ROUND( dx_/4.0);
         int dy = ROUND( dy_/4.0);
         
@@ -134,17 +150,16 @@ private:
         } // for intersections
     } // get_empty_features()
 
-    // See if the center is darker than the surroundings
+    // Brightness in a 3x3 window
     //---------------------------------------------------------------------
-    inline static void tt_feature( const cv::Mat &img, // gray
-                                  const Points2f &intersections,
-                                  float dx_, float dy_,
-                                  std::vector<float> &res )
+    inline static void center_bright( const cv::Mat &img, // gray
+                                     const Points2f &intersections,
+                                     float dx_, float dy_,
+                                     std::vector<float> &res )
     {
-        int dx = ROUND( dx_/4.0);
-        int dy = ROUND( dy_/4.0);
-        dx=dy=1;
-        
+        int dx = 1;
+        int dy = 1;
+
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
@@ -160,7 +175,7 @@ private:
                 res.push_back( brightness);
             }
         } // for intersections
-    } // center_darkness()
+    } // center_bright()
 
 }; // class BlackWhiteEmpty
     
