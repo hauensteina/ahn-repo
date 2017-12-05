@@ -53,7 +53,7 @@ public:
         ISLOOP( brightness) {
             //float black_median = get_neighbor_med( i, 3, brightness);
             float wthresh = black_median * 1.0; // larger means less White stones
-            if (brightness[i] > wthresh  &&  crossness[i] < 0.4  )  {
+            if (brightness[i] > wthresh  &&  crossness[i] < 0.35  )  {
                 res[i] = WWHITE;
                 //PLOG( ">>>>>>> WHITE crossness %f\n", crossness[i]);
             }
@@ -176,20 +176,24 @@ private:
                 inv_thresh_avg( hood, threshed);
                 //inv_thresh_median( hood, threshed);
                 int mid_y = ROUND(threshed.rows / 2.0);
+                int mid_x = ROUND(threshed.cols / 2.0);
                 float ssum = 0;
+                int n = 0;
+                const int marg = 2;
                 CLOOP (threshed.cols) {
-                    ssum += threshed.at<uint8_t>(mid_y-1, c);
-                    ssum += threshed.at<uint8_t>(mid_y-2, c);
+                    if (c < marg) continue;
+                    if (c >= threshed.cols - marg ) continue;
+                    //ssum += threshed.at<uint8_t>(mid_y, c);
+                    ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
+                    ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
                 }
-                ssum /= 2*threshed.cols;
-                //float area = threshed.cols * threshed.rows;
-                //float totsum = cv::sum(threshed).val[0];
-                //cv::Mat center;
-                //float center_area = get_center_crop( threshed, center, 6.0);
-                //float centsum = cv::sum(center).val[0];
-                //cv::matchTemplate( hood, mcross, matchRes, CV_TM_SQDIFF);
-                //float ssum = cv::sum( matchRes).val[0];
-                //float crossness = RAT( RAT( centsum, center_area), RAT( totsum, area));
+                RLOOP (threshed.rows) {
+                    if (r < marg) continue;
+                    if (r >= threshed.cols - marg ) continue;
+                    //ssum += threshed.at<uint8_t>(mid_y, c);
+                    ssum += threshed.at<uint8_t>(r, mid_x); n++;
+                }
+                ssum /= n;
                 res.push_back( ssum);
                 if (i==0) {
                     int tt = 42;
