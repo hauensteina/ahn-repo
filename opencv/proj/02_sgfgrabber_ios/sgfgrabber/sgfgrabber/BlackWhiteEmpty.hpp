@@ -22,26 +22,26 @@ public:
     enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
     
     //----------------------------------------------------------------------------------
-    inline static std::vector<int> classify( const cv::Mat &img, // small, color
+    inline static std::vector<int> classify( const cv::Mat &gray, // gray, normalized
                                             const Points2f &intersections,
                                             float dx, // approximate dist between lines
                                             float dy)
     {
-        cv::Mat gray;
-        cv::cvtColor( img, gray, cv::COLOR_BGR2GRAY);
+//        cv::Mat gray;
+//        cv::cvtColor( img, gray, cv::COLOR_BGR2GRAY);
         std::vector<int> res(SZ(intersections), DONTKNOW);
         
-        cv::Mat gray_normed;
-        normalize_plane( gray, gray_normed);
+//        cv::Mat gray_normed;
+//        normalize_plane( gray, gray_normed);
         //cv::Mat &gray_normed(gray);
         //equalizeHist( gray, gray_normed );
         
         // Compute features for each board intersection
         std::vector<float> black_features;
-        get_black_features( gray_normed, intersections, dx, dy, black_features);
+        get_black_features( gray, intersections, dx, dy, black_features);
 
         std::vector<float> center_brightness;
-        center_bright( gray_normed, intersections, dx, dy, center_brightness);
+        center_bright( gray, intersections, dx, dy, center_brightness);
 
         // Black stones
         float black_median = vec_median( black_features);
@@ -56,7 +56,7 @@ public:
         ISLOOP( black_features) {
             //float black_median = get_neighbor_med( i, 3, black_features);
             float wthresh = black_median * 1.2; // larger means less White stones
-            if (black_features[i] > wthresh  /* && black_features[i] - center_brightness[i] < 0 */ ) {
+            if (black_features[i] > wthresh  /* && black_features[i] - center_brightness[i] < 0 */  ) {
                 res[i] = WWHITE;
             }
         }
