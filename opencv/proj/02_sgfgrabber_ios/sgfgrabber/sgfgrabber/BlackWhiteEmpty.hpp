@@ -52,7 +52,7 @@ public:
         }
         // White places
         ISLOOP( black_features) {
-            float black_median = get_neighbor_med( i, 4, black_features);
+            float black_median = get_neighbor_med( i, 3, black_features);
             float wthresh = black_median * 1.1; // larger means less White stones
             if (black_features[i] > wthresh  && black_features[i] - center_brightness[i] < 0 ) {
                 res[i] = WWHITE;

@@ -235,14 +235,18 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
     _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
     // This also removes dups from the points in _finder.horizontal_clusters
     _finder.cluster();
-    cv::Vec2f ratline;
-    float dy; int rat_idx;
-    float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
     
-    _horizontal_lines.clear();
-    find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
-                     _horizontal_lines);
-    _vertical_lines.clear();
+    cv::Vec2f ratline;
+    do {
+        if (!SZ(_finder.m_horizontal_lines)) break;
+        float dy; int rat_idx;
+        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+        
+        _horizontal_lines.clear();
+        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
+                         _horizontal_lines);
+        _vertical_lines.clear();
+    } while(0);
     
     // Show results
     cv::Mat drawing;
@@ -545,7 +549,10 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 - (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
-    _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+    _corners.clear();
+    if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
+        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+    }
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
@@ -555,22 +562,30 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     return res;
 }
 
+// Unwarp the square defined by corners
+//------------------------------------------------------------------------
+void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst)
+{
+    int marg = img.cols / 20;
+    // Target square for transform
+    Points2f square = {
+        cv::Point( marg, marg),
+        cv::Point( img.cols - marg, marg),
+        cv::Point( img.cols - marg, img.cols - 2*marg),
+        cv::Point( marg, img.cols - 2*marg) };
+    cv::Mat M = cv::getPerspectiveTransform(corners, square);
+    cv::warpPerspective(img, dst, M, cv::Size( img.cols, img.rows));
+}
+
 // Zoom in
 //----------------------------
 - (UIImage *) f07_zoom_in
 {
     g_app.mainVC.lbDbg.text = @"07";
-    int marg = _small.cols / 20;
-    // Target square for transform
-    Points2f dst = {
-        cv::Point( marg, marg),
-        cv::Point( _small.cols - marg, marg),
-        cv::Point( _small.cols - marg, _small.cols - 2*marg),
-        cv::Point( marg, _small.cols - 2*marg) };
-    cv::Mat M = cv::getPerspectiveTransform(_corners, dst);
-    cv::warpPerspective(_gray, _gray_zoomed, M, cv::Size( _small.cols, _small.rows));
-    cv::warpPerspective(_small, _small_zoomed, M, cv::Size( _small.cols, _small.rows));
-
+    if (SZ(_corners) == 4) {
+        zoom_in( _gray,  _corners, _gray_zoomed);
+        zoom_in( _small, _corners, _small_zoomed);
+    }
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
@@ -584,31 +599,32 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 {
     g_app.mainVC.lbDbg.text = @"08";
 
-    // Blobs
-    _stone_or_empty.clear();
-    BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
-    BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
-
-    // Horizontals
-    _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
-    // This also removes dups from the points in _finder.horizontal_clusters
-    _finder.cluster();
-    cv::Vec2f ratline;
-    float dy; int rat_idx;
-    float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-    _horizontal_lines.clear();
-    find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
-                     _horizontal_lines);
-    
-    // Verticals
-    _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-    dedup_vertical_lines( _vertical_lines, _gray_zoomed);
-    fix_vertical_lines( _vertical_lines, _gray_zoomed);
-    
-    // Corners
-    _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
-    
-    //_vertical_lines.clear();
+    do {
+        if (_gray_zoomed.rows == 0) break;
+        // Blobs
+        _stone_or_empty.clear();
+        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
+        BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
+        
+        // Horizontals
+        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
+        // This also removes dups from the points in _finder.horizontal_clusters
+        _finder.cluster();
+        cv::Vec2f ratline;
+        float dy; int rat_idx;
+        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+        _horizontal_lines.clear();
+        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
+                         _horizontal_lines);
+        
+        // Verticals
+        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
+        fix_vertical_lines( _vertical_lines, _gray_zoomed);
+        
+        // Corners
+        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
+    } while(0);
     
     // Show results
     cv::Mat drawing;
@@ -629,7 +645,9 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 {
     g_app.mainVC.lbDbg.text = @"09";
     
+    if (SZ(_corners) == 4) {
     get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
+    }
 
     // Show results
     cv::Mat drawing;
@@ -750,7 +768,10 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
 {
     g_app.mainVC.lbDbg.text = @"10";
     
-    auto diagram = classify( _intersections, _small_zoomed, _dx, _dy);
+    std::vector<int> diagram;
+    if (_small_zoomed.rows > 0) {
+        diagram = classify( _intersections, _small_zoomed, _dx, _dy);
+    }
     
     // Show results
     cv::Mat drawing;
@@ -776,7 +797,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
     return res;
 } // f10_classify()
 
-// Save small crops around intersections for use as template
+// Save small crops around intersections for inspection
 //-------------------------------------------------------------------------------
 void save_intersections( const cv::Mat img,
                         const Points &intersections, int delta_v, int delta_h)
