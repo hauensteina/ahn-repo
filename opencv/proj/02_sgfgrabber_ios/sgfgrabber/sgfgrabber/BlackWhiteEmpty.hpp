@@ -33,25 +33,29 @@ public:
         std::vector<float> brightness;
         get_brightness( gray, intersections, dx, dy, brightness);
 
-        std::vector<float> center_sum;
-        get_center_sum( gray, intersections, dx, dy, center_sum);
+        //std::vector<float> center_sum;
+        //get_center_sum( gray, intersections, dx, dy, center_sum);
+
+        std::vector<float> crossness;
+        get_crossness( gray, intersections, dx, dy, crossness);
 
         // Black stones
         float black_median = vec_median( brightness);
         ISLOOP( brightness) {
             //float black_median = get_neighbor_med( i, 3, black_features);
-            float bthresh = black_median * 0.66; // larger means more Black stones
+            //float bthresh = black_median * 0.66; // larger means more Black stones
+            float bthresh = black_median * 0.5; // larger means more Black stones
             if (brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
         // White places
         ISLOOP( brightness) {
-            //float black_median = get_neighbor_med( i, 3, black_features);
+            //float black_median = get_neighbor_med( i, 3, brightness);
             float wthresh = black_median * 1.0; // larger means less White stones
-            if (brightness[i] > wthresh  &&  center_sum[i] < 7  )  {
+            if (brightness[i] > wthresh  &&  crossness[i] < 0.4  )  {
                 res[i] = WWHITE;
-                //PLOG( ">>>>>>> WHITE center sum %f\n", center_sum[i]);
+                //PLOG( ">>>>>>> WHITE crossness %f\n", crossness[i]);
             }
         }
         // Empty places
@@ -146,6 +150,53 @@ private:
             }
         } // for intersections
     } // get_center_sum()
+
+    //-------------------------------------------------------------------
+    inline static void get_crossness( const cv::Mat &img, // gray
+                                     const Points2f &intersections,
+                                     float dx_, float dy_,
+                                     std::vector<float> &res ) //@@@
+    {
+        int dx = ROUND(dx_/2.0);
+        int dy = ROUND(dy_/2.0);
+        
+        res.clear();
+        ISLOOP (intersections) {
+            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
+            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+            if (0 <= rect.x &&
+                0 <= rect.width &&
+                rect.x + rect.width <= img.cols &&
+                0 <= rect.y &&
+                0 <= rect.height &&
+                rect.y + rect.height <= img.rows)
+            {
+                cv::Mat hood = cv::Mat( img, rect);
+                cv::Mat threshed;
+                inv_thresh_avg( hood, threshed);
+                //inv_thresh_median( hood, threshed);
+                int mid_y = ROUND(threshed.rows / 2.0);
+                float ssum = 0;
+                CLOOP (threshed.cols) {
+                    ssum += threshed.at<uint8_t>(mid_y-1, c);
+                    ssum += threshed.at<uint8_t>(mid_y-2, c);
+                }
+                ssum /= 2*threshed.cols;
+                //float area = threshed.cols * threshed.rows;
+                //float totsum = cv::sum(threshed).val[0];
+                //cv::Mat center;
+                //float center_area = get_center_crop( threshed, center, 6.0);
+                //float centsum = cv::sum(center).val[0];
+                //cv::matchTemplate( hood, mcross, matchRes, CV_TM_SQDIFF);
+                //float ssum = cv::sum( matchRes).val[0];
+                //float crossness = RAT( RAT( centsum, center_area), RAT( totsum, area));
+                res.push_back( ssum);
+                if (i==0) {
+                    int tt = 42;
+                }
+            }
+        } // for intersections
+    } // get_crossness()
     
     // If there are contours, it's probably empty
     //----------------------------------------------------------------------------------------

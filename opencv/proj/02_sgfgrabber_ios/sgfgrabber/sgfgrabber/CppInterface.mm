@@ -713,7 +713,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
 //    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
 //                                                  intersections,
 //                                                  dx, dy));
-//    
+    
     // Vote across wiggle
     std::vector<int> diagram; // vote result
     ISLOOP( diagrams[0]) {

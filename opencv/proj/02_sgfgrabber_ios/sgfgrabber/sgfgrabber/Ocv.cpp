@@ -506,6 +506,14 @@ void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst)
     cv::threshold( gray, dst, med, 1, CV_THRESH_BINARY_INV);
 }
 
+// Inverse threshold at average
+//-----------------------------------------------------------
+void inv_thresh_avg( const cv::Mat &gray, cv::Mat &dst)
+{
+    double avg = cv::sum( gray).val[0];
+    avg /= (gray.rows * gray.cols);
+    cv::threshold( gray, dst, avg, 1, CV_THRESH_BINARY_INV);
+}
 
 // Automatic edge detection without parameters (from PyImageSearch)
 //--------------------------------------------------------------------
@@ -545,11 +553,11 @@ void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type)
 //-------------------------------------------------------------------
 int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac)
 {
-    float cx = img.cols / 2.0;
-    float cy = img.rows / 2.0;
-    float dx = img.cols / frac;
-    float dy = img.rows / frac;
-    dst = cv::Mat( img, cv::Rect( round(cx-dx), round(cy-dy), round(2*dx), round(2*dy)));
+    float cx = ROUND(img.cols / 2.0);
+    float cy = ROUND(img.rows / 2.0);
+    float dx = ROUND(img.cols / frac);
+    float dy = ROUND(img.rows / frac);
+    dst = cv::Mat( img, cv::Rect( cx-dx, cy-dy, 2*dx+1, 2*dy+1));
     int area = dst.rows * dst.cols;
     return area;
 }

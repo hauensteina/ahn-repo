@@ -133,6 +133,8 @@ void normalize_plane( const cv::Mat &src, cv::Mat &dst);
 float direction( const cv::Mat &img, const Points &ps);
 // Inverse threshold at median
 void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst);
+// Inverse threshold at average
+void inv_thresh_avg( const cv::Mat &gray, cv::Mat &dst);
 
 // Drawing
 //==========
