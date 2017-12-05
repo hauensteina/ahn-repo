@@ -564,7 +564,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 
 // Unwarp the square defined by corners
 //------------------------------------------------------------------------
-void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst)
+void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat &M)
 {
     int marg = img.cols / 20;
     // Target square for transform
@@ -573,7 +573,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst)
         cv::Point( img.cols - marg, marg),
         cv::Point( img.cols - marg, img.cols - 2*marg),
         cv::Point( marg, img.cols - 2*marg) };
-    cv::Mat M = cv::getPerspectiveTransform(corners, square);
+    M = cv::getPerspectiveTransform(corners, square);
     cv::warpPerspective(img, dst, M, cv::Size( img.cols, img.rows));
 }
 
@@ -583,8 +583,9 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst)
 {
     g_app.mainVC.lbDbg.text = @"07";
     if (SZ(_corners) == 4) {
-        zoom_in( _gray,  _corners, _gray_zoomed);
-        zoom_in( _small, _corners, _small_zoomed);
+        cv::Mat M;
+        zoom_in( _gray,  _corners, _gray_zoomed, M);
+        zoom_in( _small, _corners, _small_zoomed, M);
     }
     // Show results
     cv::Mat drawing;
@@ -913,9 +914,17 @@ void get_intersections( const Points_ &corners, int boardsz,
         
         // Find corners
         _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+        if (SZ(_corners) != 4) break;
         get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
-        if (_dx < 2 || _dy < 2) break;
-        auto diagram = classify( _intersections, _small, _dx, _dy);
+        //if (_dx < 2 || _dy < 2) break;
+        //auto diagram = classify( _intersections, _small, _dx, _dy);
+
+        //draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
+        
+        // Zoom in
+        cv::Mat M;
+        zoom_in( _gray,  _corners, _gray_zoomed, M);
+        zoom_in( _small, _corners, _small_zoomed, M);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   _small, cv::Scalar( 255,0,0,255));
@@ -925,7 +934,40 @@ void get_intersections( const Points_ &corners, int boardsz,
                   _small, cv::Scalar( 255,0,0,255));
         draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
                   _small, cv::Scalar( 255,0,0,255));
-        //draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
+
+        
+        // Repeat process on zoomed image
+        _stone_or_empty.clear();
+        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
+        BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
+        if (SZ(_stone_or_empty) < 3) break;
+        
+        // Horizontals
+        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
+        // This also removes dups from the points in _finder.horizontal_clusters
+        _finder.cluster();
+        if (SZ(_finder.m_horizontal_clusters) < 3) break;
+        //cv::Vec2f ratline;
+        //float dy; int rat_idx;
+        dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+        _horizontal_lines.clear();
+        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
+                         _horizontal_lines);
+        
+        // Verticals
+        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
+        fix_vertical_lines( _vertical_lines, _gray_zoomed);
+        
+        // Corners
+        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
+        if (SZ(_corners) != 4) break;
+
+        // Classify
+        Points2f intersections_zoomed;
+        get_intersections( _corners, _board_sz, intersections_zoomed, _dx, _dy);
+        auto diagram = classify( intersections_zoomed, _small_zoomed, _dx, _dy);
+        
         ISLOOP (diagram) {
 //            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
 //            cv::Rect rect( p.x - dx,
