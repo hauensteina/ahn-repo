@@ -41,8 +41,6 @@ public:
         std::vector<float> center_brightness;
         center_bright( gray_normed, intersections, dx, dy, center_brightness);
 
-        int tt=42;
-    
         // Black stones
         //float black_median = vec_median( black_features);
         ISLOOP( black_features) {
@@ -55,7 +53,7 @@ public:
         // White places
         ISLOOP( black_features) {
             float black_median = get_neighbor_med( i, 4, black_features);
-            float wthresh = black_median * 1.2; // larger means less White stones
+            float wthresh = black_median * 1.1; // larger means less White stones
             if (black_features[i] > wthresh  && black_features[i] - center_brightness[i] < 0 ) {
                 res[i] = WWHITE;
             }
