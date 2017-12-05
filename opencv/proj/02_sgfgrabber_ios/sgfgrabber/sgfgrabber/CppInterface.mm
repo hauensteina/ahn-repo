@@ -657,7 +657,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
     std::vector<std::vector<int> > diagrams;
     // Wiggle the regions a little.
     // Perspective tends to see stones with y too small (higher up).
-    // Therefore, look too pixels up, but never down.
+    // Therefore, look two pixels up, but never down.
     intersections = translate_points( intersections_, 0, 0);
     diagrams.push_back( BlackWhiteEmpty::classify( img,
                                                   intersections,
@@ -695,7 +695,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
                                                   intersections,
                                                   dx, dy));
     
-    // Vote
+    // Vote acroos wiggle
     std::vector<int> diagram; // vote result
     ISLOOP( diagrams[0]) {
         std::vector<int> votes(4,0);
@@ -706,6 +706,41 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
         int winner = argmax( votes);
         diagram.push_back( winner);
     }
+    // Vote across time
+    typedef struct { int b; int w; int e; } Votes;
+    static std::vector<Votes > timevotes(19*19);
+    static time_t ttime = 0;
+    // reset after two seconds
+    if (time(NULL) - ttime > 2) {
+        ISLOOP (timevotes) {
+            timevotes[i].b = timevotes[i].e = timevotes[i].w = 0;
+        }
+    }
+    ttime = time(NULL);
+    ISLOOP (diagram) {
+        int bwe = diagram[i];
+        switch (bwe) {
+            case BlackWhiteEmpty::BBLACK:
+                timevotes[i].b++; break;
+            case BlackWhiteEmpty::EEMPTY:
+                timevotes[i].e++; break;
+            case BlackWhiteEmpty::WWHITE:
+                timevotes[i].w++; break;
+            default: assert(1==0);
+        }
+    }
+    ISLOOP (diagram) {
+        if (timevotes[i].w > timevotes[i].b && timevotes[i].w > timevotes[i].e) {
+            diagram[i] = BlackWhiteEmpty::WWHITE;
+        }
+        else if (timevotes[i].b > timevotes[i].w && timevotes[i].b > timevotes[i].e) {
+            diagram[i] = BlackWhiteEmpty::BBLACK;
+        }
+        else {
+            diagram[i] = BlackWhiteEmpty::EEMPTY;
+        }
+    }
+    
     return diagram;
 } // classify()
 
