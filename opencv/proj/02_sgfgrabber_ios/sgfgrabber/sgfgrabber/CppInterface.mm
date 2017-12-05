@@ -916,7 +916,7 @@ void get_intersections( const Points_ &corners, int boardsz,
         _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
         if (SZ(_corners) != 4) break;
         get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
-        //if (_dx < 2 || _dy < 2) break;
+        if (_dx < 2 || _dy < 2) break;
         //auto diagram = classify( _intersections, _small, _dx, _dy);
 
         //draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
@@ -966,6 +966,7 @@ void get_intersections( const Points_ &corners, int boardsz,
         // Classify
         Points2f intersections_zoomed;
         get_intersections( _corners, _board_sz, intersections_zoomed, _dx, _dy);
+        if (_dx < 2 || _dy < 2) break;
         auto diagram = classify( intersections_zoomed, _small_zoomed, _dx, _dy);
         
         ISLOOP (diagram) {

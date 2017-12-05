@@ -33,7 +33,9 @@ public:
         
         cv::Mat gray_normed;
         normalize_plane( gray, gray_normed);
-
+        //cv::Mat &gray_normed(gray);
+        //equalizeHist( gray, gray_normed );
+        
         // Compute features for each board intersection
         std::vector<float> black_features;
         get_black_features( gray_normed, intersections, dx, dy, black_features);
@@ -42,9 +44,9 @@ public:
         center_bright( gray_normed, intersections, dx, dy, center_brightness);
 
         // Black stones
-        //float black_median = vec_median( black_features);
+        float black_median = vec_median( black_features);
         ISLOOP( black_features) {
-            float black_median = get_neighbor_med( i, 4, black_features);
+            //float black_median = get_neighbor_med( i, 3, black_features);
             float bthresh = black_median * 0.66; // larger means more Black stones
             if (black_features[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
@@ -52,9 +54,9 @@ public:
         }
         // White places
         ISLOOP( black_features) {
-            float black_median = get_neighbor_med( i, 3, black_features);
-            float wthresh = black_median * 1.1; // larger means less White stones
-            if (black_features[i] > wthresh  && black_features[i] - center_brightness[i] < 0 ) {
+            //float black_median = get_neighbor_med( i, 3, black_features);
+            float wthresh = black_median * 1.2; // larger means less White stones
+            if (black_features[i] > wthresh  /* && black_features[i] - center_brightness[i] < 0 */ ) {
                 res[i] = WWHITE;
             }
         }
