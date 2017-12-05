@@ -27,21 +27,11 @@ public:
                                             float dx, // approximate dist between lines
                                             float dy)
     {
-//        cv::Mat gray;
-//        cv::cvtColor( img, gray, cv::COLOR_BGR2GRAY);
         std::vector<int> res(SZ(intersections), DONTKNOW);
-        
-//        cv::Mat gray_normed;
-//        normalize_plane( gray, gray_normed);
-        //cv::Mat &gray_normed(gray);
-        //equalizeHist( gray, gray_normed );
         
         // Compute features for each board intersection
         std::vector<float> brightness;
         get_brightness( gray, intersections, dx, dy, brightness);
-
-        //std::vector<float> center_brightness;
-        //center_bright( gray, intersections, dx, dy, center_brightness);
 
         std::vector<float> center_sum;
         get_center_sum( gray, intersections, dx, dy, center_sum);
@@ -58,9 +48,8 @@ public:
         // White places
         ISLOOP( brightness) {
             //float black_median = get_neighbor_med( i, 3, black_features);
-            float wthresh = black_median * 1.2; // larger means less White stones
-//            if (brightness[i] > wthresh && center_sum[i] < 5 /* && black_features[i] - center_brightness[i] < 0 */  ) {
-            if (center_sum[i] <= 3 /* && black_features[i] - center_brightness[i] < 0 */  ) {
+            float wthresh = black_median * 1.0; // larger means less White stones
+            if (brightness[i] > wthresh  &&  center_sum[i] < 7  )  {
                 res[i] = WWHITE;
                 //PLOG( ">>>>>>> WHITE center sum %f\n", center_sum[i]);
             }
@@ -131,8 +120,8 @@ private:
                                   float dx_, float dy_,
                                   std::vector<float> &res )
     {
-        int dx = ROUND(dx_/2);
-        int dy = ROUND(dy_/2);
+        int dx = ROUND(dx_/2.0);
+        int dy = ROUND(dy_/2.0);
         
         res.clear();
         ISLOOP (intersections) {
@@ -189,33 +178,6 @@ private:
             }
         } // for intersections
     } // get_empty_features()
-
-    // Brightness in a 3x3 window
-    //---------------------------------------------------------------------
-    inline static void center_bright( const cv::Mat &img, // gray
-                                     const Points2f &intersections,
-                                     float dx_, float dy_,
-                                     std::vector<float> &res )
-    {
-        int dx = 1;
-        int dy = 1;
-
-        ISLOOP (intersections) {
-            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            if (0 <= rect.x &&
-                0 <= rect.width &&
-                rect.x + rect.width <= img.cols &&
-                0 <= rect.y &&
-                0 <= rect.height &&
-                rect.y + rect.height <= img.rows)
-            {
-                cv::Mat hood = cv::Mat( img, rect);
-                float brightness = channel_median( hood);
-                res.push_back( brightness);
-            }
-        } // for intersections
-    } // center_bright()
 
 }; // class BlackWhiteEmpty
     

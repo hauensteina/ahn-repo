@@ -681,40 +681,40 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
                                                   intersections,
                                                   dx, dy));
-    intersections = translate_points( intersections_, -1, 0);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, 1, 0);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, 0, -1);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, -1, -1);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, 1, -1);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, 0, -2);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, -1, -2);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    intersections = translate_points( intersections_, 1, -2);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-                                                  intersections,
-                                                  dx, dy));
-    
-    // Vote acroos wiggle
+//    intersections = translate_points( intersections_, -1, 0);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, 1, 0);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, 0, 1);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, -1, 1);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, 1, 1);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, 0, 2);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, -1, 2);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    intersections = translate_points( intersections_, 1, 2);
+//    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+//                                                  intersections,
+//                                                  dx, dy));
+//    
+    // Vote across wiggle
     std::vector<int> diagram; // vote result
     ISLOOP( diagrams[0]) {
         std::vector<int> votes(4,0);
@@ -969,9 +969,11 @@ void get_intersections( const Points_ &corners, int boardsz,
         Points2f intersections_zoomed;
         get_intersections( _corners, _board_sz, intersections_zoomed, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
-        cv::Mat gray_normed;
-        normalize_plane( _gray_zoomed, gray_normed);
-        auto diagram = classify( intersections_zoomed, gray_normed, _dx, _dy);
+        //cv::Mat gray_normed;
+        //normalize_plane( _gray_zoomed, gray_normed);
+        cv::Mat gray_blurred;
+        cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
+        auto diagram = classify( intersections_zoomed, gray_blurred, _dx, _dy);
         
         ISLOOP (diagram) {
 //            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
