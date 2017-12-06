@@ -771,9 +771,9 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     
     std::vector<int> diagram;
     if (_small_zoomed.rows > 0) {
-        cv::Mat gray_normed;
-        normalize_plane( _gray_zoomed, gray_normed);
-        diagram = classify( _intersections, gray_normed, _dx, _dy);
+        cv::Mat gray_blurred;
+        cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
+        diagram = classify( _intersections, gray_blurred, _dx, _dy);
     }
     
     // Show results

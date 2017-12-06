@@ -179,19 +179,20 @@ private:
                 int mid_x = ROUND(threshed.cols / 2.0);
                 float ssum = 0;
                 int n = 0;
-                const int marg = 2;
+                const int marg = 4;
                 CLOOP (threshed.cols) {
                     if (c < marg) continue;
                     if (c >= threshed.cols - marg ) continue;
-                    //ssum += threshed.at<uint8_t>(mid_y, c);
+                    //ssum += threshed.at<uint8_t>(mid_y, c); n++;
                     ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
                     ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
                 }
                 RLOOP (threshed.rows) {
                     if (r < marg) continue;
                     if (r >= threshed.cols - marg ) continue;
-                    //ssum += threshed.at<uint8_t>(mid_y, c);
                     ssum += threshed.at<uint8_t>(r, mid_x); n++;
+                    //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
+                    //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
                 }
                 ssum /= n;
                 res.push_back( ssum);
