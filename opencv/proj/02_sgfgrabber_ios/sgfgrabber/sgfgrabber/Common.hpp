@@ -138,8 +138,9 @@ template <typename T>
 void ringpush( std::vector<T>& v, const T &elt, int N)
 {
     v.push_back( elt);
-    while (v.size() > N) {
-        v.erase( 0);
+    int erase_n = SZ(v) - N;
+    if (erase_n > 0) {
+        v.erase( v.begin(), v.begin() + erase_n);
     }
 }
 

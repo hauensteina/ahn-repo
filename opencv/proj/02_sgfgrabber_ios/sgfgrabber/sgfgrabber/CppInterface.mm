@@ -726,38 +726,16 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
         diagram.push_back( winner);
     }
     // Vote across time
-    typedef struct { int b; int w; int e; } Votes;
-    static std::vector<Votes > timevotes(19*19);
-    static time_t ttime = 0;
-    // reset after two seconds
-    if (time(NULL) - ttime > 2) {
-        ISLOOP (timevotes) {
-            timevotes[i].b = timevotes[i].e = timevotes[i].w = 0;
-        }
-    }
-    ttime = time(NULL);
+    const int BUFSZ = 20; // frames of history for voting
+    static std::vector<std::vector<int> > timevotes(19*19);
     ISLOOP (diagram) {
-        int bwe = diagram[i];
-        switch (bwe) {
-            case BlackWhiteEmpty::BBLACK:
-                timevotes[i].b++; break;
-            case BlackWhiteEmpty::EEMPTY:
-                timevotes[i].e++; break;
-            case BlackWhiteEmpty::WWHITE:
-                timevotes[i].w++; break;
-            default: assert(1==0);
-        }
+        ringpush( timevotes[i], diagram[i], BUFSZ);
     }
-    ISLOOP (diagram) {
-        if (timevotes[i].w > timevotes[i].b && timevotes[i].w > timevotes[i].e) {
-            diagram[i] = BlackWhiteEmpty::WWHITE;
-        }
-        else if (timevotes[i].b > timevotes[i].w && timevotes[i].b > timevotes[i].e) {
-            diagram[i] = BlackWhiteEmpty::BBLACK;
-        }
-        else {
-            diagram[i] = BlackWhiteEmpty::EEMPTY;
-        }
+    ISLOOP (timevotes) {
+        std::vector<int> counts( BlackWhiteEmpty::DONTKNOW, 0); // index is bwe
+        for (int bwe: timevotes[i]) { ++counts[bwe]; }
+        int winner = argmax( counts);
+        diagram[i] = winner;
     }
     
     return diagram;
