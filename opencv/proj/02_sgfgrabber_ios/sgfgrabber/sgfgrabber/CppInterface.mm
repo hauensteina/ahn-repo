@@ -112,11 +112,11 @@ bool board_valid( Points board, float screenArea)
     g_app.mainVC.lbDbg.text = @"00";
     
     // Live Camera
-    //UIImageToMat( img, _m);
+    UIImageToMat( img, _m);
     
     // From file
-    load_img( @"board03.jpg", _m);
-    cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
+    //load_img( @"board03.jpg", _m);
+    //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
@@ -125,6 +125,8 @@ bool board_valid( Points board, float screenArea)
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
+    auto cleaned = BlobFinder::clean( _stone_or_empty);
+    _stone_or_empty = cleaned;
     
     // Show results
     cv::Mat drawing;
@@ -149,12 +151,77 @@ bool board_valid( Points board, float screenArea)
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
+    auto cleaned = BlobFinder::clean( _stone_or_empty);
+    _stone_or_empty = cleaned;
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    draw_points(_stone_or_empty, drawing, 2, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
+
+// Find a nonzero point near the middle, flood from there,
+// eliminate all else.
+//--------------------------------------------------------
+void flood_from_center( cv::Mat &m)
+{
+    // Find some nonzero point close to the center
+    cv::Mat locations;
+    cv::findNonZero(m, locations);
+    std::vector<float> distvec(locations.rows);
+    std::vector<int> idxvec(locations.rows);
+    cv::Point center( m.cols / 2, m.rows / 2);
+    // Sort points by dist from center
+    for (int i=0; i<locations.rows; i++) {
+        cv::Point p = locations.at<cv::Point>(i,0);
+        distvec[i] = line_len(p, center);
+        idxvec[i] = i;
+    }
+    if (!distvec.size()) return;
+    std::sort( idxvec.begin(), idxvec.end(), [distvec](int a, int b) {
+        return distvec[a] < distvec[b];
+    });
+    // Floodfill from nonzero point closest to center
+    cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
+    cv::floodFill(m, seed, cv::Scalar(200));
+    
+    // Keep only filled area
+    cv::threshold(m, m, 199, 255, cv::THRESH_BINARY);
+} // flood_from_center()
+
+//---------------------------------------------------------------------------------------
+void morph_closing( cv::Mat &m, int size, int iterations, int type = cv::MORPH_RECT )
+{
+    cv::Mat element = cv::getStructuringElement( type,
+                                                cv::Size( 2*size + 1, 2*size+1 ),
+                                                cv::Point( size, size ) );
+    for (int i=0; i<iterations; i++) {
+        cv::dilate( m, m, element );
+        cv::erode( m, m, element );
+    }
+}
+
+// Find rough board outline with contour techniques
+//-------------------------------------------------------------
+Points board_by_contours( const cv::Mat &gray)
+{
+    cv::Mat m;
+    adaptiveThreshold(gray, m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                      7, // neighborhood_size
+                      4); // constant to add. 2 to 6 is the viable range
+    int erosion_size = 1;
+    int iterations = 3;
+    morph_closing( m, erosion_size, iterations);
+    flood_from_center( m);
+    Contours conts;
+    cv::findContours( m, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    Points board = approx_poly( flatten(conts), 4);
+    board = order_points( board);
+    return board;
+}
+
 
 // Find closest line among a bunch of roughly horizontal lines,
 // using distance at x == width/2
@@ -428,7 +495,7 @@ int count_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line, Po
 int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, Points points, int middle_y)
 {
     int res = 0;
-    const float EPS = 2;
+    const float EPS = 5;
     for (auto p: points) {
         float ldist = dist_point_line( p, left_line);
         float rdist = dist_point_line( p, right_line);
@@ -519,6 +586,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             max_idx = i;
         }
     }
+    int sz = SZ(pts);
     cv::Vec2f top_line = horiz_lines[max_idx];
     cv::Vec2f bot_line = horiz_lines[max_idx + board_sz - 1];
     
@@ -651,7 +719,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     g_app.mainVC.lbDbg.text = @"09";
     
     if (SZ(_corners) == 4) {
-    get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
+        get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
     }
 
     // Show results

@@ -195,3 +195,85 @@ void BlobFinder::matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points
     ILOOP (keypoints.size()) { result.push_back(keypoints[i].pt); }
 } // matchTemplate()
 
+// Remove outliers. A good point has many with similar dist from center.
+//-----------------------------------------------------------------------
+Points BlobFinder::clean(  Points &pts)
+{
+    Points res;
+    // Find center
+    int med_x = median_x( pts);
+    int med_y = median_y( pts);
+    // Sort by dist from center. Maxnorm, not euklidean.
+    std::sort( pts.begin(), pts.end(),
+              [med_x, med_y] (cv::Point p1, cv::Point p2) {
+                  int d1 = MAX( fabs( p1.x - med_x), fabs( p1.y - med_y));
+                  int d2 = MAX( fabs( p2.x - med_x), fabs( p2.y - med_y));
+                  return d1 < d2;
+              });
+    const int RAD = 4;
+    const int MAXDIST = 10;
+    const int THRESH = RAD;
+    ISLOOP (pts) {
+        cv::Point p = pts[i];
+        int d = MAX( fabs( p.x - med_x), fabs( p.y - med_y));
+        int count = 0;
+        for (int j = i-RAD; j <= i+RAD; j++) {
+            if (j >= 0 && j < SZ(pts)) {
+                cv::Point pj = pts[j];
+                int dj = MAX( fabs( pj.x - med_x), fabs( pj.y - med_y));
+                if (fabs( dj - d) < MAXDIST) count++;
+            }
+        }
+        if (count >= THRESH) {
+            res.push_back( p);
+        }
+    } // ISLOOP( pts)
+    return res;
+} // clean()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

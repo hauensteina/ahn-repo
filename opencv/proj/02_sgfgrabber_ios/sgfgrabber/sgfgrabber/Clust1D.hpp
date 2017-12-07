@@ -23,6 +23,7 @@ public:
     template <typename T, typename G>
     static inline std::vector<float> cluster( const std::vector<T> &seq_, float width, G getter)
     {
+        std::vector<float> cuts;
         const float SMOOTH = 3.0;
         typedef float(*WinFunc)(float,float,float);
         WinFunc winf = bell;
@@ -32,46 +33,47 @@ public:
         std::sort( vals.begin(), vals.end(), [](float a, float b) { return a<b; });
         std::vector<float> freq(vals.size());
         
-        // Distance weighted sum of number of samples to the left and to the right
-        ISLOOP (vals) {
-            float sum = 0; int j;
-            j=i;
-            while( j < vals.size() && winf( vals[j], vals[i], width) > 0) {
-                sum += winf( vals[j], vals[i], width);
-                j++;
+        do {
+            // Distance weighted sum of number of samples to the left and to the right
+            ISLOOP (vals) {
+                float sum = 0; int j;
+                j=i;
+                while( j < vals.size() && winf( vals[j], vals[i], width) > 0) {
+                    sum += winf( vals[j], vals[i], width);
+                    j++;
+                }
+                j=i;
+                while( j >= 0 && winf( vals[j], vals[i], width) > 0) {
+                    sum += winf( vals[j], vals[i], width);
+                    j--;
+                }
+                freq[i] = sum;
+            } // ISLOOP
+            if (SZ(vals) == 0) break;
+            
+            // Convert to discrete pdf, missing values set to -1
+            int mmax = ROUND( vec_max( vals)) + 1;
+            mmax += 10; // Padding to find the rightmost cluster
+            std::vector<float> pdf(mmax,-1);
+            ISLOOP (freq) {
+                pdf[ROUND(vals[i])] = freq[i];
             }
-            j=i;
-            while( j >= 0 && winf( vals[j], vals[i], width) > 0) {
-                sum += winf( vals[j], vals[i], width);
-                j--;
+            pdf = smooth( pdf,SMOOTH);
+            
+            std::vector<float> maxes;
+            ISLOOP (pdf) {
+                if (i < 1) continue;
+                if (i >= pdf.size()-1) continue;
+                if (pdf[i] >= pdf[i-1] && pdf[i] > pdf[i+1]) {
+                    maxes.push_back( i);
+                }
             }
-            freq[i] = sum;
-        } // ISLOOP
-        
-        // Convert to discrete pdf, missing values set to -1
-        int mmax = ROUND( vec_max( vals)) + 1;
-        mmax += 10; // Padding to find the rightmost cluster
-        std::vector<float> pdf(mmax,-1);
-        ISLOOP (freq) {
-            pdf[ROUND(vals[i])] = freq[i];
-        }
-        pdf = smooth( pdf,SMOOTH);
-
-        std::vector<float> maxes;
-        ISLOOP (pdf) {
-            if (i < 1) continue;
-            if (i >= pdf.size()-1) continue;
-            if (pdf[i] >= pdf[i-1] && pdf[i] > pdf[i+1]) {
-                maxes.push_back( i);
+            ISLOOP (maxes) {
+                if (i==0) continue;
+                cuts.push_back( (maxes[i] + maxes[i-1]) / 2.0);
             }
-        }
-        std::vector<float> cuts;
-        ISLOOP (maxes) {
-            if (i==0) continue;
-            cuts.push_back( (maxes[i] + maxes[i-1]) / 2.0);
-        }
+        } while(0);
         return cuts;
-        
     } // cluster()
     
     // Use the cuts returned by cluster() to classify new samples

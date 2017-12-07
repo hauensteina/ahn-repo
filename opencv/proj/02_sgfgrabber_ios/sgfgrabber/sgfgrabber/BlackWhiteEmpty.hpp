@@ -70,6 +70,22 @@ public:
     
 private:
     
+    // Check if a rectangle makes sense
+    //---------------------------------------------------------------------
+    inline static bool check_rect( const cv::Rect &r, int rows, int cols )
+    {
+        if (0 <= r.x && r.x < 1e6 &&
+            0 <= r.width && r.width < 1e6 &&
+            r.x + r.width <= cols &&
+            0 <= r.y &&  r.y < 1e6 &&
+            0 <= r.height &&  r.height < 1e6 &&
+            r.y + r.height <= rows)
+        {
+            return true;
+        }
+        return false;
+    }
+    
 //    // Get median of a neighborhood of size n around idx
 //    //-------------------------------------------------------------------------------------------------
 //    inline static float get_neighbor_med( int idx, int n, const std::vector<float> &feat )
@@ -103,13 +119,7 @@ private:
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            if (0 <= rect.x &&
-                0 <= rect.width &&
-                rect.x + rect.width <= img.cols &&
-                0 <= rect.y &&
-                0 <= rect.height &&
-                rect.y + rect.height <= img.rows)
-            {
+            if (check_rect( rect, img.rows, img.cols)) {
                 cv::Mat hood = cv::Mat( img, rect);
                 float brightness = channel_median( hood);
                 res.push_back( brightness);
@@ -164,13 +174,7 @@ private:
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            if (0 <= rect.x &&
-                0 <= rect.width &&
-                rect.x + rect.width <= img.cols &&
-                0 <= rect.y &&
-                0 <= rect.height &&
-                rect.y + rect.height <= img.rows)
-            {
+            if (check_rect( rect, img.rows, img.cols)) {
                 cv::Mat hood = cv::Mat( img, rect);
                 cv::Mat threshed;
                 inv_thresh_avg( hood, threshed);

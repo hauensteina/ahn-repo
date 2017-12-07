@@ -23,6 +23,8 @@ public:
     static void find_empty_places( const cv::Mat &img, Points &result);
     // Find stones in a grayscale image
     static void find_stones( const cv::Mat &img, Points &result);
+    // Clean outliers
+    static Points clean(  Points &pts);
 private:
     static void matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, double thresh);
 }; // class BlobFinder
