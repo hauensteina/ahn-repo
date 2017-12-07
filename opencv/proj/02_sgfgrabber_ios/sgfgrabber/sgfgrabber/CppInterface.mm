@@ -162,66 +162,6 @@ bool board_valid( Points board, float screenArea)
     return res;
 }
 
-// Find a nonzero point near the middle, flood from there,
-// eliminate all else.
-//--------------------------------------------------------
-void flood_from_center( cv::Mat &m)
-{
-    // Find some nonzero point close to the center
-    cv::Mat locations;
-    cv::findNonZero(m, locations);
-    std::vector<float> distvec(locations.rows);
-    std::vector<int> idxvec(locations.rows);
-    cv::Point center( m.cols / 2, m.rows / 2);
-    // Sort points by dist from center
-    for (int i=0; i<locations.rows; i++) {
-        cv::Point p = locations.at<cv::Point>(i,0);
-        distvec[i] = line_len(p, center);
-        idxvec[i] = i;
-    }
-    if (!distvec.size()) return;
-    std::sort( idxvec.begin(), idxvec.end(), [distvec](int a, int b) {
-        return distvec[a] < distvec[b];
-    });
-    // Floodfill from nonzero point closest to center
-    cv::Point seed = locations.at<cv::Point>(idxvec[0],0);
-    cv::floodFill(m, seed, cv::Scalar(200));
-    
-    // Keep only filled area
-    cv::threshold(m, m, 199, 255, cv::THRESH_BINARY);
-} // flood_from_center()
-
-//---------------------------------------------------------------------------------------
-void morph_closing( cv::Mat &m, int size, int iterations, int type = cv::MORPH_RECT )
-{
-    cv::Mat element = cv::getStructuringElement( type,
-                                                cv::Size( 2*size + 1, 2*size+1 ),
-                                                cv::Point( size, size ) );
-    for (int i=0; i<iterations; i++) {
-        cv::dilate( m, m, element );
-        cv::erode( m, m, element );
-    }
-}
-
-// Find rough board outline with contour techniques
-//-------------------------------------------------------------
-Points board_by_contours( const cv::Mat &gray)
-{
-    cv::Mat m;
-    adaptiveThreshold(gray, m, 100, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                      7, // neighborhood_size
-                      4); // constant to add. 2 to 6 is the viable range
-    int erosion_size = 1;
-    int iterations = 3;
-    morph_closing( m, erosion_size, iterations);
-    flood_from_center( m);
-    Contours conts;
-    cv::findContours( m, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    Points board = approx_poly( flatten(conts), 4);
-    board = order_points( board);
-    return board;
-}
-
 
 // Find closest line among a bunch of roughly horizontal lines,
 // using distance at x == width/2
