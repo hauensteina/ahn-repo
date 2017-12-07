@@ -112,11 +112,11 @@ bool board_valid( Points board, float screenArea)
     g_app.mainVC.lbDbg.text = @"00";
     
     // Live Camera
-    UIImageToMat( img, _m);
+    //UIImageToMat( img, _m);
     
     // From file
-    //load_img( @"board03.jpg", _m);
-    //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
+    load_img( @"board03.jpg", _m);
+    cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
@@ -238,7 +238,7 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
     
     cv::Vec2f ratline;
     do {
-        if (!SZ(_finder.m_horizontal_lines)) break;
+        if (SZ(_finder.m_horizontal_clusters) < 3) break;
         float dy; int rat_idx;
         float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
         
@@ -611,6 +611,10 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
         // This also removes dups from the points in _finder.horizontal_clusters
         _finder.cluster();
+        if (SZ(_finder.m_horizontal_clusters) < 3) {
+            int tt=42;
+            break;
+        }
         cv::Vec2f ratline;
         float dy; int rat_idx;
         float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
