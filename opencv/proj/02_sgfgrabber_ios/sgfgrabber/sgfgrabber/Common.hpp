@@ -152,7 +152,7 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 {
     std::size_t total_size = 0;
     for (const auto& sub : v)
-        total_size += sub.size(); // I wish there was a transform_accumulate
+        total_size += sub.size(); 
     std::vector<T> result;
     result.reserve(total_size);
     for (const auto& sub : v)
@@ -188,6 +188,27 @@ T vec_median( std::vector<T> vec)
     std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
     return vec[vec.size() / 2];
 }
+
+// Bottom quartile
+//---------------------------------
+template <typename T>
+T vec_q1( std::vector<T> vec)
+{
+    if (!vec.size()) return T(0);
+    std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
+    return vec[vec.size() / 4];
+}
+
+// Top quartile
+//---------------------------------
+template <typename T>
+T vec_q3( std::vector<T> vec)
+{
+    if (!vec.size()) return T(0);
+    std::sort( vec.begin(), vec.end(), [](T a, T b) { return a < b; });
+    return vec[(3 * vec.size()) / 4];
+}
+
 
 // Variance (sigma**2) of a vector.
 // Welford's algorithm.

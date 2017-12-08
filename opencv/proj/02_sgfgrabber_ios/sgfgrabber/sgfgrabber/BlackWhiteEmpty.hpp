@@ -15,6 +15,8 @@
 #include "Common.hpp"
 #include "Ocv.hpp"
 
+cv::Mat mat_dbg;  // debug image to viz intermediate reults
+
 class BlackWhiteEmpty
 //=====================
 {
@@ -68,7 +70,7 @@ public:
         return res;
     } // classify()
     
-private:
+//private:
     
     // Check if a rectangle makes sense
     //---------------------------------------------------------------------
@@ -169,15 +171,20 @@ private:
     {
         int dx = ROUND(dx_/2.0);
         int dy = ROUND(dy_/2.0);
+        cv::Mat threshed;
         
+        //mat_dbg = img.clone();
         res.clear();
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
             if (check_rect( rect, img.rows, img.cols)) {
-                cv::Mat hood = cv::Mat( img, rect);
-                cv::Mat threshed;
+                cv::Mat hood = img(rect); //  cv::Mat( img, rect);
+                //cv::Mat threshed;
                 inv_thresh_avg( hood, threshed);
+                //inv_thresh_q1( hood, threshed);
+                //threshed.copyTo( mat_dbg( rect));
+                //mat_dbg( rect) = threshed.clone();
                 //inv_thresh_median( hood, threshed);
                 int mid_y = ROUND(threshed.rows / 2.0);
                 int mid_x = ROUND(threshed.cols / 2.0);
@@ -199,6 +206,7 @@ private:
                     //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
                 }
                 ssum /= n;
+                //mat_dbg( rect) = 255 * ssum;
                 res.push_back( ssum);
             }
         } // for intersections

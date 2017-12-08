@@ -129,10 +129,14 @@ float center_avg( const cv::Mat &img, float frac=4);
 void normalize_image( const cv::Mat &src, cv::Mat &dst);
 // Normalize mean and variance for one uint channel, scale back to 0..255
 void normalize_plane( const cv::Mat &src, cv::Mat &dst);
+// Normalize nxn submatrices, with mean and var from larger submatrix.
+void normalize_plane_local( const cv::Mat &src, cv::Mat &dst, int radius);
 // Get main horizontal direction of a grid of points (in rad)
 float direction( const cv::Mat &img, const Points &ps);
 // Inverse threshold at median
 void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst);
+// Inverse threshold at q1
+void inv_thresh_q1( const cv::Mat &gray, cv::Mat &dst);
 // Inverse threshold at average
 void inv_thresh_avg( const cv::Mat &gray, cv::Mat &dst);
 

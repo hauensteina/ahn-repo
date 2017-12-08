@@ -24,7 +24,7 @@
 #import "BlobFinder.hpp"
 #import "Clust1D.hpp"
 
-const cv::Size TMPL_SZ(16,16);
+extern cv::Mat mat_dbg;
 
 #define STRETCH_FACTOR 1.1
 
@@ -43,6 +43,7 @@ const cv::Size TMPL_SZ(16,16);
 @property std::vector<cv::Vec2f> horizontal_lines;
 @property std::vector<cv::Vec2f> vertical_lines;
 @property Points2f corners;
+@property Points2f corners_zoomed;
 @property Points2f intersections;
 @property float dy;
 @property float dx;
@@ -120,8 +121,8 @@ bool board_valid( Points board, float screenArea)
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+    //normalize_plane_local(_gray, _gray, 15);
 
-    
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
@@ -130,9 +131,10 @@ bool board_valid( Points board, float screenArea)
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP ( _stone_or_empty) {
-        draw_point( _stone_or_empty[i], drawing, 2);
+        //draw_point( _stone_or_empty[i], drawing, 2);
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -594,6 +596,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
+        cv::perspectiveTransform( _corners, _corners_zoomed, M);
     }
     // Show results
     cv::Mat drawing;
@@ -607,46 +610,49 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
 - (UIImage *) f08_repeat_on_zoomed
 {
     g_app.mainVC.lbDbg.text = @"08";
+    _corners = _corners_zoomed;
+    //_gray_zoomed = _gray.clone();
 
-    do {
-        if (_gray_zoomed.rows == 0) break;
-        // Blobs
-        _stone_or_empty.clear();
-        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
-        BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
-        
-        // Horizontals
-        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
-        // This also removes dups from the points in _finder.horizontal_clusters
-        _finder.cluster();
-        if (SZ(_finder.m_horizontal_clusters) < 3) {
-            int tt=42;
-            break;
-        }
-        cv::Vec2f ratline;
-        float dy; int rat_idx;
-        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-        _horizontal_lines.clear();
-        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
-                         _horizontal_lines);
-        
-        // Verticals
-        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
-        fix_vertical_lines( _vertical_lines, _gray_zoomed);
-        
-        // Corners
-        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
-    } while(0);
+//    do {
+//        if (_gray_zoomed.rows == 0) break;
+//        // Blobs
+//        _stone_or_empty.clear();
+//        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
+//        //BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
+//
+//        // Horizontals
+//        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
+//        // This also removes dups from the points in _finder.horizontal_clusters
+//        _finder.cluster();
+//        if (SZ(_finder.m_horizontal_clusters) < 3) {
+//            int tt=42;
+//            break;
+//        }
+//        cv::Vec2f ratline;
+//        float dy; int rat_idx;
+//        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+//        _horizontal_lines.clear();
+//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
+//                         _horizontal_lines);
+//
+//        // Verticals
+//        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+//        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
+//        fix_vertical_lines( _vertical_lines, _gray_zoomed);
+//
+//        // Corners
+//        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
+//    } while(0);
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP ( _stone_or_empty) {
-        draw_point( _stone_or_empty[i], drawing, 2);
-    }
-    draw_polar_lines( _horizontal_lines, drawing);
-    draw_polar_lines( _vertical_lines, drawing);
+    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    //ISLOOP ( _stone_or_empty) {
+    //    draw_point( _stone_or_empty[i], drawing, 2);
+    //}
+    //draw_polar_lines( _horizontal_lines, drawing);
+    //draw_polar_lines( _vertical_lines, drawing);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -769,6 +775,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
 
     int dx = ROUND( _dx/4.0);
     int dy = ROUND( _dy/4.0);
@@ -819,8 +826,8 @@ void save_intersections( const cv::Mat img,
 // Find all intersections from corners and boardsize
 //--------------------------------------------------------------------------------
 template <typename Points_>
-void get_intersections( const Points_ &corners, int boardsz,
-                       Points_ &result, float &delta_h, float &delta_v)
+void get_intersections( const Points_ &corners, int boardsz, // in
+                       Points_ &result, float &delta_h, float &delta_v) // out
 {
     if (corners.size() != 4) return;
     
@@ -917,6 +924,7 @@ void get_intersections( const Points_ &corners, int boardsz,
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
+        cv::perspectiveTransform( _corners, _corners_zoomed, M);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   _small, cv::Scalar( 255,0,0,255));
@@ -926,38 +934,38 @@ void get_intersections( const Points_ &corners, int boardsz,
                   _small, cv::Scalar( 255,0,0,255));
         draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
                   _small, cv::Scalar( 255,0,0,255));
-
-        
-        // Repeat process on zoomed image
-        _stone_or_empty.clear();
-        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
-        BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
-        if (SZ(_stone_or_empty) < 3) break;
-        
-        // Horizontals
-        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
-        // This also removes dups from the points in _finder.horizontal_clusters
-        _finder.cluster();
-        if (SZ(_finder.m_horizontal_clusters) < 3) break;
-        //cv::Vec2f ratline;
-        //float dy; int rat_idx;
-        dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-        _horizontal_lines.clear();
-        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
-                         _horizontal_lines);
-        
-        // Verticals
-        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
-        fix_vertical_lines( _vertical_lines, _gray_zoomed);
-        
-        // Corners
-        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
+//
+//
+//        // Repeat process on zoomed image
+//        _stone_or_empty.clear();
+//        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
+//        BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
+//        if (SZ(_stone_or_empty) < 3) break;
+//
+//        // Horizontals
+//        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
+//        // This also removes dups from the points in _finder.horizontal_clusters
+//        _finder.cluster();
+//        if (SZ(_finder.m_horizontal_clusters) < 3) break;
+//        //cv::Vec2f ratline;
+//        //float dy; int rat_idx;
+//        dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+//        _horizontal_lines.clear();
+//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
+//                         _horizontal_lines);
+//
+//        // Verticals
+//        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+//        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
+//        fix_vertical_lines( _vertical_lines, _gray_zoomed);
+//
+//        // Corners
+//        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
         if (SZ(_corners) != 4) break;
 
         // Classify
         Points2f intersections_zoomed;
-        get_intersections( _corners, _board_sz, intersections_zoomed, _dx, _dy);
+        get_intersections( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
         //cv::Mat gray_normed;
         //normalize_plane( _gray_zoomed, gray_normed);

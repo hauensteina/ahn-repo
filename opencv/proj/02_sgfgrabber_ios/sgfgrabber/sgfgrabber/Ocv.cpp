@@ -129,6 +129,20 @@ int channel_median( cv::Mat channel )
     return vec_median( v);
 }
 
+// Calculate the q1 value of a single channel
+//---------------------------------------------------
+int channel_q1( cv::Mat channel )
+{
+    std::vector<int> v(channel.rows*channel.cols);
+    int i=0;
+    RLOOP( channel.rows) {
+        CLOOP( channel.cols) {
+            v[i++] = channel.at<uint8_t>(r,c);
+        }
+    }
+    return vec_q1( v);
+}
+
 // Contour
 //===========
 
@@ -506,6 +520,14 @@ void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst)
     cv::threshold( gray, dst, med, 1, CV_THRESH_BINARY_INV);
 }
 
+// Inverse threshold at q1
+//-----------------------------------------------------------
+void inv_thresh_q1( const cv::Mat &gray, cv::Mat &dst)
+{
+    float q1 = channel_q1( gray);
+    cv::threshold( gray, dst, q1, 1, CV_THRESH_BINARY_INV);
+}
+
 // Inverse threshold at average
 //-----------------------------------------------------------
 void inv_thresh_avg( const cv::Mat &gray, cv::Mat &dst)
@@ -608,6 +630,55 @@ void normalize_plane( const cv::Mat &src, cv::Mat &dst)
     double scale = 255.0 / delta;
     double trans = -mmin * scale;
     normed.convertTo( dst, CV_8UC1, scale , trans);
+}
+
+// Make sure rect does not extend beyond img
+//--------------------------------------------------
+void clip_rect( cv::Rect &rect, const cv::Mat &img)
+{
+    if (rect.x < 0) rect.x = 0;
+    if (rect.y < 0) rect.y = 0;
+    if (rect.x > img.cols-1) rect.x = img.cols-1;
+    if (rect.y > img.rows-1) rect.y = img.rows-1;
+    if (rect.x + rect.width > img.cols) {
+        rect.width = img.cols - rect.x;
+    }
+    if (rect.y + rect.height > img.rows) {
+        rect.height = img.rows - rect.y;
+    }
+}
+
+// Normalize nxn submatrices, with mean and var from larger submatrix.
+//------------------------------------------------------------------------
+void normalize_plane_local( const cv::Mat &src, cv::Mat &dst, int radius)
+{
+    cv::Mat normed;
+    cv::Scalar mmean, sstddev;
+    cv::Mat fltmat( src.rows, src.cols, CV_32FC1);
+    const int FAC = 4;
+
+    int r = 0;
+    while (r < src.rows) {
+        int c = 0;
+        while (c < src.cols) {
+            cv::Rect inner_rect( c-radius, r-radius, 2*radius+1, 2*radius+1);
+            clip_rect( inner_rect, src);
+            cv::Rect outer_rect( c - FAC*radius, r - FAC*radius, 2*FAC*radius+1, 2*FAC*radius+1);
+            clip_rect( outer_rect, src);
+            cv::meanStdDev( src( outer_rect), mmean, sstddev);
+            src(inner_rect).convertTo( normed, CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+            //PLOG(">>>>>>>>>> mean %f sigma %f\n", mmean.val[0], sstddev.val[0]);
+            normed.copyTo( fltmat( inner_rect) );
+            c += 2*radius+1;
+        }
+        r += 2*radius + 1;
+    }
+    double mmin, mmax;
+    cv::minMaxLoc( fltmat, &mmin, &mmax);
+    double delta = mmax - mmin;
+    double scale = 255.0 / delta;
+    double trans = -mmin * scale;
+    fltmat.convertTo( dst, CV_8UC1, scale , trans);
 }
 
 
