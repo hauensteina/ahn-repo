@@ -380,6 +380,32 @@ float x_from_y( float y, cv::Vec2f pline)
     return res;
 }
 
+// Rectangle
+//===============
+// Check if a rectangle makes sense
+//---------------------------------------------------------------------
+bool check_rect( const cv::Rect &r, int rows, int cols )
+{
+    if (0 <= r.x && r.x < 1e6 &&
+        0 <= r.width && r.width < 1e6 &&
+        r.x + r.width <= cols &&
+        0 <= r.y &&  r.y < 1e6 &&
+        0 <= r.height &&  r.height < 1e6 &&
+        r.y + r.height <= rows)
+    {
+        return true;
+    }
+    return false;
+}
+
+// Make a rect extending dx, dy both sides of center.
+//-----------------------------------------------------
+cv::Rect make_hood( Point2f center, int dx, int dy)
+{
+    cv::Point p( ROUND(center.x), ROUND(center.y));
+    cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+    return rect;
+}
 
 
 // Quad
@@ -780,6 +806,7 @@ void points2int( const Points2f &pf, Points &pi)
 
 // Misc
 //========
+
 
 //----------------------------
 std::string opencvVersion()

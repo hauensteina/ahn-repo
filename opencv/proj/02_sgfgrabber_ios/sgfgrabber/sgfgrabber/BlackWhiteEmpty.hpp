@@ -176,7 +176,9 @@ public:
             res.push_back( feat);
         } // for intersections
     } // get_crossness()
-    
+
+
+    // Look whether the cross pixels are set
     //----------------------------------------------------------------------------------------
     inline static float cross_feature( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
     {
@@ -193,7 +195,7 @@ public:
             int mid_x = ROUND(threshed.cols / 2.0);
             float ssum = 0;
             int n = 0;
-            const int marg = 4;
+            const int marg = 6;
             CLOOP (threshed.cols) {
                 if (c < marg) continue;
                 if (c >= threshed.cols - marg ) continue;
@@ -213,7 +215,48 @@ public:
         }
         return res;
     } // cross_feature
-    
+
+    // Look whether cross pixels are set in neighborhood of p_.
+    // img should be binary, 0 or 1, from an adaptive threshold operation.
+    // The result is close to 0 for empty intersections, else close to 1,
+    // because that looks nicer when visualizing.
+    //---------------------------------------------------------------------------------------------
+    inline static float cross_feature_new( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
+    {
+        float res = 1.0;
+        int dx = ROUND(dx_/2.0);
+        int dy = ROUND(dy_/2.0);
+        cv::Mat threshed;
+        cv::Point p(ROUND(p_.x), ROUND(p_.y));
+        cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+        if (check_rect( rect, img.rows, img.cols)) {
+            cv::Mat hood = img(rect);
+            int mid_y = ROUND(hood.rows / 2.0);
+            int mid_x = ROUND(hood.cols / 2.0);
+            float ssum = 0;
+            int n = 0;
+            const int marg = 5;
+            CLOOP (hood.cols) {
+                if (c < marg) continue;
+                if (c >= hood.cols - marg ) continue;
+                //ssum += threshed.at<uint8_t>(mid_y, c); n++;
+                ssum += hood.at<uint8_t>(mid_y-1, c); n++;
+                ssum += hood.at<uint8_t>(mid_y-2, c); n++;
+            }
+            RLOOP (hood.rows) {
+                if (r < marg) continue;
+                if (r >= hood.cols - marg ) continue;
+                ssum += hood.at<uint8_t>(r, mid_x); n++;
+                //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
+                //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
+            }
+            ssum /= n;
+            res = 1-ssum;
+        }
+        //PLOG(">>>>>>>>>>>> %0.3d\n", ROUND(res*100));
+        return res;
+    } // cross_feature
+
     
 //    // If there are contours, it's probably empty
 //    //----------------------------------------------------------------------------------------

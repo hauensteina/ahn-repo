@@ -86,8 +86,6 @@ cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 cv::Vec4f polar2segment( const cv::Vec2f &pline);
 // Line segment to polar, with positive rho
 cv::Vec2f segment2polar( const cv::Vec4f &line);
-// Fit a line through points, L2 norm
-//cv::Vec4f fit_line( const Points &p);
 // Length of a line segment
 float line_len( cv::Point p, cv::Point q);
 // Distance between point and line segment
@@ -98,6 +96,13 @@ float dist_point_line( cv::Point p, const cv::Vec2f &pline);
 float y_from_x( float x, cv::Vec2f pline);
 // x given y for polar line
 float x_from_y( float y, cv::Vec2f pline);
+
+// Rectangle
+//=============
+// Check if a rectangle makes sense
+bool check_rect( const cv::Rect &r, int rows, int cols );
+// Make a rect extending dx, dy both sides of center.
+cv::Rect make_hood( Point2f center, int dx, int dy);
 
 // Quad
 //========
@@ -182,6 +187,8 @@ void printMatD( const cv::Mat &m);
 
 // Misc
 //========
+// Make a rect extending dx, dy both sides of center.
+cv::Rect make_hood( Point2f center, int dx, int dy);
 std::string opencvVersion();
 void test_mcluster();
 void test_segment2polar();

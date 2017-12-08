@@ -528,7 +528,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             max_idx = i;
         }
     }
-    int sz = SZ(pts);
+    //int sz = SZ(pts);
     cv::Vec2f top_line = horiz_lines[max_idx];
     cv::Vec2f bot_line = horiz_lines[max_idx + board_sz - 1];
     
@@ -552,25 +552,88 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     Point2f bl = intersection( left_line,  bot_line);
     Points2f corners = {tl, tr, br, bl};
     return corners;
-}
+} // get_corners()
+
+
+// Visualize features, one per intersection.
+//----------------------------------------------------------------------------------------------------
+void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<float> features,
+                 cv::Mat &dst, const float multiplier = 255)
+{
+    dst = cv::Mat::zeros( img.size(), img.type());
+    ISLOOP (intersections) {
+        auto pf = intersections[i];
+        float feat = features[i];
+        auto hood = make_hood( pf, 5, 5);
+        if (check_rect( hood, img.rows, img.cols)) {
+            dst( hood) = feat * multiplier;
+        }
+    }
+} // viz_feature()
 
 // Find the corners
 //----------------------------
 - (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
+    int dx,dy;
+    dx = dy = 10;
+    cv::Mat mtmp;
+    cv::adaptiveThreshold( _gray, mtmp, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          11,  // neighborhood_size
+                          8); // 8 or ten, need to try both. 8 better for 19x19
+    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    cv::dilate( mtmp, mtmp, element );
+    Points2f intersections;
+    std::vector<float> features;
+    // For each intersection of two lines
+    RSLOOP( _horizontal_lines) {
+        cv::Vec2f hl = _horizontal_lines[r];
+        CSLOOP( _vertical_lines) {
+            cv::Vec2f vl = _vertical_lines[c];
+            Point2f pf = intersection( hl, vl);
+            intersections.push_back( pf);
+            float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
+            features.push_back( crossness);
+        }
+    }
+    Points crosses;
+    ISLOOP (intersections) {
+        if (features[i] < 0.01) {
+            crosses.push_back( intersections[i]);
+        }
+    }
     _corners.clear();
     if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
     }
+    
     // Show results
     cv::Mat drawing;
+    //viz_feature( _gray, intersections, features, drawing, 255);
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    get_color(true);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
-}
+} // f06_corners()
+
+//// Find the corners
+////----------------------------
+//- (UIImage *) f06_corners
+//{
+//    g_app.mainVC.lbDbg.text = @"06";
+//    _corners.clear();
+//    if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
+//        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+//    }
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    get_color(true);
+//    draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//}
 
 // Unwarp the square defined by corners
 //------------------------------------------------------------------------
