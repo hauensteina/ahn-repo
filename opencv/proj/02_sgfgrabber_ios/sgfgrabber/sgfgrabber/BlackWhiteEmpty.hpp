@@ -169,48 +169,51 @@ public:
                                      float dx_, float dy_,
                                      std::vector<float> &res ) //@@@
     {
-        int dx = ROUND(dx_/2.0);
-        int dy = ROUND(dy_/2.0);
-        cv::Mat threshed;
-        
         //mat_dbg = img.clone();
         res.clear();
         ISLOOP (intersections) {
-            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            if (check_rect( rect, img.rows, img.cols)) {
-                cv::Mat hood = img(rect); //  cv::Mat( img, rect);
-                //cv::Mat threshed;
-                inv_thresh_avg( hood, threshed);
-                //inv_thresh_q1( hood, threshed);
-                //threshed.copyTo( mat_dbg( rect));
-                //mat_dbg( rect) = threshed.clone();
-                //inv_thresh_median( hood, threshed);
-                int mid_y = ROUND(threshed.rows / 2.0);
-                int mid_x = ROUND(threshed.cols / 2.0);
-                float ssum = 0;
-                int n = 0;
-                const int marg = 4;
-                CLOOP (threshed.cols) {
-                    if (c < marg) continue;
-                    if (c >= threshed.cols - marg ) continue;
-                    //ssum += threshed.at<uint8_t>(mid_y, c); n++;
-                    ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
-                    ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
-                }
-                RLOOP (threshed.rows) {
-                    if (r < marg) continue;
-                    if (r >= threshed.cols - marg ) continue;
-                    ssum += threshed.at<uint8_t>(r, mid_x); n++;
-                    //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
-                    //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
-                }
-                ssum /= n;
-                //mat_dbg( rect) = 255 * ssum;
-                res.push_back( ssum);
-            }
+            float feat = cross_feature( img, intersections[i], dx_, dy_);
+            res.push_back( feat);
         } // for intersections
     } // get_crossness()
+    
+    //----------------------------------------------------------------------------------------
+    inline static float cross_feature( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
+    {
+        float res = 0;
+        int dx = ROUND(dx_/2.0);
+        int dy = ROUND(dy_/2.0);
+        cv::Mat threshed;
+        cv::Point p(ROUND(p_.x), ROUND(p_.y));
+        cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+        if (check_rect( rect, img.rows, img.cols)) {
+            cv::Mat hood = img(rect);
+            inv_thresh_avg( hood, threshed);
+            int mid_y = ROUND(threshed.rows / 2.0);
+            int mid_x = ROUND(threshed.cols / 2.0);
+            float ssum = 0;
+            int n = 0;
+            const int marg = 4;
+            CLOOP (threshed.cols) {
+                if (c < marg) continue;
+                if (c >= threshed.cols - marg ) continue;
+                //ssum += threshed.at<uint8_t>(mid_y, c); n++;
+                ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
+                ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
+            }
+            RLOOP (threshed.rows) {
+                if (r < marg) continue;
+                if (r >= threshed.cols - marg ) continue;
+                ssum += threshed.at<uint8_t>(r, mid_x); n++;
+                //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
+                //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
+            }
+            ssum /= n;
+            res = ssum;
+        }
+        return res;
+    } // cross_feature
+    
     
 //    // If there are contours, it's probably empty
 //    //----------------------------------------------------------------------------------------
