@@ -597,7 +597,7 @@ cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
     //const float RHO_EPS = 10;
     const float THETA_EPS = 10 * PI / 180;
     int maxhits = -1;
-    cv::Vec2f res;
+    cv::Vec2f res = {0,0};
     for (auto p: allpoints) {
         if (p.x <= pt.x) continue;
         Points pts = { pt, p };
@@ -613,6 +613,9 @@ cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
     }
     //PLOG( "maxhits:%d\n", maxhits);
     //int tt = count_points_on_line( res, allpoints);
+    if (res[1] < 0.1) {
+        int tt = 42;
+    }
     return res;
 } // find_horiz_line_thru_point()
 
@@ -629,7 +632,9 @@ std::vector<cv::Vec2f> homegrown_vert_lines( Points pts)
     // For each point, find a line that hits many other points
     for (auto tp: top_points) {
         cv::Vec2f newline = find_vert_line_thru_point( pts, tp);
-        res.push_back( newline);
+        if (newline[0] != 0) {
+            res.push_back( newline);
+        }
     }
     return res;
 } // homegrown_vert_lines()
@@ -646,7 +651,9 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
     // For each point, find a line that hits many other points
     for (auto tp: left_points) {
         cv::Vec2f newline = find_horiz_line_thru_point( pts, tp);
-        res.push_back( newline);
+        if (newline[0] != 0) {
+            res.push_back( newline);
+        }
     }
     return res;
 } // homegrown_horiz_lines()
@@ -1102,6 +1109,7 @@ void get_intersections( const Points_ &corners, int boardsz, // in
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
+    static int counter = 0;
     _board_sz = 19;
     do {
         //const int N_BOARDS = 8;
@@ -1139,6 +1147,8 @@ void get_intersections( const Points_ &corners, int boardsz, // in
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_vertical_lines( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
+        
+        PLOG("@@@@@@@@@@@@@ %d\n", counter++ % 1000);
         
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
