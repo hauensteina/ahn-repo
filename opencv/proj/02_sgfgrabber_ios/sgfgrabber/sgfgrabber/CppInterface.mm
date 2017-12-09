@@ -36,8 +36,6 @@ extern cv::Mat mat_dbg;
 @property cv::Mat gray_zoomed;  // Grayscale version of small, zoomed into the board
 @property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
-//@property Points board;  // Current hypothesis on where the board is
-//@property Points board_zoomed; // board corners after zooming in
 @property int board_sz; // board size, 9 or 19
 @property Points stone_or_empty; // places where we suspect stones or empty
 @property std::vector<cv::Vec2f> horizontal_lines;
@@ -47,8 +45,6 @@ extern cv::Mat mat_dbg;
 @property Points2f intersections;
 @property float dy;
 @property float dx;
-//@property cv::Vec2f horiz_line;
-//@property cv::Vec2f vert_line;
 @property LineFinder finder;
 
 @end
@@ -370,7 +366,6 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
-            int tt=42;
         }
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) > width) break;
@@ -390,7 +385,6 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
-            int tt = 42;
         }
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) < 0) break;
@@ -466,7 +460,6 @@ int count_points_on_line( cv::Vec2f line, Points pts)
     }
     return res;
 }
-
 
 // Find a vertical line thru pt which hits a lot of other points
 // WARNING: allpoints must be sorted by y
@@ -560,12 +553,28 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     return corners;
 } // get_corners()
 
+// Get intersections of two sets of lines
+//-------------------------------------------------------------------
+Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
+                           const std::vector<cv::Vec2f> &vlines)
+{
+    Points2f res;
+    RSLOOP( hlines) {
+        cv::Vec2f hl = hlines[r];
+        CSLOOP( vlines) {
+            cv::Vec2f vl = vlines[c];
+            Point2f pf = intersection( hl, vl);
+            res.push_back( pf);
+        }
+    }
+    return res;
+}
+
 // Look at each intersection and give a gues whether you thing it is an empty intersection.
 // This helps us find the board position.
 //----------------------------------------------------------------------------------------------
 Points find_crosses( const cv::Mat &img,
-                    const std::vector<cv::Vec2f> &hlines,
-                    const std::vector<cv::Vec2f> &vlines)
+                    const Points2f &intersections)
 {
     Points res;
     int dx=10, dy=10;
@@ -575,24 +584,18 @@ Points find_crosses( const cv::Mat &img,
                           8); // 8 or ten, need to try both. 8 better for 19x19
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
     cv::dilate( mtmp, mtmp, element );
-    Points2f intersections;
     std::vector<float> features;
     // For each intersection of two lines
-    RSLOOP( hlines) {
-        cv::Vec2f hl = hlines[r];
-        CSLOOP( vlines) {
-            cv::Vec2f vl = vlines[c];
-            Point2f pf = intersection( hl, vl);
-            intersections.push_back( pf);
+    for (auto pf:intersections) {
             float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
             features.push_back( crossness);
-        }
     }
     ISLOOP (intersections) {
         if (features[i] < 0.01) {
             res.push_back( intersections[i]);
         }
     }
+    viz_feature( img, intersections, features, mat_dbg, 255);
     return res;
 } // find_crosses()
 
@@ -617,7 +620,8 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 - (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
-    auto crosses = find_crosses( _gray, _horizontal_lines, _vertical_lines);
+    auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
+    auto crosses = find_crosses( _gray, intersections);
     _corners.clear();
     if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
         _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
@@ -625,8 +629,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
     
     // Show results
     cv::Mat drawing;
-    //viz_feature( _gray, intersections, features, drawing, 255);
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -990,7 +993,12 @@ void get_intersections( const Points_ &corners, int boardsz, // in
         fix_vertical_lines( _vertical_lines, _gray);
         
         // Find corners
-        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
+        auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
+        auto crosses = find_crosses( _gray, intersections);
+        _corners.clear();
+        if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
+            _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
+        }
         if (SZ(_corners) != 4) break;
         get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;

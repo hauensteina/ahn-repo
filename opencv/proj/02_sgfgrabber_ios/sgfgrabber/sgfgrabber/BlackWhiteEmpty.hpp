@@ -129,40 +129,6 @@ public:
         } // for intersections
     } // get_brightness()
 
-//    // Inverse thresh hood by median, then sum center 9 pixels
-//    //-------------------------------------------------------------------
-//    inline static void get_center_sum( const cv::Mat &img, // gray
-//                                  const Points2f &intersections,
-//                                  float dx_, float dy_,
-//                                  std::vector<float> &res )
-//    {
-//        int dx = ROUND(dx_/2.0);
-//        int dy = ROUND(dy_/2.0);
-//
-//        res.clear();
-//        ISLOOP (intersections) {
-//            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-//            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-//            if (0 <= rect.x &&
-//                0 <= rect.width &&
-//                rect.x + rect.width <= img.cols &&
-//                0 <= rect.y &&
-//                0 <= rect.height &&
-//                rect.y + rect.height <= img.rows)
-//            {
-//                cv::Mat hood = cv::Mat( img, rect);
-//                cv::Mat threshed;
-//                inv_thresh_median( hood, threshed);
-//                const int rad = 1;
-//                int cx = ROUND(threshed.cols / 2.0);
-//                int cy = ROUND(threshed.rows / 2.0);
-//                cv::Mat center = threshed( cv::Range (cy - rad, cy + rad + 1), cv::Range( cx - rad, cx + rad + 1));
-//                float csum = cv::sum( center).val[0];
-//                res.push_back( csum);
-//            }
-//        } // for intersections
-//    } // get_center_sum()
-
     //-------------------------------------------------------------------
     inline static void get_crossness( const cv::Mat &img, // gray
                                      const Points2f &intersections,
@@ -228,7 +194,9 @@ public:
         int dy = ROUND(dy_/2.0);
         cv::Mat threshed;
         cv::Point p(ROUND(p_.x), ROUND(p_.y));
-        cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+        int w = 2*dx+1;
+        int h = 2*dy+1;
+        cv::Rect rect( p.x - dx, p.y - dy, w, h );
         if (check_rect( rect, img.rows, img.cols)) {
             cv::Mat hood = img(rect);
             int mid_y = ROUND(hood.rows / 2.0);
@@ -236,59 +204,35 @@ public:
             float ssum = 0;
             int n = 0;
             const int marg = 5;
+            // Look for horizontal line in the middle
             CLOOP (hood.cols) {
                 if (c < marg) continue;
                 if (c >= hood.cols - marg ) continue;
-                //ssum += threshed.at<uint8_t>(mid_y, c); n++;
-                ssum += hood.at<uint8_t>(mid_y-1, c); n++;
-                ssum += hood.at<uint8_t>(mid_y-2, c); n++;
+                ssum += hood.at<uint8_t>(mid_y, c); n++;
             }
+            // Look for vertical line in the middle
             RLOOP (hood.rows) {
                 if (r < marg) continue;
                 if (r >= hood.cols - marg ) continue;
                 ssum += hood.at<uint8_t>(r, mid_x); n++;
-                //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
-                //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
             }
-            ssum /= n;
+            // Total sum of darkness
+            float totsum = 0;
+            RLOOP (hood.rows) {
+                CLOOP (hood.cols) {
+                      totsum += hood.at<uint8_t>(r, c);
+                }
+                    //PLOG( ">>>>>>> dx %d dy %d\n", dx, dy);
+            }
+            //PLOG( "========\n");
+            //PLOG( "%3.2f %3.2f %3.2f %3.2f\n", ssum, totsum, RAT( ssum, totsum), (totsum-ssum)/area);
+            ssum = RAT( ssum, totsum);
+            ssum *= 30;
             res = 1-ssum;
+            if (res < 0) res = 0;
         }
-        //PLOG(">>>>>>>>>>>> %0.3d\n", ROUND(res*100));
         return res;
     } // cross_feature
-
-    
-//    // If there are contours, it's probably empty
-//    //----------------------------------------------------------------------------------------
-//    inline static void get_empty_features( const cv::Mat &img, // gray
-//                                          const Points2f &intersections,
-//                                          float dx_, float dy_,
-//                                          std::vector<float> &res )
-//    {
-//        int dx = ROUND( dx_/4.0);
-//        int dy = ROUND( dy_/4.0);
-//
-//        cv::Mat edges;
-//        cv::Canny( img, edges, 30, 70);
-//
-//        ISLOOP (intersections) {
-//            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-//            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-//            if (0 <= rect.x &&
-//                0 <= rect.width &&
-//                rect.x + rect.width <= img.cols &&
-//                0 <= rect.y &&
-//                0 <= rect.height &&
-//                rect.y + rect.height <= img.rows)
-//            {
-//                cv::Mat hood = cv::Mat( edges, rect);
-//                float area = hood.rows * hood.cols;
-//                cv::Scalar ssum = cv::sum( hood);
-//                float crossness = ssum[0] / area;
-//                res.push_back( crossness);
-//            }
-//        } // for intersections
-//    } // get_empty_features()
 
 }; // class BlackWhiteEmpty
     
