@@ -479,6 +479,54 @@ Points avg_quad( std::vector<Points> quads)
     return res;
 }
 
+// Median the corners of quads
+//---------------------------------------------------
+Points2f med_quad( std::vector<Points2f> quads)
+{
+    std::vector<cv::Point> p0;
+    std::vector<cv::Point> p1;
+    std::vector<cv::Point> p2;
+    std::vector<cv::Point> p3;
+    Points2f res(4);
+    ILOOP (quads.size()) {
+        Points2f b = quads[i];
+        p0.push_back( b[0]);
+        p1.push_back( b[1]);
+        p2.push_back( b[2]);
+        p3.push_back( b[3]);
+    }
+    auto x_getter = [](cv::Point p){ return p.x; };
+    auto y_getter = [](cv::Point p){ return p.y; };
+    res[0].x = vec_median( p0, x_getter).x;
+    res[0].y = vec_median( p0, y_getter).y;
+    res[1].x = vec_median( p1, x_getter).x;
+    res[1].y = vec_median( p1, y_getter).y;
+    res[2].x = vec_median( p2, x_getter).x;
+    res[2].y = vec_median( p2, y_getter).y;
+    res[3].x = vec_median( p3, x_getter).x;
+    res[3].y = vec_median( p3, y_getter).y;
+    return res;
+}
+
+// Sum of distances of corners, relative to shortest side.
+//--------------------------------------------------------------
+float diff_quads( const Points2f &q1, const Points2f &q2)
+{
+    float d = 0;
+    ILOOP( 4) {
+        d += line_len( q1[i], q2[i]);
+    }
+    float minlen = 1E9;
+    ILOOP( 4) {
+        float len;
+        len = line_len( q1[i], q1[(i+1)%4]);
+        if (len < minlen) minlen = len;
+        len = line_len( q2[i], q2[(i+1)%4]);
+        if (len < minlen) minlen = len;
+    }
+    return RAT(d,minlen);
+}
+
 // Image
 //=========
 

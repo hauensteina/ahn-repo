@@ -133,7 +133,7 @@ public:
     inline static void get_crossness( const cv::Mat &img, // gray
                                      const Points2f &intersections,
                                      float dx_, float dy_,
-                                     std::vector<float> &res ) //@@@
+                                     std::vector<float> &res ) 
     {
         //mat_dbg = img.clone();
         res.clear();

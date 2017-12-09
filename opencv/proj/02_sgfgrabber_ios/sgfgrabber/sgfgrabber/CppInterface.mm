@@ -46,6 +46,7 @@ extern cv::Mat mat_dbg;
 @property float dy;
 @property float dx;
 @property LineFinder finder;
+@property std::vector<Points2f> boards; // history of board corners
 
 @end
 
@@ -897,7 +898,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     g_app.mainVC.lbDbg.text = @"09";
     
     if (SZ(_corners) == 4) {
-        get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
+        get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
     }
 
     // Show results
@@ -1058,8 +1059,8 @@ void save_intersections( const cv::Mat img,
 // Find all intersections from corners and boardsize
 //--------------------------------------------------------------------------------
 template <typename Points_>
-void get_intersections( const Points_ &corners, int boardsz, // in
-                       Points_ &result, float &delta_h, float &delta_v) // out
+void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
+                                    Points_ &result, float &delta_h, float &delta_v) // out
 {
     if (corners.size() != 4) return;
     
@@ -1101,7 +1102,6 @@ void get_intersections( const Points_ &corners, int boardsz, // in
     }
 } // get_intersections()
 
-
 #pragma mark - Real time implementation
 //========================================
 
@@ -1109,7 +1109,7 @@ void get_intersections( const Points_ &corners, int boardsz, // in
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
-    static int counter = 0;
+    //static int counter = 0;
     _board_sz = 19;
     do {
         //const int N_BOARDS = 8;
@@ -1148,7 +1148,7 @@ void get_intersections( const Points_ &corners, int boardsz, // in
         dedup_vertical_lines( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
         
-        PLOG("@@@@@@@@@@@@@ %d\n", counter++ % 1000);
+        //PLOG("$$$$$$$$$$$ %d\n", counter++ % 1000);
         
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
@@ -1158,17 +1158,25 @@ void get_intersections( const Points_ &corners, int boardsz, // in
             _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
         }
         if (SZ(_corners) != 4) break;
-        get_intersections( _corners, _board_sz, _intersections, _dx, _dy);
+        //@@@ prevent board flicker
+        const int BORDBUFLEN = 5;
+        Points2f med_board = med_quad( _boards);
+        ringpush( _boards, _corners, BORDBUFLEN);
+        float diff = diff_quads( _corners, med_board);
+        //PLOG( "######### %.2f\n", diff);
+        if (diff > 0.1) { _corners = med_board; }
+
+        get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
         //auto diagram = classify( _intersections, _small, _dx, _dy);
 
         //draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
         
         // Zoom in
-        cv::Mat M;
-        zoom_in( _gray,  _corners, _gray_zoomed, M);
-        zoom_in( _small, _corners, _small_zoomed, M);
-        cv::perspectiveTransform( _corners, _corners_zoomed, M);
+        //cv::Mat M;
+        //zoom_in( _gray,  _corners, _gray_zoomed, M);
+        //zoom_in( _small, _corners, _small_zoomed, M);
+        //cv::perspectiveTransform( _corners, _corners_zoomed, M);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   _small, cv::Scalar( 255,0,0,255));
@@ -1205,18 +1213,20 @@ void get_intersections( const Points_ &corners, int boardsz, // in
 //
 //        // Corners
 //        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
-        if (SZ(_corners) != 4) break;
+//        if (SZ(_corners) != 4) break;
 
         // Classify
-        Points2f intersections_zoomed;
-        get_intersections( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
-        if (_dx < 2 || _dy < 2) break;
+//        Points2f intersections_zoomed;
+//        get_intersections_from_corners( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
+//        if (_dx < 2 || _dy < 2) break;
         //cv::Mat gray_normed;
         //normalize_plane( _gray_zoomed, gray_normed);
         cv::Mat gray_blurred;
-        cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        auto diagram = classify( intersections_zoomed, gray_blurred, _dx, _dy);
-        
+        //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
+        cv::GaussianBlur( _gray, gray_blurred, cv::Size(5, 5), 2, 2 );
+//        auto diagram = classify( intersections_zoomed, gray_blurred, _dx, _dy);
+        auto diagram = classify( _intersections, gray_blurred, _dx, _dy);
+
         ISLOOP (diagram) {
 //            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
 //            cv::Rect rect( p.x - dx,

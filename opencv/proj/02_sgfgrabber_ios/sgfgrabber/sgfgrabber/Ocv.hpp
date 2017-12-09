@@ -115,6 +115,10 @@ Points whole_img_quad( const cv::Mat &img);
 Points smallest_quad( std::vector<Points> quads);
 // Average the corners of quads
 Points avg_quad( std::vector<Points> quads);
+// Median the corners of quads
+Points2f med_quad( std::vector<Points2f> quads);
+// Sum of distances of corners, relative to shortest side.
+float diff_quads( const Points2f &q1, const Points2f &q2);
 
 // Image
 //========
