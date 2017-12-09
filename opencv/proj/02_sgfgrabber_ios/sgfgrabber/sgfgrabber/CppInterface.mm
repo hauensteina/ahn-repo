@@ -289,7 +289,6 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
     return res;
 } // f03_vert_lines()
 
-
 // Replace close clusters of vert lines by their average.
 //-----------------------------------------------------------------------------------
 void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
@@ -355,7 +354,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     synth_lines.push_back(med_line);
     float rho, theta;
     // If there is a close line, use it. Else interpolate.
-    float thresh = 6;
+    const float X_THRESH = 6;
+    const float THETA_THRESH = PI / 180;
     // Lines to the right
     rho = med_line[0];
     theta = med_line[1];
@@ -365,9 +365,12 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         theta += d_theta;
         float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
         int close_idx = vec_closest( xes, x);
-        if (fabs( x - xes[close_idx]) < thresh) {
+        if (fabs( x - xes[close_idx]) < X_THRESH &&
+            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
+            int tt=42;
         }
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) > width) break;
@@ -382,9 +385,12 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         theta -= d_theta;
         float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
         int close_idx = vec_closest( xes, x);
-        if (fabs( x - xes[close_idx]) < thresh) {
+        if (fabs( x - xes[close_idx]) < X_THRESH &&
+            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
+            int tt = 42;
         }
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) < 0) break;
@@ -554,9 +560,44 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     return corners;
 } // get_corners()
 
+// Look at each intersection and give a gues whether you thing it is an empty intersection.
+// This helps us find the board position.
+//----------------------------------------------------------------------------------------------
+Points find_crosses( const cv::Mat &img,
+                    const std::vector<cv::Vec2f> &hlines,
+                    const std::vector<cv::Vec2f> &vlines)
+{
+    Points res;
+    int dx=10, dy=10;
+    cv::Mat mtmp;
+    cv::adaptiveThreshold( img, mtmp, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          11,  // neighborhood_size
+                          8); // 8 or ten, need to try both. 8 better for 19x19
+    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    cv::dilate( mtmp, mtmp, element );
+    Points2f intersections;
+    std::vector<float> features;
+    // For each intersection of two lines
+    RSLOOP( hlines) {
+        cv::Vec2f hl = hlines[r];
+        CSLOOP( vlines) {
+            cv::Vec2f vl = vlines[c];
+            Point2f pf = intersection( hl, vl);
+            intersections.push_back( pf);
+            float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
+            features.push_back( crossness);
+        }
+    }
+    ISLOOP (intersections) {
+        if (features[i] < 0.01) {
+            res.push_back( intersections[i]);
+        }
+    }
+    return res;
+} // find_crosses()
 
 // Visualize features, one per intersection.
-//----------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
 void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<float> features,
                  cv::Mat &dst, const float multiplier = 255)
 {
@@ -576,33 +617,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 - (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
-    int dx,dy;
-    dx = dy = 10;
-    cv::Mat mtmp;
-    cv::adaptiveThreshold( _gray, mtmp, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          11,  // neighborhood_size
-                          8); // 8 or ten, need to try both. 8 better for 19x19
-    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::dilate( mtmp, mtmp, element );
-    Points2f intersections;
-    std::vector<float> features;
-    // For each intersection of two lines
-    RSLOOP( _horizontal_lines) {
-        cv::Vec2f hl = _horizontal_lines[r];
-        CSLOOP( _vertical_lines) {
-            cv::Vec2f vl = _vertical_lines[c];
-            Point2f pf = intersection( hl, vl);
-            intersections.push_back( pf);
-            float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
-            features.push_back( crossness);
-        }
-    }
-    Points crosses;
-    ISLOOP (intersections) {
-        if (features[i] < 0.01) {
-            crosses.push_back( intersections[i]);
-        }
-    }
+    auto crosses = find_crosses( _gray, _horizontal_lines, _vertical_lines);
     _corners.clear();
     if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
         _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
