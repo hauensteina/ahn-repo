@@ -237,21 +237,25 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
 - (UIImage *) f02_horiz_lines
 {
     g_app.mainVC.lbDbg.text = @"02";
-    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
-    // This also removes dups from the points in _finder.horizontal_clusters
-    _finder.cluster();
+//    _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+//    // This also removes dups from the points in _finder.horizontal_clusters
+//    _finder.cluster();
+//
+//    cv::Vec2f ratline;
+//    do {
+//        if (SZ(_finder.m_horizontal_clusters) < 3) break;
+//        float dy; int rat_idx;
+//        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+//
+//        _horizontal_lines.clear();
+//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
+//                         _horizontal_lines);
+//        _vertical_lines.clear();
+//    } while(0);
     
-    cv::Vec2f ratline;
-    do {
-        if (SZ(_finder.m_horizontal_clusters) < 3) break;
-        float dy; int rat_idx;
-        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-        
-        _horizontal_lines.clear();
-        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
-                         _horizontal_lines);
-        _vertical_lines.clear();
-    } while(0);
+    _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
+    dedup_horiz_lines( _horizontal_lines, _gray);
+    fix_horiz_lines( _horizontal_lines, _gray);
     
     // Show results
     cv::Mat drawing;
@@ -261,7 +265,7 @@ void find_horiz_lines( cv::Vec2f ratline, float dy, float dy_rat,
         cv::Scalar col = get_color();
         draw_polar_line( _horizontal_lines[i], drawing, col);
     }
-    draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
+    //draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
@@ -297,6 +301,30 @@ void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     auto vert_line_cuts = Clust1D::cluster( lines, wwidth, Getter);
     std::vector<std::vector<cv::Vec2f> > clusters;
     Clust1D::classify( lines, vert_line_cuts, min_clust_size, Getter, clusters);
+    
+    // Average the clusters into single lines
+    lines.clear();
+    ISLOOP (clusters) {
+        auto &clust = clusters[i];
+        double theta = vec_avg( clust, [](cv::Vec2f line){ return line[1]; });
+        double rho   = vec_avg( clust, [](cv::Vec2f line){ return line[0]; });
+        cv::Vec2f line( rho, theta);
+        lines.push_back( line);
+    }
+}
+
+// Replace close clusters of horiz lines by their average.
+//-----------------------------------------------------------------------------------
+void dedup_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+{
+    // Cluster by y in the middle
+    const float wwidth = 32.0;
+    const float middle_x = img.cols / 2.0;
+    const int min_clust_size = 0;
+    auto Getter =  [middle_x](cv::Vec2f line) { return y_from_x( middle_x, line); };
+    auto horiz_line_cuts = Clust1D::cluster( lines, wwidth, Getter);
+    std::vector<std::vector<cv::Vec2f> > clusters;
+    Clust1D::classify( lines, horiz_line_cuts, min_clust_size, Getter, clusters);
     
     // Average the clusters into single lines
     lines.clear();
@@ -398,6 +426,77 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     lines = synth_lines;
 } // fix_vertical_lines()
 
+// Find the change per line in rho and theta and synthesize the whole bunch
+// starting at the middle. Replace synthesized lines with real ones if close enough.
+//----------------------------------------------------------------------------------
+void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+{
+    const float middle_x = img.rows / 2.0;
+    const float height = img.rows;
+    
+    auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
+    auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
+    auto ys     = vec_extract( lines, [middle_x](cv::Vec2f line) { return y_from_x( middle_x, line); });
+    auto d_rhos   = vec_delta( rhos);
+    auto d_thetas = vec_delta( thetas);
+    auto d_rho   = vec_median( d_rhos);
+    //auto d_rho   = (rhos.back() - rhos.front()) / (SZ(rhos)-1);
+    auto d_theta = vec_median( d_thetas);
+    //auto d_theta  = (thetas.back() - thetas.front()) / (SZ(thetas)-1);
+    
+    cv::Vec2f med_line = lines[SZ(lines)/2];
+    std::vector<cv::Vec2f> synth_lines;
+    synth_lines.push_back(med_line);
+    float rho, theta;
+    // If there is a close line, use it. Else interpolate.
+    const float Y_THRESH = 6;
+    const float THETA_THRESH = PI / 180;
+    // Lines below
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        if (!i) continue;
+        rho += d_rho;
+        theta += d_theta;
+        float y = y_from_x( middle_x, cv::Vec2f( rho, theta));
+        int close_idx = vec_closest( ys, y);
+        if (fabs( y - ys[close_idx]) < Y_THRESH &&
+            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        {
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+        }
+        cv::Vec2f line( rho,theta);
+        if (y_from_x( middle_x, line) > height) break;
+        synth_lines.push_back( line);
+    }
+    // Lines above
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        if (!i) continue;
+        rho -= d_rho;
+        theta -= d_theta;
+        float y = y_from_x( middle_x, cv::Vec2f( rho, theta));
+        int close_idx = vec_closest( ys, y);
+        if (fabs( y - ys[close_idx]) < Y_THRESH &&
+            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        {
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+        }
+        cv::Vec2f line( rho,theta);
+        if (y_from_x( middle_x, line) < 0) break;
+        synth_lines.push_back( line);
+    }
+    std::sort( synth_lines.begin(), synth_lines.end(),
+              [middle_x](cv::Vec2f line1, cv::Vec2f line2) {
+                  return y_from_x( middle_x, line1) < y_from_x( middle_x, line2);
+              });
+    lines = synth_lines;
+} // fix_horiz_lines()
+
+
 // Find vertical line parameters
 //---------------------------------
 - (UIImage *) f05_vert_params
@@ -464,7 +563,7 @@ int count_points_on_line( cv::Vec2f line, Points pts)
 // Find a vertical line thru pt which hits a lot of other points
 // WARNING: allpoints must be sorted by y
 //------------------------------------------------------------------
-cv::Vec2f find_line_thru_point( const Points &allpoints, cv::Point pt)
+cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt)
 {
     // Find next point below.
     //const float RHO_EPS = 10;
@@ -487,7 +586,35 @@ cv::Vec2f find_line_thru_point( const Points &allpoints, cv::Point pt)
     //PLOG( "maxhits:%d\n", maxhits);
     //int tt = count_points_on_line( res, allpoints);
     return res;
-} // find_line_thru_point()
+} // find_vert_line_thru_point()
+
+// Find a horiz line thru pt which hits a lot of other points
+// WARNING: allpoints must be sorted by x
+//------------------------------------------------------------------
+cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
+{
+    // Find next point to the right.
+    //const float RHO_EPS = 10;
+    const float THETA_EPS = 10 * PI / 180;
+    int maxhits = -1;
+    cv::Vec2f res;
+    for (auto p: allpoints) {
+        if (p.x <= pt.x) continue;
+        Points pts = { pt, p };
+        //cv::Vec2f newline = fit_pline( pts);
+        cv::Vec2f newline = segment2polar( cv::Vec4f( pt.x, pt.y, p.x, p.y));
+        if (fabs( fabs( newline[1]) - PI/2) < THETA_EPS ) {
+            int nhits = count_points_on_line( newline, allpoints);
+            if (nhits > maxhits) {
+                maxhits = nhits;
+                res = newline;
+            }
+        }
+    }
+    //PLOG( "maxhits:%d\n", maxhits);
+    //int tt = count_points_on_line( res, allpoints);
+    return res;
+} // find_horiz_line_thru_point()
 
 // Homegrown method to find vertical line candidates, as a replacement
 // for thinning Hough lines.
@@ -501,11 +628,28 @@ std::vector<cv::Vec2f> homegrown_vert_lines( Points pts)
     std::copy_n ( pts.begin(), SZ(pts)/4, top_points.begin() );
     // For each point, find a line that hits many other points
     for (auto tp: top_points) {
-        cv::Vec2f newline = find_line_thru_point( pts, tp);
+        cv::Vec2f newline = find_vert_line_thru_point( pts, tp);
         res.push_back( newline);
     }
     return res;
 } // homegrown_vert_lines()
+
+// Homegrown method to find horizontal line candidates
+//-----------------------------------------------------------------------------
+std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
+{
+    std::vector<cv::Vec2f> res;
+    // Find points in quartile with lowest x
+    std::sort( pts.begin(), pts.end(), [](Point2f p1, Point2f p2) { return p1.x < p2.x; } );
+    Points left_points( SZ(pts)/4);
+    std::copy_n ( pts.begin(), SZ(pts)/4, left_points.begin() );
+    // For each point, find a line that hits many other points
+    for (auto tp: left_points) {
+        cv::Vec2f newline = find_horiz_line_thru_point( pts, tp);
+        res.push_back( newline);
+    }
+    return res;
+} // homegrown_horiz_lines()
 
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
@@ -974,18 +1118,22 @@ void get_intersections( const Points_ &corners, int boardsz, // in
 
         // Find dominant direction
         float theta = direction( _gray, _stone_or_empty) - PI/2;
-        if (fabs(theta) > 0.03) break;
+        if (fabs(theta) > 0.02) break;
         
         // Find horiz lines
-        _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
-        _finder.cluster();
-        if (SZ(_finder.m_horizontal_clusters) < 3) break;
-        cv::Vec2f ratline;
-        float dy; int rat_idx;
-        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-        _horizontal_lines.clear();
-        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
-                         _horizontal_lines);
+        _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
+        dedup_horiz_lines( _horizontal_lines, _gray);
+        fix_horiz_lines( _horizontal_lines, _gray);
+//
+//        _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
+//        _finder.cluster();
+//        if (SZ(_finder.m_horizontal_clusters) < 3) break;
+//        cv::Vec2f ratline;
+//        float dy; int rat_idx;
+//        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
+//        _horizontal_lines.clear();
+//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
+//                         _horizontal_lines);
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
