@@ -24,13 +24,18 @@ public:
     enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
     
     //----------------------------------------------------------------------------------
-    inline static std::vector<int> classify( const cv::Mat &gray, // gray, normalized
+    inline static std::vector<int> classify( const cv::Mat &gray,
                                             const Points2f &intersections,
                                             float dx, // approximate dist between lines
                                             float dy)
     {
-        std::vector<int> res(SZ(intersections), DONTKNOW);
+        std::vector<int> res(SZ(intersections), EEMPTY);
         
+        cv::Mat threshed;
+        cv::adaptiveThreshold( gray, threshed, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                              11,  // neighborhood_size
+                              8);  // threshold
+
         // Compute features for each board intersection
         std::vector<float> brightness;
         get_brightness( gray, intersections, dx, dy, brightness);
@@ -40,6 +45,14 @@ public:
 
         std::vector<float> crossness;
         get_crossness( gray, intersections, dx, dy, crossness);
+        
+        std::vector<float> whiteness;
+        get_whiteness( gray, intersections, dx, dy, whiteness);
+        
+//        std::vector<float> center_sums(SZ(intersections));
+//        ISLOOP (intersections) {
+//            center_sums[i] = center_sum( threshed, intersections[i], dx, dy);
+//        }
 
         // Black stones
         float black_median = vec_median( brightness);
@@ -52,21 +65,23 @@ public:
             }
         }
         // White places
-        ISLOOP( brightness) {
+        ISLOOP( whiteness) {
             //float black_median = get_neighbor_med( i, 3, brightness);
-            float wthresh = black_median * 1.0; // larger means less White stones
-            if (brightness[i] > wthresh  &&  crossness[i] < 0.35  )  {
+            //float wthresh = black_median * 1.0; // larger means less White stones
+            //if (whiteness[i] > 140 &&  crossness[i] < 120)  {
+            if (whiteness[i] > 135 &&  crossness[i] < 125)  {
                 res[i] = WWHITE;
                 //PLOG( ">>>>>>> WHITE crossness %f\n", crossness[i]);
             }
         }
-        // Empty places
-        ISLOOP( res) {
-            if (res[i] != WWHITE && res[i] != BBLACK) {
-                res[i] = EEMPTY;
-                //PLOG( "######## EMPTY center sum %f\n", center_sum[i]);
-            }
-        }
+//        // Empty places
+//        ISLOOP( res) {
+//            PLOG( "crossness: %.2f\n", crossness[i]);
+//            if (crossness[i] <= 0.0) {
+//                res[i] = EEMPTY;
+//                //PLOG( "######## EMPTY center sum %f\n", center_sum[i]);
+//            }
+//        }
         return res;
     } // classify()
     
@@ -129,21 +144,172 @@ public:
         } // for intersections
     } // get_brightness()
 
-    //-------------------------------------------------------------------
+//    //-------------------------------------------------------------------
+//    inline static void get_crossness( const cv::Mat &img, // gray
+//                                     const Points2f &intersections,
+//                                     float dx_, float dy_,
+//                                     std::vector<float> &res )
+//    {
+//        //mat_dbg = img.clone();
+//        res.clear();
+//        ISLOOP (intersections) {
+//            //float feat = cross_feature( img, intersections[i], dx_, dy_);
+//            float feat = cross_feature_new( img, intersections[i], dx_, dy_);
+//            res.push_back( feat);
+//        } // for intersections
+//    } // get_crossness()
+    
+    // Look whether the cross pixels are set
+    //----------------------------------------------------------------------------------------
+    inline static float center_sum( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
+    {
+        float res = 0;
+        int dx_inner = ROUND(dx_/4.0);
+        int dy_inner = ROUND(dy_/4.0);
+        int dx_outer = ROUND(dx_/2.0);
+        int dy_outer = ROUND(dy_/2.0);
+        float area = dx_*dy_;
+        float innersum=0, outersum=0;
+        const int NSHIFT = 3;
+        for (int shift=0; shift < NSHIFT; shift++) {
+            cv::Point p(ROUND(p_.x), ROUND(p_.y - shift));
+            cv::Rect rect_inner( p.x - dx_inner, p.y - dy_inner, 2*dx_inner+1, 2*dy_inner+1 );
+            cv::Rect rect_outer( p.x - dx_outer, p.y - dy_outer, 2*dx_outer+1, 2*dy_outer+1 );
+            if (check_rect( rect_inner, img.rows, img.cols) &&
+                check_rect( rect_outer, img.rows, img.cols))
+            {
+                cv::Mat hood_inner = img(rect_inner);
+                cv::Mat hood_outer = img(rect_outer);
+                innersum = cv::sum(hood_inner)[0];
+                outersum = cv::sum(hood_outer)[0];
+                res += (innersum - outersum)/area;
+            }
+        } // for shift
+        res /= NSHIFT;
+        return -res;
+    } // center_sum
+
+
+    //------------------------------------------------------------------------
+    inline static void get_whiteness( const cv::Mat &img, // gray
+                                     const Points2f &intersections,
+                                     float dx_, float dy_,
+                                     std::vector<float> &res )
+    {
+        int dx = ROUND(dx_/4.0);
+        int dy = ROUND(dy_/4.0);
+        float area = (2*dx+1) * (2*dy+1);
+        cv::Mat threshed;
+        cv::adaptiveThreshold( img, threshed, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                              11,  // neighborhood_size
+                              8);  // threshold
+
+        const int tsz = 15;
+        uint8_t tmpl[tsz*tsz] = {
+            1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,
+            1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,
+            1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,
+            1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,
+            1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,
+            1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,
+            1,1,1,1,1,1,0,0,0,1,1,1,1,1,1
+        };
+//        uint8_t tmpl[tsz*tsz] = {
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
+//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
+//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
+//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
+//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//        };
+        cv::Mat mtmpl = 255 * cv::Mat(tsz, tsz, CV_8UC1, tmpl);
+        cv::Mat mtt;
+        cv::copyMakeBorder( threshed, mtt, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
+        cv::Mat dst;
+        cv::matchTemplate( mtt, mtmpl, dst, CV_TM_SQDIFF);
+        cv::normalize( dst, dst, 0 , 255, CV_MINMAX, CV_8UC1);
+        res.clear();
+        ISLOOP (intersections) {
+            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y-2));
+            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+            if (check_rect( rect, img.rows, img.cols)) {
+                cv::Mat hood = dst(rect);
+                float wness = cv::sum(hood)[0] / area;
+                res.push_back( 255 - wness);
+            }
+        } // for intersections
+    } // get_whiteness()
+
+    //------------------------------------------------------------------------
     inline static void get_crossness( const cv::Mat &img, // gray
                                      const Points2f &intersections,
                                      float dx_, float dy_,
-                                     std::vector<float> &res ) 
+                                     std::vector<float> &res )
     {
-        //mat_dbg = img.clone();
+        int dx = ROUND(dx_/4.0);
+        int dy = ROUND(dy_/4.0);
+        float area = (2*dx+1) * (2*dy+1);
+        cv::Mat threshed;
+        cv::adaptiveThreshold( img, threshed, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                              11,  // neighborhood_size
+                              8);  // threshold
+        
+        const int tsz = 15;
+        uint8_t tmpl[tsz*tsz] = {
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+        };
+        cv::Mat mtmpl = 255 * cv::Mat(tsz, tsz, CV_8UC1, tmpl);
+        cv::Mat mtt;
+        cv::copyMakeBorder( threshed, mtt, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
+        cv::Mat dst;
+        cv::matchTemplate( mtt, mtmpl, dst, CV_TM_SQDIFF);
+        cv::normalize( dst, dst, 0 , 255, CV_MINMAX, CV_8UC1);
         res.clear();
         ISLOOP (intersections) {
-            float feat = cross_feature( img, intersections[i], dx_, dy_);
-            res.push_back( feat);
+            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
+            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+            if (check_rect( rect, img.rows, img.cols)) {
+                cv::Mat hood = dst(rect);
+                float wness = cv::sum(hood)[0] / area;
+                res.push_back( 255 - wness);
+            }
         } // for intersections
+        mat_dbg = threshed.clone();
     } // get_crossness()
+    
 
-
+    
     // Look whether the cross pixels are set
     //----------------------------------------------------------------------------------------
     inline static float cross_feature( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
