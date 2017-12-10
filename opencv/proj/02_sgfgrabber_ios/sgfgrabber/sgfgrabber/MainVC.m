@@ -227,76 +227,79 @@
     if (self.debug_mode) {
         static int state = 0;
         UIImage *img;
-        switch (state) {
-            case 0:
-                state++;
-                //state=100;
-                self.frame_grabber_on = NO;
-                [self.frameExtractor suspend];
-                img = [self.grabFuncs f00_blobs:self.img];
-                [self.cameraView setImage:img];
-                break;
-            case 1:
-                state++;
-                img = [self.grabFuncs f01_straight];
-                [self.cameraView setImage:img];
-                break;
-            case 2:
-                state++;
-                img = [self.grabFuncs f02_horiz_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 3:
-                state++;
-                img = [self.grabFuncs f03_vert_lines];
-                [self.cameraView setImage:img];
-                break;
-            case 4:
-                state++;
-                img = [self.grabFuncs f04_vert_lines_2];
-                [self.cameraView setImage:img];
-                break;
-            case 5:
-                state++;
-                img = [self.grabFuncs f05_vert_params];
-                [self.cameraView setImage:img];
-                break;
-            case 6:
-                state++;
-                img = [self.grabFuncs f06_corners];
-                [self.cameraView setImage:img];
-                break;
-            case 7:
-                state++;
-                img = [self.grabFuncs f07_zoom_in];
-                [self.cameraView setImage:img];
-                break;
-            case 8:
-                state++;
-                img = [self.grabFuncs f08_repeat_on_zoomed];
-                [self.cameraView setImage:img];
-                break;
-            case 9:
-                state++;
-                img = [self.grabFuncs f09_intersections];
-                [self.cameraView setImage:img];
-                break;
-            case 10:
-                state++;
-                img = [self.grabFuncs f10_classify];
-                [self.cameraView setImage:img];
-                break;
-//            case 11:
-//                state++;
-//                img = [self.grabFuncs f11_classify];
-//                [self.cameraView setImage:img];
-//                break;
-            default:
-                state=0;
-                self.frame_grabber_on = YES;
-                [self.frameExtractor resume];
-        } // switch
-    }
+        while(1) {
+            switch (state) {
+                case 0:
+                    state++;
+                    //state=100;
+                    self.frame_grabber_on = NO;
+                    [self.frameExtractor suspend];
+                    img = [self.grabFuncs f00_blobs:self.img];
+                    [self.cameraView setImage:img];
+                    break;
+                case 1:
+                    state++;
+                    img = [self.grabFuncs f01_straight];
+                    [self.cameraView setImage:img];
+                    break;
+                case 2:
+                    state++;
+                    img = [self.grabFuncs f02_horiz_lines];
+                    [self.cameraView setImage:img];
+                    break;
+                case 3:
+                    state++;
+                    img = [self.grabFuncs f03_vert_lines];
+                    [self.cameraView setImage:img];
+                    break;
+                case 4:
+                    state++;
+                    img = [self.grabFuncs f04_vert_lines_2];
+                    [self.cameraView setImage:img];
+                    break;
+                case 5:
+                    state++;
+                    img = [self.grabFuncs f05_vert_params];
+                    [self.cameraView setImage:img];
+                    break;
+                case 6:
+                    state++;
+                    img = [self.grabFuncs f06_corners];
+                    [self.cameraView setImage:img];
+                    break;
+                case 7:
+                    state++;
+                    img = [self.grabFuncs f07_zoom_in];
+                    [self.cameraView setImage:img];
+                    break;
+                case 8:
+                    state++;
+                    img = [self.grabFuncs f08_repeat_on_zoomed];
+                    [self.cameraView setImage:img];
+                    break;
+                case 9:
+                    state++;
+                    img = [self.grabFuncs f09_intersections];
+                    [self.cameraView setImage:img];
+                    break;
+                case 10:
+                    img = [self.grabFuncs f10_features];
+                    if (!img) { state=11; continue; } // aka goto 11
+                    else { [self.cameraView setImage:img]; }
+                    break;
+                case 11:
+                    state++;
+                    img = [self.grabFuncs f11_classify];
+                    [self.cameraView setImage:img];
+                    break;
+                default:
+                    state=0;
+                    self.frame_grabber_on = YES;
+                    [self.frameExtractor resume];
+            } // switch
+            break;
+        } // while(1)
+    } // if
 } // btnGo()
 
 

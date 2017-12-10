@@ -73,12 +73,12 @@ void load_img( NSString *fname, cv::Mat &m)
     UIImageToMat(img, m);
 }
 
-
 // Reject board if opposing lines not parallel
 // or adjacent lines not at right angles
-//----------------------------------------------
-bool board_valid( Points board, float screenArea)
+//-----------------------------------------------------
+bool board_valid( Points2f board, const cv::Mat &img)
 {
+    float screenArea = img.rows * img.cols;
     if (board.size() != 4) return false;
     float area = cv::contourArea(board);
     if (area / screenArea > 0.95) return false;
@@ -97,7 +97,6 @@ bool board_valid( Points board, float screenArea)
     if (abs(right_ang2 - 90) > 10) return false;
     return true;
 }
-
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -160,7 +159,6 @@ bool board_valid( Points board, float screenArea)
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
-
 
 // Find closest line among a bunch of roughly horizontal lines,
 // using distance at x == width/2
@@ -516,37 +514,39 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     return res;
 } // f05_vert_params()
 
-// Use y at the center to count points between two horizontal lines.
-//--------------------------------------------------------------------------------------------------------------
-int count_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line, Points points, int middle_x)
+// Use y at the center to sum feat at points between two horizontal lines.
+//---------------------------------------------------------------------------------
+float sum_points_between_horiz_lines( cv::Vec2f top_line, cv::Vec2f bot_line,
+                                   const std::vector<PFeat> &pfts, int middle_x)
 {
-    int res = 0;
+    float res = 0;
     const float EPS = 5;
-    for (auto p: points) {
-        float tdist = dist_point_line( p, top_line);
-        float bdist = dist_point_line( p, bot_line);
+    for (auto pft: pfts) {
+        float tdist = dist_point_line( pft.p, top_line);
+        float bdist = dist_point_line( pft.p, bot_line);
         if ((tdist > 0 || fabs( tdist) < EPS) && (bdist < 0 || fabs( bdist) < EPS) ) {
-            res++;
+            res += pft.feat;
         }
     }
     return res;
-}
+} // sum_points_between_horiz_lines()
 
-// Use x at the center to count points between two vertical lines.
-//--------------------------------------------------------------------------------------------------------------
-int count_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line, Points points, int middle_y)
+// Use y at the center to sum feat at points between two vertical lines.
+//---------------------------------------------------------------------------------
+float sum_points_between_vert_lines( cv::Vec2f left_line, cv::Vec2f right_line,
+                                    const std::vector<PFeat> &pfts, int middle_y)
 {
-    int res = 0;
+    float res = 0;
     const float EPS = 5;
-    for (auto p: points) {
-        float ldist = dist_point_line( p, left_line);
-        float rdist = dist_point_line( p, right_line);
+    for (auto pft: pfts) {
+        float ldist = dist_point_line( pft.p, left_line);
+        float rdist = dist_point_line( pft.p, right_line);
         if ((ldist > 0 || fabs( ldist) < EPS) && (rdist < 0 || fabs( rdist) < EPS) ) {
-            res++;
+            res += pft.feat;
         }
     }
     return res;
-}
+} // sum_points_between_vert_lines()
 
 //--------------------------------------------------------
 int count_points_on_line( cv::Vec2f line, Points pts)
@@ -596,7 +596,7 @@ cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
 {
     // Find next point to the right.
     //const float RHO_EPS = 10;
-    const float THETA_EPS = 10 * PI / 180;
+    const float THETA_EPS = 5 * PI / 180;
     int maxhits = -1;
     cv::Vec2f res = {0,0};
     for (auto p: allpoints) {
@@ -662,35 +662,38 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
-                     const Points &pts, const cv::Mat &img, int board_sz = 19)
+                     const std::vector<PFeat> &pfts, const cv::Mat &img, int board_sz = 19)
 {
     int height = img.rows;
     int width  = img.cols;
-    int max_n, max_idx;
+    int max_idx;
+    float max_score;
     
     // Find bounding horiz lines
-    max_n = -1E9; max_idx = -1;
+    max_score = -1E9; max_idx = -1;
     for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
         cv::Vec2f top_line = horiz_lines[i];
         cv::Vec2f bot_line = horiz_lines[i + board_sz - 1];
-        int n = count_points_between_horiz_lines( top_line, bot_line, pts, width / 2);
-        if (n > max_n) {
-            max_n = n;
+        float score = sum_points_between_horiz_lines( top_line, bot_line, pfts, width / 2);
+        if (score > max_score) {
+            max_score = score;
             max_idx = i;
         }
     }
+    //PLOG("MAX:%f\n", max_score);
+    //if (max_score < 150) { return Points2f(); }
     //int sz = SZ(pts);
     cv::Vec2f top_line = horiz_lines[max_idx];
     cv::Vec2f bot_line = horiz_lines[max_idx + board_sz - 1];
     
     // Find bounding vert lines
-    max_n = -1E9; max_idx = -1;
+    max_score = -1E9; max_idx = -1;
     for (int i=0; i < SZ(vert_lines) - board_sz + 1; i++) {
         cv::Vec2f left_line = vert_lines[i];
         cv::Vec2f right_line = vert_lines[i + board_sz - 1];
-        int n = count_points_between_vert_lines( left_line, right_line, pts, height / 2);
-        if (n > max_n) {
-            max_n = n;
+        float score = sum_points_between_vert_lines( left_line, right_line, pfts, height / 2);
+        if (score > max_score) {
+            max_score = score;
             max_idx = i;
         }
     }
@@ -722,13 +725,12 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
     return res;
 }
 
-// Look at each intersection and give a gues whether you thing it is an empty intersection.
-// This helps us find the board position.
-//----------------------------------------------------------------------------------------------
-Points find_crosses( const cv::Mat &img,
-                    const Points2f &intersections)
+// Look at each intersection and give a guess whether you think it
+// is an empty intersection. This helps us find the location of the board.
+// ------------------------------------------------------------------------
+std::vector<PFeat> find_crosses( const cv::Mat &img,
+                                const Points2f &intersections)
 {
-    Points res;
     int dx=10, dy=10;
     cv::Mat mtmp;
     cv::adaptiveThreshold( img, mtmp, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
@@ -737,16 +739,18 @@ Points find_crosses( const cv::Mat &img,
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
     cv::dilate( mtmp, mtmp, element );
     std::vector<float> features;
+    std::vector<PFeat> res;
     // For each intersection of two lines
     for (auto pf:intersections) {
-            float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
-            features.push_back( crossness);
+        float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
+        res.push_back( { pf, 1 - crossness } );
+        features.push_back( crossness );
     }
-    ISLOOP (intersections) {
-        if (features[i] < 0.01) {
-            res.push_back( intersections[i]);
-        }
-    }
+//    ISLOOP (intersections) {
+//        if (features[i] < 0.01) {
+//            res.push_back( intersections[i]);
+//        }
+//    }
     viz_feature( img, intersections, features, mat_dbg, 255);
     return res;
 } // find_crosses()
@@ -902,7 +906,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     if (SZ(_corners) == 4) {
         get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
     }
-
+    
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
@@ -910,6 +914,27 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f09_intersections()
+
+// Visualize some features
+//-------------------------------
+- (UIImage *) f10_features
+{
+    return NULL;
+    g_app.mainVC.lbDbg.text = @"10";
+    
+    if (SZ(_corners) == 4) {
+        get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
+    }
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    draw_points( _intersections, drawing, 1, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f10_features()
+
+
 
 // Translate a bunch of points
 //----------------------------------------------------------------
@@ -996,9 +1021,9 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
 
 // Classify intersections into black, white, empty
 //-----------------------------------------------------------
-- (UIImage *) f10_classify 
+- (UIImage *) f11_classify
 {
-    g_app.mainVC.lbDbg.text = @"10";
+    g_app.mainVC.lbDbg.text = @"11";
     
     std::vector<int> diagram;
     if (_small_zoomed.rows > 0) {
@@ -1128,7 +1153,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 
         // Find dominant direction
         float theta = direction( _gray, _stone_or_empty) - PI/2;
-        if (fabs(theta) > 0.02) break;
+        if (fabs(theta) > 4 * PI/180) break;
         
         // Find horiz lines
         _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
@@ -1159,7 +1184,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
         }
-        if (SZ(_corners) != 4) break;
+        if (!board_valid( _corners, _gray)) break;
         //@@@ prevent board flicker
         const int BORDBUFLEN = 5;
         ringpush( _boards, _corners, BORDBUFLEN);

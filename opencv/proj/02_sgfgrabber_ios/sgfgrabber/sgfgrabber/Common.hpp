@@ -132,6 +132,14 @@ float bisect( Func f, float lower, float upper, int target, int maxiter=10)
 // Vector
 //==========
 
+// Append a vector in place
+//----------------------------------------------------
+template <typename T>
+void vec_append( std::vector<T> a, std::vector<T> b)
+{
+    a.insert(a.end(), b.begin(), b.end());
+}
+
 // Append elt to vector, remove elts from front until length <= N
 //------------------------------------------------------------------
 template <typename T>

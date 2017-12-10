@@ -13,7 +13,6 @@
 #ifndef Ocv_hpp
 #define Ocv_hpp
 
-
 #ifdef __cplusplus
 
 #include <opencv2/opencv.hpp>
@@ -29,7 +28,7 @@ typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
 typedef cv::Point Line[2];
 typedef std::vector<cv::Point2f> Points2f;
-
+typedef struct { Point2f p; float feat; } PFeat;
 
 extern cv::RNG rng;
 

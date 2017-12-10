@@ -25,7 +25,8 @@
 - (UIImage *) f07_zoom_in;
 - (UIImage *) f08_repeat_on_zoomed;
 - (UIImage *) f09_intersections;
-- (UIImage *) f10_classify;
+- (UIImage *) f10_features;
+- (UIImage *) f11_classify;
 - (UIImage *) findBoard:(UIImage *)img;
 @property float sld_low;
 @property int canny_hi;
