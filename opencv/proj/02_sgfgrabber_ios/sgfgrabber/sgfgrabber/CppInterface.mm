@@ -755,21 +755,6 @@ std::vector<PFeat> find_crosses( const cv::Mat &img,
     return res;
 } // find_crosses()
 
-// Visualize features, one per intersection.
-//------------------------------------------------------------------------------------------------------
-void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<float> features,
-                 cv::Mat &dst, const float multiplier = 255)
-{
-    dst = cv::Mat::zeros( img.size(), img.type());
-    ISLOOP (intersections) {
-        auto pf = intersections[i];
-        float feat = features[i];
-        auto hood = make_hood( pf, 5, 5);
-        if (check_rect( hood, img.rows, img.cols)) {
-            dst( hood) = feat * multiplier;
-        }
-    }
-} // viz_feature()
 
 // Find the corners
 //----------------------------
@@ -915,26 +900,58 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     return res;
 } // f09_intersections()
 
-// Visualize some features
+// Visualize features, one per intersection.
+//------------------------------------------------------------------------------------------------------
+void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<float> features,
+                 cv::Mat &dst, const float multiplier = 255)
+{
+    dst = cv::Mat::zeros( img.size(), img.type());
+    ISLOOP (intersections) {
+        auto pf = intersections[i];
+        float feat = features[i];
+        auto hood = make_hood( pf, 5, 5);
+        if (check_rect( hood, img.rows, img.cols)) {
+            dst( hood) = fmin( 255, feat * multiplier);
+        }
+    }
+} // viz_feature()
+
+// Visualize some features //@@@
 //-------------------------------
 - (UIImage *) f10_features
 {
-    return NULL;
     g_app.mainVC.lbDbg.text = @"10";
-    
-    if (SZ(_corners) == 4) {
-        get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
+    static int state = 0;
+    std::vector<float> feats;
+    cv::Mat drawing;
+
+    switch (state) {
+        case 0:
+            BlackWhiteEmpty::get_whiteness( _gray_zoomed,
+                                           _intersections,
+                                           _dx, _dy,
+                                           feats);
+            viz_feature( _gray, _intersections, feats, drawing, 255);
+            break;
+        case 1:
+            BlackWhiteEmpty::get_crossness( _gray_zoomed,
+                                           _intersections,
+                                           _dx, _dy,
+                                           feats);
+            viz_feature( _gray, _intersections, feats, drawing, 2);
+            break;
+        default:
+            state = 0;
+            return NULL;
     }
+    state++;
     
     // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    draw_points( _intersections, drawing, 1, cv::Scalar(255,0,0));
+    cv::cvtColor( drawing, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f10_features()
-
-
 
 // Translate a bunch of points
 //----------------------------------------------------------------
@@ -947,8 +964,9 @@ Points2f translate_points( const Points2f &pts, int dx, int dy)
     return res;
 }
 
-//--------------------------------------------------------------------------------------------------
-std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_normed, float dx, float dy)
+//---------------------------------------------------------------------------------------------------
+std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, float dx, float dy,
+                          bool timevote = true)
 {
     Points2f intersections;
     std::vector<std::vector<int> > diagrams;
@@ -956,7 +974,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     // Perspective tends to see stones with y too small (higher up).
     // Therefore, look two pixels up, but never down.
     intersections = translate_points( intersections_, 0, 0);
-    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
+    diagrams.push_back( BlackWhiteEmpty::classify( img,
                                                   intersections,
                                                   dx, dy));
 //    intersections = translate_points( intersections_, -1, 0);
@@ -1009,11 +1027,13 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     ISLOOP (diagram) {
         ringpush( timevotes[i], diagram[i], BUFSZ);
     }
-    ISLOOP (timevotes) {
-        std::vector<int> counts( BlackWhiteEmpty::DONTKNOW, 0); // index is bwe
-        for (int bwe: timevotes[i]) { ++counts[bwe]; }
-        int winner = argmax( counts);
-        diagram[i] = winner;
+    if (timevote) {
+        ISLOOP (timevotes) {
+            std::vector<int> counts( BlackWhiteEmpty::DONTKNOW, 0); // index is bwe
+            for (int bwe: timevotes[i]) { ++counts[bwe]; }
+            int winner = argmax( counts);
+            diagram[i] = winner;
+        }
     }
     
     return diagram;
@@ -1029,7 +1049,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     if (_small_zoomed.rows > 0) {
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        diagram = classify( _intersections, _gray_zoomed, _dx, _dy);
+        diagram = classify( _intersections, _gray_zoomed, _dx, _dy, false);
     }
     
     // Show results
@@ -1055,7 +1075,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &gray_n
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f10_classify()
+} // f11_classify()
 
 // Save small crops around intersections for inspection
 //-------------------------------------------------------------------------------

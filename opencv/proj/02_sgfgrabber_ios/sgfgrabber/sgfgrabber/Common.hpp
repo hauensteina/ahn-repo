@@ -77,6 +77,7 @@ r = int(rr * 255); g = int(gg * 255); b = int(bb * 255); \
 #import <iostream>
 #import <complex>
 #import <vector>
+#import <algorithm>
 
 typedef std::complex<double> cplx;
 extern cplx I;
@@ -307,6 +308,18 @@ T vec_max( std::vector<T> vec )
 {
     T res = *(std::max_element(vec.begin(), vec.end()));
     return res;
+}
+
+// Scale vector to max_element = mmax
+//----------------------------------------------
+template <typename T>
+void vec_scale( std::vector<T> &vec, double mmax_ )
+{
+    auto mmax = vec_max( vec);
+    double fac = mmax_ / mmax;
+    std::vector<T> dst(SZ(vec));
+    std::transform( vec.begin(), vec.end(), dst.begin(), [fac](T elt){ return elt * fac; });
+    vec = dst;
 }
 
 // Calculates the avg delta of a vector

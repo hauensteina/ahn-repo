@@ -31,10 +31,10 @@ public:
     {
         std::vector<int> res(SZ(intersections), EEMPTY);
         
-        cv::Mat threshed;
-        cv::adaptiveThreshold( gray, threshed, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                              11,  // neighborhood_size
-                              8);  // threshold
+        //cv::Mat threshed;
+        //cv::adaptiveThreshold( gray, threshed, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+        //                      11,  // neighborhood_size
+        //                      8);  // threshold
 
         // Compute features for each board intersection
         std::vector<float> brightness;
@@ -46,8 +46,8 @@ public:
         std::vector<float> crossness;
         get_crossness( gray, intersections, dx, dy, crossness);
         
-        std::vector<float> whiteness;
-        get_whiteness( gray, intersections, dx, dy, whiteness);
+        //std::vector<float> whiteness;
+        //get_whiteness( gray, intersections, dx, dy, whiteness);
         
 //        std::vector<float> center_sums(SZ(intersections));
 //        ISLOOP (intersections) {
@@ -65,11 +65,11 @@ public:
             }
         }
         // White places
-        ISLOOP( whiteness) {
+        ISLOOP( crossness) {
             //float black_median = get_neighbor_med( i, 3, brightness);
             //float wthresh = black_median * 1.0; // larger means less White stones
             //if (whiteness[i] > 140 &&  crossness[i] < 120)  {
-            if (whiteness[i] > 135 &&  crossness[i] < 125)  {
+            if (crossness[i] < 120 &&  res[i] != BBLACK)  {
                 res[i] = WWHITE;
                 //PLOG( ">>>>>>> WHITE crossness %f\n", crossness[i]);
             }
@@ -251,10 +251,13 @@ public:
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
             if (check_rect( rect, img.rows, img.cols)) {
                 cv::Mat hood = dst(rect);
-                float wness = cv::sum(hood)[0] / area;
-                res.push_back( 255 - wness);
+                float wness = cv::sum(hood)[0] / area; // 0 .. 255
+                wness /= 255.0; // 0 .. 1; best match is 0
+                wness = -log(wness); // 0 .. inf
+                res.push_back( wness);
             }
         } // for intersections
+        mat_dbg = dst.clone();
     } // get_whiteness()
 
     //------------------------------------------------------------------------
@@ -263,32 +266,85 @@ public:
                                      float dx_, float dy_,
                                      std::vector<float> &res )
     {
-        int dx = ROUND(dx_/4.0);
-        int dy = ROUND(dy_/4.0);
+        int dx = 2; // ROUND(dx_/.0);
+        int dy = 2; // ROUND(dy_/5.0);
         float area = (2*dx+1) * (2*dy+1);
         cv::Mat threshed;
         cv::adaptiveThreshold( img, threshed, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               11,  // neighborhood_size
                               8);  // threshold
-        
+        cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+        cv::dilate( threshed, threshed, element );
+
         const int tsz = 15;
+//        uint8_t tmpl[tsz*tsz] = {
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+//        };
+//        uint8_t tmpl[tsz*tsz] = {
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+//        };
         uint8_t tmpl[tsz*tsz] = {
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
+            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
         };
+//        uint8_t tmpl[tsz*tsz] = {
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
+//        };
         cv::Mat mtmpl = 255 * cv::Mat(tsz, tsz, CV_8UC1, tmpl);
         cv::Mat mtt;
         cv::copyMakeBorder( threshed, mtt, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
@@ -298,14 +354,16 @@ public:
         res.clear();
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+            cv::Rect rect( p.x - dx, p.y - dy-2, 2*dx+1, 2*dy+1 );
             if (check_rect( rect, img.rows, img.cols)) {
                 cv::Mat hood = dst(rect);
-                float wness = cv::sum(hood)[0] / area;
-                res.push_back( 255 - wness);
+                float cness = cv::sum(hood)[0] / area;
+                res.push_back( 255 - cness);
             }
         } // for intersections
-        mat_dbg = threshed.clone();
+        vec_scale( res, 255);
+        //PLOG( "min cross: %.0f\n", vec_min( res));
+        mat_dbg = dst.clone();
     } // get_crossness()
     
 
@@ -345,7 +403,7 @@ public:
             ssum /= n;
             res = ssum;
         }
-        return res;
+        return fabs(res);
     } // cross_feature
 
     // Look whether cross pixels are set in neighborhood of p_.
@@ -397,7 +455,7 @@ public:
             res = 1-ssum;
             if (res < 0) res = 0;
         }
-        return res;
+        return fabs(res);
     } // cross_feature
 
 }; // class BlackWhiteEmpty
