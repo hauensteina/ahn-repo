@@ -69,7 +69,7 @@ public:
             //float black_median = get_neighbor_med( i, 3, brightness);
             //float wthresh = black_median * 1.0; // larger means less White stones
             //if (whiteness[i] > 140 &&  crossness[i] < 120)  {
-            if (crossness[i] < 120 &&  res[i] != BBLACK)  {
+            if (crossness[i] < 130 &&  res[i] != BBLACK)  {
                 res[i] = WWHITE;
                 //PLOG( ">>>>>>> WHITE crossness %f\n", crossness[i]);
             }
