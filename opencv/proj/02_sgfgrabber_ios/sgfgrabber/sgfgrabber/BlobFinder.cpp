@@ -12,18 +12,10 @@
 
 extern cv::Mat mat_dbg;
 
-// Find empty intersections in a grayscale image
-//--------------------------------------------------------------------------------
-void BlobFinder::find_empty_places( const cv::Mat &img, Points &result, int athresh)
+// Find empty intersections in a thresholded, dilated image
+//------------------------------------------------------------------------------------------
+void BlobFinder::find_empty_places( const cv::Mat &threshed, Points &result, int athresh)
 {
-    // Prepare image for template matching
-    cv::Mat mtmp;
-    cv::adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          11,  // neighborhood_size
-                          athresh); // 8 or ten, need to try both. 8 better for 19x19
-    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::dilate( mtmp, mtmp, element );
-    mat_dbg = mtmp.clone();
     
     // Define the templates
     const int tsz = 15;
@@ -124,7 +116,7 @@ void BlobFinder::find_empty_places( const cv::Mat &img, Points &result, int athr
     //matchTemplate( mtmp, mleft, result, thresh);
     //matchTemplate( mtmp, mtop, result, thresh);
     //matchTemplate( mtmp, mbottom, result, thresh);
-    matchTemplate( mtmp, mcross, result, thresh);
+    matchTemplate( threshed, mcross, result, thresh);
 } // find_empty_places()
 
 // Find stones in a grayscale image
@@ -176,11 +168,9 @@ void BlobFinder::matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points
     cv::matchTemplate( mtmp, templ, matchRes, CV_TM_SQDIFF);
     cv::normalize( matchRes, matchRes, 0 , 255, CV_MINMAX, CV_8UC1);
     cv::adaptiveThreshold( matchRes, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          //11,  // neighborhood_size
                           11,  // neighborhood_size
                           thresh); // threshold; less is more
     
-    //mat_dbg = mtmp.clone();
     // Find the blobs. They are the empty places.
     cv::SimpleBlobDetector::Params params;
     params.filterByColor = true;

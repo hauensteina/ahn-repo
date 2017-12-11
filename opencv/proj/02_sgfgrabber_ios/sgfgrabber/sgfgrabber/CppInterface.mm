@@ -33,7 +33,9 @@ extern cv::Mat mat_dbg;
 @property cv::Mat small; // resized image, in color
 @property cv::Mat small_zoomed;  // small, zoomed into the board
 @property cv::Mat gray;  // Grayscale version of small
-@property cv::Mat gray_zoomed;  // Grayscale version of small, zoomed into the board
+@property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
+@property cv::Mat gray_zoomed;   // Grayscale version of small, zoomed into the board
+@property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
 @property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
 @property int board_sz; // board size, 9 or 19
@@ -98,6 +100,17 @@ bool board_valid( Points2f board, const cv::Mat &img)
     return true;
 }
 
+// Apply inverse thresh and dilate grayscale image.
+//---------------------------------------------------------
+void thresh_dilate( const cv::Mat &img, cv::Mat &dst)
+{
+    cv::adaptiveThreshold( img, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          11,  // neighborhood_size
+                          8);  // threshold
+    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    cv::dilate( dst, dst, element );
+}
+
 #pragma mark - Processing Pipeline for debugging
 //=================================================
 
@@ -117,18 +130,19 @@ bool board_valid( Points2f board, const cv::Mat &img)
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+    thresh_dilate( _gray, _gray_threshed);
     //normalize_plane_local(_gray, _gray, 15);
 
     _stone_or_empty.clear();
-    BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
+    BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
     auto cleaned = BlobFinder::clean( _stone_or_empty);
     _stone_or_empty = cleaned;
     
     // Show results
     cv::Mat drawing;
-    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP ( _stone_or_empty) {
         //draw_point( _stone_or_empty[i], drawing, 2);
     }
@@ -145,9 +159,11 @@ bool board_valid( Points2f board, const cv::Mat &img)
     // Rotate to exactly pi/2
     rot_img( _gray, theta, _gray);
     rot_img( _small, theta, _small);
+    thresh_dilate( _gray, _gray_threshed);
+
     // Rerun the blob detection. We could just rotate the blobs for efficiency.
     _stone_or_empty.clear();
-    BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
+    BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
     auto cleaned = BlobFinder::clean( _stone_or_empty);
     _stone_or_empty = cleaned;
@@ -566,7 +582,7 @@ int count_points_on_line( cv::Vec2f line, Points pts)
 }
 
 // Find a vertical line thru pt which hits a lot of other points
-// WARNING: allpoints must be sorted by y
+// PRECONDITION: allpoints must be sorted by y
 //------------------------------------------------------------------
 cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt)
 {
@@ -594,7 +610,7 @@ cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt)
 } // find_vert_line_thru_point()
 
 // Find a horiz line thru pt which hits a lot of other points
-// WARNING: allpoints must be sorted by x
+// PRECONDITION: allpoints must be sorted by x
 //------------------------------------------------------------------
 cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
 {
@@ -731,21 +747,16 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 
 // Look at each intersection and give a guess whether you think it
 // is an empty intersection. This helps us find the location of the board.
+// The img is binary, the result of threshold and dilate.
 // ------------------------------------------------------------------------
-std::vector<PFeat> find_crosses( const cv::Mat &img,
+std::vector<PFeat> find_crosses( const cv::Mat &threshed,
                                 const Points2f &intersections)
 {
-    cv::Mat mtmp;
-    cv::adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          11,  // neighborhood_size
-                          8); // 8 or ten, need to try both. 8 better for 19x19
-    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::dilate( mtmp, mtmp, element );
     std::vector<float> features;
     std::vector<PFeat> res;
     // For each intersection of two lines
     int r=10;
-    BlackWhiteEmpty::get_feature( mtmp, intersections, r, BlackWhiteEmpty::cross_feature_new,
+    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::cross_feature_new,
                                  features);
     ISLOOP (features) {
         res.push_back( { intersections[i], features[i] } );
@@ -770,8 +781,9 @@ std::vector<PFeat> find_crosses( const cv::Mat &img,
 - (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
+
     auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-    auto crosses = find_crosses( _gray, intersections);
+    auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
     if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
         _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
@@ -779,7 +791,7 @@ std::vector<PFeat> find_crosses( const cv::Mat &img,
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -830,6 +842,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
+        thresh_dilate( _gray_zoomed, _gz_threshed);
     }
     // Show results
     cv::Mat drawing;
@@ -955,14 +968,8 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
         }
         case 2:
         {
-            cv::Mat mtmp;
-            cv::adaptiveThreshold( _gray_zoomed, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                                  11,  // neighborhood_size
-                                  8); // 8 or ten, need to try both. 8 better for 19x19
-            cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-            cv::dilate( mtmp, mtmp, element );
             int r = 3;
-            BlackWhiteEmpty::get_feature( mtmp, _intersections, r,
+            BlackWhiteEmpty::get_feature( _gz_threshed, _intersections, r,
                                          BlackWhiteEmpty::cross_feature_new,
                                          feats);
             viz_feature( _gray_zoomed, _intersections, feats, drawing, 2);
@@ -992,9 +999,10 @@ Points2f translate_points( const Points2f &pts, int dx, int dy)
     return res;
 }
 
-//---------------------------------------------------------------------------------------------------
-std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, float dx, float dy,
-                          bool timevote = true)
+//------------------------------------------------------------------------------------------------------
+std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, const cv::Mat &threshed,
+                          float dx, float dy,
+                          int TIMEBUFSZ = 1)
 {
     Points2f intersections;
     std::vector<std::vector<int> > diagrams;
@@ -1002,7 +1010,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
     // Perspective tends to see stones with y too small (higher up).
     // Therefore, look two pixels up, but never down.
     intersections = translate_points( intersections_, 0, 0);
-    diagrams.push_back( BlackWhiteEmpty::classify( img,
+    diagrams.push_back( BlackWhiteEmpty::classify( img, threshed,
                                                   intersections,
                                                   dx, dy));
 //    intersections = translate_points( intersections_, -1, 0);
@@ -1050,18 +1058,16 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
         diagram.push_back( winner);
     }
     // Vote across time
-    const int BUFSZ = 20; // frames of history for voting
+    //const int BUFSZ = 20; // frames of history for voting
     static std::vector<std::vector<int> > timevotes(19*19);
     ISLOOP (diagram) {
-        ringpush( timevotes[i], diagram[i], BUFSZ);
+        ringpush( timevotes[i], diagram[i], TIMEBUFSZ);
     }
-    if (timevote) {
-        ISLOOP (timevotes) {
-            std::vector<int> counts( BlackWhiteEmpty::DONTKNOW, 0); // index is bwe
-            for (int bwe: timevotes[i]) { ++counts[bwe]; }
-            int winner = argmax( counts);
-            diagram[i] = winner;
-        }
+    ISLOOP (timevotes) {
+        std::vector<int> counts( BlackWhiteEmpty::DONTKNOW, 0); // index is bwe
+        for (int bwe: timevotes[i]) { ++counts[bwe]; }
+        int winner = argmax( counts);
+        diagram[i] = winner;
     }
     
     return diagram;
@@ -1077,13 +1083,13 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
     if (_small_zoomed.rows > 0) {
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        diagram = classify( _intersections, _gray_zoomed, _dx, _dy, false);
+        diagram = classify( _intersections, _gray_zoomed, _gz_threshed, _dx, _dy, false);
     }
     
     // Show results
     cv::Mat drawing;
     //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
 
     int dx = ROUND( _dx/4.0);
     int dy = ROUND( _dy/4.0);
@@ -1095,7 +1101,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, f
                       2*dy + 1);
         cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
         if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-            draw_point( p, drawing, 1, cv::Scalar(255,255,255,255));
+            draw_point( p, drawing, 2, cv::Scalar(255,255,255,255));
         }
         else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
             draw_point( p, drawing, 2, cv::Scalar(0,0,255,255));
@@ -1186,20 +1192,23 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 {
     //static int counter = 0;
     _board_sz = 19;
+    cv::Mat drawing;
+
     do {
         //const int N_BOARDS = 8;
         static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _m, false);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+        thresh_dilate( _gray, _gray_threshed);
         
         // Find stones and intersections
         _stone_or_empty.clear();
-        BlobFinder::find_empty_places( _gray, _stone_or_empty); // has to be first
+        BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
         BlobFinder::find_stones( _gray, _stone_or_empty);
         if (SZ(_stone_or_empty) < 3) break;
 
-        // Find dominant direction
+        // Break if not straight
         float theta = direction( _gray, _stone_or_empty) - PI/2;
         if (fabs(theta) > 4 * PI/180) break;
         
@@ -1207,16 +1216,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
         dedup_horiz_lines( _horizontal_lines, _gray);
         fix_horiz_lines( _horizontal_lines, _gray);
-//
-//        _finder = LineFinder( _stone_or_empty, _board_sz, _gray.size() );
-//        _finder.cluster();
-//        if (SZ(_finder.m_horizontal_clusters) < 3) break;
-//        cv::Vec2f ratline;
-//        float dy; int rat_idx;
-//        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-//        _horizontal_lines.clear();
-//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray.cols,
-//                         _horizontal_lines);
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
@@ -1227,31 +1226,28 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-        auto crosses = find_crosses( _gray, intersections);
+        auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
         }
         if (!board_valid( _corners, _gray)) break;
-        //@@@ prevent board flicker
+        // Use median border coordinates to prevent flicker
         const int BORDBUFLEN = 5;
         ringpush( _boards, _corners, BORDBUFLEN);
         Points2f med_board = med_quad( _boards);
-        //float diff = diff_quads( _corners, med_board);
-        //PLOG( "######### %.2f\n", diff);
-        //if (diff > 0.1) { _corners = med_board; }
         _corners = med_board;
 
         get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
-        //auto diagram = classify( _intersections, _small, _dx, _dy);
-
-        //draw_points( _stone_or_empty, _small, 1, cv::Scalar(255,0,0,255));
         
         // Zoom in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
+        // Threshold and dilate. This is our principal input for feature computation.
+        thresh_dilate( _gray_zoomed, _gz_threshed);
+        
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
@@ -1262,34 +1258,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
                   _small, cv::Scalar( 255,0,0,255));
         draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
                   _small, cv::Scalar( 255,0,0,255));
-//
-//
-//        // Repeat process on zoomed image
-//        _stone_or_empty.clear();
-//        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
-//        BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
-//        if (SZ(_stone_or_empty) < 3) break;
-//
-//        // Horizontals
-//        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
-//        // This also removes dups from the points in _finder.horizontal_clusters
-//        _finder.cluster();
-//        if (SZ(_finder.m_horizontal_clusters) < 3) break;
-//        //cv::Vec2f ratline;
-//        //float dy; int rat_idx;
-//        dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-//        _horizontal_lines.clear();
-//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
-//                         _horizontal_lines);
-//
-//        // Verticals
-//        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-//        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
-//        fix_vertical_lines( _vertical_lines, _gray_zoomed);
-//
-//        // Corners
-//        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
-//        if (SZ(_corners) != 4) break;
 
         // Classify
         Points2f intersections_zoomed;
@@ -1300,33 +1268,34 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         ///cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
         //cv::GaussianBlur( _gray, gray_blurred, cv::Size(5, 5), 2, 2 );
-        auto diagram = classify( intersections_zoomed, _gray_zoomed, _dx, _dy);
-//        auto diagram = classify( _intersections, _gray, _dx, _dy);
+        auto diagram = classify( intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, 10);
 
+        //_small = _gz_threshed.clone();
         ISLOOP (diagram) {
-//            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-//            cv::Rect rect( p.x - dx,
-//                          p.y - dy,
-//                          2*dx + 1,
-//                          2*dy + 1);
-//            cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
             if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-                cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-                draw_point( p, _small, 2, cv::Scalar(255,255,255,255));
+                draw_point( p, _small, 4, cv::Scalar(0,255,0,255));
             }
             else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
-                cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-                draw_point( p, _small, 2, cv::Scalar(255,0,0,255));
+                draw_point( p, _small, 4, cv::Scalar(255,0,0,255));
             }
-//            else if (diagram[i] == BlackWhiteEmpty::EEMPTY) {
-//                cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-//                draw_point( p, _small, 2, cv::Scalar(0,255,0,255));
-//            }
         }
-        
+
+//        cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
+//        ISLOOP (diagram) {
+//            cv::Point p(ROUND(intersections_zoomed[i].x), ROUND(intersections_zoomed[i].y));
+//            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+//                draw_point( p, drawing, 3, cv::Scalar(0,255,0,255));
+//            }
+//            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
+//                draw_point( p, drawing, 3, cv::Scalar(255,0,0,255));
+//            }
+//        }
+
     } while(0);
         
     UIImage *res = MatToUIImage( _small);
+    //UIImage *res = MatToUIImage( drawing);
     return res;
 } // findBoard()
 
