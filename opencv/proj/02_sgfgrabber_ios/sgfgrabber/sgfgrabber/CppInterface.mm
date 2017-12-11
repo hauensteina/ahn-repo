@@ -104,8 +104,11 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //---------------------------------------------------------
 void thresh_dilate( const cv::Mat &img, cv::Mat &dst)
 {
+//    cv::adaptiveThreshold( img, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+//                          11,  // neighborhood_size
+//                          8);  // threshold
     cv::adaptiveThreshold( img, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          11,  // neighborhood_size
+                          5,  // neighborhood_size
                           8);  // threshold
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
     cv::dilate( dst, dst, element );
@@ -1190,12 +1193,10 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 //--------------------------------------------
 - (UIImage *) findBoard:(UIImage *) img
 {
-    //static int counter = 0;
     _board_sz = 19;
     cv::Mat drawing;
 
     do {
-        //const int N_BOARDS = 8;
         static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _m, false);
         resize( _m, _small, 350);
@@ -1222,8 +1223,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         dedup_vertical_lines( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
         
-        //PLOG("$$$$$$$$$$$ %d\n", counter++ % 1000);
-        
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
         auto crosses = find_crosses( _gray_threshed, intersections);
@@ -1247,8 +1246,14 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         zoom_in( _small, _corners, _small_zoomed, M);
         // Threshold and dilate. This is our principal input for feature computation.
         thresh_dilate( _gray_zoomed, _gz_threshed);
-        
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
+
+        // Classify
+        Points2f intersections_zoomed;
+        get_intersections_from_corners( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
+        if (_dx < 2 || _dy < 2) break;
+        const int TIME_BUF_SZ = 10;
+        auto diagram = classify( intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   _small, cv::Scalar( 255,0,0,255));
@@ -1259,32 +1264,30 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
                   _small, cv::Scalar( 255,0,0,255));
 
-        // Classify
-        Points2f intersections_zoomed;
-        get_intersections_from_corners( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
-        if (_dx < 2 || _dy < 2) break;
-        auto diagram = classify( intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, 10);
-
-        //_small = _gz_threshed.clone();
-
-        // Show classification result
-        //        ISLOOP (diagram) {
-        //            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-        //            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-        //                draw_point( p, _small, 5, cv::Scalar(0,255,0,255));
-        //            }
-        //            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
-        //                draw_point( p, _small, 5, cv::Scalar(255,0,0,255));
-        //            }
-        //        }
         
+#define SHOW_CLASS
+#ifdef SHOW_CLASS
+        // Show classification result
+        ISLOOP (diagram) {
+            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
+            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+                draw_point( p, _small, 5, cv::Scalar(0,255,0,255));
+            }
+            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
+                draw_point( p, _small, 5, cv::Scalar(255,0,0,255));
+            }
+        }
+#else
         // Show one feature for debugging
         ISLOOP (diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-            int feat = BWE_crossness_new[i];
+            //int feat = BWE_sigma[i];
+            int feat = BWE_sum[i];
+            //int feat = BWE_crossness_new[i];
             //int feat = BWE_brightness[i];
             draw_point( p, _small, 5, cm_penny_lane( feat));
         }
+#endif
     } while(0);
         
     UIImage *res = MatToUIImage( _small);

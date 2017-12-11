@@ -315,10 +315,14 @@ T vec_max( std::vector<T> vec )
 template <typename T>
 void vec_scale( std::vector<T> &vec, double mmax_ )
 {
-    auto mmax = vec_max( vec);
-    double fac = RAT( mmax_, mmax);
+    std::vector<T> tmp(SZ(vec));
+    auto mmin = vec_min( vec);
+    std::transform( vec.begin(), vec.end(), tmp.begin(), [mmin](T elt){ return elt - mmin; });
+    
     std::vector<T> dst(SZ(vec));
-    std::transform( vec.begin(), vec.end(), dst.begin(), [fac](T elt){ return elt * fac; });
+    auto mmax = vec_max( tmp);
+    double fac = RAT( mmax_, mmax);
+    std::transform( tmp.begin(), tmp.end(), dst.begin(), [fac](T elt){ return elt * fac; });
     vec = dst;
 }
 

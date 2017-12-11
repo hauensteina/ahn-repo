@@ -17,6 +17,8 @@
 
 cv::Mat mat_dbg;  // debug image to viz intermediate reults
 std::vector<float> BWE_brightness;
+std::vector<float> BWE_sum;
+std::vector<float> BWE_sigma;
 std::vector<float> BWE_crossness_new;
 
 class BlackWhiteEmpty
@@ -32,25 +34,39 @@ public:
                                             float dx, // approximate dist between lines
                                             float dy)
     {
+        int r, yshift;
         std::vector<int> res(SZ(intersections), EEMPTY);
         
         // Compute features for each board intersection
-        get_brightness( gray, intersections, dx, dy, BWE_brightness);
         
-        int r=3;
+        r=3;
+        get_feature( gray, intersections, r, brightness_feature, BWE_brightness);
+        float bright_median = vec_median( BWE_brightness);
+        
+        r=3;
         get_feature( threshed, intersections, r, cross_feature_new, BWE_crossness_new);
 
+        r=11; yshift = 0;
+        get_feature( threshed, intersections, r, sum_feature, BWE_sum, yshift);
+        
+        r=3; yshift = 0;
+        get_feature( threshed, intersections, r, sigma_feature, BWE_sigma, yshift);
+        
         // Black stones
-        float black_median = vec_median( BWE_brightness);
         ISLOOP( BWE_brightness) {
-            float bthresh = black_median * 0.5; // larger means more Black stones
-            if (BWE_brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
+            //float bthresh = bright_median * 0.5; // larger means more Black stones
+            if (BWE_brightness[i] < 40 /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
         // White places
-        ISLOOP( BWE_crossness_new) {
-            if (BWE_crossness_new[i] < 50 &&  res[i] != BBLACK)  {
+        //float sigma_thresh    = (4/5.0) * 256;
+        float sum_thresh    = (2/5.0) * 256;
+        ISLOOP( BWE_brightness) {
+            if ( BWE_brightness[i] > 180
+                //&& BWE_crossness_new[i] < 100
+                && BWE_sum[i] > 80
+                && res[i] != BBLACK)  {
                 res[i] = WWHITE;
             }
         }
@@ -71,7 +87,7 @@ public:
             return true;
         }
         return false;
-    }
+    } // check_rect()
     
 //    // Get median of a neighborhood of size n around idx
 //    //-------------------------------------------------------------------------------------------------
@@ -114,28 +130,57 @@ public:
         vec_scale( res, 255);
     } // get_feature
     
-    // Average pixel value around center of each intersection is black indicator.
+    // Median of pixel values. Used to find B stones.
     //---------------------------------------------------------------------------------
-    inline static void get_brightness( const cv::Mat &img, // gray
-                                          const Points2f &intersections,
-                                          float dx_, float dy_,
-                                          std::vector<float> &res )
-    {        
-        int dx = ROUND( dx_/4.0);
-        int dy = ROUND( dy_/4.0);
-        
-        res.clear();
-        float brightness = 0;
-        ISLOOP (intersections) {
-            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            if (check_rect( rect, img.rows, img.cols)) {
-                const cv::Mat &hood( img(rect));
-                brightness = channel_median( hood);
+    inline static float brightness_feature( const cv::Mat &hood)
+    {
+        return channel_median(hood);
+    } // brightness_feature()
+
+    // Median of pixel values. Used to find B stones.
+    //---------------------------------------------------------------------------------
+    inline static float sigma_feature( const cv::Mat &hood)
+    {
+        cv::Scalar mmean, sstddev;
+        cv::meanStdDev( hood, mmean, sstddev);
+        return sstddev[0];
+    } // sigma_feature()
+
+    // Sum all pixels in hood.
+    //---------------------------------------------------------------------------------
+    inline static float sum_feature( const cv::Mat &hood)
+    {
+        return cv::sum( hood)[0];
+    } // sum_feature()
+    
+    // Look whether cross pixels are set in neighborhood of p_.
+    // hood should be binary, 0 or 1, from an adaptive threshold operation.
+    //---------------------------------------------------------------------------------
+    inline static float cross_feature_new( const cv::Mat &hood)
+    {
+        int mid_y = ROUND(hood.rows / 2.0);
+        int mid_x = ROUND(hood.cols / 2.0);
+        float ssum = 0;
+        int n = 0;
+        // Look for horizontal line in the middle
+        CLOOP (hood.cols) {
+            ssum += hood.at<uint8_t>(mid_y, c); n++;
+        }
+        // Look for vertical line in the middle
+        RLOOP (hood.rows) {
+            ssum += hood.at<uint8_t>(r, mid_x); n++;
+        }
+        // Total sum of darkness
+        float totsum = 0;
+        RLOOP (hood.rows) {
+            CLOOP (hood.cols) {
+                totsum += hood.at<uint8_t>(r, c);
             }
-            res.push_back( brightness);
-        } // for intersections
-    } // get_brightness()
+        }
+        ssum = RAT( ssum, totsum);
+        return fabs(ssum);
+    } // cross_feature_new()
+
 
 //    //-------------------------------------------------------------------
 //    inline static void get_crossness( const cv::Mat &img, // gray
@@ -391,33 +436,6 @@ public:
 //        return fabs(res);
 //    } // cross_feature()
 
-    // Look whether cross pixels are set in neighborhood of p_.
-    // hood should be binary, 0 or 1, from an adaptive threshold operation.
-    //---------------------------------------------------------------------------------
-    inline static float cross_feature_new( const cv::Mat &hood)
-    {
-        int mid_y = ROUND(hood.rows / 2.0);
-        int mid_x = ROUND(hood.cols / 2.0);
-        float ssum = 0;
-        int n = 0;
-        // Look for horizontal line in the middle
-        CLOOP (hood.cols) {
-            ssum += hood.at<uint8_t>(mid_y, c); n++;
-        }
-        // Look for vertical line in the middle
-        RLOOP (hood.rows) {
-            ssum += hood.at<uint8_t>(r, mid_x); n++;
-        }
-        // Total sum of darkness
-        float totsum = 0;
-        RLOOP (hood.rows) {
-            CLOOP (hood.cols) {
-                totsum += hood.at<uint8_t>(r, c);
-            }
-        }
-        ssum = RAT( ssum, totsum);
-        return fabs(ssum);
-    } // cross_feature_new()
 
 }; // class BlackWhiteEmpty
     
