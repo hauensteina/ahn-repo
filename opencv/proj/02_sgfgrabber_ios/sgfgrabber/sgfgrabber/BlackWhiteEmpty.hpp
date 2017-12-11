@@ -16,6 +16,8 @@
 #include "Ocv.hpp"
 
 cv::Mat mat_dbg;  // debug image to viz intermediate reults
+std::vector<float> BWE_brightness;
+std::vector<float> BWE_crossness_new;
 
 class BlackWhiteEmpty
 //=====================
@@ -33,24 +35,22 @@ public:
         std::vector<int> res(SZ(intersections), EEMPTY);
         
         // Compute features for each board intersection
-        std::vector<float> brightness;
-        get_brightness( gray, intersections, dx, dy, brightness);
+        get_brightness( gray, intersections, dx, dy, BWE_brightness);
         
-        std::vector<float> crossness_new;
         int r=3;
-        get_feature( threshed, intersections, r, cross_feature_new, crossness_new);
+        get_feature( threshed, intersections, r, cross_feature_new, BWE_crossness_new);
 
         // Black stones
-        float black_median = vec_median( brightness);
-        ISLOOP( brightness) {
+        float black_median = vec_median( BWE_brightness);
+        ISLOOP( BWE_brightness) {
             float bthresh = black_median * 0.5; // larger means more Black stones
-            if (brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
+            if (BWE_brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
         // White places
-        ISLOOP( crossness_new) {
-            if (crossness_new[i] < 50 &&  res[i] != BBLACK)  {
+        ISLOOP( BWE_crossness_new) {
+            if (BWE_crossness_new[i] < 50 &&  res[i] != BBLACK)  {
                 res[i] = WWHITE;
             }
         }
@@ -106,7 +106,7 @@ public:
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - r, p.y - r + yshift, 2*r + 1, 2*r + 1 );
             if (check_rect( rect, img.rows, img.cols)) {
-                cv::Mat hood = cv::Mat( img, rect);
+                const cv::Mat &hood( img(rect));
                 feat = Feat( hood);
             }
             res.push_back( feat);
@@ -130,7 +130,7 @@ public:
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
             if (check_rect( rect, img.rows, img.cols)) {
-                cv::Mat hood = cv::Mat( img, rect);
+                const cv::Mat &hood( img(rect));
                 brightness = channel_median( hood);
             }
             res.push_back( brightness);

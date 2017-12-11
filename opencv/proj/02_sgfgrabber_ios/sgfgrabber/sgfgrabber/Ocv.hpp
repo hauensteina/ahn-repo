@@ -150,6 +150,8 @@ void inv_thresh_avg( const cv::Mat &gray, cv::Mat &dst);
 
 // Drawing
 //==========
+// Convert 0-255 to Penny Lane colormap
+cv::Scalar cm_penny_lane( int c);
 // Draw a point on an image
 void draw_point( cv::Point p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
 void draw_point( cv::Point2f p, cv::Mat &img, int r, cv::Scalar col);

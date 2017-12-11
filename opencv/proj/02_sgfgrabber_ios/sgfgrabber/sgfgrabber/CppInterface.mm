@@ -1129,7 +1129,7 @@ void save_intersections( const cv::Mat img,
             0 <= rect.height &&
             rect.y + rect.height <= img.rows)
         {
-            cv::Mat hood = cv::Mat( img, rect);
+            const cv::Mat &hood( img(rect));
             NSString *fname = nsprintf(@"hood_%03d.jpg",i);
             fname = getFullPath( fname);
             cv::imwrite( [fname UTF8String], hood);
@@ -1263,35 +1263,28 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         Points2f intersections_zoomed;
         get_intersections_from_corners( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
-        //cv::Mat gray_normed;
-        //normalize_plane( _gray_zoomed, gray_normed);
-        ///cv::Mat gray_blurred;
-        //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        //cv::GaussianBlur( _gray, gray_blurred, cv::Size(5, 5), 2, 2 );
         auto diagram = classify( intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, 10);
 
         //_small = _gz_threshed.clone();
+
+        // Show classification result
+        //        ISLOOP (diagram) {
+        //            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
+        //            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+        //                draw_point( p, _small, 5, cv::Scalar(0,255,0,255));
+        //            }
+        //            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
+        //                draw_point( p, _small, 5, cv::Scalar(255,0,0,255));
+        //            }
+        //        }
+        
+        // Show one feature for debugging
         ISLOOP (diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-                draw_point( p, _small, 4, cv::Scalar(0,255,0,255));
-            }
-            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
-                draw_point( p, _small, 4, cv::Scalar(255,0,0,255));
-            }
+            int feat = BWE_crossness_new[i];
+            //int feat = BWE_brightness[i];
+            draw_point( p, _small, 5, cm_penny_lane( feat));
         }
-
-//        cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
-//        ISLOOP (diagram) {
-//            cv::Point p(ROUND(intersections_zoomed[i].x), ROUND(intersections_zoomed[i].y));
-//            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-//                draw_point( p, drawing, 3, cv::Scalar(0,255,0,255));
-//            }
-//            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
-//                draw_point( p, drawing, 3, cv::Scalar(255,0,0,255));
-//            }
-//        }
-
     } while(0);
         
     UIImage *res = MatToUIImage( _small);

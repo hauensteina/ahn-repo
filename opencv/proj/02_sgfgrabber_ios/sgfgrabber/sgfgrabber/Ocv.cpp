@@ -759,6 +759,21 @@ void normalize_plane_local( const cv::Mat &src, cv::Mat &dst, int radius)
 // Drawing
 //==========
 
+// Convert 0-255 to Penny Lane colormap
+//-------------------------------------
+cv::Scalar cm_penny_lane( int c)
+{
+    cv::Scalar res;
+    static cv::Scalar red(    255,47, 47, 255 );
+    static cv::Scalar orange( 255,162,47, 255 );
+    static cv::Scalar yellow( 255,225,47, 255 );
+    static cv::Scalar green(  106,255,47, 255 );
+    static cv::Scalar cyan(   47, 255,218,255 );
+    static cv::Scalar cols[] = { red, orange, yellow, green, cyan };
+    int idx = MIN( 4, int(fabs(c * 5 / 256.0)));
+    return cols[idx];
+}
+
 // Draw a point
 //--------------------------------------------------------------------
 void draw_point( cv::Point p, cv::Mat &img, int r, cv::Scalar col)
