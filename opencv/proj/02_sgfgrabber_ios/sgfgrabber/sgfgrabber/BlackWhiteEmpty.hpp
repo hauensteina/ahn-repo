@@ -122,6 +122,28 @@ public:
 //        return vec_median( vals);
 //    }
     
+    // Generic way to get any feature for all intersections
+    //-----------------------------------------------------------------------------------------
+    template <typename F>
+    inline static void get_feature( const cv::Mat &img, const Points2f &intersections, int r,
+                                   F Feat,
+                                   std::vector<float> &res,
+                                   float yshift = 0)
+    {
+        res.clear();
+        float feat = 0;
+        ISLOOP (intersections) {
+            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
+            cv::Rect rect( p.x - r, p.y - r + yshift, 2*r + 1, 2*r + 1 );
+            if (check_rect( rect, img.rows, img.cols)) {
+                cv::Mat hood = cv::Mat( img, rect);
+                feat = Feat( hood);
+            }
+            res.push_back( feat);
+        } // for intersections
+        vec_scale( res, 255);
+    } // get_feature
+    
     // Average pixel value around center of each intersection is black indicator.
     //---------------------------------------------------------------------------------
     inline static void get_brightness( const cv::Mat &img, // gray
@@ -133,14 +155,15 @@ public:
         int dy = ROUND( dy_/4.0);
         
         res.clear();
+        float brightness = 0;
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
             if (check_rect( rect, img.rows, img.cols)) {
                 cv::Mat hood = cv::Mat( img, rect);
-                float brightness = channel_median( hood);
-                res.push_back( brightness);
+                brightness = channel_median( hood);
             }
+            res.push_back( brightness);
         } // for intersections
     } // get_brightness()
 
@@ -246,6 +269,7 @@ public:
         cv::matchTemplate( mtt, mtmpl, dst, CV_TM_SQDIFF);
         cv::normalize( dst, dst, 0 , 255, CV_MINMAX, CV_8UC1);
         res.clear();
+        float wness = 0;
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y-2));
             cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
@@ -254,8 +278,8 @@ public:
                 float wness = cv::sum(hood)[0] / area; // 0 .. 255
                 wness /= 255.0; // 0 .. 1; best match is 0
                 wness = -log(wness); // 0 .. inf
-                res.push_back( wness);
             }
+            res.push_back( wness);
         } // for intersections
         mat_dbg = dst.clone();
     } // get_whiteness()
@@ -352,14 +376,15 @@ public:
         cv::matchTemplate( mtt, mtmpl, dst, CV_TM_SQDIFF);
         cv::normalize( dst, dst, 0 , 255, CV_MINMAX, CV_8UC1);
         res.clear();
+        float cness = 255;
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - dx, p.y - dy-2, 2*dx+1, 2*dy+1 );
             if (check_rect( rect, img.rows, img.cols)) {
                 cv::Mat hood = dst(rect);
-                float cness = cv::sum(hood)[0] / area;
-                res.push_back( 255 - cness);
+                cness = cv::sum(hood)[0] / area;
             }
+            res.push_back( 255 - cness);
         } // for intersections
         vec_scale( res, 255);
         //PLOG( "min cross: %.0f\n", vec_min( res));
@@ -368,95 +393,83 @@ public:
     
 
     
-    // Look whether the cross pixels are set
-    //----------------------------------------------------------------------------------------
-    inline static float cross_feature( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
-    {
-        float res = 0;
-        int dx = ROUND(dx_/2.0);
-        int dy = ROUND(dy_/2.0);
-        cv::Mat threshed;
-        cv::Point p(ROUND(p_.x), ROUND(p_.y));
-        cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-        if (check_rect( rect, img.rows, img.cols)) {
-            cv::Mat hood = img(rect);
-            inv_thresh_avg( hood, threshed);
-            int mid_y = ROUND(threshed.rows / 2.0);
-            int mid_x = ROUND(threshed.cols / 2.0);
-            float ssum = 0;
-            int n = 0;
-            const int marg = 6;
-            CLOOP (threshed.cols) {
-                if (c < marg) continue;
-                if (c >= threshed.cols - marg ) continue;
-                //ssum += threshed.at<uint8_t>(mid_y, c); n++;
-                ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
-                ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
-            }
-            RLOOP (threshed.rows) {
-                if (r < marg) continue;
-                if (r >= threshed.cols - marg ) continue;
-                ssum += threshed.at<uint8_t>(r, mid_x); n++;
-                //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
-                //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
-            }
-            ssum /= n;
-            res = ssum;
-        }
-        return fabs(res);
-    } // cross_feature
+//    // Look whether the cross pixels are set
+//    //------------------------------------------------------------------------------------------
+//    inline static float cross_feature( const cv::Mat &img, Point2f p_, float r, float yshift=0)
+//    {
+//        float res = 0;
+//        int dx = ROUND(r/2.0);
+//        int dy = ROUND(r/2.0);
+//        cv::Mat threshed;
+//        cv::Point p(ROUND(p_.x), ROUND(p_.y));
+//        cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
+//        if (check_rect( rect, img.rows, img.cols)) {
+//            cv::Mat hood = img(rect);
+//            inv_thresh_avg( hood, threshed);
+//            int mid_y = ROUND(threshed.rows / 2.0);
+//            int mid_x = ROUND(threshed.cols / 2.0);
+//            float ssum = 0;
+//            int n = 0;
+//            const int marg = 6;
+//            CLOOP (threshed.cols) {
+//                if (c < marg) continue;
+//                if (c >= threshed.cols - marg ) continue;
+//                //ssum += threshed.at<uint8_t>(mid_y, c); n++;
+//                ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
+//                ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
+//            }
+//            RLOOP (threshed.rows) {
+//                if (r < marg) continue;
+//                if (r >= threshed.cols - marg ) continue;
+//                ssum += threshed.at<uint8_t>(r, mid_x); n++;
+//                //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
+//                //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
+//            }
+//            ssum /= n;
+//            res = ssum;
+//        }
+//        return fabs(res);
+//    } // cross_feature()
 
     // Look whether cross pixels are set in neighborhood of p_.
     // img should be binary, 0 or 1, from an adaptive threshold operation.
-    // The result is close to 0 for empty intersections, else close to 1,
-    // because that looks nicer when visualizing.
-    //---------------------------------------------------------------------------------------------
-    inline static float cross_feature_new( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
+    //---------------------------------------------------------------------------------
+    inline static float cross_feature_new( const cv::Mat &hood)
     {
-        float res = 1.0;
-        int dx = ROUND(dx_/2.0);
-        int dy = ROUND(dy_/2.0);
-        cv::Mat threshed;
-        cv::Point p(ROUND(p_.x), ROUND(p_.y));
-        int w = 2*dx+1;
-        int h = 2*dy+1;
-        cv::Rect rect( p.x - dx, p.y - dy, w, h );
-        if (check_rect( rect, img.rows, img.cols)) {
-            cv::Mat hood = img(rect);
-            int mid_y = ROUND(hood.rows / 2.0);
-            int mid_x = ROUND(hood.cols / 2.0);
-            float ssum = 0;
-            int n = 0;
-            const int marg = 5;
-            // Look for horizontal line in the middle
-            CLOOP (hood.cols) {
-                if (c < marg) continue;
-                if (c >= hood.cols - marg ) continue;
-                ssum += hood.at<uint8_t>(mid_y, c); n++;
-            }
-            // Look for vertical line in the middle
-            RLOOP (hood.rows) {
-                if (r < marg) continue;
-                if (r >= hood.cols - marg ) continue;
-                ssum += hood.at<uint8_t>(r, mid_x); n++;
-            }
-            // Total sum of darkness
-            float totsum = 0;
-            RLOOP (hood.rows) {
-                CLOOP (hood.cols) {
-                      totsum += hood.at<uint8_t>(r, c);
-                }
-                    //PLOG( ">>>>>>> dx %d dy %d\n", dx, dy);
-            }
-            //PLOG( "========\n");
-            //PLOG( "%3.2f %3.2f %3.2f %3.2f\n", ssum, totsum, RAT( ssum, totsum), (totsum-ssum)/area);
-            ssum = RAT( ssum, totsum);
-            ssum *= 30;
-            res = 1-ssum;
-            if (res < 0) res = 0;
+        float res = 0;
+        int mid_y = ROUND(hood.rows / 2.0);
+        int mid_x = ROUND(hood.cols / 2.0);
+        float ssum = 0;
+        int n = 0;
+        //const int marg = 5;
+        // Look for horizontal line in the middle
+        CLOOP (hood.cols) {
+            //if (c < marg) continue;
+            //if (c >= hood.cols - marg ) continue;
+            ssum += hood.at<uint8_t>(mid_y, c); n++;
         }
-        return fabs(res);
-    } // cross_feature
+        // Look for vertical line in the middle
+        RLOOP (hood.rows) {
+            //if (r < marg) continue;
+            //if (r >= hood.cols - marg ) continue;
+            ssum += hood.at<uint8_t>(r, mid_x); n++;
+        }
+        // Total sum of darkness
+        float totsum = 0;
+        RLOOP (hood.rows) {
+            CLOOP (hood.cols) {
+                totsum += hood.at<uint8_t>(r, c);
+            }
+            //PLOG( ">>>>>>> dx %d dy %d\n", dx, dy);
+        }
+        //PLOG( "========\n");
+        //PLOG( "%3.2f %3.2f %3.2f %3.2f\n", ssum, totsum, RAT( ssum, totsum), (totsum-ssum)/area);
+        ssum = RAT( ssum, totsum);
+        //ssum *= 30;
+        //res = 1-ssum;
+        //if (res < 0) res = 0;
+        return fabs(ssum);
+    } // cross_feature_new()
 
 }; // class BlackWhiteEmpty
     

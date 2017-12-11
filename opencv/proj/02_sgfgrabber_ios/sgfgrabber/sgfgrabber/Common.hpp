@@ -316,7 +316,7 @@ template <typename T>
 void vec_scale( std::vector<T> &vec, double mmax_ )
 {
     auto mmax = vec_max( vec);
-    double fac = mmax_ / mmax;
+    double fac = RAT( mmax_, mmax);
     std::vector<T> dst(SZ(vec));
     std::transform( vec.begin(), vec.end(), dst.begin(), [fac](T elt){ return elt * fac; });
     vec = dst;

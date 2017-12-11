@@ -394,6 +394,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
         }
+        if (rho == 0) break;
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) > width) break;
         synth_lines.push_back( line);
@@ -413,6 +414,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
         }
+        if (rho == 0) break;
         cv::Vec2f line( rho,theta);
         if (x_from_y( middle_y, line) < 0) break;
         synth_lines.push_back( line);
@@ -465,6 +467,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
         }
+        if (rho == 0) break;
         cv::Vec2f line( rho,theta);
         if (y_from_x( middle_x, line) > height) break;
         synth_lines.push_back( line);
@@ -484,6 +487,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
         }
+        if (rho == 0) break;
         cv::Vec2f line( rho,theta);
         if (y_from_x( middle_x, line) < 0) break;
         synth_lines.push_back( line);
@@ -731,9 +735,8 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 std::vector<PFeat> find_crosses( const cv::Mat &img,
                                 const Points2f &intersections)
 {
-    int dx=10, dy=10;
     cv::Mat mtmp;
-    cv::adaptiveThreshold( img, mtmp, 1, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    cv::adaptiveThreshold( img, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           11,  // neighborhood_size
                           8); // 8 or ten, need to try both. 8 better for 19x19
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
@@ -741,17 +744,23 @@ std::vector<PFeat> find_crosses( const cv::Mat &img,
     std::vector<float> features;
     std::vector<PFeat> res;
     // For each intersection of two lines
-    for (auto pf:intersections) {
-        float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
-        res.push_back( { pf, 1 - crossness } );
-        features.push_back( crossness );
+    int r=10;
+    BlackWhiteEmpty::get_feature( mtmp, intersections, r, BlackWhiteEmpty::cross_feature_new,
+                                 features);
+    ISLOOP (features) {
+        res.push_back( { intersections[i], features[i] } );
     }
+//    for (auto pf:intersections) {
+//        float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
+//        res.push_back( { pf, 1 - crossness } );
+//        features.push_back( crossness );
+//    }
 //    ISLOOP (intersections) {
 //        if (features[i] < 0.01) {
 //            res.push_back( intersections[i]);
 //        }
 //    }
-    viz_feature( img, intersections, features, mat_dbg, 255);
+//    viz_feature( img, intersections, features, mat_dbg, 255);
     return res;
 } // find_crosses()
 
@@ -927,23 +936,42 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 
     switch (state) {
         case 0:
+        {
             BlackWhiteEmpty::get_whiteness( _gray_zoomed,
                                            _intersections,
                                            _dx, _dy,
                                            feats);
-            viz_feature( _gray, _intersections, feats, drawing, 255);
+            viz_feature( _gray_zoomed, _intersections, feats, drawing, 255);
             break;
+        }
         case 1:
+        {
             BlackWhiteEmpty::get_crossness( _gray_zoomed,
                                            _intersections,
                                            _dx, _dy,
                                            feats);
-            viz_feature( _gray, _intersections, feats, drawing, 2);
+            viz_feature( _gray_zoomed, _intersections, feats, drawing, 1);
             break;
+        }
+        case 2:
+        {
+            cv::Mat mtmp;
+            cv::adaptiveThreshold( _gray_zoomed, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                                  11,  // neighborhood_size
+                                  8); // 8 or ten, need to try both. 8 better for 19x19
+            cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+            cv::dilate( mtmp, mtmp, element );
+            int r = 3;
+            BlackWhiteEmpty::get_feature( mtmp, _intersections, r,
+                                         BlackWhiteEmpty::cross_feature_new,
+                                         feats);
+            viz_feature( _gray_zoomed, _intersections, feats, drawing, 2);
+            break;
+        }
         default:
             state = 0;
             return NULL;
-    }
+    } // switch
     state++;
     
     // Show results
