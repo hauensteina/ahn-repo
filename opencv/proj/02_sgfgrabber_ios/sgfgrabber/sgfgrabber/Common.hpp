@@ -22,6 +22,7 @@
 #define ILOOP(n) for (int i=0; i < (n); i++ )
 #define JLOOP(n) for (int j=0; j < (n); j++ )
 #define KLOOP(n) for (int k=0; k < (n); k++ )
+#define NLOOP(k) for (int n=0; n < (k); n++ )
 #define RLOOP(n) for (int r=0; r < (n); r++ )
 #define CLOOP(n) for (int c=0; c < (n); c++ )
 

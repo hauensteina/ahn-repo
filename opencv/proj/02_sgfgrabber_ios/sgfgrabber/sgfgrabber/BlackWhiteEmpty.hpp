@@ -20,7 +20,8 @@ std::vector<float> BWE_brightness;
 std::vector<float> BWE_sum;
 std::vector<float> BWE_sigma;
 std::vector<float> BWE_crossness_new;
-std::vector<float> BWE_white_templ_feat;
+std::vector<float> BWE_white_templ_score;
+std::vector<float> BWE_empty_templ_score;
 
 class BlackWhiteEmpty
 //=====================
@@ -55,50 +56,86 @@ public:
         
         // Black stones
         ISLOOP( BWE_brightness) {
-            float bthresh = 25; // larger means more Black stones
+            float bthresh = 35; // larger means more Black stones
             if (BWE_brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
         // White places, first guess
         //float sigma_thresh    = (4/5.0) * 256;
-        //float sum_thresh    = (2/5.0) * 256;
+        float sum_thresh    = 80;  // smaller means more White stones
         float bright_thresh = 200; // smaller means more White stones
         ISLOOP( BWE_brightness) {
             if ( BWE_brightness[i] > bright_thresh
                 //&& BWE_crossness_new[i] < 100
-                //&& BWE_sum[i] > 80
+                && BWE_sum[i] > 80
                 && res[i] != BBLACK)  {
                 res[i] = WWHITE;
             }
         }
         
-        // White places, second guess.
-        Points2f white_intersections;
-        ISLOOP( res) {
-            if (res[i] != WWHITE) continue;
-            white_intersections.push_back( intersections[i]);
-        }
-        // Make a white template
-        cv::Mat white_template;
-        r = 10;
-        avg_hoods( threshed, white_intersections, r, white_template);
-        // Use sim with templ as feature
-        get_feature( threshed, intersections, r,
-                    [white_template](const cv::Mat &hood) {
-                        cv::Mat tmp;
-                        hood.convertTo( tmp, CV_32FC1);
-                        float res = MAX( 1e-5, mat_dist( tmp, white_template));
-                        return -res;
-                    },
-                    BWE_white_templ_feat);
-        // Use templ feature to remove false positives
-        ISLOOP( res) {
-            if (res[i] != WWHITE) continue;
-            if (BWE_white_templ_feat[i] < 200) {
-                //res[i] = EEMPTY;
+        // Bootstrap.
+        // Train templates on preliminary classification result, then reclassify,
+        // repeat. This should compensate for highlights and changes in the environment.
+        const int NITER = 2;
+        const int MAGIC = 400;
+        NLOOP (NITER) {
+            // Make a template for white places
+            Points2f white_intersections;
+            ISLOOP( res) {
+                if (res[i] != WWHITE) continue;
+                white_intersections.push_back( intersections[i]);
             }
-        }
+            cv::Mat white_template;
+            r = 10;
+            avg_hoods( threshed, white_intersections, r, white_template);
+            
+            // Make a template for empty places
+            Points2f empty_intersections;
+            ISLOOP( res) {
+                if (res[i] != EEMPTY) continue;
+                empty_intersections.push_back( intersections[i]);
+            }
+            cv::Mat empty_template;
+            r = 10;
+            avg_hoods( threshed, empty_intersections, r, empty_template);
+            
+            // Get the template scores
+            get_feature( threshed, intersections, r,
+                        [white_template](const cv::Mat &hood) {
+                            cv::Mat tmp;
+                            hood.convertTo( tmp, CV_32FC1);
+                            float res = MAX( 1e-5, mat_dist( tmp, white_template));
+                            return -res;
+                        },
+                        BWE_white_templ_score, 0, false);
+            get_feature( threshed, intersections, r,
+                        [empty_template](const cv::Mat &hood) {
+                            cv::Mat tmp;
+                            hood.convertTo( tmp, CV_32FC1);
+                            float res = MAX( 1e-5, mat_dist( tmp, empty_template));
+                            return -res;
+                        },
+                        BWE_empty_templ_score, 0, false);
+            
+            // Re-classify based on templates
+            ISLOOP( res) {
+                if (res[i] == BBLACK) continue;
+                PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
+                if (BWE_white_templ_score[i] > BWE_empty_templ_score[i]) {
+                    if (res[i] != WWHITE) {
+                        PLOG( "Switch E->W\n");
+                    }
+                    res[i] = WWHITE;
+                }
+                else if (BWE_white_templ_score[i] < BWE_empty_templ_score[i] + MAGIC ) {
+                    if (res[i] != EEMPTY) {
+                        PLOG( "Switch W->E\n");
+                    }
+                    res[i] = EEMPTY;
+                }
+            } // ISLOOP
+        } // NLOOP
         return res;
     } // classify()
 
@@ -142,7 +179,7 @@ public:
     inline static void get_feature( const cv::Mat &img, const Points2f &intersections, int r,
                                    F Feat,
                                    std::vector<float> &res,
-                                   float yshift = 0)
+                                   float yshift = 0, bool scale_flag=true)
     {
         res.clear();
         float feat = 0;
@@ -155,7 +192,9 @@ public:
             }
             res.push_back( feat);
         } // for intersections
-        vec_scale( res, 255);
+        if (scale_flag) {
+            vec_scale( res, 255);
+        }
     } // get_feature
     
     // Median of pixel values. Used to find B stones.
