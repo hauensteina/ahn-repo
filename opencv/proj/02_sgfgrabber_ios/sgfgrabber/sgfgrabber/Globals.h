@@ -15,6 +15,10 @@ extern UIFont *g_fntBtn;
 extern AppDelegate *g_app;
 
 #ifdef __cplusplus
+extern std::string g_docroot;
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
     

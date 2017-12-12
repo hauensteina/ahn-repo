@@ -142,6 +142,15 @@ void vec_append( std::vector<T> a, std::vector<T> b)
     a.insert(a.end(), b.begin(), b.end());
 }
 
+// Get a slice out of a vector
+//------------------------------------------------------------------
+template <typename T>
+std::vector<T> vec_slice( std::vector<T> vec, int start, int len)
+{
+    std::vector<T> res( vec.begin() + start, vec.begin() + start + len);
+    return res;
+}
+
 // Append elt to vector, remove elts from front until length <= N
 //------------------------------------------------------------------
 template <typename T>
@@ -271,6 +280,17 @@ T vec_var_med( std::vector<T> samples)
     return sqmean;
 }
 
+// Sum a vector
+//------------------------------
+template <typename T>
+T vec_sum( std::vector<T> vec)
+{
+    if (!vec.size()) return T(0);
+    double ssum = 0;
+    for (auto& x : vec) ssum += x;
+    return T(ssum);
+}
+
 // Avg value of a vector
 //------------------------------
 template <typename T>
@@ -316,6 +336,7 @@ T vec_max( std::vector<T> vec )
 template <typename T>
 void vec_scale( std::vector<T> &vec, double mmax_ )
 {
+    if (!SZ(vec)) return;
     std::vector<T> tmp(SZ(vec));
     auto mmin = vec_min( vec);
     std::transform( vec.begin(), vec.end(), tmp.begin(), [mmin](T elt){ return elt - mmin; });

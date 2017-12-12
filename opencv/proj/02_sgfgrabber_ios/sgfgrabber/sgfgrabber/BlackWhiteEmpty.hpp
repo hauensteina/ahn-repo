@@ -16,26 +16,30 @@
 #include "Ocv.hpp"
 
 cv::Mat mat_dbg;  // debug image to viz intermediate results
-std::vector<float> BWE_brightness;
+static std::vector<float> BWE_brightness;
 std::vector<float> BWE_sum;
-std::vector<float> BWE_sigma;
-std::vector<float> BWE_crossness_new;
-std::vector<float> BWE_white_templ_score;
-std::vector<float> BWE_empty_templ_score;
+static std::vector<float> BWE_sigma;
+static std::vector<float> BWE_crossness_new;
+static std::vector<float> BWE_white_templ_score;
+static std::vector<float> BWE_black_templ_score;
+static std::vector<float> BWE_empty_templ_score;
+const static std::string WHITE_TEMPL_FNAME = "white_templ.yml";
+const static std::string BLACK_TEMPL_FNAME = "black_templ.yml";
+const static std::string EMPTY_TEMPL_FNAME = "empty_templ.yml";
 
 class BlackWhiteEmpty
 //=====================
 {
 public:
     enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
-    
+
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &gray,
                                             const cv::Mat &threshed,
                                             const Points2f &intersections,
-                                            float dx, // approximate dist between lines
-                                            float dy)
+                                            float &match_quality)
     {
+        //static cv::Mat default_empty_template = readMat( )
         int r, yshift;
         std::vector<int> res(SZ(intersections), EEMPTY);
         
@@ -81,6 +85,16 @@ public:
             r = 10;
             avg_hoods( threshed, white_intersections, r, white_template);
             
+            // Make a template for black places
+            Points2f black_intersections;
+            ISLOOP( res) {
+                if (res[i] != BBLACK) continue;
+                black_intersections.push_back( intersections[i]);
+            }
+            cv::Mat black_template;
+            r = 10;
+            avg_hoods( threshed, black_intersections, r, black_template);
+            
             // Make a template for empty places
             Points2f empty_intersections;
             ISLOOP( res) {
@@ -108,25 +122,50 @@ public:
                             return -res;
                         },
                         BWE_empty_templ_score, 0, false);
+            get_feature( threshed, intersections, r,
+                        [black_template](const cv::Mat &hood) {
+                            cv::Mat tmp;
+                            hood.convertTo( tmp, CV_32FC1);
+                            float res = MAX( 1e-5, mat_dist( tmp, black_template));
+                            return -res;
+                        },
+                        BWE_black_templ_score, 0, false);
             
             // Re-classify based on templates
             ISLOOP( res) {
                 if (res[i] == BBLACK) continue;
-                PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
+                //PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
                 if (BWE_white_templ_score[i] > BWE_empty_templ_score[i]) {
                     if (res[i] != WWHITE) {
-                        PLOG( "Switch E->W\n");
+                        //PLOG( "Switch E->W\n");
                     }
                     res[i] = WWHITE;
                 }
                 else if (BWE_white_templ_score[i] < BWE_empty_templ_score[i] + MAGIC ) {
                     if (res[i] != EEMPTY) {
-                        PLOG( "Switch W->E\n");
+                        //PLOG( "Switch W->E\n");
                     }
                     res[i] = EEMPTY;
                 }
             } // ISLOOP
+            // Save templates to file
+            std::string path;
+            path = g_docroot + "/" + WHITE_TEMPL_FNAME;
+            cv::FileStorage efilew( path, cv::FileStorage::WRITE);
+            efilew << "white_template" << white_template;
+
+            path = g_docroot + "/" + BLACK_TEMPL_FNAME;
+            cv::FileStorage efileb( path, cv::FileStorage::WRITE);
+            efileb << "black_template" << black_template;
+
+            path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
+            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
+            efilee << "empty_template" << empty_template;
+
+            
         } // NLOOP
+        match_quality = vec_sum( BWE_white_templ_score);
+        match_quality += vec_sum( BWE_empty_templ_score);
         return res;
     } // classify()
 

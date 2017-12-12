@@ -34,7 +34,7 @@ NSString *nscat (id a, id b)
 // File Stuff
 //=============
 
-// Prepend path to our documents folder
+// Prepend path to documents folder
 //---------------------------------------------
 NSString* getFullPath( NSString *fname)
 {
@@ -44,4 +44,12 @@ NSString* getFullPath( NSString *fname)
     return filePath;
 }
 
+// Find a file in the main bundle
+//----------------------------------
+NSString* findInBundle( NSString *basename, NSString *ext)
+{
+    NSBundle* myBundle = [NSBundle mainBundle];
+    NSString* path = [myBundle pathForResource:basename ofType:ext];
+    return path;
+}
 

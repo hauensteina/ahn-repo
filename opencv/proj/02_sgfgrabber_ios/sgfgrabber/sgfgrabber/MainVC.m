@@ -78,7 +78,8 @@
     
     // Toggle debug mode
     UISwitch *swi = [UISwitch new];
-    [swi setOn:NO];
+    [swi setOn:YES]; _debug_mode = true;
+    //[swi setOn:NO];
     [swi addTarget:self action:@selector(swiDbg:) forControlEvents:UIControlEventValueChanged];
     [v addSubview:swi];
     self.swiDbg = swi;
@@ -213,11 +214,10 @@
 }
 
 // Debug on/off
-//-----------------------------------
+//----------------------------
 - (void) swiDbg:(id) sender
 {
-    BOOL tt = [self.swiDbg isOn];
-    self.debug_mode = tt;
+    self.debug_mode = [self.swiDbg isOn];
 }
 
 // Debugging helper, shows individual processing stages

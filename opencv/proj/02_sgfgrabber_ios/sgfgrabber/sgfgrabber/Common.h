@@ -18,8 +18,10 @@ extern "C" {
     
     NSString *nsprintf (NSString *format, ...);
     NSString *nscat (id a, id b);
+    // Prepend path to documents folder
     NSString* getFullPath( NSString *fname);
-
+    // Find a file in the main bundle
+    NSString* findInBundle( NSString *basename, NSString *ext);
 
 #ifdef __cplusplus
 }
