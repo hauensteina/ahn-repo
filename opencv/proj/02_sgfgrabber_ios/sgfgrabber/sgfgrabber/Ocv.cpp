@@ -115,8 +115,8 @@ std::string mat_typestr( const cv::Mat &m)
     return r;
 }
 
-// Calculate the median value of a single channel
-//---------------------------------------------------
+// Mmedian value of a single channel
+//---------------------------------------
 int channel_median( cv::Mat channel )
 {
     std::vector<int> v(channel.rows*channel.cols);
@@ -129,8 +129,8 @@ int channel_median( cv::Mat channel )
     return vec_median( v);
 }
 
-// Calculate the q1 value of a single channel
-//---------------------------------------------------
+// q1 value of a single channel
+//----------------------------------
 int channel_q1( cv::Mat channel )
 {
     std::vector<int> v(channel.rows*channel.cols);
@@ -141,6 +141,18 @@ int channel_q1( cv::Mat channel )
         }
     }
     return vec_q1( v);
+}
+
+// Elementwise L2 distance between two single channel mats.
+// Used for matching.
+//------------------------------------------------------------
+float mat_dist( const cv::Mat &m1, const cv::Mat &m2)
+{
+    cv::Mat diff = m1 - m2;
+    diff = diff.mul( diff);
+    double ssum = cv::sum(diff)[0];
+    float res = sqrt( ssum);
+    return res;
 }
 
 // Contour
@@ -182,7 +194,7 @@ void draw_contours( const Contours cont, cv::Mat &dst)
 //=========
 
 // Stretch a line by factor, on both ends
-//--------------------------------------------------
+//------------------------------------------------
 Points stretch_line(Points line, float factor )
 {
     cv::Point p0 = line[0];

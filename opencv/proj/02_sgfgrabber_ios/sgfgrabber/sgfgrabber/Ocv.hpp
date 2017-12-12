@@ -54,6 +54,11 @@ void rem_dups_x( Points &pts, float tol);
 std::string mat_typestr( const cv::Mat &m);
 // Calculate the median value of a single channel
 int channel_median( cv::Mat channel );
+// q1 value of a single channel
+int channel_q1( cv::Mat channel );
+// Elementwise L2 distance between two single channel mats.
+float mat_dist( const cv::Mat &m1, const cv::Mat &m2);
+
 
 // Contour
 //=========

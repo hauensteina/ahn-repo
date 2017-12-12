@@ -1282,9 +1282,10 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         ISLOOP (diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
             //int feat = BWE_sigma[i];
-            int feat = BWE_sum[i];
+            //int feat = BWE_sum[i];
             //int feat = BWE_crossness_new[i];
             //int feat = BWE_brightness[i];
+            int feat = BWE_white_templ_feat[i];
             draw_point( p, _small, 5, cm_penny_lane( feat));
         }
 #endif

@@ -15,11 +15,12 @@
 #include "Common.hpp"
 #include "Ocv.hpp"
 
-cv::Mat mat_dbg;  // debug image to viz intermediate reults
+cv::Mat mat_dbg;  // debug image to viz intermediate results
 std::vector<float> BWE_brightness;
 std::vector<float> BWE_sum;
 std::vector<float> BWE_sigma;
 std::vector<float> BWE_crossness_new;
+std::vector<float> BWE_white_templ_feat;
 
 class BlackWhiteEmpty
 //=====================
@@ -41,7 +42,7 @@ public:
         
         r=3;
         get_feature( gray, intersections, r, brightness_feature, BWE_brightness);
-        float bright_median = vec_median( BWE_brightness);
+        float bright_median = vec_median( BWE_brightness); // Bad idea because this is the board color
         
         r=3;
         get_feature( threshed, intersections, r, cross_feature_new, BWE_crossness_new);
@@ -54,20 +55,48 @@ public:
         
         // Black stones
         ISLOOP( BWE_brightness) {
-            //float bthresh = bright_median * 0.5; // larger means more Black stones
-            if (BWE_brightness[i] < 40 /* && black_features[i] - tt_feat[i] < 8 */ ) {
+            float bthresh = 25; // larger means more Black stones
+            if (BWE_brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
                 res[i] = BBLACK;
             }
         }
-        // White places
+        // White places, first guess
         //float sigma_thresh    = (4/5.0) * 256;
-        float sum_thresh    = (2/5.0) * 256;
+        //float sum_thresh    = (2/5.0) * 256;
+        float bright_thresh = 200; // smaller means more White stones
         ISLOOP( BWE_brightness) {
-            if ( BWE_brightness[i] > 180
+            if ( BWE_brightness[i] > bright_thresh
                 //&& BWE_crossness_new[i] < 100
-                && BWE_sum[i] > 80
+                //&& BWE_sum[i] > 80
                 && res[i] != BBLACK)  {
                 res[i] = WWHITE;
+            }
+        }
+        
+        // White places, second guess.
+        Points2f white_intersections;
+        ISLOOP( res) {
+            if (res[i] != WWHITE) continue;
+            white_intersections.push_back( intersections[i]);
+        }
+        // Make a white template
+        cv::Mat white_template;
+        r = 10;
+        avg_hoods( threshed, white_intersections, r, white_template);
+        // Use sim with templ as feature
+        get_feature( threshed, intersections, r,
+                    [white_template](const cv::Mat &hood) {
+                        cv::Mat tmp;
+                        hood.convertTo( tmp, CV_32FC1);
+                        float res = MAX( 1e-5, mat_dist( tmp, white_template));
+                        return -res;
+                    },
+                    BWE_white_templ_feat);
+        // Use templ feature to remove false positives
+        ISLOOP( res) {
+            if (res[i] != WWHITE) continue;
+            if (BWE_white_templ_feat[i] < 200) {
+                //res[i] = EEMPTY;
             }
         }
         return res;
@@ -89,24 +118,23 @@ public:
         return false;
     } // check_rect()
     
-//    // Get median of a neighborhood of size n around idx
-//    //-------------------------------------------------------------------------------------------------
-//    inline static float get_neighbor_med( int idx, int n, const std::vector<float> &feat )
-//    {
-//        int board_sz = sqrt(SZ(feat));
-//        std::vector<float> vals;
-//        int row = idx / board_sz;
-//        int col = idx % board_sz;
-//        for (int r = row-n; r <= row+n; r++) {
-//            if (r < 0 || r >= board_sz) continue;
-//            for (int c = col-n; c <= col+n; c++) {
-//                if (c < 0 || c >= board_sz) continue;
-//                int pos = r * board_sz + col;
-//                vals.push_back( feat[pos]);
-//            }
-//        }
-//        return vec_median( vals);
-//    }
+    // Take neighborhoods around points and average them, reulting in a
+    // template for matching.
+    //--------------------------------------------------------------------------------------------
+    inline static void avg_hoods( const cv::Mat &img, const Points2f &pts, int r, cv::Mat &dst)
+    {
+        dst = cv::Mat( 2*r + 1, 2*r + 1, CV_32FC1);
+        int n = 0;
+        ISLOOP (pts) {
+            cv::Point p( ROUND(pts[i].x), ROUND(pts[i].y));
+            cv::Rect rect( p.x - r, p.y - r, 2*r + 1, 2*r + 1 );
+            if (!check_rect( rect, img.rows, img.cols)) continue;
+            cv::Mat tmp;
+            img( rect).convertTo( tmp, CV_32FC1);
+            dst = dst * (n/(float)(n+1)) + tmp * (1/(float)(n+1));
+            n++;
+        }
+    } // avg_hoods
     
     // Generic way to get any feature for all intersections
     //-----------------------------------------------------------------------------------------
@@ -181,53 +209,7 @@ public:
         return fabs(ssum);
     } // cross_feature_new()
 
-
-//    //-------------------------------------------------------------------
-//    inline static void get_crossness( const cv::Mat &img, // gray
-//                                     const Points2f &intersections,
-//                                     float dx_, float dy_,
-//                                     std::vector<float> &res )
-//    {
-//        //mat_dbg = img.clone();
-//        res.clear();
-//        ISLOOP (intersections) {
-//            //float feat = cross_feature( img, intersections[i], dx_, dy_);
-//            float feat = cross_feature_new( img, intersections[i], dx_, dy_);
-//            res.push_back( feat);
-//        } // for intersections
-//    } // get_crossness()
     
-    // Look whether the cross pixels are set
-    //----------------------------------------------------------------------------------------
-    inline static float center_sum( const cv::Mat &img, Point2f p_, float dx_, float dy_ )
-    {
-        float res = 0;
-        int dx_inner = ROUND(dx_/4.0);
-        int dy_inner = ROUND(dy_/4.0);
-        int dx_outer = ROUND(dx_/2.0);
-        int dy_outer = ROUND(dy_/2.0);
-        float area = dx_*dy_;
-        float innersum=0, outersum=0;
-        const int NSHIFT = 3;
-        for (int shift=0; shift < NSHIFT; shift++) {
-            cv::Point p(ROUND(p_.x), ROUND(p_.y - shift));
-            cv::Rect rect_inner( p.x - dx_inner, p.y - dy_inner, 2*dx_inner+1, 2*dy_inner+1 );
-            cv::Rect rect_outer( p.x - dx_outer, p.y - dy_outer, 2*dx_outer+1, 2*dy_outer+1 );
-            if (check_rect( rect_inner, img.rows, img.cols) &&
-                check_rect( rect_outer, img.rows, img.cols))
-            {
-                cv::Mat hood_inner = img(rect_inner);
-                cv::Mat hood_outer = img(rect_outer);
-                innersum = cv::sum(hood_inner)[0];
-                outersum = cv::sum(hood_outer)[0];
-                res += (innersum - outersum)/area;
-            }
-        } // for shift
-        res /= NSHIFT;
-        return -res;
-    } // center_sum
-
-
     //------------------------------------------------------------------------
     inline static void get_whiteness( const cv::Mat &threshed,
                                      const Points2f &intersections,
@@ -396,47 +378,6 @@ public:
         mat_dbg = dst.clone();
     } // get_crossness()
     
-
-    
-//    // Look whether the cross pixels are set
-//    //------------------------------------------------------------------------------------------
-//    inline static float cross_feature( const cv::Mat &img, Point2f p_, float r, float yshift=0)
-//    {
-//        float res = 0;
-//        int dx = ROUND(r/2.0);
-//        int dy = ROUND(r/2.0);
-//        cv::Mat threshed;
-//        cv::Point p(ROUND(p_.x), ROUND(p_.y));
-//        cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-//        if (check_rect( rect, img.rows, img.cols)) {
-//            cv::Mat hood = img(rect);
-//            inv_thresh_avg( hood, threshed);
-//            int mid_y = ROUND(threshed.rows / 2.0);
-//            int mid_x = ROUND(threshed.cols / 2.0);
-//            float ssum = 0;
-//            int n = 0;
-//            const int marg = 6;
-//            CLOOP (threshed.cols) {
-//                if (c < marg) continue;
-//                if (c >= threshed.cols - marg ) continue;
-//                //ssum += threshed.at<uint8_t>(mid_y, c); n++;
-//                ssum += threshed.at<uint8_t>(mid_y-1, c); n++;
-//                ssum += threshed.at<uint8_t>(mid_y-2, c); n++;
-//            }
-//            RLOOP (threshed.rows) {
-//                if (r < marg) continue;
-//                if (r >= threshed.cols - marg ) continue;
-//                ssum += threshed.at<uint8_t>(r, mid_x); n++;
-//                //ssum += threshed.at<uint8_t>(r, mid_x-1); n++;
-//                //ssum += threshed.at<uint8_t>(r, mid_x+1); n++;
-//            }
-//            ssum /= n;
-//            res = ssum;
-//        }
-//        return fabs(res);
-//    } // cross_feature()
-
-
 }; // class BlackWhiteEmpty
     
 
