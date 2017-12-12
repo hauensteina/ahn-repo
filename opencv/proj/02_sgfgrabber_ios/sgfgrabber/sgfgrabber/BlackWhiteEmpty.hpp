@@ -40,35 +40,26 @@ public:
         std::vector<int> res(SZ(intersections), EEMPTY);
         
         // Compute features for each board intersection
-        
         r=3;
         get_feature( gray, intersections, r, brightness_feature, BWE_brightness);
-        float bright_median = vec_median( BWE_brightness); // Bad idea because this is the board color
         
-        r=3;
-        get_feature( threshed, intersections, r, cross_feature_new, BWE_crossness_new);
-
         r=11; yshift = 0;
         get_feature( threshed, intersections, r, sum_feature, BWE_sum, yshift);
-        
-        r=3; yshift = 0;
-        get_feature( threshed, intersections, r, sigma_feature, BWE_sigma, yshift);
         
         // Black stones
         ISLOOP( BWE_brightness) {
             float bthresh = 35; // larger means more Black stones
-            if (BWE_brightness[i] < bthresh /* && black_features[i] - tt_feat[i] < 8 */ ) {
+            if (BWE_brightness[i] < bthresh ) {
                 res[i] = BBLACK;
             }
         }
         // White places, first guess
-        //float sigma_thresh    = (4/5.0) * 256;
         float sum_thresh    = 80;  // smaller means more White stones
         float bright_thresh = 200; // smaller means more White stones
         ISLOOP( BWE_brightness) {
             if ( BWE_brightness[i] > bright_thresh
                 //&& BWE_crossness_new[i] < 100
-                && BWE_sum[i] > 80
+                && BWE_sum[i] > sum_thresh
                 && res[i] != BBLACK)  {
                 res[i] = WWHITE;
             }

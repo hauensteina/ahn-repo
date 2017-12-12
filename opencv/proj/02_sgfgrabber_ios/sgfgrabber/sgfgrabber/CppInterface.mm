@@ -635,11 +635,6 @@ cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
             }
         }
     }
-    //PLOG( "maxhits:%d\n", maxhits);
-    //int tt = count_points_on_line( res, allpoints);
-    if (res[1] < 0.1) {
-        int tt = 42;
-    }
     return res;
 } // find_horiz_line_thru_point()
 
@@ -800,24 +795,6 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     return res;
 } // f06_corners()
 
-//// Find the corners
-////----------------------------
-//- (UIImage *) f06_corners
-//{
-//    g_app.mainVC.lbDbg.text = @"06";
-//    _corners.clear();
-//    if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-//        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray);
-//    }
-//    // Show results
-//    cv::Mat drawing;
-//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-//    get_color(true);
-//    draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
-//    UIImage *res = MatToUIImage( drawing);
-//    return res;
-//}
-
 // Unwarp the square defined by corners
 //------------------------------------------------------------------------
 void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat &M)
@@ -856,52 +833,14 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
 
 // Repeat whole process 01 to 06 on the zoomed in version
 //-----------------------------------------------------------
-- (UIImage *) f08_repeat_on_zoomed
+- (UIImage *) f08_show_threshed
 {
     g_app.mainVC.lbDbg.text = @"08";
     _corners = _corners_zoomed;
-    //_gray_zoomed = _gray.clone();
-
-//    do {
-//        if (_gray_zoomed.rows == 0) break;
-//        // Blobs
-//        _stone_or_empty.clear();
-//        BlobFinder::find_empty_places( _gray_zoomed, _stone_or_empty); // has to be first
-//        //BlobFinder::find_stones( _gray_zoomed, _stone_or_empty);
-//
-//        // Horizontals
-//        _finder = LineFinder( _stone_or_empty, _board_sz, _gray_zoomed.size() );
-//        // This also removes dups from the points in _finder.horizontal_clusters
-//        _finder.cluster();
-//        if (SZ(_finder.m_horizontal_clusters) < 3) {
-//            int tt=42;
-//            break;
-//        }
-//        cv::Vec2f ratline;
-//        float dy; int rat_idx;
-//        float dy_rat = _finder.dy_rat( ratline, dy, rat_idx);
-//        _horizontal_lines.clear();
-//        find_horiz_lines( ratline, dy, dy_rat, _finder.m_horizontal_lines, _board_sz, _gray_zoomed.cols,
-//                         _horizontal_lines);
-//
-//        // Verticals
-//        _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-//        dedup_vertical_lines( _vertical_lines, _gray_zoomed);
-//        fix_vertical_lines( _vertical_lines, _gray_zoomed);
-//
-//        // Corners
-//        _corners = get_corners( _horizontal_lines, _vertical_lines, _stone_or_empty, _gray_zoomed);
-//    } while(0);
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
-    //ISLOOP ( _stone_or_empty) {
-    //    draw_point( _stone_or_empty[i], drawing, 2);
-    //}
-    //draw_polar_lines( _horizontal_lines, drawing);
-    //draw_polar_lines( _vertical_lines, drawing);
+    cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;

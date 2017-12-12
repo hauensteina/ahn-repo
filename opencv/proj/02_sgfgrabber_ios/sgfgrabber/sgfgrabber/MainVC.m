@@ -274,7 +274,7 @@
                     break;
                 case 8:
                     state++;
-                    img = [self.grabFuncs f08_repeat_on_zoomed];
+                    img = [self.grabFuncs f08_show_threshed];
                     [self.cameraView setImage:img];
                     break;
                 case 9:
