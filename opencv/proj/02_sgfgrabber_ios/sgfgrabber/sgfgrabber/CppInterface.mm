@@ -908,7 +908,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
 } // f08_repeat_on_zoomed()
 
 // Intersections on zoomed from corners
-//-----------------------------------------------------------
+//----------------------------------------
 - (UIImage *) f09_intersections
 {
     g_app.mainVC.lbDbg.text = @"09";
@@ -941,41 +941,23 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
     }
 } // viz_feature()
 
-// Visualize some features //@@@
-//-------------------------------
+// Visualize some features
+//---------------------------
 - (UIImage *) f10_features
 {
     g_app.mainVC.lbDbg.text = @"10";
     static int state = 0;
     std::vector<float> feats;
     cv::Mat drawing;
+    int r;
 
     switch (state) {
         case 0:
         {
-            BlackWhiteEmpty::get_whiteness( _gray_zoomed,
-                                           _intersections,
-                                           _dx, _dy,
-                                           feats);
-            viz_feature( _gray_zoomed, _intersections, feats, drawing, 255);
-            break;
-        }
-        case 1:
-        {
-            BlackWhiteEmpty::get_crossness( _gray_zoomed,
-                                           _intersections,
-                                           _dx, _dy,
-                                           feats);
-            viz_feature( _gray_zoomed, _intersections, feats, drawing, 1);
-            break;
-        }
-        case 2:
-        {
-            int r = 3;
+            r=11;
             BlackWhiteEmpty::get_feature( _gz_threshed, _intersections, r,
-                                         BlackWhiteEmpty::cross_feature_new,
-                                         feats);
-            viz_feature( _gray_zoomed, _intersections, feats, drawing, 2);
+                                         BlackWhiteEmpty::sum_feature, feats);
+            viz_feature( _gz_threshed, _intersections, feats, drawing, 1);
             break;
         }
         default:
@@ -1010,8 +992,6 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     Points2f intersections;
     std::vector<std::vector<int> > diagrams;
     // Wiggle the regions a little.
-    // Perspective tends to see stones with y too small (higher up).
-    // Therefore, look two pixels up, but never down.
     intersections = translate_points( intersections_, 0, 0);
     diagrams.push_back( BlackWhiteEmpty::classify( img, threshed,
                                                   intersections,
@@ -1061,7 +1041,6 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
         diagram.push_back( winner);
     }
     // Vote across time
-    //const int BUFSZ = 20; // frames of history for voting
     static std::vector<std::vector<int> > timevotes(19*19);
     ISLOOP (diagram) {
         ringpush( timevotes[i], diagram[i], TIMEBUFSZ);
@@ -1086,7 +1065,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     if (_small_zoomed.rows > 0) {
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        diagram = classify( _intersections, _gray_zoomed, _gz_threshed, _dx, _dy, false);
+        diagram = classify( _intersections, _gray_zoomed, _gz_threshed, _dx, _dy, 1);
     }
     
     // Show results
@@ -1102,12 +1081,12 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
                       p.y - dy,
                       2*dx + 1,
                       2*dy + 1);
-        cv::rectangle( drawing, rect, cv::Scalar(255,0,0,255));
+        cv::rectangle( drawing, rect, cv::Scalar(0,0,255,255));
         if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-            draw_point( p, drawing, 2, cv::Scalar(255,255,255,255));
+            draw_point( p, drawing, 5, cv::Scalar(0,255,0,255));
         }
         else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
-            draw_point( p, drawing, 2, cv::Scalar(0,0,255,255));
+            draw_point( p, drawing, 5, cv::Scalar(255,0,0,255));
         }
     }
     UIImage *res = MatToUIImage( drawing);
