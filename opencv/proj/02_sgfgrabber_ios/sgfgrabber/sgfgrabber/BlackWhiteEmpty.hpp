@@ -161,11 +161,19 @@ public:
             path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
             cv::FileStorage efilee( path, cv::FileStorage::WRITE);
             efilee << "empty_template" << empty_template;
-
-            
         } // NLOOP
-        match_quality = vec_sum( BWE_white_templ_score);
-        match_quality += vec_sum( BWE_empty_templ_score);
+        
+        // Get an overall match quaity score
+        std::vector<float> best_matches = BWE_white_templ_score;
+        ISLOOP (best_matches) {
+            if (BWE_black_templ_score[i] > best_matches[i]) {
+                best_matches[i] = BWE_black_templ_score[i];
+            }
+            if (BWE_empty_templ_score[i] > best_matches[i]) {
+                best_matches[i] = BWE_empty_templ_score[i];
+            }
+        }
+        match_quality = vec_sum( best_matches);
         return res;
     } // classify()
 

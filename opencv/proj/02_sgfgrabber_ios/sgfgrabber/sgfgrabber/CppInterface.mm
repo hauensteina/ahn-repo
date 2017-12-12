@@ -47,6 +47,8 @@ extern cv::Mat mat_dbg;
 @property float dx;
 @property LineFinder finder;
 @property std::vector<Points2f> boards; // history of board corners
+@property cv::Mat white_templ;
+@property cv::Mat black_templ;
 @property cv::Mat empty_templ;
 
 @end
@@ -61,9 +63,19 @@ extern cv::Mat mat_dbg;
     if (self) {
         // Load template files
         cv::Mat tmat;
-        NSString *fpath = findInBundle( @"empty_templ", @"yml");
-        cv::FileStorage fs( [fpath UTF8String], cv::FileStorage::READ);
-        fs["empty_template"] >> _empty_templ;
+        NSString *fpath;
+
+        fpath = findInBundle( @"white_templ", @"yml");
+        cv::FileStorage fsw( [fpath UTF8String], cv::FileStorage::READ);
+        fsw["white_template"] >> _white_templ;
+
+        fpath = findInBundle( @"black_templ", @"yml");
+        cv::FileStorage fsb( [fpath UTF8String], cv::FileStorage::READ);
+        fsb["black_template"] >> _black_templ;
+
+        fpath = findInBundle( @"empty_templ", @"yml");
+        cv::FileStorage fse( [fpath UTF8String], cv::FileStorage::READ);
+        fse["empty_template"] >> _empty_templ;
     }
     return self;
 }
