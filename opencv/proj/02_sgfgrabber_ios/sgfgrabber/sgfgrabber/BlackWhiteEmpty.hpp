@@ -148,19 +148,19 @@ public:
                     res[i] = EEMPTY;
                 }
             } // ISLOOP
-            // Save templates to file
-            std::string path;
-            path = g_docroot + "/" + WHITE_TEMPL_FNAME;
-            cv::FileStorage efilew( path, cv::FileStorage::WRITE);
-            efilew << "white_template" << white_template;
-
-            path = g_docroot + "/" + BLACK_TEMPL_FNAME;
-            cv::FileStorage efileb( path, cv::FileStorage::WRITE);
-            efileb << "black_template" << black_template;
-
-            path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
-            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
-            efilee << "empty_template" << empty_template;
+//            // Save templates to file
+//            std::string path;
+//            path = g_docroot + "/" + WHITE_TEMPL_FNAME;
+//            cv::FileStorage efilew( path, cv::FileStorage::WRITE);
+//            efilew << "white_template" << white_template;
+//
+//            path = g_docroot + "/" + BLACK_TEMPL_FNAME;
+//            cv::FileStorage efileb( path, cv::FileStorage::WRITE);
+//            efileb << "black_template" << black_template;
+//
+//            path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
+//            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
+//            efilee << "empty_template" << empty_template;
         } // NLOOP
         
         // Get an overall match quaity score

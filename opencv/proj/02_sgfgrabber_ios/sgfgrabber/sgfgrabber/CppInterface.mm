@@ -821,9 +821,13 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
     auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
-    if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
+    do {
+        if (SZ( _horizontal_lines) > 40) break;
+        if (SZ( _horizontal_lines) < 5) break;
+        if (SZ( _vertical_lines) > 40) break;
+        if (SZ( _vertical_lines) < 5) break;
         _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
-    }
+    } while(0);
     
     // Show results
     cv::Mat drawing;
@@ -1166,19 +1170,24 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
         dedup_horiz_lines( _horizontal_lines, _gray);
         fix_horiz_lines( _horizontal_lines, _gray);
-        
+        //PLOG( "HLINES:%d\n", SZ(_horizontal_lines));
+        if (SZ( _horizontal_lines) > 40) break;
+        if (SZ( _horizontal_lines) < 5) break;
+
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_vertical_lines( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
-        
+        //PLOG( "VLINES:%d\n", SZ(_vertical_lines));
+        if (SZ( _vertical_lines) > 40) break;
+        if (SZ( _vertical_lines) < 5) break;
+
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
         auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-            //_corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
-            _corners = get_corners( _horizontal_lines, _vertical_lines, _gray, _gray_threshed);
+            _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker
