@@ -37,7 +37,10 @@ public:
     inline static std::vector<int> classify( const cv::Mat &gray,
                                             const cv::Mat &threshed,
                                             const Points2f &intersections,
-                                            float &match_quality)
+                                            float &match_quality,
+                                            const cv::Mat *white_template_ = NULL,
+                                            const cv::Mat *black_template_ = NULL,
+                                            const cv::Mat *empty_template_ = NULL)
     {
         //static cv::Mat default_empty_template = readMat( )
         int r, yshift;
@@ -74,62 +77,71 @@ public:
         // repeat. This should compensate for highlights and changes in the environment.
         const int NITER = 2;
         const int MAGIC = 400;
+        r = 10;
+        const cv::Mat *wtp, *btp, *etp;
         NLOOP (NITER) {
             // Make a template for white places
-            Points2f white_intersections;
-            ISLOOP( res) {
-                if (res[i] != WWHITE) continue;
-                white_intersections.push_back( intersections[i]);
+            wtp = white_template_;
+            if (!wtp) {
+                Points2f white_intersections;
+                ISLOOP( res) {
+                    if (res[i] != WWHITE) continue;
+                    white_intersections.push_back( intersections[i]);
+                }
+                cv::Mat white_template;
+                avg_hoods( threshed, white_intersections, r, white_template);
+                wtp = &white_template;
             }
-            cv::Mat white_template;
-            r = 10;
-            avg_hoods( threshed, white_intersections, r, white_template);
             
             // Make a template for black places
-            Points2f black_intersections;
-            ISLOOP( res) {
-                if (res[i] != BBLACK) continue;
-                black_intersections.push_back( intersections[i]);
+            btp = black_template_;
+            if (!btp) {
+                Points2f black_intersections;
+                ISLOOP( res) {
+                    if (res[i] != BBLACK) continue;
+                    black_intersections.push_back( intersections[i]);
+                }
+                cv::Mat black_template;
+                avg_hoods( threshed, black_intersections, r, black_template);
+                btp = &black_template;
             }
-            cv::Mat black_template;
-            r = 10;
-            avg_hoods( threshed, black_intersections, r, black_template);
-            
             // Make a template for empty places
-            Points2f empty_intersections;
-            ISLOOP( res) {
-                if (res[i] != EEMPTY) continue;
-                empty_intersections.push_back( intersections[i]);
+            etp = empty_template_;
+            if (!etp) {
+                Points2f empty_intersections;
+                ISLOOP( res) {
+                    if (res[i] != EEMPTY) continue;
+                    empty_intersections.push_back( intersections[i]);
+                }
+                cv::Mat empty_template;
+                avg_hoods( threshed, empty_intersections, r, empty_template);
+                etp = &empty_template;
             }
-            cv::Mat empty_template;
-            r = 10;
-            avg_hoods( threshed, empty_intersections, r, empty_template);
-            
             // Get the template scores
             get_feature( threshed, intersections, r,
-                        [white_template](const cv::Mat &hood) {
+                        [wtp](const cv::Mat &hood) {
                             cv::Mat tmp;
                             hood.convertTo( tmp, CV_32FC1);
-                            float res = MAX( 1e-5, mat_dist( tmp, white_template));
+                            float res = MAX( 1e-5, mat_dist( tmp, *wtp));
                             return -res;
                         },
                         BWE_white_templ_score, 0, false);
             get_feature( threshed, intersections, r,
-                        [empty_template](const cv::Mat &hood) {
+                        [btp](const cv::Mat &hood) {
                             cv::Mat tmp;
                             hood.convertTo( tmp, CV_32FC1);
-                            float res = MAX( 1e-5, mat_dist( tmp, empty_template));
-                            return -res;
-                        },
-                        BWE_empty_templ_score, 0, false);
-            get_feature( threshed, intersections, r,
-                        [black_template](const cv::Mat &hood) {
-                            cv::Mat tmp;
-                            hood.convertTo( tmp, CV_32FC1);
-                            float res = MAX( 1e-5, mat_dist( tmp, black_template));
+                            float res = MAX( 1e-5, mat_dist( tmp, *btp));
                             return -res;
                         },
                         BWE_black_templ_score, 0, false);
+            get_feature( threshed, intersections, r,
+                        [etp](const cv::Mat &hood) {
+                            cv::Mat tmp;
+                            hood.convertTo( tmp, CV_32FC1);
+                            float res = MAX( 1e-5, mat_dist( tmp, *etp));
+                            return -res;
+                        },
+                        BWE_empty_templ_score, 0, false);
             
             // Re-classify based on templates
             ISLOOP( res) {
@@ -148,19 +160,19 @@ public:
                     res[i] = EEMPTY;
                 }
             } // ISLOOP
-            // Save templates to file
-            std::string path;
-            path = g_docroot + "/" + WHITE_TEMPL_FNAME;
-            cv::FileStorage efilew( path, cv::FileStorage::WRITE);
-            efilew << "white_template" << white_template;
-
-            path = g_docroot + "/" + BLACK_TEMPL_FNAME;
-            cv::FileStorage efileb( path, cv::FileStorage::WRITE);
-            efileb << "black_template" << black_template;
-
-            path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
-            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
-            efilee << "empty_template" << empty_template;
+//            // Save templates to file
+//            std::string path;
+//            path = g_docroot + "/" + WHITE_TEMPL_FNAME;
+//            cv::FileStorage efilew( path, cv::FileStorage::WRITE);
+//            efilew << "white_template" << *wtp;
+//
+//            path = g_docroot + "/" + BLACK_TEMPL_FNAME;
+//            cv::FileStorage efileb( path, cv::FileStorage::WRITE);
+//            efileb << "black_template" << *btp;
+//
+//            path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
+//            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
+//            efilee << "empty_template" << *etp;
         } // NLOOP
         
         // Get an overall match quaity score
@@ -174,6 +186,7 @@ public:
             }
         }
         match_quality = vec_sum( best_matches);
+        PLOG( "match_quality: %.0f\n", match_quality);
         return res;
     } // classify()
 
