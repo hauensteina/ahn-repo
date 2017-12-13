@@ -72,7 +72,7 @@ public:
         // Bootstrap.
         // Train templates on preliminary classification result, then reclassify,
         // repeat. This should compensate for highlights and changes in the environment.
-        const int NITER = 2;
+        const int NITER = 10; // 10 is better than 3. Not sure about the optimum.
         const int MAGIC = 400;
         NLOOP (NITER) {
             // Make a template for white places
@@ -133,18 +133,16 @@ public:
             
             // Re-classify based on templates
             ISLOOP( res) {
-                if (res[i] == BBLACK) continue;
-                //PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
-                if (BWE_white_templ_score[i] > BWE_empty_templ_score[i]) {
-                    if (res[i] != WWHITE) {
-                        //PLOG( "Switch E->W\n");
+                if (res[i] == BBLACK) {
+                    if (BWE_empty_templ_score[i] > BWE_black_templ_score[i]) {
+                        res[i] = EEMPTY;
                     }
+                }
+                //PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
+                else if (BWE_white_templ_score[i] > BWE_empty_templ_score[i]) {
                     res[i] = WWHITE;
                 }
                 else if (BWE_white_templ_score[i] < BWE_empty_templ_score[i] + MAGIC ) {
-                    if (res[i] != EEMPTY) {
-                        //PLOG( "Switch W->E\n");
-                    }
                     res[i] = EEMPTY;
                 }
             } // ISLOOP
