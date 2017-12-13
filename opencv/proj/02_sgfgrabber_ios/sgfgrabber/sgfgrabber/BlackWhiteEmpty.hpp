@@ -71,9 +71,9 @@ public:
         
         // Bootstrap.
         // Train templates on preliminary classification result, then reclassify,
-        // repeat. This should compensate for highlights and changes in the environment.
+        // repeat. This deals with highlights and changes in the environment.
         const int NITER = 10; // 10 is better than 3. Not sure about the optimum.
-        const int MAGIC = 400;
+        const int MAGIC = 400; // A crude guess.
         NLOOP (NITER) {
             // Make a template for white places
             Points2f white_intersections;

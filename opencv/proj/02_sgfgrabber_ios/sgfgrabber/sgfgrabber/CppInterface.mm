@@ -138,11 +138,11 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst)
     g_app.mainVC.lbDbg.text = @"00";
     
     // Live Camera
-    UIImageToMat( img, _m);
+    //UIImageToMat( img, _m);
     
     // From file
-    //load_img( @"board06.jpg", _m);
-    //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
+    load_img( @"board06.jpg", _m);
+    cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
@@ -786,14 +786,25 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 // The img is binary, the result of threshold and dilate.
 // ------------------------------------------------------------------------
 std::vector<PFeat> find_crosses( const cv::Mat &threshed,
-                                const Points2f &intersections)
+                                const Points2f &intersections,
+                                const cv::Mat &ttemplate,
+                                int r)
 {
     std::vector<float> features;
     std::vector<PFeat> res;
     // For each intersection of two lines
-    int r=10;
-    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::cross_feature_new,
-                                 features);
+    //int r=5;
+    BlackWhiteEmpty::get_feature( threshed, intersections, r,
+                [ttemplate](const cv::Mat &hood) {
+                    cv::Mat tmp;
+                    hood.convertTo( tmp, CV_32FC1);
+                    float res = MAX( 1e-5, mat_dist( tmp, ttemplate));
+                    return -res;
+                },
+                features);
+
+//    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::cross_feature_new,
+//                                 features);
     ISLOOP (features) {
         res.push_back( { intersections[i], features[i] } );
     }
@@ -811,6 +822,35 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     return res;
 } // find_crosses()
 
+// Make a template from the center NxN intersections
+//----------------------------------------------------------------------------
+void make_template( const std::vector<cv::Vec2f> &horiz_lines,
+                   const std::vector<cv::Vec2f> &vert_lines,
+                   const cv::Mat &img, int &r, cv::Mat &dst)
+{
+    r = ROUND( 0.3 * img.cols / SZ(vert_lines));
+    //r = ROUND( 0.5 * img.cols / SZ(vert_lines));
+    const int SAMPLE_WIDTH = 5;
+    const int SAMPLE_RAD = SAMPLE_WIDTH/2;
+    int hmid = SZ(horiz_lines) / 2;
+    int hmin = hmid - SAMPLE_RAD;
+    int hmax = hmid + SAMPLE_RAD+1;
+    
+    int vmid = SZ(vert_lines) / 2;
+    int vmin = vmid - SAMPLE_RAD;
+    int vmax = vmid + SAMPLE_RAD+1;
+    
+    std::vector<cv::Vec2f> h_sample_lines;
+    for (int i=hmin; i < hmax; i++) {
+        h_sample_lines.push_back( horiz_lines[i]);
+    }
+    std::vector<cv::Vec2f> v_sample_lines;
+    for (int i=vmin; i < vmax; i++) {
+        v_sample_lines.push_back( vert_lines[i]);
+    }
+    Points2f intersections = get_intersections( h_sample_lines, v_sample_lines);
+    BlackWhiteEmpty::avg_hoods( img, intersections, r, dst);
+}
 
 // Find the corners
 //----------------------------
@@ -818,8 +858,12 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
 {
     g_app.mainVC.lbDbg.text = @"06";
     
+    cv::Mat templ;
+    int r;
+    make_template( _horizontal_lines, _vertical_lines, _gray_threshed, r, templ);
     auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-    auto crosses = find_crosses( _gray_threshed, intersections);
+    //auto crosses = find_crosses( _gray_threshed, intersections, _empty_templ);
+    auto crosses = find_crosses( _gray_threshed, intersections, templ, r);
     _corners.clear();
     do {
         if (SZ( _horizontal_lines) > 40) break;
@@ -1183,8 +1227,13 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         if (SZ( _vertical_lines) < 5) break;
 
         // Find corners
+        cv::Mat templ;
+        int r;
+        make_template( _horizontal_lines, _vertical_lines, _gray_threshed, r, templ);
+
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-        auto crosses = find_crosses( _gray_threshed, intersections);
+        //auto crosses = find_crosses( _gray_threshed, intersections, _empty_templ);
+        auto crosses = find_crosses( _gray_threshed, intersections, templ, r);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
