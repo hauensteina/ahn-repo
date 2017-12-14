@@ -30,17 +30,17 @@ extern cv::Mat mat_dbg;
 @interface CppInterface()
 //=======================
 @property cv::Mat small; // resized image, in color, RGB
-@property cv::Mat hue;   // HSV of small
-@property cv::Mat sat;
-@property cv::Mat val;
+//@property cv::Mat hue;   // HSV of small
+//@property cv::Mat sat;
+//@property cv::Mat val;
 
 @property cv::Mat small_zoomed;  // small, zoomed into the board
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
 @property cv::Mat gray_zoomed;   // Grayscale version of small, zoomed into the board
-@property cv::Mat hue_zoomed;
-@property cv::Mat sat_zoomed;
-@property cv::Mat val_zoomed;
+//@property cv::Mat hue_zoomed;
+//@property cv::Mat sat_zoomed;
+//@property cv::Mat val_zoomed;
 
 @property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
 @property cv::Mat m;     // Mat with image we are working on
@@ -52,6 +52,7 @@ extern cv::Mat mat_dbg;
 @property Points2f corners;
 @property Points2f corners_zoomed;
 @property Points2f intersections;
+@property Points2f intersections_zoomed;
 @property float dy;
 @property float dx;
 //@property LineFinder finder;
@@ -155,13 +156,6 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 
     resize( _m, _small, 350);
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY); // Yes, RGB not BGR //@@@
-    cv::Mat hsv;
-    cv::cvtColor( _small, hsv, cv::COLOR_RGB2HSV);
-    cv::Mat planes[3];
-    cv::split( hsv, planes);
-    _hue = planes[0];
-    _sat = planes[1];
-    _val = planes[2];
     thresh_dilate( _gray, _gray_threshed);
     //normalize_plane_local(_gray, _gray, 15);
 
@@ -719,7 +713,6 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 {
     int height = img.rows;
     int width  = img.cols;
-    int max_idx;
     float max_score = -1E9;
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
@@ -901,16 +894,10 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
-        zoom_in( _hue, _corners, _hue_zoomed, M); _hue_zoomed *= (255.0 / 180.0);
-        zoom_in( _sat, _corners, _sat_zoomed, M);
-        zoom_in( _val, _corners, _val_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
     }
     // Show results
-    DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
-    std::vector<int> v;
-    drb.draw( v);
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
     UIImage *res = MatToUIImage( drawing);
@@ -926,9 +913,9 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     
     // Show results
     cv::Mat drawing;
-    int s = 2*BlackWhiteEmpty::RING_R+1;
-    cv::Rect re( 100, 100, s, s);
-    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
+//    int s = 2*BlackWhiteEmpty::RING_R+1;
+//    cv::Rect re( 100, 100, s, s);
+//    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
     cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
@@ -942,14 +929,14 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
 {
     g_app.mainVC.lbDbg.text = @"09";
     
-    if (SZ(_corners) == 4) {
-        get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
+    if (SZ(_corners_zoomed) == 4) {
+        get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
     }
     
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    draw_points( _intersections, drawing, 1, cv::Scalar(255,0,0));
+    draw_points( _intersections_zoomed, drawing, 1, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f09_intersections()
@@ -984,9 +971,9 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
         case 0:
         {
             r=11;
-            BlackWhiteEmpty::get_feature( _gz_threshed, _intersections, r,
+            BlackWhiteEmpty::get_feature( _gz_threshed, _intersections_zoomed, r,
                                          BlackWhiteEmpty::sum_feature, feats);
-            viz_feature( _gz_threshed, _intersections, feats, drawing, 1);
+            viz_feature( _gz_threshed, _intersections_zoomed, feats, drawing, 1);
             break;
         }
         default:
@@ -1065,18 +1052,20 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     if (_small_zoomed.rows > 0) {
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        diagram = classify( _intersections, _gray_zoomed, _gz_threshed, _dx, _dy, 1);
+        diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, 1);
     }
     
     // Show results
     cv::Mat drawing;
+    DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
+    drb.draw( diagram);
     //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
 
     int dx = ROUND( _dx/4.0);
     int dy = ROUND( _dy/4.0);
     ISLOOP (diagram) {
-        cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
+        cv::Point p(ROUND(_intersections_zoomed[i].x), ROUND(_intersections_zoomed[i].y));
         cv::Rect rect( p.x - dx,
                       p.y - dy,
                       2*dx + 1,

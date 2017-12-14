@@ -50,11 +50,11 @@ public:
         // Compute features for each board intersection
         r=3;
         get_feature( gray, intersections, r, brightness_feature, BWE_brightness);
-        float max_brightness = vec_max( BWE_brightness);
+        //float max_brightness = vec_max( BWE_brightness);
         
         r=10; yshift=0;
         get_feature( threshed, intersections, r, sum_feature, BWE_sum, yshift);
-        float max_sum = vec_max( BWE_sum);
+        //float max_sum = vec_max( BWE_sum);
 
         r=3; yshift=0;
         get_feature( threshed, intersections, r, sum_feature, BWE_sum_inner, yshift);
@@ -68,7 +68,7 @@ public:
         // Looking for a ring
         vec_sub( BWE_outer_minus_inner, BWE_sum_inner); // Yes, do this twice
         vec_sub( BWE_outer_minus_inner, BWE_sum_inner);
-        float max_outer_minus_inner = vec_max( BWE_outer_minus_inner);
+        //float max_outer_minus_inner = vec_max( BWE_outer_minus_inner);
 
         // Black stones
         ISLOOP( BWE_brightness) {
@@ -101,7 +101,7 @@ public:
         // Train templates on preliminary classification result, then reclassify,
         // repeat. This should compensate for highlights and changes in the environment.
         const int NITER = 2; // Not sure about the best number
-        const int WMAGIC = 800; // larger means less W stones
+        //const int WMAGIC = 800; // larger means less W stones
         const int EMAGIC = 100;   // larger means more W stones
         NLOOP (NITER) {
             // Make a template for white places
@@ -333,7 +333,6 @@ public:
         cv::circle( mask, center, r, 255, -1);
         //cv::circle( mask, center, middle_r, 127, -1);
         cv::circle( mask, center, inner_r, 0, -1);
-        int tt=42;
 
         return mask;
     }
