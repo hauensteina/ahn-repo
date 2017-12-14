@@ -95,14 +95,14 @@ public:
             }
         }
         int tt = 42;
-#define BOOTSTRAP
+//#define BOOTSTRAP
 #ifdef BOOTSTRAP
         // Bootstrap.
         // Train templates on preliminary classification result, then reclassify,
         // repeat. This should compensate for highlights and changes in the environment.
         const int NITER = 2; // Not sure about the best number
         //const int WMAGIC = 800; // larger means less W stones
-        const int EMAGIC = 100;   // larger means more W stones
+        const int EMAGIC = 0;   // larger means more W stones
         NLOOP (NITER) {
             // Make a template for white places
             Points2f white_intersections;

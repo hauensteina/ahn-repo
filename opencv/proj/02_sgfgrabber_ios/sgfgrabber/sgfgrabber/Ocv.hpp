@@ -182,6 +182,7 @@ void points2float( const Points &pi, Points2f &pf);
 Points2f points2float( const Points &pi);
 // Vector of float points to int
 void points2int( const Points2f &pf, Points &pi);
+inline cv::Point p2f2p( const Point2f p) { return cv::Point( ROUND(p.x), ROUND(p.y)); }
 
 // Debugging
 //=============

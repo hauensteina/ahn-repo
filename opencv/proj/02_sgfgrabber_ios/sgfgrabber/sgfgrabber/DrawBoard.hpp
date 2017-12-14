@@ -18,15 +18,14 @@ class DrawBoard
 {
 public:
     // Constructor
-    DrawBoard( cv::Mat &dst, int topmarg, int leftmarg, int board_sz):
-    m_dst(dst), m_topmarg(topmarg), m_leftmarg(leftmarg), m_board_sz(board_sz)
+    DrawBoard( cv::Mat &dst, Points2f corners, int board_sz):
+    m_dst(dst), m_corners(corners), m_board_sz(board_sz)
     {}
     // Draw board and position
     void draw( std::vector<int> diagram);
 private:
     cv::Mat   &m_dst;
-    const int m_topmarg;
-    const int m_leftmarg;
+    const Points2f m_corners;
     const int m_board_sz;
     
     // Board coords to screen coords

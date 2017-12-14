@@ -709,34 +709,49 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
-                     const std::vector<PFeat> &pfts, const cv::Mat &img, int board_sz = 19)
+                     const cv::Mat &img, int board_sz = 19)
 {
-    int height = img.rows;
-    int width  = img.cols;
-    float max_score = -1E9;
+    Points2f res;
+    float mindist = 1E12;
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
 
+    cv::Mat templ = cv::Mat( img.rows, img.cols, CV_8UC1);
+    cv::Mat m1 = cv::Mat( img.rows, img.cols, CV_8UC1);
+    cv::Mat m2 = cv::Mat( img.rows, img.cols, CV_8UC1);
+    cv::Mat mask = cv::Mat( img.rows, img.cols, CV_8UC1);
+    std::vector<int> diagram( board_sz*board_sz, BlackWhiteEmpty::EEMPTY);
     for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
         std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
-        for (int i=0; i < SZ(vert_lines) - board_sz + 1; i++) {
-            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, i, board_sz);
+        for (int j=0; j < SZ(vert_lines) - board_sz + 1; j++) {
+            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, j, board_sz);
             top_line = hlines.front(); bot_line = hlines.back();
             left_line = vlines.front(); right_line = vlines.back();
-            float score = sum_points_between_four_lines( top_line, bot_line, left_line, right_line, pfts, width/2, height/2);
-            if (score > max_score) {
-                max_score = score;
-                max_top_line = top_line; max_bot_line = bot_line;
-                max_left_line = left_line; max_right_line = right_line;
+            Point2f tl = intersection( top_line, left_line);
+            Point2f tr = intersection( top_line, right_line);
+            Point2f br = intersection( bot_line, right_line);
+            Point2f bl = intersection( bot_line, left_line);
+            Points2f corners = {tl, tr, br, bl};
+            DrawBoard drb( templ, corners, board_sz);
+            drb.draw( diagram);
+            cv::Point mask_corners[4] = { p2f2p(tl), p2f2p(tr), p2f2p(br), p2f2p(bl) };
+            mask=0;
+            cv::fillConvexPoly(mask, mask_corners, 4, 1);
+            m1=0; m2=0;
+            templ.copyTo( m1, mask);
+            img.copyTo( m2, mask);
+            float d = mat_dist( m1, m2);
+            //float d = mat_dist( templ, img);
+            //PLOG( ">>>>>>>>>>%.0f\n", d);
+            if (d < mindist) {
+                mindist = d;
+                res = corners;
+                //m1.copyTo( mat_dbg);
             }
-        }
-    }
-    Point2f tl = intersection( max_left_line,  max_top_line);
-    Point2f tr = intersection( max_right_line, max_top_line);
-    Point2f br = intersection( max_right_line, max_bot_line);
-    Point2f bl = intersection( max_left_line,  max_bot_line);
-    Points2f corners = {tl, tr, br, bl};
-    return corners;
+        } // for vert_lines
+    } // for horiz_lines
+    int tt = 42;
+    return res;
 } // get_corners()
 
 //// Use horizontal and vertical lines to find corners such that the board best matches the points we found
@@ -828,19 +843,22 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     g_app.mainVC.lbDbg.text = @"06";
     
     auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-    auto crosses = find_crosses( _gray_threshed, intersections);
+    //auto crosses = find_crosses( _gray_threshed, intersections);
+    float match_quality;
+    auto diagram = BlackWhiteEmpty::classify( _gray, _gray_threshed, intersections, match_quality);
     _corners.clear();
     do {
         if (SZ( _horizontal_lines) > 40) break;
         if (SZ( _horizontal_lines) < 5) break;
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
+        _corners = get_corners( _horizontal_lines, _vertical_lines, _gray, _board_sz);
     } while(0);
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1057,7 +1075,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     
     // Show results
     cv::Mat drawing;
-    DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
+    DrawBoard drb( _gray_zoomed, _corners_zoomed, _board_sz);
     drb.draw( diagram);
     //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
@@ -1072,7 +1090,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
                       2*dy + 1);
         cv::rectangle( drawing, rect, cv::Scalar(0,0,255,255));
         if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-            draw_point( p, drawing, 2, cv::Scalar(0,255,0,255));
+            draw_point( p, drawing, 5, cv::Scalar(0,255,0,255));
         }
         else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
             draw_point( p, drawing, 5, cv::Scalar(255,0,0,255));
@@ -1202,7 +1220,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-            _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray);
+            _corners = get_corners( _horizontal_lines, _vertical_lines, _gray, _board_sz);
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker
@@ -1223,11 +1241,11 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
 
         // Classify
-        Points2f intersections_zoomed;
-        get_intersections_from_corners( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
+        //Points2f intersections_zoomed;
+        get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
         const int TIME_BUF_SZ = 10;
-        auto diagram = classify( intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
+        auto diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   _small, cv::Scalar( 255,0,0,255));
