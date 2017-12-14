@@ -15,7 +15,7 @@
 #include "Common.hpp"
 #include "Ocv.hpp"
 
-cv::Mat mat_dbg;  // debug image to viz intermediate results
+//extern cv::Mat mat_dbg;  // debug image to viz intermediate results
 static std::vector<float> BWE_brightness;
 static std::vector<float> BWE_sum;
 static std::vector<float> BWE_sum_inner;

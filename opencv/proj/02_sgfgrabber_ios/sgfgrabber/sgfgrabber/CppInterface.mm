@@ -1072,7 +1072,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
                       2*dy + 1);
         cv::rectangle( drawing, rect, cv::Scalar(0,0,255,255));
         if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-            draw_point( p, drawing, 5, cv::Scalar(0,255,0,255));
+            draw_point( p, drawing, 2, cv::Scalar(0,255,0,255));
         }
         else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
             draw_point( p, drawing, 5, cv::Scalar(255,0,0,255));

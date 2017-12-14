@@ -6,6 +6,7 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+#import "Ocv.hpp"
 #import <UIKit/UIKit.h>
 #import "Globals.h"
 #import "Common.h"
@@ -13,6 +14,7 @@
 UIFont *g_fntBtn;
 AppDelegate *g_app;
 std::string g_docroot;
+cv::Mat mat_dbg;
 
 // Init globals. Called from Appdelegate.
 //----------------------------------------

@@ -7,6 +7,7 @@
 //
 
 #include "DrawBoard.hpp"
+#include "BlackWhiteEmpty.hpp"
 
 
 // Draw a board from a list of B,W,E
@@ -14,22 +15,41 @@
 void DrawBoard::draw( std::vector<int> diagram)
 {
     int x,y;
-    RLOOP (board_sz) {
+    // The lines
+    RLOOP (m_board_sz) {
         b2xy( r, 0, x, y);
         cv::Point p1( x,y);
         b2xy( r, 18, x, y);
         cv::Point p2( x,y);
         int color = 0; int width = 1;
-        cv::line( dst, p1, p2, color, width, CV_AA);
+        cv::line( m_dst, p1, p2, color, width, CV_AA);
     }
-    CLOOP (board_sz) {
+    CLOOP (m_board_sz) {
         b2xy( 0, c, x, y);
         cv::Point p1( x,y);
         b2xy( 18, c, x, y);
         cv::Point p2( x,y);
         int color = 0; int width = 1;
-        cv::line( dst, p1, p2, color, width, CV_AA);
+        cv::line( m_dst, p1, p2, color, width, CV_AA);
     }
+    // The stones
+    const int rightmarg = m_leftmarg;
+    const float boardwidth  = m_dst.cols - m_leftmarg - rightmarg;
+    int r = ROUND( 0.5 * boardwidth / (m_board_sz - 1)) +1;
+    ISLOOP (diagram) {
+        int row = i / m_board_sz;
+        int col = i % m_board_sz;
+        b2xy( row, col, x, y);
+        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+            int color = 0;
+            cv::circle( m_dst, cv::Point(x,y), r, color, -1);
+        }
+        else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
+            int color = 255;
+            cv::circle( m_dst, cv::Point(x,y), r, color, -1);
+        }
+    }
+    
 } // draw()
 
 // Board row and col (0-18) to pixel coord
@@ -37,9 +57,9 @@ void DrawBoard::draw( std::vector<int> diagram)
 void DrawBoard::b2xy( int boardrow, int boardcol,
                      int &x, int &y) // out
 {
-    const int rightmarg = leftmarg;
-    const float boardwidth  = dst.cols - leftmarg - rightmarg;
+    const int rightmarg = m_leftmarg;
+    const float boardwidth  = m_dst.cols - m_leftmarg - rightmarg;
     const float boardheight = boardwidth;
-    x = ROUND( leftmarg + boardcol * boardwidth / (board_sz-1));
-    y = ROUND( topmarg + boardrow * boardheight / (board_sz-1));
+    x = ROUND( m_leftmarg + boardcol * boardwidth / (m_board_sz-1));
+    y = ROUND( m_topmarg + boardrow * boardheight / (m_board_sz-1));
 } // b2xy()
