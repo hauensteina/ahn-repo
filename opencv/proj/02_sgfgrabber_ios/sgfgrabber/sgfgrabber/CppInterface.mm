@@ -908,8 +908,9 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
     }
     // Show results
-    DrawBoard drb; std::vector<int> v;
-    drb.draw( _gray_zoomed, _gray_zoomed, v, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
+    DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
+    std::vector<int> v;
+    drb.draw( v);
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
     UIImage *res = MatToUIImage( drawing);

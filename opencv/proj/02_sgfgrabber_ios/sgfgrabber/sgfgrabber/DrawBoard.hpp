@@ -17,11 +17,20 @@ class DrawBoard
 //=================
 {
 public:
-    void draw( const cv::Mat &img, cv::Mat &dst, std::vector<int> diagram,
-              int topmarg = 0, int leftmarg = 0, int board_sz = 19);
+    // Constructor
+    DrawBoard( cv::Mat &dst_, int topmarg_, int leftmarg_, int board_sz_):
+    dst(dst_), topmarg(topmarg_), leftmarg(leftmarg_), board_sz(board_sz_)
+    {}
+    // Draw board and position
+    void draw( std::vector<int> diagram);
 private:
-    void b2xy( const cv::Mat &img, int boardrow, int boardcol,
-              int topmarg, int leftmarg, int board_sz,
+    cv::Mat &dst;
+    const int topmarg;
+    const int leftmarg;
+    const int board_sz;
+    
+    // Board coords to screen coords
+    void b2xy( int boardrow, int boardcol,
               int &x, int &y); // out
 
 }; // class DrawBoard
