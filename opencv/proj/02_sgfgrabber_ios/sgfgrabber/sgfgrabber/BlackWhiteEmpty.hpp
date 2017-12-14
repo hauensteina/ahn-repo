@@ -17,12 +17,15 @@
 
 cv::Mat mat_dbg;  // debug image to viz intermediate results
 static std::vector<float> BWE_brightness;
-std::vector<float> BWE_sum;
+static std::vector<float> BWE_sum;
+static std::vector<float> BWE_sum_inner;
+static std::vector<float> BWE_outer_minus_inner;
 static std::vector<float> BWE_sigma;
 static std::vector<float> BWE_crossness_new;
 static std::vector<float> BWE_white_templ_score;
 static std::vector<float> BWE_black_templ_score;
 static std::vector<float> BWE_empty_templ_score;
+static std::vector<float> BWE_ringmatch;
 const static std::string WHITE_TEMPL_FNAME = "white_templ.yml";
 const static std::string BLACK_TEMPL_FNAME = "black_templ.yml";
 const static std::string EMPTY_TEMPL_FNAME = "empty_templ.yml";
@@ -32,6 +35,7 @@ class BlackWhiteEmpty
 {
 public:
     enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
+    enum { RING_R = 12 };
 
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &gray,
@@ -46,10 +50,26 @@ public:
         // Compute features for each board intersection
         r=3;
         get_feature( gray, intersections, r, brightness_feature, BWE_brightness);
+        float max_brightness = vec_max( BWE_brightness);
         
-        r=11; yshift = 0;
+        r=10; yshift=0;
         get_feature( threshed, intersections, r, sum_feature, BWE_sum, yshift);
-        
+        float max_sum = vec_max( BWE_sum);
+
+        r=3; yshift=0;
+        get_feature( threshed, intersections, r, sum_feature, BWE_sum_inner, yshift);
+
+        r=RING_R ; yshift=0;
+        get_feature( threshed, intersections, r,
+                    [](const cv::Mat &hood) { return mat_dist( ringmask(), hood); },
+                    BWE_ringmatch, yshift);
+
+        BWE_outer_minus_inner = BWE_sum;
+        // Looking for a ring
+        vec_sub( BWE_outer_minus_inner, BWE_sum_inner); // Yes, do this twice
+        vec_sub( BWE_outer_minus_inner, BWE_sum_inner);
+        float max_outer_minus_inner = vec_max( BWE_outer_minus_inner);
+
         // Black stones
         ISLOOP( BWE_brightness) {
             float bthresh = 35; // larger means more Black stones
@@ -58,22 +78,31 @@ public:
             }
         }
         // White places, first guess
-        float sum_thresh    = 80;  // smaller means more White stones
-        float bright_thresh = 200; // smaller means more White stones
+        //float sum_thresh    = 80;  // smaller means more White stones
+        //float sum_thresh    = 0.8 * max_sum;  // smaller means more White stones
+        //float bright_thresh = 0.9 * max_brightness; // smaller means more White stones
+        //float ring_thresh = 0.9 * max_outer_minus_inner;
         ISLOOP( BWE_brightness) {
-            if ( BWE_brightness[i] > bright_thresh
+            if ( 1
+                //&& BWE_brightness[i] > bright_thresh
                 //&& BWE_crossness_new[i] < 100
-                && BWE_sum[i] > sum_thresh
-                && res[i] != BBLACK)  {
+                //&& BWE_sum[i] > sum_thresh
+                && BWE_outer_minus_inner[i] > 0
+                //&& BWE_ringmatch[i] < 100
+                && res[i] != BBLACK)
+            {
                 res[i] = WWHITE;
             }
         }
-        
+        int tt = 42;
+#define BOOTSTRAP
+#ifdef BOOTSTRAP
         // Bootstrap.
         // Train templates on preliminary classification result, then reclassify,
         // repeat. This should compensate for highlights and changes in the environment.
-        const int NITER = 10; // 10 is better than 3. Not sure about the optimum.
-        const int MAGIC = 400;
+        const int NITER = 2; // Not sure about the best number
+        const int WMAGIC = 800; // larger means less W stones
+        const int EMAGIC = 100;   // larger means more W stones
         NLOOP (NITER) {
             // Make a template for white places
             Points2f white_intersections;
@@ -139,10 +168,10 @@ public:
                     }
                 }
                 //PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
-                else if (BWE_white_templ_score[i] > BWE_empty_templ_score[i]) {
-                    res[i] = WWHITE;
-                }
-                else if (BWE_white_templ_score[i] < BWE_empty_templ_score[i] + MAGIC ) {
+//                else if (BWE_white_templ_score[i] - WMAGIC > BWE_empty_templ_score[i]) {
+//                    res[i] = WWHITE;
+//                }
+                else if (BWE_empty_templ_score[i] - EMAGIC > BWE_white_templ_score[i]  ) {
                     res[i] = EEMPTY;
                 }
             } // ISLOOP
@@ -160,7 +189,7 @@ public:
 //            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
 //            efilee << "empty_template" << empty_template;
         } // NLOOP
-        
+#endif
         // Get an overall match quaity score
         std::vector<float> best_matches = BWE_white_templ_score;
         ISLOOP (best_matches) {
@@ -283,177 +312,94 @@ public:
         ssum = RAT( ssum, totsum);
         return fabs(ssum);
     } // cross_feature_new()
-
     
-    //------------------------------------------------------------------------
-    inline static void get_whiteness( const cv::Mat &threshed,
-                                     const Points2f &intersections,
-                                     float dx_, float dy_,
-                                     std::vector<float> &res )
+    // Return a ring shaped mask used to detect W stones in threshed gray img.
+    // For some reason, this is much worse than outer_minus_inner.
+    //-------------------------------------------------------------------------
+    inline static cv::Mat& ringmask()
     {
-        int dx = ROUND(dx_/4.0);
-        int dy = ROUND(dy_/4.0);
-        float area = (2*dx+1) * (2*dy+1);
+        static cv::Mat mask;
+        if (mask.rows) { return mask; }
+        
+        // Build the mask, once.
+        const int r = RING_R;
+        //const int middle_r = 8;
+        const int inner_r = 3;
+        const int width = 2*r + 1;
+        const int height = width;
+        mask = cv::Mat( height, width, CV_8UC1);
+        mask = 0;
+        cv::Point center( r, r);
+        cv::circle( mask, center, r, 255, -1);
+        //cv::circle( mask, center, middle_r, 127, -1);
+        cv::circle( mask, center, inner_r, 0, -1);
+        int tt=42;
 
-        const int tsz = 15;
-        uint8_t tmpl[tsz*tsz] = {
-            1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,
-            1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,
-            1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,
-            1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-            1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-            1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,
-            1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,
-            1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,
-            1,1,1,1,1,1,0,0,0,1,1,1,1,1,1
-        };
-//        uint8_t tmpl[tsz*tsz] = {
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
-//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
-//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
-//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
-//            1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//        };
-        cv::Mat mtmpl = 255 * cv::Mat(tsz, tsz, CV_8UC1, tmpl);
-        cv::Mat mtt;
-        cv::copyMakeBorder( threshed, mtt, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
-        cv::Mat dst;
-        cv::matchTemplate( mtt, mtmpl, dst, CV_TM_SQDIFF);
-        cv::normalize( dst, dst, 0 , 255, CV_MINMAX, CV_8UC1);
-        res.clear();
-        float wness = 0;
-        ISLOOP (intersections) {
-            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y-2));
-            cv::Rect rect( p.x - dx, p.y - dy, 2*dx+1, 2*dy+1 );
-            if (check_rect( rect, threshed.rows, threshed.cols)) {
-                cv::Mat hood = dst(rect);
-                float wness = cv::sum(hood)[0] / area; // 0 .. 255
-                wness /= 255.0; // 0 .. 1; best match is 0
-                wness = -log(wness); // 0 .. inf
-            }
-            res.push_back( wness);
-        } // for intersections
-        mat_dbg = dst.clone();
-    } // get_whiteness()
+        return mask;
+    }
 
-    //------------------------------------------------------------------------
-    inline static void get_crossness( const cv::Mat &threshed,
-                                     const Points2f &intersections,
-                                     float dx_, float dy_,
-                                     std::vector<float> &res )
-    {
-        int dx = 2; // ROUND(dx_/.0);
-        int dy = 2; // ROUND(dy_/5.0);
-        float area = (2*dx+1) * (2*dy+1);
-
-        const int tsz = 15;
-//        uint8_t tmpl[tsz*tsz] = {
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//            0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,
-//        };
-//        uint8_t tmpl[tsz*tsz] = {
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//            0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-//        };
-        uint8_t tmpl[tsz*tsz] = {
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-            0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,
-        };
-//        uint8_t tmpl[tsz*tsz] = {
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//            0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,
-//        };
-        cv::Mat mtmpl = 255 * cv::Mat(tsz, tsz, CV_8UC1, tmpl);
-        cv::Mat mtt;
-        cv::copyMakeBorder( threshed, mtt, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
-        cv::Mat dst;
-        cv::matchTemplate( mtt, mtmpl, dst, CV_TM_SQDIFF);
-        cv::normalize( dst, dst, 0 , 255, CV_MINMAX, CV_8UC1);
-        res.clear();
-        float cness = 255;
-        ISLOOP (intersections) {
-            cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
-            cv::Rect rect( p.x - dx, p.y - dy-2, 2*dx+1, 2*dy+1 );
-            if (check_rect( rect, threshed.rows, threshed.cols)) {
-                cv::Mat hood = dst(rect);
-                cness = cv::sum(hood)[0] / area;
-            }
-            res.push_back( 255 - cness);
-        } // for intersections
-        vec_scale( res, 255);
-        //PLOG( "min cross: %.0f\n", vec_min( res));
-        mat_dbg = dst.clone();
-    } // get_crossness()
-    
 }; // class BlackWhiteEmpty
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #endif /* BlackWhiteEmpty_hpp */

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */ = {isa = PBXBuildFile; fileRef = AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */; };
+		AC0BC39D1FE2E26F0066C542 /* DrawBoard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC0BC39B1FE2E26F0066C542 /* DrawBoard.cpp */; };
 		AC3C5EBC1FBC942000BB8B4F /* Ocv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */; };
 		AC5540741F9BE6AD00922557 /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC5540731F9BE6AD00922557 /* opencv2.framework */; };
 		AC5540771F9BE71900922557 /* CppInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC5540761F9BE71800922557 /* CppInterface.mm */; };
@@ -37,6 +38,8 @@
 		AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FrameExtractor.h; sourceTree = "<group>"; };
 		AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FrameExtractor.m; sourceTree = "<group>"; };
 		AC043D331F9BB9AB006CF7F0 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
+		AC0BC39B1FE2E26F0066C542 /* DrawBoard.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DrawBoard.cpp; sourceTree = "<group>"; };
+		AC0BC39C1FE2E26F0066C542 /* DrawBoard.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DrawBoard.hpp; sourceTree = "<group>"; };
 		AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Ocv.cpp; sourceTree = "<group>"; };
 		AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Ocv.hpp; sourceTree = "<group>"; };
 		AC5540731F9BE6AD00922557 /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = SOURCE_ROOT; };
@@ -121,6 +124,8 @@
 				AC61AD561FBCCB0B00DEBCDA /* Common.hpp */,
 				AC5540751F9BE71800922557 /* CppInterface.h */,
 				AC5540761F9BE71800922557 /* CppInterface.mm */,
+				AC0BC39B1FE2E26F0066C542 /* DrawBoard.cpp */,
+				AC0BC39C1FE2E26F0066C542 /* DrawBoard.hpp */,
 				AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */,
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC9702191FBC88050057C4C2 /* Globals.h */,
@@ -257,6 +262,7 @@
 				AC61AD571FBCCB0B00DEBCDA /* Common.cpp in Sources */,
 				ACEF735D1FBD03CA00DA4AD8 /* LineFixer.cpp in Sources */,
 				AC5540771F9BE71900922557 /* CppInterface.mm in Sources */,
+				AC0BC39D1FE2E26F0066C542 /* DrawBoard.cpp in Sources */,
 				AC9702181FBC87DF0057C4C2 /* Globals.mm in Sources */,
 				AC8ACF8C1FBF5553005D5722 /* BlobFinder.cpp in Sources */,
 				AC628C341F9A80150043FCEE /* MainVC.m in Sources */,

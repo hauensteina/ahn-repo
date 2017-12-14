@@ -331,6 +331,27 @@ T vec_max( std::vector<T> vec )
     return res;
 }
 
+// Add a vector to another, in place
+//------------------------------------------------------------
+template <typename T>
+void vec_add( std::vector<T> &v1, const std::vector<T> &v2 )
+{
+    ISLOOP (v1) {
+        v1[i] += v2[i];
+    }
+}
+
+// Subtract a vector from another, in place
+//------------------------------------------------------------
+template <typename T>
+void vec_sub( std::vector<T> &v1, const std::vector<T> &v2 )
+{
+    ISLOOP (v1) {
+        v1[i] -= v2[i];
+    }
+}
+
+
 // Scale vector to max_element = mmax
 //----------------------------------------------
 template <typename T>

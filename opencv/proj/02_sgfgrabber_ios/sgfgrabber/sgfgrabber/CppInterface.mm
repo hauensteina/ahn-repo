@@ -18,21 +18,30 @@
 #import "AppDelegate.h"
 #import "Globals.h"
 #import "CppInterface.h"
-#import "LineFinder.hpp"
-#import "LineFixer.hpp"
+//#import "LineFinder.hpp"
+//#import "LineFixer.hpp"
 #import "BlackWhiteEmpty.hpp"
 #import "BlobFinder.hpp"
 #import "Clust1D.hpp"
+#import "DrawBoard.hpp"
 
 extern cv::Mat mat_dbg;
 
 @interface CppInterface()
 //=======================
-@property cv::Mat small; // resized image, in color
+@property cv::Mat small; // resized image, in color, RGB
+@property cv::Mat hue;   // HSV of small
+@property cv::Mat sat;
+@property cv::Mat val;
+
 @property cv::Mat small_zoomed;  // small, zoomed into the board
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
 @property cv::Mat gray_zoomed;   // Grayscale version of small, zoomed into the board
+@property cv::Mat hue_zoomed;
+@property cv::Mat sat_zoomed;
+@property cv::Mat val_zoomed;
+
 @property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
 @property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
@@ -45,7 +54,7 @@ extern cv::Mat mat_dbg;
 @property Points2f intersections;
 @property float dy;
 @property float dx;
-@property LineFinder finder;
+//@property LineFinder finder;
 @property std::vector<Points2f> boards; // history of board corners
 @property cv::Mat white_templ;
 @property cv::Mat black_templ;
@@ -118,11 +127,11 @@ bool board_valid( Points2f board, const cv::Mat &img)
 
 // Apply inverse thresh and dilate grayscale image.
 //---------------------------------------------------------
-void thresh_dilate( const cv::Mat &img, cv::Mat &dst)
+void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 {
     cv::adaptiveThreshold( img, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           5 /* 11 */ ,  // neighborhood_size
-                          8);  // threshold
+                          thresh);  // threshold
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
     cv::dilate( dst, dst, element );
 }
@@ -145,7 +154,14 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst)
     //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
-    cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+    cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY); // Yes, RGB not BGR //@@@
+    cv::Mat hsv;
+    cv::cvtColor( _small, hsv, cv::COLOR_RGB2HSV);
+    cv::Mat planes[3];
+    cv::split( hsv, planes);
+    _hue = planes[0];
+    _sat = planes[1];
+    _val = planes[2];
     thresh_dilate( _gray, _gray_threshed);
     //normalize_plane_local(_gray, _gray, 15);
 
@@ -868,8 +884,8 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     Points2f square = {
         cv::Point( marg, marg),
         cv::Point( img.cols - marg, marg),
-        cv::Point( img.cols - marg, img.cols - 2*marg),
-        cv::Point( marg, img.cols - 2*marg) };
+        cv::Point( img.cols - marg, img.cols - marg),
+        cv::Point( marg, img.cols - marg) };
     M = cv::getPerspectiveTransform(corners, square);
     cv::warpPerspective(img, dst, M, cv::Size( img.cols, img.rows));
 }
@@ -885,10 +901,15 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
+        zoom_in( _hue, _corners, _hue_zoomed, M); _hue_zoomed *= (255.0 / 180.0);
+        zoom_in( _sat, _corners, _sat_zoomed, M);
+        zoom_in( _val, _corners, _val_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
-        thresh_dilate( _gray_zoomed, _gz_threshed);
+        thresh_dilate( _gray_zoomed, _gz_threshed, 4);
     }
     // Show results
+    DrawBoard drb; std::vector<int> v;
+    drb.draw( _gray_zoomed, _gray_zoomed, v, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
     cv::Mat drawing;
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
     UIImage *res = MatToUIImage( drawing);
@@ -904,7 +925,11 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     
     // Show results
     cv::Mat drawing;
+    int s = 2*BlackWhiteEmpty::RING_R+1;
+    cv::Rect re( 100, 100, s, s);
+    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
     cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
