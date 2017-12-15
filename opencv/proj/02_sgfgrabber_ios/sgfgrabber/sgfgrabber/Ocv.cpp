@@ -294,6 +294,13 @@ int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
     int tt=42;
     return res;
 }
+//------------------------------------------------------------------------
+int median_on_segment( const cv::Mat &gray, cv::Vec4f seg)
+{
+    cv::Point p1(ROUND(seg[0]), ROUND(seg[1]));
+    cv::Point p2(ROUND(seg[2]), ROUND(seg[3]));
+    return median_on_segment( gray, p1, p2);
+}
 
 // Return a line segment with median theta 
 //-----------------------------------------------------------

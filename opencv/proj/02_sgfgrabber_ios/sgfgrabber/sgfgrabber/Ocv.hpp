@@ -86,6 +86,7 @@ Point2f intersection( cv::Vec2f line1, cv::Vec2f line2);
 float line_len( cv::Point p, cv::Point q);
 // Median pixel val on line segment
 int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
+int median_on_segment( const cv::Mat &gray, cv::Vec4f seg);
 // Median polar line bt theta
 cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)

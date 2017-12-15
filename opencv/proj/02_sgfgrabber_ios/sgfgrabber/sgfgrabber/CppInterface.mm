@@ -155,7 +155,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
-    cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY); // Yes, RGB not BGR //@@@
+    cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY); // Yes, RGB not BGR
     thresh_dilate( _gray, _gray_threshed);
     //normalize_plane_local(_gray, _gray, 15);
 
@@ -725,83 +725,83 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     //int width  = img.cols;
     float middle_x = img.cols/2.0;
     float middle_y = img.rows/2.0;
-    cv::Mat hue;
-    get_hue_from_rgb( img, hue);
+    //cv::Mat hue;
+    //get_hue_from_rgb( img, hue);
     
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Point tl, tr, br, bl;
     cv::Point best_tl, best_tr, best_br, best_bl;
     //cv::Vec2f mid_h_line, mid_v_line;
-    //cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
+    cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
     //int mid_h_idx=0, mid_v_idx=0;
+    cv::Vec4f topseg, botseg;
     
-    float mindiff = 1E9;
-    //for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
-    for (int i=2; i < SZ(horiz_lines) - board_sz +1 -2; i++) { // exclude the outer two lines
-        PLOG(" ==========\n");
+    float mindiff;
+    int marg  = 1;
+    int shift = 5;
+    
+    mindiff = 1E9;
+    for (int i=marg; i < SZ(horiz_lines) - board_sz+1-marg; i++) {
         std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
         top_line = hlines.front(); bot_line = hlines.back();
-        //for (int j=0; j < SZ(vert_lines) - board_sz + 1; j++) {
-        for (int j=2; j < SZ(vert_lines) - board_sz +1 -2; j++) { // exclude the outer two lines
-            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, j, board_sz);
-            left_line = vlines.front(); right_line = vlines.back();
-            tl = pf2p( intersection( left_line,  top_line));
-            tr = pf2p( intersection( right_line, top_line));
-            br = pf2p( intersection( right_line, bot_line));
-            bl = pf2p( intersection( left_line,  bot_line));
-            int shift=5;
-            int left_median  = median_on_segment(  hue, cv::Point( tl.x-shift, tl.y),  cv::Point( bl.x-shift, bl.y) );
-            int right_median = median_on_segment(  hue, cv::Point( tr.x+shift, tr.y),  cv::Point( br.x+shift, br.y) );
-            int top_median   = median_on_segment(  hue, cv::Point( tl.x, tl.y-shift),  cv::Point( tr.x, tr.y-shift) );
-            int bot_median   = median_on_segment(  hue, cv::Point( bl.x, bl.y+shift),  cv::Point( br.x, br.y+shift) );
-            int dv = ABS( left_median - right_median);
-            int dh = ABS( top_median - bot_median);
-            int d = dh + dv;
-            PLOG( "row col left right dv dh d %3d %3d %5d %5d %5d %5d %5d\n", i, j, left_median, right_median, dv, dh, d);
-            if (d < mindiff) {
-                mindiff = d;
-                best_tl = tl;
-                best_tr = tr;
-                best_br = br;
-                best_bl = bl;
-            }
-            //int top_median = median_on_segment(   hue, tl, tr );
-            //int bot_median = median_on_segment(   hue, bl, br );
-        } // for vert_lines
-    } // for horiz_lines
+        float x1 = middle_x - middle_x/2.0, x2 = middle_x + middle_x/2.0;
+        Point2f tl1( x1, y_from_x( x1, top_line));
+        Point2f tl2( x2, y_from_x( x2, top_line));
+        topseg = cv::Vec4f( tl1.x, tl1.y-shift, tl2.x, tl2.y-shift);
+        Point2f bl1( x1, y_from_x( x1, bot_line));
+        Point2f bl2( x2, y_from_x( x2, bot_line));
+        botseg = cv::Vec4f( bl1.x, bl1.y+shift, bl2.x, bl2.y+shift);
 
-//
-//    for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
+        int top_median = median_on_segment( img, topseg);
+        int bot_median = median_on_segment( img, botseg);
+        int d = ABS( top_median - bot_median);
+        PLOG( "row top bot d %3d %5d %5d %5d\n", i, top_median, bot_median, d);
+        if (d < mindiff) {
+            mindiff = d;
+            max_top_line = hlines.front();
+            max_bot_line = hlines.back();
+        }
+    } // for horiz lines
+
+//    int marg = 2;
+//    for (int i=marg; i < SZ(horiz_lines) - board_sz+1-marg; i++) {
+//        PLOG(" ==========\n");
 //        std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
 //        top_line = hlines.front(); bot_line = hlines.back();
-//        mid_h_line =
-//        float y = y_from_x(middle_x, <#cv::Vec2f pline#>)
-//        for (int j=0; j < SZ(vert_lines) - board_sz + 1; j++) {
+//        for (int j=marg; j < SZ(vert_lines) - board_sz+1-marg; j++) {
 //            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, j, board_sz);
 //            left_line = vlines.front(); right_line = vlines.back();
-//
-//            cv::Point tl = pf2p( intersection( left_line,  top_line));
-//            cv::Point tr = pf2p( intersection( right_line, top_line));
-//            cv::Point br = pf2p( intersection( right_line, bot_line));
-//            cv::Point bl = pf2p( intersection( left_line,  bot_line));
-//            int width = 1;
-//            float score = 0;
-//            score += pixels_on_segment( img, tl, tr, width);
-//            score += pixels_on_segment( img, tr, br, width);
-//            score += pixels_on_segment( img, br, bl, width);
-//            score += pixels_on_segment( img, bl, tl, width);
-//            if (score > max_score) {
-//                max_score = score;
-//                max_top_line = top_line; max_bot_line = bot_line;
-//                max_left_line = left_line; max_right_line = right_line;
+//            tl = pf2p( intersection( left_line,  top_line));
+//            tr = pf2p( intersection( right_line, top_line));
+//            br = pf2p( intersection( right_line, bot_line));
+//            bl = pf2p( intersection( left_line,  bot_line));
+//            int shift=5;
+//            int left_median  = median_on_segment(  hue, cv::Point( tl.x-shift, tl.y),  cv::Point( bl.x-shift, bl.y) );
+//            int right_median = median_on_segment(  hue, cv::Point( tr.x+shift, tr.y),  cv::Point( br.x+shift, br.y) );
+//            int top_median   = median_on_segment(  hue, cv::Point( tl.x, tl.y-shift),  cv::Point( tr.x, tr.y-shift) );
+//            int bot_median   = median_on_segment(  hue, cv::Point( bl.x, bl.y+shift),  cv::Point( br.x, br.y+shift) );
+//            int dv = ABS( left_median - right_median);
+//            int dh = ABS( top_median - bot_median);
+//            int d = dh + dv;
+//            PLOG( "row col left right dv dh d %3d %3d %5d %5d %5d %5d %5d\n", i, j, left_median, right_median, dv, dh, d);
+//            if (d < mindiff) {
+//                mindiff = d;
+//                best_tl = tl;
+//                best_tr = tr;
+//                best_br = br;
+//                best_bl = bl;
 //            }
-//        } // for vert-lines
+//            //int top_median = median_on_segment(   hue, tl, tr );
+//            //int bot_median = median_on_segment(   hue, bl, br );
+//        } // for vert_lines
 //    } // for horiz_lines
-//    Point2f tl = intersection( max_left_line,  max_top_line);
-//    Point2f tr = intersection( max_right_line, max_top_line);
-//    Point2f br = intersection( max_right_line, max_bot_line);
-//    Point2f bl = intersection( max_left_line,  max_bot_line);
-    Points2f corners = {best_tl, best_tr, best_br, best_bl};
+    
+    //Points2f corners = {best_tl, best_tr, best_br, best_bl};
+    img.copyTo(mat_dbg);
+    draw_line(topseg, mat_dbg);
+    draw_line(botseg, mat_dbg);
+    int tt=42;
+    Points2f corners;
     return corners;
 } // get_corners()
 
@@ -941,12 +941,13 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
         if (SZ( _horizontal_lines) < 5) break;
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, /*_gray*/ /*_gray_threshed*/ _small);
+        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray /*_gray_threshed*/ /*_small*/ );
     } while(0);
     
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1153,6 +1154,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
 - (UIImage *) f11_classify
 {
     g_app.mainVC.lbDbg.text = @"11";
+    if (SZ(_corners_zoomed) != 4) { return MatToUIImage( _gray); }
     
     std::vector<int> diagram;
     if (_small_zoomed.rows > 0) {
@@ -1258,7 +1260,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
             result.push_back(p);
         }
     }
-} // get_intersections()
+} // get_intersections_from_corners()
 
 #pragma mark - Real time implementation
 //========================================
