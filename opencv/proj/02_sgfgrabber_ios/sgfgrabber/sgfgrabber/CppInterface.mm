@@ -735,7 +735,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
     //int mid_h_idx=0, mid_v_idx=0;
     cv::Vec4f topseg, botseg;
-    
+    cv::Vec4f leftseg, rightseg;
+
     float mindiff;
     int marg  = 1;
     int shift = 5;
@@ -751,7 +752,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         Point2f bl1( x1, y_from_x( x1, bot_line));
         Point2f bl2( x2, y_from_x( x2, bot_line));
         botseg = cv::Vec4f( bl1.x, bl1.y+shift, bl2.x, bl2.y+shift);
-
+        
         int top_median = median_on_segment( img, topseg);
         int bot_median = median_on_segment( img, botseg);
         int d = ABS( top_median - bot_median);
@@ -762,7 +763,30 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             max_bot_line = hlines.back();
         }
     } // for horiz lines
+    
+    mindiff = 1E9;
+    for (int i=marg; i < SZ(vert_lines) - board_sz+1-marg; i++) {
+        std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, i, board_sz);
+        left_line = vlines.front(); right_line = vlines.back();
+        float y1 = middle_y - middle_y/2.0, y2 = middle_y + middle_y/2.0;
+        Point2f ll1( x_from_y( y1, left_line), y1);
+        Point2f ll2( x_from_y( y2, left_line), y2);
+        leftseg = cv::Vec4f( ll1.x-shift, ll1.y, ll2.x-shift, ll2.y);
+        Point2f rl1( x_from_y( y1, right_line), y1);
+        Point2f rl2( x_from_y( y2, right_line), y2);
+        rightseg = cv::Vec4f( rl1.x+shift, rl1.y, rl2.x+shift, rl2.y);
 
+        int left_median  = median_on_segment( img, leftseg);
+        int right_median = median_on_segment( img, rightseg);
+        int d = ABS( left_median - right_median);
+        PLOG( "col left right d %3d %5d %5d %5d\n", i, left_median, right_median, d);
+        if (d < mindiff) {
+            mindiff = d;
+            max_left_line = vlines.front();
+            max_right_line = vlines.back();
+        }
+    } // for vert lines
+    
 //    int marg = 2;
 //    for (int i=marg; i < SZ(horiz_lines) - board_sz+1-marg; i++) {
 //        PLOG(" ==========\n");
@@ -795,13 +819,16 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 //            //int bot_median = median_on_segment(   hue, bl, br );
 //        } // for vert_lines
 //    } // for horiz_lines
+    tl = intersection( max_left_line,  max_top_line);
+    tr = intersection( max_right_line, max_top_line);
+    br = intersection( max_right_line, max_bot_line);
+    bl = intersection( max_left_line,  max_bot_line);
+    Points2f corners = {tl, tr, br, bl};
     
-    //Points2f corners = {best_tl, best_tr, best_br, best_bl};
     img.copyTo(mat_dbg);
     draw_line(topseg, mat_dbg);
     draw_line(botseg, mat_dbg);
-    int tt=42;
-    Points2f corners;
+    //Points2f corners;
     return corners;
 } // get_corners()
 
