@@ -68,37 +68,38 @@ void draw_contours( const Contours cont, cv::Mat &dst);
 
 // Line
 //=======
-// Stretch a line by factor, on both ends
-Points stretch_line(Points line, float factor );
-// Stretch a line by factor, on both ends
-cv::Vec4f stretch_line(cv::Vec4f line, float factor );
-// Angle between line segments
 float angle_between_lines( cv::Point pa, cv::Point pe,
                           cv::Point qa, cv::Point qe);
-// Intersection of two lines defined by point pairs
-Point2f intersection( cv::Vec4f line1, cv::Vec4f line2);
-// Intersection of polar lines (rho, theta)
-Point2f intersection( cv::Vec2f line1, cv::Vec2f line2);
 // Average line segs by fitting a line thu the endpoints
 cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines );
 // Average polar lines after setting rho to zero and conv to seg
 cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines );
+// Distance between point and line segment
+float dist_point_line( cv::Point p, const cv::Vec4f &line);
+// Distance between point and polar line
+float dist_point_line( cv::Point p, const cv::Vec2f &pline);
+// Intersection of two lines defined by point pairs
+Point2f intersection( cv::Vec4f line1, cv::Vec4f line2);
+// Intersection of polar lines (rho, theta)
+Point2f intersection( cv::Vec2f line1, cv::Vec2f line2);
+// Length of a line segment
+float line_len( cv::Point p, cv::Point q);
+// Median pixel val on line segment
+int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
 // Median polar line bt theta
 cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)
 cv::Vec4f polar2segment( const cv::Vec2f &pline);
 // Line segment to polar, with positive rho
 cv::Vec2f segment2polar( const cv::Vec4f &line);
-// Length of a line segment
-float line_len( cv::Point p, cv::Point q);
-// Distance between point and line segment
-float dist_point_line( cv::Point p, const cv::Vec4f &line);
-// Distance between point and polar line
-float dist_point_line( cv::Point p, const cv::Vec2f &pline);
-// y given x for polar line
-float y_from_x( float x, cv::Vec2f pline);
+// Stretch a line by factor, on both ends
+Points stretch_line(Points line, float factor );
+// Stretch a line by factor, on both ends
+cv::Vec4f stretch_line(cv::Vec4f line, float factor );
 // x given y for polar line
 float x_from_y( float y, cv::Vec2f pline);
+// y given x for polar line
+float y_from_x( float x, cv::Vec2f pline);
 
 // Rectangle
 //=============
@@ -135,6 +136,8 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33);
 void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORPH_RECT );
 // Get a center crop of an image
 int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4);
+// Get hue
+void get_hue_from_rgb( const cv::Mat &img, cv::Mat &dst);
 // Average over a center crop of img
 float center_avg( const cv::Mat &img, float frac=4);
 // Normalize mean and variance, per channel
@@ -182,6 +185,7 @@ void points2float( const Points &pi, Points2f &pf);
 Points2f points2float( const Points &pi);
 // Vector of float points to int
 void points2int( const Points2f &pf, Points &pi);
+inline cv::Point pf2p( const Point2f p) { return cv::Point( ROUND(p.x), ROUND(p.y)) ; }
 
 // Debugging
 //=============

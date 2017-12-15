@@ -192,35 +192,6 @@ void draw_contours( const Contours cont, cv::Mat &dst)
 
 // Line
 //=========
-
-// Stretch a line by factor, on both ends
-//------------------------------------------------
-Points stretch_line(Points line, float factor )
-{
-    cv::Point p0 = line[0];
-    cv::Point p1 = line[1];
-    float length = line_len( p0, p1);
-    cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
-    Points res = {p0-v , p1+v};
-    return res;
-}
-
-// Stretch a line by factor, on both ends
-//----------------------------------------------------
-cv::Vec4f stretch_line(cv::Vec4f line, float factor )
-{
-    const cv::Point p0( line[0], line[1]);
-    const cv::Point p1( line[2], line[3]);
-    float length = line_len( p0, p1);
-    const cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
-    cv::Vec4f res;
-    res[0] = (p0-v).x;
-    res[1] = (p0-v).y;
-    res[2] = (p1+v).x;
-    res[3] = (p1+v).y;
-    return res;
-}
-
 //----------------------------------------------------
 float angle_between_lines( cv::Point pa, cv::Point pe,
                           cv::Point qa, cv::Point qe)
@@ -232,27 +203,6 @@ float angle_between_lines( cv::Point pa, cv::Point pe,
     if (dot > 1) dot = 1;
     return std::acos(dot);
 }
-
-// Intersection of two lines defined by point pairs
-//----------------------------------------------------------
-Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
-{
-    return intersection( cv::Point2f( line1[0], line1[1]),
-                        cv::Point2f( line1[2], line1[3]),
-                        cv::Point2f( line2[0], line2[1]),
-                        cv::Point2f( line2[2], line2[3]));
-}
-
-// Intersection of polar lines (rho, theta)
-//---------------------------------------------------------
-Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
-{
-    cv::Vec4f seg1, seg2;
-    seg1 = polar2segment( line1);
-    seg2 = polar2segment( line2);
-    return intersection( seg1, seg2);
-}
-
 
 // Average a bunch of line segments by
 // fitting a line through all the endpoints
@@ -292,6 +242,57 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines )
         segs.push_back(seg);
     }
     return avg_lines( segs);
+}
+
+// Distance between point and polar line
+//----------------------------------------------------------
+float dist_point_line( cv::Point p, const cv::Vec2f &pline)
+{
+    cv::Vec4f line = polar2segment( pline);
+    return dist_point_line( p, line);
+}
+
+
+// Intersection of two lines defined by point pairs
+//----------------------------------------------------------
+Point2f intersection( cv::Vec4f line1, cv::Vec4f line2)
+{
+    return intersection( cv::Point2f( line1[0], line1[1]),
+                        cv::Point2f( line1[2], line1[3]),
+                        cv::Point2f( line2[0], line2[1]),
+                        cv::Point2f( line2[2], line2[3]));
+}
+
+// Intersection of polar lines (rho, theta)
+//---------------------------------------------------------
+Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
+{
+    cv::Vec4f seg1, seg2;
+    seg1 = polar2segment( line1);
+    seg2 = polar2segment( line2);
+    return intersection( seg1, seg2);
+}
+
+// Length of a line segment
+//---------------------------------------------------------
+float line_len( cv::Point p, cv::Point q)
+{
+    return cv::norm( q-p);
+}
+
+// Median pixel val on line segment
+//------------------------------------------------------------------------
+int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
+{
+    cv::LineIterator it( gray, p1, p2, 8);
+    std::vector<int> v( it.count);
+    for(int i = 0; i < it.count; i++, it++) {
+        //cv::Scalar s = cv::Scalar(*it);
+        v[i] = **it;
+    }
+    int res = vec_median( v);
+    int tt=42;
+    return res;
 }
 
 // Return a line segment with median theta 
@@ -345,12 +346,32 @@ cv::Vec2f segment2polar( const cv::Vec4f &line_)
     return pline;
 }
 
-
-// Length of a line segment
-//---------------------------------------------------------
-float line_len( cv::Point p, cv::Point q)
+// Stretch a line by factor, on both ends
+//------------------------------------------------
+Points stretch_line(Points line, float factor )
 {
-    return cv::norm( q-p);
+    cv::Point p0 = line[0];
+    cv::Point p1 = line[1];
+    float length = line_len( p0, p1);
+    cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
+    Points res = {p0-v , p1+v};
+    return res;
+}
+
+// Stretch a line by factor, on both ends
+//----------------------------------------------------
+cv::Vec4f stretch_line(cv::Vec4f line, float factor )
+{
+    const cv::Point p0( line[0], line[1]);
+    const cv::Point p1( line[2], line[3]);
+    float length = line_len( p0, p1);
+    const cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
+    cv::Vec4f res;
+    res[0] = (p0-v).x;
+    res[1] = (p0-v).y;
+    res[2] = (p1+v).x;
+    res[3] = (p1+v).y;
+    return res;
 }
 
 // Distance between point and line segment
@@ -368,12 +389,12 @@ float dist_point_line( cv::Point p, const cv::Vec4f &line)
     return num / den;
 }
 
-// Distance between point and polar line
-//----------------------------------------------------------
-float dist_point_line( cv::Point p, const cv::Vec2f &pline)
+// x given y for polar line
+//----------------------------------------
+float x_from_y( float y, cv::Vec2f pline)
 {
-    cv::Vec4f line = polar2segment( pline);
-    return dist_point_line( p, line);
+    float res = (pline[0] - y * sin( pline[1])) / cos( pline[1]);
+    return res;
 }
 
 // y given x for polar line
@@ -384,13 +405,6 @@ float y_from_x( float x, cv::Vec2f pline)
     return res;
 }
 
-// x given y for polar line
-//----------------------------------------
-float x_from_y( float y, cv::Vec2f pline)
-{
-    float res = (pline[0] - y * sin( pline[1])) / cos( pline[1]);
-    return res;
-}
 
 // Rectangle
 //===============
@@ -668,6 +682,17 @@ int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac)
     dst = cv::Mat( img, cv::Rect( cx-dx, cy-dy, 2*dx+1, 2*dy+1));
     int area = dst.rows * dst.cols;
     return area;
+}
+
+// Get hue
+//----------------------------------------------------------
+void get_hue_from_rgb( const cv::Mat &img, cv::Mat &dst)
+{
+    cv::Mat tmp;
+    cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
+    cv::Mat planes[4];
+    cv::split( tmp, planes);
+    planes[0].copyTo( dst);
 }
 
 // Average over a center crop of img
