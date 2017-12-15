@@ -185,7 +185,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     // Rotate to exactly pi/2
     rot_img( _gray, theta, _gray);
     rot_img( _small, theta, _small);
-    thresh_dilate( _gray, _gray_threshed);
+    thresh_dilate( _gray, _gray_threshed, 4);
 
     // Rerun the blob detection. We could just rotate the blobs for efficiency.
     _stone_or_empty.clear();
@@ -719,8 +719,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 
     for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
         std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
-        for (int i=0; i < SZ(vert_lines) - board_sz + 1; i++) {
-            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, i, board_sz);
+        for (int j=0; j < SZ(vert_lines) - board_sz + 1; j++) {
+            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, j, board_sz);
             top_line = hlines.front(); bot_line = hlines.back();
             left_line = vlines.front(); right_line = vlines.back();
             float score = sum_points_between_four_lines( top_line, bot_line, left_line, right_line, pfts, width/2, height/2);
@@ -797,12 +797,28 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 std::vector<PFeat> find_crosses( const cv::Mat &threshed,
                                 const Points2f &intersections)
 {
-    std::vector<float> features;
+    std::vector<float> features, inner;
     std::vector<PFeat> res;
-    // For each intersection of two lines
     int r=10;
     BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::cross_feature_new,
-                                 features);
+                                 features, 0, true);
+//    int r = BlackWhiteEmpty::RING_R ;
+//    BlackWhiteEmpty::get_feature( threshed, intersections, r,
+//                                 [](const cv::Mat &hood) { return mat_dist( BlackWhiteEmpty::ringmask(), hood); },
+//                                 features);
+    
+//    r=10;
+//    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::sum_feature, features);
+//    //float max_sum = vec_max( BWE_sum);
+//
+//    r=3;
+//    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::sum_feature, inner);
+//
+//    // Looking for a ring
+//    vec_sub( features, inner); // Yes, do this twice
+//    vec_sub( features, inner);
+//    //float max_outer_minus_inner = vec_max( BWE_outer_minus_
+    
     ISLOOP (features) {
         res.push_back( { intersections[i], features[i] } );
     }

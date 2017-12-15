@@ -100,9 +100,9 @@ public:
         // Bootstrap.
         // Train templates on preliminary classification result, then reclassify,
         // repeat. This should compensate for highlights and changes in the environment.
-        const int NITER = 2; // Not sure about the best number
+        const int NITER = 10; // Not sure about the best number
         //const int WMAGIC = 800; // larger means less W stones
-        const int EMAGIC = 100;   // larger means more W stones
+        const int EMAGIC = 0;   // larger means more W stones
         NLOOP (NITER) {
             // Make a template for white places
             Points2f white_intersections;
@@ -294,24 +294,27 @@ public:
         int mid_x = ROUND(hood.cols / 2.0);
         float ssum = 0;
         int n = 0;
+ //       int marg = 3;
         // Look for horizontal line in the middle
         CLOOP (hood.cols) {
+//            if (c < marg) continue;
+//            if (hood.cols - c <= marg) continue;
             ssum += hood.at<uint8_t>(mid_y, c); n++;
         }
         // Look for vertical line in the middle
         RLOOP (hood.rows) {
+//            if (r < marg) continue;
+//            if (hood.rows - r <= marg) continue;
             ssum += hood.at<uint8_t>(r, mid_x); n++;
         }
-        // Total sum of darkness
-        float totsum = 0;
-        RLOOP (hood.rows) {
-            CLOOP (hood.cols) {
-                totsum += hood.at<uint8_t>(r, c);
-            }
-        }
+        float totsum = cv::sum(hood)[0];
+//        float bad = totsum - ssum;
         ssum = RAT( ssum, totsum);
         return fabs(ssum);
+//        return ssum - bad;
     } // cross_feature_new()
+
+
     
     // Return a ring shaped mask used to detect W stones in threshed gray img.
     // For some reason, this is much worse than outer_minus_inner.
