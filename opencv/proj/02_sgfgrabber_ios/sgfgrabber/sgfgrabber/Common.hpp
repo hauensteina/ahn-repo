@@ -38,6 +38,7 @@
 #define SIGN(x) ((x)>=0?1:-1)
 #define ROUND(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
 #define RAT(a,b) ((b)!=0?((a)/(b)):0)
+#define SQR(x) ((x)*(x))
 #define PI M_PI
 
 #define RGB(rgbValue) [UIColor \

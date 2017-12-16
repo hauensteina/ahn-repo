@@ -162,8 +162,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
-    auto cleaned = BlobFinder::clean( _stone_or_empty);
-    _stone_or_empty = cleaned;
+    _stone_or_empty = BlobFinder::clean( _stone_or_empty);
     
     // Show results
     cv::Mat drawing;
@@ -736,6 +735,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
     cv::Mat hsva[4];
     cv::split( tmp, hsva);
+    
+    cv::Mat hsvrgb[6] = { hsva[0], hsva[1], hsva[2], rgba[0], rgba[1], rgba[2] };
 
     
     cv::Vec2f top_line, bot_line, left_line, right_line;
@@ -745,6 +746,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
     //int mid_h_idx=0, mid_v_idx=0;
     cv::Vec4f topseg, botseg;
+    cv::Vec4f besttop, bestbot;
     cv::Vec4f leftseg, rightseg;
     cv::Vec4f bestleft, bestright;
 
@@ -764,14 +766,20 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         Point2f bl2( x2, y_from_x( x2, bot_line));
         botseg = cv::Vec4f( bl1.x, bl1.y+shift, bl2.x, bl2.y+shift);
         
-        int top_median = median_on_segment( hsva[0], topseg);
-        int bot_median = median_on_segment( hsva[0], botseg);
-        int d = ABS( top_median - bot_median);
-        PLOG( "row top bot d %3d %5d %5d %5d\n", i, top_median, bot_median, d);
+        int top_median, bot_median;
+        float d=0;
+        KLOOP(1) {
+            top_median = median_on_segment( hsvrgb[k], topseg);
+            bot_median = median_on_segment( hsvrgb[k], botseg);
+            d += SQR( ABS( top_median - bot_median));
+        }
+        
+        PLOG( "row top bot d %3d %5d %5d %.0f\n", i, top_median, bot_median, d);
         if (d < mindiff) {
             mindiff = d;
             max_top_line = hlines.front();
             max_bot_line = hlines.back();
+            besttop = topseg; bestbot = botseg;
         }
     } // for horiz lines
     
@@ -787,10 +795,14 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         Point2f rl2( x_from_y( y2, right_line), y2);
         rightseg = cv::Vec4f( rl1.x+shift, rl1.y, rl2.x+shift, rl2.y);
 
-        int left_median  = median_on_segment( hsva[0], leftseg);
-        int right_median = median_on_segment( hsva[0], rightseg);
-        int d = ABS( left_median - right_median);
-        PLOG( "col left right d %3d %5d %5d %5d\n", i, left_median, right_median, d);
+        int left_median, right_median;
+        float d=0;
+        KLOOP(1) {
+            left_median = median_on_segment(  hsvrgb[k], leftseg);
+            right_median = median_on_segment( hsvrgb[k], rightseg);
+            d += SQR( ABS( left_median - right_median));
+        }
+        PLOG( "col left right d %3d %5d %5d %.0f\n", i, left_median, right_median, d);
         if (d < mindiff) {
             mindiff = d;
             max_left_line = vlines.front();
@@ -840,6 +852,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     gray.copyTo(mat_dbg);
     draw_line(bestleft, mat_dbg);
     draw_line(bestright, mat_dbg);
+    draw_line(besttop, mat_dbg);
+    draw_line(bestbot, mat_dbg);
     //Points2f corners;
     return corners;
 } // get_corners()
@@ -1315,13 +1329,14 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _m, false);
         resize( _m, _small, 350);
-        cv::cvtColor( _small, _gray, cv::COLOR_BGR2GRAY);
+        cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
         thresh_dilate( _gray, _gray_threshed);
         
         // Find stones and intersections
         _stone_or_empty.clear();
         BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
         BlobFinder::find_stones( _gray, _stone_or_empty);
+        _stone_or_empty = BlobFinder::clean( _stone_or_empty);
         if (SZ(_stone_or_empty) < 3) break;
 
         // Break if not straight
@@ -1366,16 +1381,15 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
-        // Threshold and dilate. This is our principal input for feature computation.
-        thresh_dilate( _gray_zoomed, _gz_threshed);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
+        thresh_dilate( _gray_zoomed, _gz_threshed);
 
         // Classify
-        Points2f intersections_zoomed;
-        get_intersections_from_corners( _corners_zoomed, _board_sz, intersections_zoomed, _dx, _dy);
+        //Points2f intersections_zoomed;
+        get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
         const int TIME_BUF_SZ = 10;
-        auto diagram = classify( intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
+        auto diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
 
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   _small, cv::Scalar( 255,0,0,255));
