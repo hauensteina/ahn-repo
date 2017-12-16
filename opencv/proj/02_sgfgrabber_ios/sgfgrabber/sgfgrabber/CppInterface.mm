@@ -155,6 +155,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
+    cv::cvtColor( _small, _small, CV_RGBA2RGB);
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY); // Yes, RGB not BGR
     thresh_dilate( _gray, _gray_threshed);
     //normalize_plane_local(_gray, _gray, 15);
@@ -720,6 +721,7 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
 Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
                      const std::vector<PFeat> &pfts, const cv::Mat &img, int board_sz = 19) //@@@
 {
+    //cv::cvtColor( img_, img, CV_RGBA2RGB);
     //int height = img.rows;
     //int width  = img.cols;
     float middle_x = img.cols/2.0;
@@ -729,16 +731,45 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     
     cv::Mat gray;
     cv::cvtColor( img, gray, cv::COLOR_RGB2GRAY);
-    cv::Mat rgba[4];
+    cv::Mat rgba[3];
     cv::split( img, rgba);
     cv::Mat tmp;
     cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
-    cv::Mat hsva[4];
+    cv::Mat hsva[3];
     cv::split( tmp, hsva);
     
     cv::Mat hsvrgb[6] = { hsva[0], hsva[1], hsva[2], rgba[0], rgba[1], rgba[2] };
-
     
+    // Watershed algo
+    //==================
+//    cv::Mat zeros( img.rows, img.cols, CV_8UC1);
+//    zeros = 0;
+    // Center mask, certainly part of the board
+    cv::Mat fg( img.rows, img.cols, CV_32SC1);
+    int center_x = img.cols/4, center_width = img.cols - 2*center_x;
+    int center_y = img.rows/4, center_height = center_width; //img.rows - 2*center_y;
+    cv::Rect center( center_x, center_y, center_width, center_height);
+    fg(center) = 255;
+    
+    // Larger mask, board plus some margin
+    int outer_x = img.cols/20, outer_width = img.cols - 2*outer_x;
+    int outer_y = img.rows/20, outer_height = outer_width * 1.2; // img.rows - 2*outer_y;
+    cv::Rect outer( outer_x, outer_y, outer_width, outer_height);
+    cv::Mat bg( img.rows, img.cols, CV_32SC1);
+    bg(outer) = 128;
+    bg = 128 - bg;
+    
+    // Build markers. Unsure=0; bg=1, fg=2;
+    cv::Mat initial_markers; //( img.rows, img.cols, CV_32SC1);
+    initial_markers = fg + bg;
+    cv::Mat markers = initial_markers.clone();
+    
+    // Segment
+    auto tstr = mat_typestr( img);
+    int tt = 42;
+    cv::watershed( img, markers);
+
+#ifdef XX
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Point tl, tr, br, bl;
     cv::Point best_tl, best_tr, best_br, best_bl;
@@ -848,13 +879,15 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     br = intersection( max_right_line, max_bot_line);
     bl = intersection( max_left_line,  max_bot_line);
     Points2f corners = {tl, tr, br, bl};
+#endif
     
-    gray.copyTo(mat_dbg);
-    draw_line(bestleft, mat_dbg);
-    draw_line(bestright, mat_dbg);
-    draw_line(besttop, mat_dbg);
-    draw_line(bestbot, mat_dbg);
-    //Points2f corners;
+//    initial_markers.copyTo(mat_dbg);
+    markers.copyTo(mat_dbg);
+//    draw_line(bestleft, mat_dbg);
+//    draw_line(bestright, mat_dbg);
+//    draw_line(besttop, mat_dbg);
+//    draw_line(bestbot, mat_dbg);
+    Points2f corners;
     return corners;
 } // get_corners()
 
@@ -990,9 +1023,9 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
     do {
-        if (SZ( _horizontal_lines) > 40) break;
+        //if (SZ( _horizontal_lines) > 40) break;
         if (SZ( _horizontal_lines) < 5) break;
-        if (SZ( _vertical_lines) > 40) break;
+        //if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
         _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, /*_gray*/ /*_gray_threshed*/ _small );
     } while(0);
@@ -1000,7 +1033,10 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     // Show results
     cv::Mat drawing;
     //cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
+    mat_dbg.convertTo( mat_dbg, CV_8UC1);
     cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    float alpha = 0.5;
+    cv::addWeighted( _small, alpha, drawing, 1-alpha, 0, drawing);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -1329,6 +1365,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _m, false);
         resize( _m, _small, 350);
+        cv::cvtColor( _small, _small, CV_RGBA2RGB);
         cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
         thresh_dilate( _gray, _gray_threshed);
         
