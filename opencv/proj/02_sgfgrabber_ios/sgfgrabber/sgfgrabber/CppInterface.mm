@@ -716,6 +716,25 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
     return res;
 } // homegrown_horiz_lines()
 
+// Color after pyrMeanShiftFiltering
+//-------------------------------------------------------------------------------------
+void floodFillPostprocess( cv::Mat& img, const cv::Scalar& colorDiff=cv::Scalar::all(1) )
+{
+    CV_Assert( !img.empty() );
+    cv::RNG rng = cv::theRNG();
+    cv::Mat mask( img.rows+2, img.cols+2, CV_8UC1, cv::Scalar::all(0) );
+    get_color(true);
+    for( int y = 0; y < img.rows; y++ ) {
+        for( int x = 0; x < img.cols; x++ ) {
+            if( mask.at<uchar>(y+1, x+1) == 0 ) {
+                cv::Scalar color( rng(256), rng(256), rng(256) );
+                //auto color = get_color();
+                floodFill( img, mask, cv::Point(x,y), color, 0, colorDiff, colorDiff );
+            }
+        }
+    }
+} // floodFillPostprocess()
+
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
@@ -740,6 +759,17 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     
     cv::Mat hsvrgb[6] = { hsva[0], hsva[1], hsva[2], rgba[0], rgba[1], rgba[2] };
     
+    cv::Mat filtered;
+    int spatialRad = 5;
+    int colorRad = 30;
+    int maxPyrLevel = 1;
+    cv::pyrMeanShiftFiltering( img, filtered, spatialRad, colorRad, maxPyrLevel );
+    auto colorDiff = cv::Scalar::all(2);
+    floodFillPostprocess( filtered, colorDiff);
+    
+    
+
+#ifdef YY
     // Watershed algo
     //==================
 //    cv::Mat zeros( img.rows, img.cols, CV_8UC1);
@@ -768,7 +798,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     auto tstr = mat_typestr( img);
     int tt = 42;
     cv::watershed( img, markers);
-
+#endif
+    
 #ifdef XX
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Point tl, tr, br, bl;
@@ -881,8 +912,9 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     Points2f corners = {tl, tr, br, bl};
 #endif
     
+    filtered.copyTo(mat_dbg);
 //    initial_markers.copyTo(mat_dbg);
-    markers.copyTo(mat_dbg);
+ //   markers.copyTo(mat_dbg);
 //    draw_line(bestleft, mat_dbg);
 //    draw_line(bestright, mat_dbg);
 //    draw_line(besttop, mat_dbg);
@@ -994,30 +1026,6 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
 - (UIImage *) f06_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
-    
-//    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(1,1));
-//    cv::threshold( _gray_threshed, _gray_threshed, 100, 255, CV_THRESH_BINARY_INV);
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
-   // cv::GaussianBlur( _gray_threshed, _gray_threshed, cv::Size(21, 21), 0);
-  //  cv::dilate( _gray_threshed, _gray_threshed, element );
-  //  cv::erode(  _gray_threshed, _gray_threshed, element );
-  //  cv::dilate( _gray_threshed, _gray_threshed, element );
- //   cv::erode(  _gray_threshed, _gray_threshed, element );
-
-    
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
-//    cv::erode(  _gray_threshed, _gray_threshed, element );
-//    cv::dilate( _gray_threshed, _gray_threshed, element );
 
     auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
     auto crosses = find_crosses( _gray_threshed, intersections);
@@ -1031,12 +1039,12 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     } while(0);
     
     // Show results
-    cv::Mat drawing;
+    cv::Mat drawing = mat_dbg.clone();
     //cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
-    mat_dbg.convertTo( mat_dbg, CV_8UC1);
-    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
-    float alpha = 0.5;
-    cv::addWeighted( _small, alpha, drawing, 1-alpha, 0, drawing);
+    //mat_dbg.convertTo( mat_dbg, CV_8UC1);
+    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    //float alpha = 0.5;
+    //cv::addWeighted( _small, alpha, drawing, 1-alpha, 0, drawing);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
