@@ -728,6 +728,16 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     //cv::Mat hue;
     //get_hue_from_rgb( img, hue);
     
+    cv::Mat gray;
+    cv::cvtColor( img, gray, cv::COLOR_RGB2GRAY);
+    cv::Mat rgba[4];
+    cv::split( img, rgba);
+    cv::Mat tmp;
+    cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
+    cv::Mat hsva[4];
+    cv::split( tmp, hsva);
+
+    
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Point tl, tr, br, bl;
     cv::Point best_tl, best_tr, best_br, best_bl;
@@ -736,6 +746,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     //int mid_h_idx=0, mid_v_idx=0;
     cv::Vec4f topseg, botseg;
     cv::Vec4f leftseg, rightseg;
+    cv::Vec4f bestleft, bestright;
 
     float mindiff;
     int marg  = 1;
@@ -753,8 +764,8 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         Point2f bl2( x2, y_from_x( x2, bot_line));
         botseg = cv::Vec4f( bl1.x, bl1.y+shift, bl2.x, bl2.y+shift);
         
-        int top_median = median_on_segment( img, topseg);
-        int bot_median = median_on_segment( img, botseg);
+        int top_median = median_on_segment( hsva[0], topseg);
+        int bot_median = median_on_segment( hsva[0], botseg);
         int d = ABS( top_median - bot_median);
         PLOG( "row top bot d %3d %5d %5d %5d\n", i, top_median, bot_median, d);
         if (d < mindiff) {
@@ -776,14 +787,15 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         Point2f rl2( x_from_y( y2, right_line), y2);
         rightseg = cv::Vec4f( rl1.x+shift, rl1.y, rl2.x+shift, rl2.y);
 
-        int left_median  = median_on_segment( img, leftseg);
-        int right_median = median_on_segment( img, rightseg);
+        int left_median  = median_on_segment( hsva[0], leftseg);
+        int right_median = median_on_segment( hsva[0], rightseg);
         int d = ABS( left_median - right_median);
         PLOG( "col left right d %3d %5d %5d %5d\n", i, left_median, right_median, d);
         if (d < mindiff) {
             mindiff = d;
             max_left_line = vlines.front();
             max_right_line = vlines.back();
+            bestleft = leftseg; bestright = rightseg;
         }
     } // for vert lines
     
@@ -825,9 +837,9 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     bl = intersection( max_left_line,  max_bot_line);
     Points2f corners = {tl, tr, br, bl};
     
-    img.copyTo(mat_dbg);
-    draw_line(topseg, mat_dbg);
-    draw_line(botseg, mat_dbg);
+    gray.copyTo(mat_dbg);
+    draw_line(bestleft, mat_dbg);
+    draw_line(bestright, mat_dbg);
     //Points2f corners;
     return corners;
 } // get_corners()
@@ -968,7 +980,7 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
         if (SZ( _horizontal_lines) < 5) break;
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray /*_gray_threshed*/ /*_small*/ );
+        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, /*_gray*/ /*_gray_threshed*/ _small );
     } while(0);
     
     // Show results
