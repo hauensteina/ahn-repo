@@ -321,7 +321,7 @@
         else {
             self.frame_grabber_on = NO;
             [self.frameExtractor suspend];
-            UIImage *processedImg = [self.grabFuncs findBoard:image];
+            UIImage *processedImg = [self.grabFuncs real_time_flow:image];
             self.img = processedImg;
             [self.cameraView setImage:self.img];
             self.frame_grabber_on = YES;

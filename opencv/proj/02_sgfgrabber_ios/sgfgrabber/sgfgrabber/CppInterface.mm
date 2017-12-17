@@ -25,6 +25,10 @@
 #import "Clust1D.hpp"
 #import "DrawBoard.hpp"
 
+#define SPATIALRAD  5
+#define COLORRAD    30
+#define MAXPYRLEVEL 2
+
 extern cv::Mat mat_dbg;
 
 @interface CppInterface()
@@ -136,45 +140,6 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #pragma mark - Processing Pipeline for debugging
 //=================================================
 
-// Try to find rough board region from pyramid filtered color img.
-// pyr has flattened colors for easy segmenting.
-//------------------------------------------------------------------
-Points get_pyr_board( const cv::Mat &pyr)
-{
-    mat_dbg = pyr.clone();
-    cv::RNG rng = cv::theRNG();
-    Points res;
-    int cx = pyr.cols / 2;
-    int cy = cx;
-    int r = pyr.cols/8;
-    cv::Mat mask( pyr.rows+2, pyr.cols+2, CV_8UC1, cv::Scalar::all(0) );
-    auto colorDiff = cv::Scalar::all(1);
-    int region_id =1, max_region_id = 1;
-    int maxArea = 0;
-    for( int y = cy-r; y <= cy+r; y++ ) {
-        for( int x = cx-r; x <= cx+r; x++ ) {
-            if( mask.at<uchar>(y+1, x+1) == 0 ) {
-                // floodFill sets the mask border to 1. Our region_id starts at 2.
-                region_id++;
-                //int flags = CV_FLOODFILL_MASK_ONLY | 4 | ( region_id << 8 );
-                int flags = 4 | ( region_id << 8 );
-                cv::Rect rect;
-                cv::Scalar color( rng(256), rng(256), rng(256) );
-                floodFill( mat_dbg, mask, cv::Point(x,y), color, &rect, colorDiff, colorDiff, flags );
-                if (rect.area() > maxArea) {
-                    maxArea = rect.area();
-                    max_region_id = region_id;
-                }
-            }
-        } // for x
-    } // for y
-    cv::Mat largest = (mask == max_region_id);
-    Contours conts;
-    cv::findContours( largest, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(-1,-1));
-    res =  order_points( approx_poly( conts[0], 4));
-    return res;
-} // get_pyr_board
-
 //-----------------------------------------
 - (UIImage *) f00_blobs:(UIImage *)img
 {
@@ -192,17 +157,7 @@ Points get_pyr_board( const cv::Mat &pyr)
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
-    //int spatialRad = 30;
-    int spatialRad = 5;
-    int colorRad = 30;
-    int maxPyrLevel = 2;
-    cv::pyrMeanShiftFiltering( _small, _small_pyr, spatialRad, colorRad, maxPyrLevel );
-//    cv::Mat aux;
-//    cv::cvtColor( _small_pyr, aux, cv::COLOR_RGB2GRAY);
-//    cv::Canny( aux, aux, 30, 70);
-//    Contours conts;
-//    cv::findContours( aux, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    //_pyr_board = get_pyr_board( _small_pyr);
+    cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
 
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
@@ -211,40 +166,10 @@ Points get_pyr_board( const cv::Mat &pyr)
     
     // Show results
     cv::Mat drawing = _small_pyr.clone();
-    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    //draw_contours( conts, drawing);
-    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
-    //draw_points( _pyr_board, drawing, 5, cv::Scalar( 0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
-
-////--------------------------
-//- (UIImage *) f01_straight
-//{
-//    g_app.mainVC.lbDbg.text = @"01";
-//    // Get direction of grid. Should be around pi/2 for horizontals
-//    float theta = direction( _gray, _stone_or_empty) - PI/2;
-//    // Rotate to exactly pi/2
-//    rot_img( _gray, theta, _gray);
-//    rot_img( _small, theta, _small);
-//    thresh_dilate( _gray, _gray_threshed, 4);
-//
-//    // Rerun the blob detection. We could just rotate the blobs for efficiency.
-//    _stone_or_empty.clear();
-//    BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
-//    BlobFinder::find_stones( _gray, _stone_or_empty);
-//    auto cleaned = BlobFinder::clean( _stone_or_empty);
-//    _stone_or_empty = cleaned;
-//    
-//    // Show results
-//    cv::Mat drawing;
-//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-//    draw_points(_stone_or_empty, drawing, 2, cv::Scalar(255,0,0));
-//    UIImage *res = MatToUIImage( drawing);
-//    return res;
-//}
 
 // Find closest line among a bunch of roughly horizontal lines,
 // using distance at x == width/2
@@ -782,41 +707,36 @@ void floodFillPostprocess( cv::Mat& img, const cv::Scalar& colorDiff=cv::Scalar:
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
-                     const std::vector<PFeat> &pfts, const cv::Mat &img, int board_sz = 19) //@@@
+                     const Points2f &intersections, const cv::Mat &img, int board_sz = 19) //@@@
 {
+    if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
     //cv::cvtColor( img_, img, CV_RGBA2RGB);
     //int height = img.rows;
     //int width  = img.cols;
-    float middle_x = img.cols/2.0;
-    float middle_y = img.rows/2.0;
     //cv::Mat hue;
     //get_hue_from_rgb( img, hue);
     
     cv::Mat gray;
     cv::cvtColor( img, gray, cv::COLOR_RGB2GRAY);
-    cv::Mat rgb[3];
-    cv::split( img, rgb);
-    cv::Mat tmp;
-    cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
-    cv::Mat hsv[3];
-    cv::split( tmp, hsv);
-    
-    cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
+//    cv::Mat rgb[3];
+//    cv::split( img, rgb);
+//    cv::Mat tmp;
+//    cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
+//    cv::Mat hsv[3];
+//    cv::split( tmp, hsv);
+//
+//    cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
     
     // Make an image with one pixel per intersection
     cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
     cv::Mat auxgray = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
     //cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
-    int rad = 2;
     int i=0;
-    int hzl = SZ(horiz_lines);
-    int vl = SZ(vert_lines);
-    int pfl = SZ(pfts);
     RSLOOP (horiz_lines) {
         CSLOOP(vert_lines) {
-            Point2f pf = pfts[i].p;
+            Point2f pf = intersections[i];
             cv::Point p = pf2p(pf);
-            if (p.x < img.cols && p.y < img.rows) {
+            if (p.x < img.cols && p.y < img.rows && p.x >= 0 && p.y >= 0) {
                 aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
                 auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
                 //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
@@ -838,181 +758,29 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             double compactness;
             auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness);
             PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
-            if (compactness < mindist) { mindist = compactness; minc = c; minr = r; }
-        }
-    }
+            if (compactness < mindist) {
+                mindist = compactness;
+                minc = c;
+                minr = r;
+            }
+        } // CLOOP
+    } // RLOOP
+    if (minr < 0 || minc < 0) return Points2f();
     aux.at<cv::Vec3b>(cv::Point( minc, minr)) = cv::Vec3b( 255,0,0);
     aux.at<cv::Vec3b>(cv::Point( minc+board_sz-1, minr+board_sz-1)) = cv::Vec3b( 255,0,0);
 
-    int tt = 42;
-    
-//    // Set dark and bright spots to zero
-//    double mmin, mmax;
-//    cv::minMaxLoc(aux, &mmin, &mmax);
-//    RLOOP (auxgray.rows) {
-//        CLOOP (auxgray.cols) {
-//            float v = auxgray.at<uint8_t>(r,c);
-//            if (fabs(v-mmin) < mmax * 0.30) { auxgray.at<uint8_t>(r,c) = 255; }
-//            if (fabs(v-mmax) < mmax * 0.15) { auxgray.at<uint8_t>(r,c) = 0; }
-//        }
-//    }
-    
-    // Get clusters
-    
-    
-    cv::resize(auxgray, auxgray, img.size(), 0,0, CV_INTER_NN);
-    cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
 
-//    cv::Mat mask( aux.rows+2, aux.cols+2, CV_8UC1, cv::Scalar::all(0) );
-//    auto colorDiff = cv::Scalar::all(4);
-//    int region_id = 1, max_region_id = 1;
-//    int maxArea = 0;
-//    for( int y = 0; y < aux.rows; y++ ) {
-//        for( int x = 0; x < aux.cols; x++ ) {
-//            if( mask.at<uchar>(y+1, x+1) == 0 ) {
-//                // floodFill sets the mask border to 1. Our region_id starts at 2.
-//                region_id++;
-//                //int flags = CV_FLOODFILL_MASK_ONLY | 4 | ( region_id << 8 );
-//                int flags = 4 | ( region_id << 8 );
-//                cv::Rect rect;
-//                cv::Scalar color( rng(256), rng(256), rng(256) );
-//                floodFill( aux, mask, cv::Point(x,y), color, &rect, colorDiff, colorDiff, flags );
-//                if (rect.area() > maxArea) {
-//                    maxArea = rect.area();
-//                    max_region_id = region_id;
-//                }
-//            }
-//        } // for x
-//    } // for y
-    //cv::Mat largest = (mask == max_region_id);
-    //Contours conts;
-    //cv::findContours( largest, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(-1,-1));
-    //res =  order_points( approx_poly( conts[0], 4));
+    auto rc2p = [&intersections, &auxgray](int r, int c) { return intersections[r*auxgray.cols + c]; };
+    auto tl = rc2p( minr, minc);
+    auto tr = rc2p( minr, minc+board_sz-1);
+    auto br = rc2p( minr+board_sz-1, minc+board_sz-1);
+    auto bl = rc2p( minr+board_sz-1, minc);
+    Points2f corners = { tl, tr, br, bl };
 
+    //cv::resize(auxgray, auxgray, img.size(), 0,0, CV_INTER_NN);
+    //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     
-    
-    
-//#define XX
-#ifdef XX
-    cv::Vec2f top_line, bot_line, left_line, right_line;
-    cv::Point tl, tr, br, bl;
-    cv::Point best_tl, best_tr, best_br, best_bl;
-    //cv::Vec2f mid_h_line, mid_v_line;
-    cv::Vec2f max_top_line, max_bot_line, max_left_line, max_right_line;
-    //int mid_h_idx=0, mid_v_idx=0;
-    cv::Vec4f topseg, botseg;
-    cv::Vec4f besttop, bestbot;
-    cv::Vec4f leftseg, rightseg;
-    cv::Vec4f bestleft, bestright;
-
-    float mindiff;
-    int marg  = 1;
-    int shift = 0; //5;
-    
-    mindiff = 1E9;
-    for (int i=marg; i < SZ(horiz_lines) - board_sz+1-marg; i++) {
-        std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
-        top_line = hlines.front(); bot_line = hlines.back();
-        float x1 = middle_x - middle_x/2.0, x2 = middle_x + middle_x/2.0;
-        Point2f tl1( x1, y_from_x( x1, top_line));
-        Point2f tl2( x2, y_from_x( x2, top_line));
-        topseg = cv::Vec4f( tl1.x, tl1.y-shift, tl2.x, tl2.y-shift);
-        Point2f bl1( x1, y_from_x( x1, bot_line));
-        Point2f bl2( x2, y_from_x( x2, bot_line));
-        botseg = cv::Vec4f( bl1.x, bl1.y+shift, bl2.x, bl2.y+shift);
-        
-        int top_median, bot_median;
-        float d=0;
-        KLOOP(1) {
-            top_median = median_on_segment( hsvrgb[k], topseg);
-            bot_median = median_on_segment( hsvrgb[k], botseg);
-            d += SQR( ABS( top_median - bot_median));
-        }
-        
-        PLOG( "row top bot d %3d %5d %5d %.0f\n", i, top_median, bot_median, d);
-        if (d < mindiff) {
-            mindiff = d;
-            max_top_line = hlines.front();
-            max_bot_line = hlines.back();
-            besttop = topseg; bestbot = botseg;
-        }
-    } // for horiz lines
-    
-    mindiff = 1E9;
-    for (int i=marg; i < SZ(vert_lines) - board_sz+1-marg; i++) {
-        std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, i, board_sz);
-        left_line = vlines.front(); right_line = vlines.back();
-        float y1 = middle_y - middle_y/2.0, y2 = middle_y + middle_y/2.0;
-        Point2f ll1( x_from_y( y1, left_line), y1);
-        Point2f ll2( x_from_y( y2, left_line), y2);
-        leftseg = cv::Vec4f( ll1.x-shift, ll1.y, ll2.x-shift, ll2.y);
-        Point2f rl1( x_from_y( y1, right_line), y1);
-        Point2f rl2( x_from_y( y2, right_line), y2);
-        rightseg = cv::Vec4f( rl1.x+shift, rl1.y, rl2.x+shift, rl2.y);
-
-        int left_median, right_median;
-        float d=0;
-        KLOOP(1) {
-            left_median = median_on_segment(  hsvrgb[k], leftseg);
-            right_median = median_on_segment( hsvrgb[k], rightseg);
-            d += SQR( ABS( left_median - right_median));
-        }
-        PLOG( "col left right d %3d %5d %5d %.0f\n", i, left_median, right_median, d);
-        if (d < mindiff) {
-            mindiff = d;
-            max_left_line = vlines.front();
-            max_right_line = vlines.back();
-            bestleft = leftseg; bestright = rightseg;
-        }
-    } // for vert lines
-    
-//    int marg = 2;
-//    for (int i=marg; i < SZ(horiz_lines) - board_sz+1-marg; i++) {
-//        PLOG(" ==========\n");
-//        std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
-//        top_line = hlines.front(); bot_line = hlines.back();
-//        for (int j=marg; j < SZ(vert_lines) - board_sz+1-marg; j++) {
-//            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, j, board_sz);
-//            left_line = vlines.front(); right_line = vlines.back();
-//            tl = pf2p( intersection( left_line,  top_line));
-//            tr = pf2p( intersection( right_line, top_line));
-//            br = pf2p( intersection( right_line, bot_line));
-//            bl = pf2p( intersection( left_line,  bot_line));
-//            int shift=5;
-//            int left_median  = median_on_segment(  hue, cv::Point( tl.x-shift, tl.y),  cv::Point( bl.x-shift, bl.y) );
-//            int right_median = median_on_segment(  hue, cv::Point( tr.x+shift, tr.y),  cv::Point( br.x+shift, br.y) );
-//            int top_median   = median_on_segment(  hue, cv::Point( tl.x, tl.y-shift),  cv::Point( tr.x, tr.y-shift) );
-//            int bot_median   = median_on_segment(  hue, cv::Point( bl.x, bl.y+shift),  cv::Point( br.x, br.y+shift) );
-//            int dv = ABS( left_median - right_median);
-//            int dh = ABS( top_median - bot_median);
-//            int d = dh + dv;
-//            PLOG( "row col left right dv dh d %3d %3d %5d %5d %5d %5d %5d\n", i, j, left_median, right_median, dv, dh, d);
-//            if (d < mindiff) {
-//                mindiff = d;
-//                best_tl = tl;
-//                best_tr = tr;
-//                best_br = br;
-//                best_bl = bl;
-//            }
-//            //int top_median = median_on_segment(   hue, tl, tr );
-//            //int bot_median = median_on_segment(   hue, bl, br );
-//        } // for vert_lines
-//    } // for horiz_lines
-    tl = intersection( max_left_line,  max_top_line);
-    tr = intersection( max_right_line, max_top_line);
-    br = intersection( max_right_line, max_bot_line);
-    bl = intersection( max_left_line,  max_bot_line);
-    Points2f corners = {tl, tr, br, bl};
-#endif
-    
-    aux.copyTo(mat_dbg);
-//    initial_markers.copyTo(mat_dbg);
- //   markers.copyTo(mat_dbg);
-    //draw_line(bestleft, mat_dbg);
-    //draw_line(bestright, mat_dbg);
-    //draw_line(besttop, mat_dbg);
-    //draw_line(bestbot, mat_dbg);
-    Points2f corners;
+    //aux.copyTo(mat_dbg);
     return corners;
 } // get_corners()
 
@@ -1121,18 +889,18 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     g_app.mainVC.lbDbg.text = @"06";
 
     auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-    auto crosses = find_crosses( _gray_threshed, intersections);
+    //auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
     do {
-        //if (SZ( _horizontal_lines) > 40) break;
+        if (SZ( _horizontal_lines) > 45) break;
         if (SZ( _horizontal_lines) < 5) break;
-        //if (SZ( _vertical_lines) > 40) break;
+        if (SZ( _vertical_lines) > 35) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, /*_gray*/ /*_gray_threshed*/ /*_small*/ _small_pyr );
+        _corners = get_corners( _horizontal_lines, _vertical_lines, intersections, _small_pyr );
     } while(0);
     
     // Show results
-    cv::Mat drawing = mat_dbg.clone();
+    cv::Mat drawing = _small_pyr.clone();
     //cv::Mat drawing; cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     //mat_dbg.convertTo( mat_dbg, CV_8UC1);
     //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
@@ -1457,7 +1225,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 
 // f00_*, f01_*, ... all in one go
 //--------------------------------------------
-- (UIImage *) findBoard:(UIImage *) img
+- (UIImage *) real_time_flow:(UIImage *) img
 {
     _board_sz = 19;
     cv::Mat drawing;
@@ -1499,11 +1267,12 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-        auto crosses = find_crosses( _gray_threshed, intersections);
+        cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
+        //auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             //_corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray_threshed);
-            _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _small);
+            _corners = get_corners( _horizontal_lines, _vertical_lines, intersections, _small_pyr);
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker

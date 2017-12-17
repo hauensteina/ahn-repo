@@ -27,7 +27,7 @@
 - (UIImage *) f09_intersections;
 - (UIImage *) f10_features;
 - (UIImage *) f11_classify;
-- (UIImage *) findBoard:(UIImage *)img;
+- (UIImage *) real_time_flow:(UIImage *)img;
 @property float sld_low;
 @property int canny_hi;
 
