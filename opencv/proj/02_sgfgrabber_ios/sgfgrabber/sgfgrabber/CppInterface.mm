@@ -192,9 +192,10 @@ Points get_pyr_board( const cv::Mat &pyr)
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
-    int spatialRad = 30;
+    //int spatialRad = 30;
+    int spatialRad = 5;
     int colorRad = 30;
-    int maxPyrLevel = 1;
+    int maxPyrLevel = 2;
     cv::pyrMeanShiftFiltering( _small, _small_pyr, spatialRad, colorRad, maxPyrLevel );
 //    cv::Mat aux;
 //    cv::cvtColor( _small_pyr, aux, cv::COLOR_RGB2GRAY);
