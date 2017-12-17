@@ -31,6 +31,7 @@ typedef struct { Point2f p; float feat; } PFeat;
 
 extern cv::RNG rng;
 
+
 // Point
 //=========
 // Get average x of a bunch of points

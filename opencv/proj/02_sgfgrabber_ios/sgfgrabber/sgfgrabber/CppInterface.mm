@@ -793,17 +793,19 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     
     cv::Mat gray;
     cv::cvtColor( img, gray, cv::COLOR_RGB2GRAY);
-    cv::Mat rgba[3];
-    cv::split( img, rgba);
+    cv::Mat rgb[3];
+    cv::split( img, rgb);
     cv::Mat tmp;
     cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
-    cv::Mat hsva[3];
-    cv::split( tmp, hsva);
+    cv::Mat hsv[3];
+    cv::split( tmp, hsv);
     
-    cv::Mat hsvrgb[6] = { hsva[0], hsva[1], hsva[2], rgba[0], rgba[1], rgba[2] };
+    cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
     
     // Make an image with one pixel per intersection
     cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
+    cv::Mat auxgray( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
+    //cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
     int rad = 2;
     int i=0;
     RSLOOP (horiz_lines) {
@@ -811,11 +813,52 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             Point2f pf = pfts[i].p;
             cv::Point p = pf2p(pf);
             aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
+            auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
+            //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
             i++;
         }
     }
-    cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     
+    // Set dark and bright spots to zero
+    double mmin, mmax;
+    cv::minMaxLoc(aux, &mmin, &mmax);
+    RLOOP (auxgray.rows) {
+        CLOOP (auxgray.cols) {
+            float v = auxgray.at<uint8_t>(r,c);
+            if (fabs(v-mmin) < mmax * 0.30) { auxgray.at<uint8_t>(r,c) = 255; }
+            if (fabs(v-mmax) < mmax * 0.15) { auxgray.at<uint8_t>(r,c) = 0; }
+        }
+    }
+    
+    cv::resize(auxgray, auxgray, img.size(), 0,0, CV_INTER_NN);
+    cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
+
+//    cv::Mat mask( aux.rows+2, aux.cols+2, CV_8UC1, cv::Scalar::all(0) );
+//    auto colorDiff = cv::Scalar::all(4);
+//    int region_id = 1, max_region_id = 1;
+//    int maxArea = 0;
+//    for( int y = 0; y < aux.rows; y++ ) {
+//        for( int x = 0; x < aux.cols; x++ ) {
+//            if( mask.at<uchar>(y+1, x+1) == 0 ) {
+//                // floodFill sets the mask border to 1. Our region_id starts at 2.
+//                region_id++;
+//                //int flags = CV_FLOODFILL_MASK_ONLY | 4 | ( region_id << 8 );
+//                int flags = 4 | ( region_id << 8 );
+//                cv::Rect rect;
+//                cv::Scalar color( rng(256), rng(256), rng(256) );
+//                floodFill( aux, mask, cv::Point(x,y), color, &rect, colorDiff, colorDiff, flags );
+//                if (rect.area() > maxArea) {
+//                    maxArea = rect.area();
+//                    max_region_id = region_id;
+//                }
+//            }
+//        } // for x
+//    } // for y
+    //cv::Mat largest = (mask == max_region_id);
+    //Contours conts;
+    //cv::findContours( largest, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(-1,-1));
+    //res =  order_points( approx_poly( conts[0], 4));
+
     
     
     
@@ -1060,7 +1103,7 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     
     // Show results
     cv::Mat drawing = mat_dbg.clone();
-    //cv::cvtColor( _gray_threshed, drawing, cv::COLOR_GRAY2RGB);
+    //cv::Mat drawing; cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     //mat_dbg.convertTo( mat_dbg, CV_8UC1);
     //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     //float alpha = 0.5;
