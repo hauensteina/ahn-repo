@@ -114,6 +114,7 @@ cv::Rect make_hood( Point2f center, int dx, int dy);
 //========
 // Stretch quadrangle by factor
 Points2f stretch_quad( Points quad, float factor);
+// Zoom into a region with four corners
 cv::Mat zoom_quad( const cv::Mat &img, cv::Mat &warped, Points2f pts);
 // Return whole image as a quad
 Points whole_img_quad( const cv::Mat &img);
@@ -327,16 +328,16 @@ POINTS order_points( const POINTS &points)
 //---------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
-cluster (std::vector<T> elts, int nof_clust, Func getFeature)
+cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactness)
 {
     if (elts.size() < 2) return std::vector<std::vector<T> >();
     std::vector<float> features;
     std::vector<float> centers;
     ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
     std::vector<int> labels;
-    cv::kmeans( features, nof_clust, labels,
-               cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
-               3, cv::KMEANS_PP_CENTERS, centers);
+    compactness = cv::kmeans( features, nof_clust, labels,
+                             cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
+                             3, cv::KMEANS_PP_CENTERS, centers);
     // Extract parts
     std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
     ILOOP (elts.size()) {

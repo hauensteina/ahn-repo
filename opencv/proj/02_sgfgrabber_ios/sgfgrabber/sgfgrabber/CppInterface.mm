@@ -818,17 +818,41 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             i++;
         }
     }
-    
-    // Set dark and bright spots to zero
-    double mmin, mmax;
-    cv::minMaxLoc(aux, &mmin, &mmax);
+
+    int minr = -1, minc = -1;
+    double mindist = 1E9;
+    std::vector<int> vals;
     RLOOP (auxgray.rows) {
+        if (r + board_sz > auxgray.rows) break;
         CLOOP (auxgray.cols) {
-            float v = auxgray.at<uint8_t>(r,c);
-            if (fabs(v-mmin) < mmax * 0.30) { auxgray.at<uint8_t>(r,c) = 255; }
-            if (fabs(v-mmax) < mmax * 0.15) { auxgray.at<uint8_t>(r,c) = 0; }
+            if (c + board_sz > auxgray.cols) break;
+            cv::Rect rect( c, r, board_sz, board_sz);
+            cv::Mat tmp = auxgray( rect).clone();
+            vals.assign( tmp.begin<uint8_t>(), tmp.end<uint8_t>());
+            double compactness;
+            auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness);
+            PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
+            if (compactness < mindist) { mindist = compactness; minc = c; minr = r; }
         }
     }
+    aux.at<cv::Vec3b>(cv::Point( minc, minr)) = cv::Vec3b( 255,0,0);
+    aux.at<cv::Vec3b>(cv::Point( minc+board_sz-1, minr+board_sz-1)) = cv::Vec3b( 255,0,0);
+
+    int tt = 42;
+    
+//    // Set dark and bright spots to zero
+//    double mmin, mmax;
+//    cv::minMaxLoc(aux, &mmin, &mmax);
+//    RLOOP (auxgray.rows) {
+//        CLOOP (auxgray.cols) {
+//            float v = auxgray.at<uint8_t>(r,c);
+//            if (fabs(v-mmin) < mmax * 0.30) { auxgray.at<uint8_t>(r,c) = 255; }
+//            if (fabs(v-mmax) < mmax * 0.15) { auxgray.at<uint8_t>(r,c) = 0; }
+//        }
+//    }
+    
+    // Get clusters
+    
     
     cv::resize(auxgray, auxgray, img.size(), 0,0, CV_INTER_NN);
     cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
