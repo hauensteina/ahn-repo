@@ -307,7 +307,7 @@ cv::Vec2f fit_pline( const Points_ &p)
 // Order four points clockwise
 //----------------------------------------
 template <typename POINTS>
-POINTS order_points( POINTS &points)
+POINTS order_points( const POINTS &points)
 {
     POINTS top_bottom = points;
     std::sort( top_bottom.begin(), top_bottom.end(), [](cv::Point2f a, cv::Point2f b){ return a.y < b.y; });

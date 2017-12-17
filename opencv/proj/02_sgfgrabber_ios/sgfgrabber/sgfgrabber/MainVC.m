@@ -238,9 +238,11 @@
                     [self.cameraView setImage:img];
                     break;
                 case 1:
-                    state++;
-                    img = [self.grabFuncs f01_straight];
-                    [self.cameraView setImage:img];
+                    state = 2;
+                    continue;
+//                    state++;
+//                    img = [self.grabFuncs f01_straight];
+//                    [self.cameraView setImage:img];
                     break;
                 case 2:
                     state++;

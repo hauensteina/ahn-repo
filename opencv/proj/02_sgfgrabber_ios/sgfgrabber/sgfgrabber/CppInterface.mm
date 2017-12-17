@@ -30,17 +30,13 @@ extern cv::Mat mat_dbg;
 @interface CppInterface()
 //=======================
 @property cv::Mat small; // resized image, in color, RGB
-//@property cv::Mat hue;   // HSV of small
-//@property cv::Mat sat;
-//@property cv::Mat val;
+@property cv::Mat small_pyr; // resized image, in color, pyramid filtered
+@property Points pyr_board; // Initial guess at board location
 
 @property cv::Mat small_zoomed;  // small, zoomed into the board
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
 @property cv::Mat gray_zoomed;   // Grayscale version of small, zoomed into the board
-//@property cv::Mat hue_zoomed;
-//@property cv::Mat sat_zoomed;
-//@property cv::Mat val_zoomed;
 
 @property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
 @property cv::Mat m;     // Mat with image we are working on
@@ -140,6 +136,44 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #pragma mark - Processing Pipeline for debugging
 //=================================================
 
+// Try to find rough board region from pyramid filtered color img.
+// pyr has flattened colors for easy segmenting.
+//------------------------------------------------------------------
+Points get_pyr_board( const cv::Mat &pyr)
+{
+    mat_dbg = pyr.clone();
+    cv::RNG rng = cv::theRNG();
+    Points res;
+    int cx = pyr.cols / 2;
+    int cy = cx;
+    int r = pyr.cols/8;
+    cv::Mat mask( pyr.rows+2, pyr.cols+2, CV_8UC1, cv::Scalar::all(0) );
+    auto colorDiff = cv::Scalar::all(1);
+    int region_id =1, max_region_id = 1;
+    int maxArea = 0;
+    for( int y = cy-r; y <= cy+r; y++ ) {
+        for( int x = cx-r; x <= cx+r; x++ ) {
+            if( mask.at<uchar>(y+1, x+1) == 0 ) {
+                // floodFill sets the mask border to 1. Our region_id starts at 2.
+                region_id++;
+                //int flags = CV_FLOODFILL_MASK_ONLY | 4 | ( region_id << 8 );
+                int flags = 4 | ( region_id << 8 );
+                cv::Rect rect;
+                cv::Scalar color( rng(256), rng(256), rng(256) );
+                floodFill( mat_dbg, mask, cv::Point(x,y), color, &rect, colorDiff, colorDiff, flags );
+                if (rect.area() > maxArea) {
+                    maxArea = rect.area();
+                    max_region_id = region_id;
+                }
+            }
+        } // for x
+    } // for y
+    cv::Mat largest = (mask == max_region_id);
+    Contours conts;
+    cv::findContours( largest, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(-1,-1));
+    res =  order_points( approx_poly( conts[0], 4));
+    return res;
+} // get_pyr_board
 
 //-----------------------------------------
 - (UIImage *) f00_blobs:(UIImage *)img
@@ -155,10 +189,19 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
 
     resize( _m, _small, 350);
-    cv::cvtColor( _small, _small, CV_RGBA2RGB);
-    cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY); // Yes, RGB not BGR
+    cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
+    cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
-    //normalize_plane_local(_gray, _gray, 15);
+    int spatialRad = 30;
+    int colorRad = 30;
+    int maxPyrLevel = 1;
+    cv::pyrMeanShiftFiltering( _small, _small_pyr, spatialRad, colorRad, maxPyrLevel );
+//    cv::Mat aux;
+//    cv::cvtColor( _small_pyr, aux, cv::COLOR_RGB2GRAY);
+//    cv::Canny( aux, aux, 30, 70);
+//    Contours conts;
+//    cv::findContours( aux, conts, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    //_pyr_board = get_pyr_board( _small_pyr);
 
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
@@ -166,41 +209,41 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     _stone_or_empty = BlobFinder::clean( _stone_or_empty);
     
     // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    cv::Mat drawing = _small_pyr.clone();
+    //cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    //draw_contours( conts, drawing);
     //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
-    ISLOOP ( _stone_or_empty) {
-        //draw_point( _stone_or_empty[i], drawing, 2);
-    }
+    draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
+    //draw_points( _pyr_board, drawing, 5, cv::Scalar( 0,255,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
 
-//--------------------------
-- (UIImage *) f01_straight
-{
-    g_app.mainVC.lbDbg.text = @"01";
-    // Get direction of grid. Should be around pi/2 for horizontals
-    float theta = direction( _gray, _stone_or_empty) - PI/2;
-    // Rotate to exactly pi/2
-    rot_img( _gray, theta, _gray);
-    rot_img( _small, theta, _small);
-    thresh_dilate( _gray, _gray_threshed, 4);
-
-    // Rerun the blob detection. We could just rotate the blobs for efficiency.
-    _stone_or_empty.clear();
-    BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
-    BlobFinder::find_stones( _gray, _stone_or_empty);
-    auto cleaned = BlobFinder::clean( _stone_or_empty);
-    _stone_or_empty = cleaned;
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    draw_points(_stone_or_empty, drawing, 2, cv::Scalar(255,0,0));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
+////--------------------------
+//- (UIImage *) f01_straight
+//{
+//    g_app.mainVC.lbDbg.text = @"01";
+//    // Get direction of grid. Should be around pi/2 for horizontals
+//    float theta = direction( _gray, _stone_or_empty) - PI/2;
+//    // Rotate to exactly pi/2
+//    rot_img( _gray, theta, _gray);
+//    rot_img( _small, theta, _small);
+//    thresh_dilate( _gray, _gray_threshed, 4);
+//
+//    // Rerun the blob detection. We could just rotate the blobs for efficiency.
+//    _stone_or_empty.clear();
+//    BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
+//    BlobFinder::find_stones( _gray, _stone_or_empty);
+//    auto cleaned = BlobFinder::clean( _stone_or_empty);
+//    _stone_or_empty = cleaned;
+//    
+//    // Show results
+//    cv::Mat drawing;
+//    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+//    draw_points(_stone_or_empty, drawing, 2, cv::Scalar(255,0,0));
+//    UIImage *res = MatToUIImage( drawing);
+//    return res;
+//}
 
 // Find closest line among a bunch of roughly horizontal lines,
 // using distance at x == width/2
@@ -759,47 +802,24 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     
     cv::Mat hsvrgb[6] = { hsva[0], hsva[1], hsva[2], rgba[0], rgba[1], rgba[2] };
     
-    cv::Mat filtered;
-    int spatialRad = 5;
-    int colorRad = 30;
-    int maxPyrLevel = 1;
-    cv::pyrMeanShiftFiltering( img, filtered, spatialRad, colorRad, maxPyrLevel );
-    auto colorDiff = cv::Scalar::all(2);
-    floodFillPostprocess( filtered, colorDiff);
+    // Make an image with one pixel per intersection
+    cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
+    int rad = 2;
+    int i=0;
+    RSLOOP (horiz_lines) {
+        CSLOOP(vert_lines) {
+            Point2f pf = pfts[i].p;
+            cv::Point p = pf2p(pf);
+            aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
+            i++;
+        }
+    }
+    cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     
     
-
-#ifdef YY
-    // Watershed algo
-    //==================
-//    cv::Mat zeros( img.rows, img.cols, CV_8UC1);
-//    zeros = 0;
-    // Center mask, certainly part of the board
-    cv::Mat fg( img.rows, img.cols, CV_32SC1);
-    int center_x = img.cols/4, center_width = img.cols - 2*center_x;
-    int center_y = img.rows/4, center_height = center_width; //img.rows - 2*center_y;
-    cv::Rect center( center_x, center_y, center_width, center_height);
-    fg(center) = 255;
     
-    // Larger mask, board plus some margin
-    int outer_x = img.cols/20, outer_width = img.cols - 2*outer_x;
-    int outer_y = img.rows/20, outer_height = outer_width * 1.2; // img.rows - 2*outer_y;
-    cv::Rect outer( outer_x, outer_y, outer_width, outer_height);
-    cv::Mat bg( img.rows, img.cols, CV_32SC1);
-    bg(outer) = 128;
-    bg = 128 - bg;
     
-    // Build markers. Unsure=0; bg=1, fg=2;
-    cv::Mat initial_markers; //( img.rows, img.cols, CV_32SC1);
-    initial_markers = fg + bg;
-    cv::Mat markers = initial_markers.clone();
-    
-    // Segment
-    auto tstr = mat_typestr( img);
-    int tt = 42;
-    cv::watershed( img, markers);
-#endif
-    
+//#define XX
 #ifdef XX
     cv::Vec2f top_line, bot_line, left_line, right_line;
     cv::Point tl, tr, br, bl;
@@ -814,7 +834,7 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
 
     float mindiff;
     int marg  = 1;
-    int shift = 5;
+    int shift = 0; //5;
     
     mindiff = 1E9;
     for (int i=marg; i < SZ(horiz_lines) - board_sz+1-marg; i++) {
@@ -912,13 +932,13 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     Points2f corners = {tl, tr, br, bl};
 #endif
     
-    filtered.copyTo(mat_dbg);
+    aux.copyTo(mat_dbg);
 //    initial_markers.copyTo(mat_dbg);
  //   markers.copyTo(mat_dbg);
-//    draw_line(bestleft, mat_dbg);
-//    draw_line(bestright, mat_dbg);
-//    draw_line(besttop, mat_dbg);
-//    draw_line(bestbot, mat_dbg);
+    //draw_line(bestleft, mat_dbg);
+    //draw_line(bestright, mat_dbg);
+    //draw_line(besttop, mat_dbg);
+    //draw_line(bestbot, mat_dbg);
     Points2f corners;
     return corners;
 } // get_corners()
@@ -1035,7 +1055,7 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
         if (SZ( _horizontal_lines) < 5) break;
         //if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, /*_gray*/ /*_gray_threshed*/ _small );
+        _corners = get_corners( _horizontal_lines, _vertical_lines, crosses, /*_gray*/ /*_gray_threshed*/ /*_small*/ _small_pyr );
     } while(0);
     
     // Show results

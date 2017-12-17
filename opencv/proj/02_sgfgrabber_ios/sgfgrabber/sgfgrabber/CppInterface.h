@@ -16,7 +16,7 @@
 //----------------------------
 // Individual steps for debugging
 - (UIImage *) f00_blobs:(UIImage *)img;
-- (UIImage *) f01_straight;
+//- (UIImage *) f01_straight;
 - (UIImage *) f02_horiz_lines;
 - (UIImage *) f03_vert_lines;
 - (UIImage *) f04_vert_lines_2;
