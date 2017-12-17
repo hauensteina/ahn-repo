@@ -60,6 +60,7 @@ extern cv::Mat mat_dbg;
 @property cv::Mat white_templ;
 @property cv::Mat black_templ;
 @property cv::Mat empty_templ;
+@property std::vector<int> diagram; // The position we detected
 
 @end
 
@@ -756,9 +757,9 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             cv::Mat tmp = auxgray( rect).clone();
             vals.assign( tmp.begin<uint8_t>(), tmp.end<uint8_t>());
             double compactness;
-            int tries=1, iter=10, eps=1.0;
+            int tries=3, iter=2, eps=1.0;
             auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness, tries, iter, eps);
-            PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
+            //PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
             if (compactness < mindist) {
                 mindist = compactness;
                 minc = c;
@@ -1230,6 +1231,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 {
     _board_sz = 19;
     cv::Mat drawing;
+    bool pyr_filtered = false;
 
     do {
         static std::vector<Points> boards; // Some history for averaging
@@ -1244,7 +1246,9 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
         BlobFinder::find_stones( _gray, _stone_or_empty);
         _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-        if (SZ(_stone_or_empty) < 3) break;
+        if (SZ(_stone_or_empty) < 0.8 * SQR(_board_sz)) break;
+        
+        //PLOG(">>> %5d\n", SZ(_stone_or_empty) );
 
         // Break if not straight
         float theta = direction( _gray, _stone_or_empty) - PI/2;
@@ -1269,6 +1273,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find corners
         auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
         cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
+        pyr_filtered = true;
         //auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
@@ -1277,7 +1282,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker
-        const int BORDBUFLEN = 5;
+        const int BORDBUFLEN = 1;
         ringpush( _boards, _corners, BORDBUFLEN);
         Points2f med_board = med_quad( _boards);
         _corners = med_board;
@@ -1297,29 +1302,44 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
         if (_dx < 2 || _dy < 2) break;
         const int TIME_BUF_SZ = 10;
-        auto diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
-
+        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
+    } while(0);
+    
+    cv::Mat *canvas;
+    if (pyr_filtered) {
+        canvas = &_small; //_pyr;
+    }
+    else {
+        canvas = &_small;
+    }
+    if (SZ(_corners) == 4) {
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
-                  _small, cv::Scalar( 255,0,0,255));
+                  *canvas, cv::Scalar( 255,0,0,255));
         draw_line( cv::Vec4f( _corners[1].x, _corners[1].y, _corners[2].x, _corners[2].y),
-                  _small, cv::Scalar( 255,0,0,255));
+                  *canvas, cv::Scalar( 255,0,0,255));
         draw_line( cv::Vec4f( _corners[2].x, _corners[2].y, _corners[3].x, _corners[3].y),
-                  _small, cv::Scalar( 255,0,0,255));
+                  *canvas, cv::Scalar( 255,0,0,255));
         draw_line( cv::Vec4f( _corners[3].x, _corners[3].y, _corners[0].x, _corners[0].y),
-                  _small, cv::Scalar( 255,0,0,255));
-
+                  *canvas, cv::Scalar( 255,0,0,255));
         
+        // One horiz and vert line
+        draw_polar_line( _horizontal_lines[SZ(_horizontal_lines)/2], *canvas, cv::Scalar( 255,255,0,255));
+        draw_polar_line( _vertical_lines[SZ(_vertical_lines)/2], *canvas, cv::Scalar( 255,255,0,255));
+
 #define SHOW_CLASS
 #ifdef SHOW_CLASS
         // Show classification result
-        ISLOOP (diagram) {
+        ISLOOP (_diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-            if (diagram[i] == BlackWhiteEmpty::BBLACK) {
-                draw_point( p, _small, 5, cv::Scalar(0,255,0,255));
+            if (_diagram[i] == BlackWhiteEmpty::BBLACK) {
+                draw_point( p, *canvas, 5, cv::Scalar(0,255,0,255));
             }
-            else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
-                draw_point( p, _small, 5, cv::Scalar(255,0,0,255));
+            else if (_diagram[i] == BlackWhiteEmpty::WWHITE) {
+                draw_point( p, *canvas, 5, cv::Scalar(255,0,0,255));
             }
+        }
+        ISLOOP (_intersections) {
+            draw_point( _intersections[i], *canvas, 2, cv::Scalar(0,0,255,255));
         }
 #else
         // Show one feature for debugging
@@ -1330,12 +1350,11 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
             //int feat = BWE_crossness_new[i];
             //int feat = BWE_brightness[i];
             int feat = BWE_white_templ_feat[i];
-            draw_point( p, _small, 5, cm_penny_lane( feat));
+            draw_point( p, img, 5, cm_penny_lane( feat));
         }
 #endif
-    } while(0);
-        
-    UIImage *res = MatToUIImage( _small);
+    }
+    UIImage *res = MatToUIImage( *canvas);
     //UIImage *res = MatToUIImage( drawing);
     return res;
 } // findBoard()
