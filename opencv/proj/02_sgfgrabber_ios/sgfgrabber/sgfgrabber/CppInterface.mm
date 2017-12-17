@@ -803,18 +803,23 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
     
     // Make an image with one pixel per intersection
-    cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
-    cv::Mat auxgray( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
+    cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
+    cv::Mat auxgray = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
     //cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
     int rad = 2;
     int i=0;
+    int hzl = SZ(horiz_lines);
+    int vl = SZ(vert_lines);
+    int pfl = SZ(pfts);
     RSLOOP (horiz_lines) {
         CSLOOP(vert_lines) {
             Point2f pf = pfts[i].p;
             cv::Point p = pf2p(pf);
-            aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
-            auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
-            //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
+            if (p.x < img.cols && p.y < img.rows) {
+                aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
+                auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
+                //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
+            }
             i++;
         }
     }
