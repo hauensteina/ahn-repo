@@ -192,7 +192,8 @@ Points get_pyr_board( const cv::Mat &pyr)
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
-    int spatialRad = 30;
+    int spatialRad = 5;
+    //int spatialRad = 30;
     int colorRad = 30;
     int maxPyrLevel = 1;
     cv::pyrMeanShiftFiltering( _small, _small_pyr, spatialRad, colorRad, maxPyrLevel );
@@ -778,6 +779,39 @@ void floodFillPostprocess( cv::Mat& img, const cv::Scalar& colorDiff=cv::Scalar:
     }
 } // floodFillPostprocess()
 
+// Find sum of squares from three centroids
+//-----------------------------------------------------------------------
+double centroid3_dist( const cv::Mat &m, float lo, float mid, float hi)
+{
+    double res = 0;
+    RLOOP (m.rows) {
+        CLOOP (m.cols) {
+            float v = m.at<uint8_t>(r,c);
+            float d1 = SQR( lo-v);
+            float d2 = SQR( mid-v);
+            float d3 = SQR( hi-v);
+            double d = MIN( d1, MIN( d2, d3));
+            res += d;
+        }
+    }
+    return res;
+}
+
+// Find min, max, median
+//-----------------------------------------
+void get_centroids( const cv::Mat &m, int &lo, int &mid, int &hi)
+{
+    //int cr = m.rows/2;
+    //int cc = m.cols/2;
+    //int rad = 2;
+    //cv::Rect rect( cc-rad, cr-rad, 2*rad+1, 2*rad+1);
+    //cv::Mat tmp = m( rect).clone();
+    std::vector<uint8_t> vals( m.begin<uint8_t>(), m.end<uint8_t>());
+    lo = vec_min( vals);
+    hi = vec_max( vals);
+    mid = vec_median( vals);
+}
+
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
@@ -813,15 +847,20 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             Point2f pf = pfts[i].p;
             cv::Point p = pf2p(pf);
             aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
-            auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
-            //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
+            cv::Rect rect( p.x - rad, p.y - rad, 2*rad+1, 2*rad+1);
+            if (BlackWhiteEmpty::check_rect( rect, gray.rows, gray.cols)) {
+                //auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
+                auxgray.at<uint8_t>(r,c) = (uint8_t)(cv::sum( gray( cv::Rect( p.x - rad, p.y - rad, 2*rad+1, 2*rad+1)))[0] / (float) rect.area());
+            }
             i++;
-        }
-    }
+        } // CSLOOP
+    } // RSLOOP
 
     int minr = -1, minc = -1;
     double mindist = 1E9;
     std::vector<int> vals;
+    int lo, mid, hi;
+    get_centroids( auxgray, lo, mid, hi);
     RLOOP (auxgray.rows) {
         if (r + board_sz > auxgray.rows) break;
         CLOOP (auxgray.cols) {
@@ -829,8 +868,9 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
             cv::Rect rect( c, r, board_sz, board_sz);
             cv::Mat tmp = auxgray( rect).clone();
             vals.assign( tmp.begin<uint8_t>(), tmp.end<uint8_t>());
-            double compactness;
-            auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness);
+            //double compactness;
+            //auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness);
+            double compactness = centroid3_dist( tmp, lo, mid, hi);
             PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
             if (compactness < mindist) { mindist = compactness; minc = c; minr = r; }
         }
