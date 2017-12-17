@@ -328,7 +328,7 @@ POINTS order_points( const POINTS &points)
 //---------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
-cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactness)
+cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactness, int tries=3, int iter=10, float eps=1.0)
 {
     if (elts.size() < 2) return std::vector<std::vector<T> >();
     std::vector<float> features;
@@ -336,8 +336,8 @@ cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactnes
     ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
     std::vector<int> labels;
     compactness = cv::kmeans( features, nof_clust, labels,
-                             cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 10, 1.0),
-                             3, cv::KMEANS_PP_CENTERS, centers);
+                             cv::TermCriteria( cv::TermCriteria::EPS + cv::TermCriteria::COUNT, iter, eps),
+                             tries, cv::KMEANS_PP_CENTERS, centers);
     // Extract parts
     std::vector<std::vector<T> > res( nof_clust, std::vector<T>());
     ILOOP (elts.size()) {
