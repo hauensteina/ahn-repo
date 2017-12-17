@@ -25,6 +25,7 @@
 #import "Clust1D.hpp"
 #import "DrawBoard.hpp"
 
+// Pyramid filter params
 #define SPATIALRAD  5
 #define COLORRAD    30
 #define MAXPYRLEVEL 2
@@ -1252,8 +1253,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         BlobFinder::find_stones( _gray, _stone_or_empty);
         _stone_or_empty = BlobFinder::clean( _stone_or_empty);
         if (SZ(_stone_or_empty) < 0.8 * SQR(_board_sz)) break;
-        
-        //PLOG(">>> %5d\n", SZ(_stone_or_empty) );
 
         // Break if not straight
         float theta = direction( _gray, _stone_or_empty) - PI/2;
@@ -1271,19 +1270,15 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_vertical_lines( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
-        //PLOG( "VLINES:%d\n", SZ(_vertical_lines));
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
 
         // Find corners
-        //auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
         cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
         pyr_filtered = true;
-        //auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-            //_corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray_threshed);
             _corners = get_corners( _horizontal_lines, _vertical_lines, _intersections, _small_pyr);
         }
         if (!board_valid( _corners, _gray)) break;
@@ -1293,8 +1288,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         //Points2f med_board = med_quad( _boards);
         //_corners = med_board;
 
-        //get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
-        //if (_dx < 2 || _dy < 2) break;
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
         
         // Zoom in
@@ -1306,16 +1299,13 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         thresh_dilate( _gray_zoomed, _gz_threshed);
 
         // Classify
-        //Points2f intersections_zoomed;
-        //get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
-        //if (_dx < 2 || _dy < 2) break;
         const int TIME_BUF_SZ = 10;
         _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
     } while(0);
     
     cv::Mat *canvas;
     if (pyr_filtered) {
-        canvas = &_small; //_pyr;
+        canvas = &_small_pyr;
     }
     else {
         canvas = &_small;
@@ -1340,10 +1330,10 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         ISLOOP (_diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
             if (_diagram[i] == BlackWhiteEmpty::BBLACK) {
-                draw_point( p, *canvas, 5, cv::Scalar(0,255,0,255));
+                draw_point( p, *canvas, 5, cv::Scalar(255,0,0,255));
             }
             else if (_diagram[i] == BlackWhiteEmpty::WWHITE) {
-                draw_point( p, *canvas, 5, cv::Scalar(255,0,0,255));
+                draw_point( p, *canvas, 5, cv::Scalar(0,255,0,255));
             }
         }
         ISLOOP (_intersections) {
