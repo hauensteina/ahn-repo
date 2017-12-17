@@ -806,18 +806,21 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
     cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
     cv::Mat auxgray( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
     //cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
-    int rad = 2;
+    int rad = 0;
     int i=0;
     RSLOOP (horiz_lines) {
         CSLOOP(vert_lines) {
             Point2f pf = pfts[i].p;
             cv::Point p = pf2p(pf);
             aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
-            auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
-            //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
+            cv::Rect rect( p.x - rad, p.y - rad, 2*rad+1, 2*rad+1);
+            if (BlackWhiteEmpty::check_rect( rect, gray.rows, gray.cols)) {
+                //auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
+                auxgray.at<uint8_t>(r,c) = (uint8_t)(cv::sum( gray( cv::Rect( p.x - rad, p.y - rad, 2*rad+1, 2*rad+1)))[0] / (float) rect.area());
+            }
             i++;
-        }
-    }
+        } // CSLOOP
+    } // RSLOOP
 
     int minr = -1, minc = -1;
     double mindist = 1E9;
