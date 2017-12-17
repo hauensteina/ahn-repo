@@ -707,7 +707,7 @@ void floodFillPostprocess( cv::Mat& img, const cv::Scalar& colorDiff=cv::Scalar:
 
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
-Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines,
+Points2f get_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
                      const Points2f &intersections, const cv::Mat &img, int board_sz = 19) //@@@
 {
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
@@ -768,6 +768,11 @@ Points2f get_corners( const std::vector<cv::Vec2f> &horiz_lines, const std::vect
         } // CLOOP
     } // RLOOP
     if (minr < 0 || minc < 0) return Points2f();
+    // Return the board lines only
+    horiz_lines = vec_slice( horiz_lines, minr, board_sz);
+    vert_lines  = vec_slice( vert_lines, minc, board_sz);
+
+    // Mark corners for visualization
     aux.at<cv::Vec3b>(cv::Point( minc, minr)) = cv::Vec3b( 255,0,0);
     aux.at<cv::Vec3b>(cv::Point( minc+board_sz-1, minr+board_sz-1)) = cv::Vec3b( 255,0,0);
 
@@ -1271,36 +1276,39 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         if (SZ( _vertical_lines) < 5) break;
 
         // Find corners
-        auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
+        //auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
+        _intersections = get_intersections( _horizontal_lines, _vertical_lines);
         cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
         pyr_filtered = true;
         //auto crosses = find_crosses( _gray_threshed, intersections);
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             //_corners = get_corners( _horizontal_lines, _vertical_lines, crosses, _gray_threshed);
-            _corners = get_corners( _horizontal_lines, _vertical_lines, intersections, _small_pyr);
+            _corners = get_corners( _horizontal_lines, _vertical_lines, _intersections, _small_pyr);
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker
-        const int BORDBUFLEN = 1;
-        ringpush( _boards, _corners, BORDBUFLEN);
-        Points2f med_board = med_quad( _boards);
-        _corners = med_board;
+        //const int BORDBUFLEN = 1;
+        //ringpush( _boards, _corners, BORDBUFLEN);
+        //Points2f med_board = med_quad( _boards);
+        //_corners = med_board;
 
-        get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
-        if (_dx < 2 || _dy < 2) break;
+        //get_intersections_from_corners( _corners, _board_sz, _intersections, _dx, _dy);
+        //if (_dx < 2 || _dy < 2) break;
+        _intersections = get_intersections( _horizontal_lines, _vertical_lines);
         
         // Zoom in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
+        cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         thresh_dilate( _gray_zoomed, _gz_threshed);
 
         // Classify
         //Points2f intersections_zoomed;
-        get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
-        if (_dx < 2 || _dy < 2) break;
+        //get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
+        //if (_dx < 2 || _dy < 2) break;
         const int TIME_BUF_SZ = 10;
         _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
     } while(0);
