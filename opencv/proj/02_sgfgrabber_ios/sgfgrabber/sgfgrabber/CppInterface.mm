@@ -373,7 +373,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     synth_lines.push_back(med_line);
     float rho, theta;
     // If there is a close line, use it. Else interpolate.
-    const float X_THRESH = 6;
+    const float X_THRESH = 3; //6;
     const float THETA_THRESH = PI / 180;
     // Lines to the right
     rho = med_line[0];
@@ -444,7 +444,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     synth_lines.push_back(med_line);
     float rho, theta;
     // If there is a close line, use it. Else interpolate.
-    const float Y_THRESH = 6;
+    const float Y_THRESH = 3; // 6;
     const float THETA_THRESH = PI / 180;
     // Lines below
     rho = med_line[0];
@@ -708,8 +708,8 @@ void floodFillPostprocess( cv::Mat& img, const cv::Scalar& colorDiff=cv::Scalar:
 
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
-Points2f get_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
-                     const Points2f &intersections, const cv::Mat &img, int board_sz = 19) //@@@
+Points2f find_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
+                     const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19) //@@@
 {
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
     //cv::cvtColor( img_, img, CV_RGBA2RGB);
@@ -728,6 +728,19 @@ Points2f get_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f
 //    cv::split( tmp, hsv);
 //
 //    cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
+    
+    std::vector<PFeat> crosses = find_crosses( threshed, intersections);
+    float med = vec_median( crosses, [](PFeat &pft){ return pft.feat; }).feat;
+    //float q3 = vec_q3( crosses, [](PFeat &pft){ return pft.feat; }).feat;
+    vec_filter( crosses, [med](PFeat &p){ return p.feat > 1.6 * med; });
+    //vec_filter( crosses, [q3](PFeat &p){ return p.feat >= q3; });
+    cv::cvtColor( threshed, mat_dbg, cv::COLOR_GRAY2RGB);
+    for (auto &pft: crosses) {
+        draw_point( pft.p, mat_dbg, 4, cm_penny_lane(pft.feat) );
+    }
+    
+    int tt = 42;
+
     
     // Make an image with one pixel per intersection
     cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
@@ -853,42 +866,14 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
     std::vector<float> features, inner;
     std::vector<PFeat> res;
     int r=10;
-    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::cross_feature_new,
+    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::cross_feature,
                                  features, 0, true);
-//    int r = BlackWhiteEmpty::RING_R ;
-//    BlackWhiteEmpty::get_feature( threshed, intersections, r,
-//                                 [](const cv::Mat &hood) { return mat_dist( BlackWhiteEmpty::ringmask(), hood); },
-//                                 features);
-    
-//    r=10;
-//    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::sum_feature, features);
-//    //float max_sum = vec_max( BWE_sum);
-//
-//    r=3;
-//    BlackWhiteEmpty::get_feature( threshed, intersections, r, BlackWhiteEmpty::sum_feature, inner);
-//
-//    // Looking for a ring
-//    vec_sub( features, inner); // Yes, do this twice
-//    vec_sub( features, inner);
-//    //float max_outer_minus_inner = vec_max( BWE_outer_minus_
     
     ISLOOP (features) {
         res.push_back( { intersections[i], features[i] } );
     }
-//    for (auto pf:intersections) {
-//        float crossness = BlackWhiteEmpty::cross_feature_new( mtmp, pf, dx, dy);
-//        res.push_back( { pf, 1 - crossness } );
-//        features.push_back( crossness );
-//    }
-//    ISLOOP (intersections) {
-//        if (features[i] < 0.01) {
-//            res.push_back( intersections[i]);
-//        }
-//    }
-//    viz_feature( img, intersections, features, mat_dbg, 255);
     return res;
 } // find_crosses()
-
 
 // Find the corners
 //----------------------------
@@ -904,18 +889,18 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
         if (SZ( _horizontal_lines) < 5) break;
         if (SZ( _vertical_lines) > 35) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = get_corners( _horizontal_lines, _vertical_lines, intersections, _small_pyr );
+        _corners = find_corners( _horizontal_lines, _vertical_lines, intersections, _small_pyr, _gray_threshed );
     } while(0);
     
     // Show results
-    cv::Mat drawing = _small_pyr.clone();
+    //cv::Mat drawing = _small_pyr.clone();
     //cv::Mat drawing; cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     //mat_dbg.convertTo( mat_dbg, CV_8UC1);
     //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     //float alpha = 0.5;
     //cv::addWeighted( _small, alpha, drawing, 1-alpha, 0, drawing);
-    draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
-    UIImage *res = MatToUIImage( drawing);
+    //draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( mat_dbg);
     return res;
 } // f06_corners()
 
@@ -927,7 +912,7 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
 //    g_app.mainVC.lbDbg.text = @"06";
 //
 //    auto intersections = get_intersections( _horizontal_lines, _vertical_lines);
-//    auto crosses = find_crosses( _gray_threshed, intersections); //@@@
+//    auto crosses = find_crosses( _gray_threshed, intersections);
 //    _corners.clear();
 //    if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
 //        _corners = get_corners( _horizontal_lines, _vertical_lines, _gray, _gray_threshed);
@@ -1279,7 +1264,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         pyr_filtered = true;
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-            _corners = get_corners( _horizontal_lines, _vertical_lines, _intersections, _small_pyr);
+            _corners = find_corners( _horizontal_lines, _vertical_lines, _intersections, _small_pyr, _gray_threshed);
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker

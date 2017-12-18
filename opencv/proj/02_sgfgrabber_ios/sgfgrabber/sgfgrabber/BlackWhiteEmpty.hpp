@@ -94,7 +94,6 @@ public:
                 res[i] = WWHITE;
             }
         }
-        int tt = 42;
 #define BOOTSTRAP
 #ifdef BOOTSTRAP
         // Bootstrap.
@@ -288,33 +287,23 @@ public:
     // Look whether cross pixels are set in neighborhood of p_.
     // hood should be binary, 0 or 1, from an adaptive threshold operation.
     //---------------------------------------------------------------------------------
-    inline static float cross_feature_new( const cv::Mat &hood)
+    inline static float cross_feature( const cv::Mat &hood)
     {
         int mid_y = ROUND(hood.rows / 2.0);
         int mid_x = ROUND(hood.cols / 2.0);
         float ssum = 0;
-        int n = 0;
- //       int marg = 3;
         // Look for horizontal line in the middle
         CLOOP (hood.cols) {
-//            if (c < marg) continue;
-//            if (hood.cols - c <= marg) continue;
-            ssum += hood.at<uint8_t>(mid_y, c); n++;
+            ssum += hood.at<uint8_t>(mid_y, c);
         }
         // Look for vertical line in the middle
         RLOOP (hood.rows) {
-//            if (r < marg) continue;
-//            if (hood.rows - r <= marg) continue;
-            ssum += hood.at<uint8_t>(r, mid_x); n++;
+            ssum += hood.at<uint8_t>(r, mid_x); 
         }
         float totsum = cv::sum(hood)[0];
-//        float bad = totsum - ssum;
         ssum = RAT( ssum, totsum);
-        return fabs(ssum);
-//        return ssum - bad;
-    } // cross_feature_new()
-
-
+        return ssum;
+    } // cross_feature()
     
     // Return a ring shaped mask used to detect W stones in threshed gray img.
     // For some reason, this is much worse than outer_minus_inner.

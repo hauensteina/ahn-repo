@@ -291,7 +291,6 @@ int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
         v[i] = **it;
     }
     int res = vec_median( v);
-    int tt=42;
     return res;
 }
 //------------------------------------------------------------------------
@@ -335,8 +334,8 @@ cv::Vec2f segment2polar( const cv::Vec4f &line_)
     cv::Vec4f line = line_;
     // Always go left to right
     if (line[2] < line[0]) {
-        swap( line[0], line[2]);
-        swap( line[1], line[3]);
+        sswap( line[0], line[2]);
+        sswap( line[1], line[3]);
     }
     float dx = line[2] - line[0];
     float dy = line[3] - line[1];

@@ -97,7 +97,7 @@ void fft(cplx buf[], int n);
 // Swap two things
 //---------------------------
 template <typename T>
-void swap( T &x1, T &x2)
+void sswap( T &x1, T &x2)
 {
     T tmp = x1; x1 = x2; x2 = tmp;
 }
@@ -150,6 +150,20 @@ std::vector<T> vec_slice( std::vector<T> vec, int start, int len)
 {
     std::vector<T> res( vec.begin() + start, vec.begin() + start + len);
     return res;
+}
+
+// Filter a vector in place
+//--------------------------------------------
+template <typename T, typename Func>
+void vec_filter( std::vector<T> &v, Func f)
+{
+    std::vector<T> good;
+    for ( auto &x: v) {
+        if (f(x)) {
+            good.push_back( x);
+        }
+    }
+    v = good;
 }
 
 // Append elt to vector, remove elts from front until length <= N
@@ -229,6 +243,16 @@ T vec_q3( std::vector<T> vec)
     return vec[(3 * vec.size()) / 4];
 }
 
+// Top quartile, with acces func
+//--------------------------------------
+template <typename T, typename Func>
+T vec_q3( std::vector<T> vec, Func at)
+{
+    if (!vec.size()) return T();
+    std::sort( vec.begin(), vec.end(),
+              [at](T a, T b) { return at(a) < at(b); });
+    return vec[(3 * vec.size()) / 4];
+}
 
 // Variance (sigma**2) of a vector.
 // Welford's algorithm.
