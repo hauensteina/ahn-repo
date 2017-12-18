@@ -758,7 +758,7 @@ Points2f get_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f
             cv::Mat tmp = auxgray( rect).clone();
             vals.assign( tmp.begin<uint8_t>(), tmp.end<uint8_t>());
             double compactness;
-            int tries=3, iter=2, eps=1.0;
+            int tries=3, iter=10, eps=1.0;
             auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness, tries, iter, eps);
             //PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
             if (compactness < mindist) {
