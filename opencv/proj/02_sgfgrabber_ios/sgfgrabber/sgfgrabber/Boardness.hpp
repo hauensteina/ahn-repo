@@ -33,10 +33,13 @@ public:
     
     // Internal
     cv::Mat m_pyrpix;  // A pixel per intersection, from m_pyr
+    std::vector<bool> m_blobflags; // For each intersection, is there a blob
     cv::Mat m_edgeness;  // Prob of board at r,c by edgeness
-    
+    cv::Mat m_blobness;  // Prob of board at r,c by blobness
+
     // Methods
     //----------
+    
     //---------------------------------------------------------------------------------------------------
     Boardness( const Points2f &intersections, const Points &blobs, const cv::Mat &pyr, int boardsz,
               const std::vector<cv::Vec2f> &horiz_lines, const std::vector<cv::Vec2f> &vert_lines) :
@@ -75,31 +78,107 @@ public:
                 
                 // Left and right edge
                 for (int rr = r; rr < r + m_boardsz; rr++) {
-                    auto b_l = m.at<cv::Vec3b>(rr, c); // on the board
-                    auto b_r = m.at<cv::Vec3b>(rr, c + m_boardsz -1);
-                    auto o_l = m.at<cv::Vec3b>(rr, c - 1); // just outside the board
-                    auto o_r = m.at<cv::Vec3b>(rr, c + m_boardsz);
-                    ssum += cv::norm( b_l - o_l);
-                    ssum += cv::norm( b_r - o_r);
+                    auto b_l = m.at<cv::Vec3b>( rr, c); // on the board
+                    auto b_r = m.at<cv::Vec3b>( rr, c + m_boardsz -1);
+                    auto o_l = m.at<cv::Vec3b>( rr, c - 1); // just outside the board
+                    auto o_r = m.at<cv::Vec3b>( rr, c + m_boardsz);
+                    ssum += cv::norm( b_l, o_l);
+                    ssum += cv::norm( b_r, o_r);
                 }
                 // Top and bottom edge
                 for (int cc = c; cc < c + m_boardsz; cc++) {
-                    auto b_t = m.at<cv::Vec3b>(r, cc); // on the board
-                    auto b_b = m.at<cv::Vec3b>(r + m_boardsz - 1, cc);
-                    auto o_t = m.at<cv::Vec3b>(r - 1, cc); // just outside the board
-                    auto o_b = m.at<cv::Vec3b>(r + m_boardsz, cc);
-                    ssum += cv::norm( b_t - o_t);
-                    ssum += cv::norm( b_b - o_b);
+                    auto b_t = m.at<cv::Vec3b>( r, cc); // on the board
+                    auto b_b = m.at<cv::Vec3b>( r + m_boardsz - 1, cc);
+                    auto o_t = m.at<cv::Vec3b>( r - 1, cc); // just outside the board
+                    auto o_b = m.at<cv::Vec3b>( r + m_boardsz, cc);
+                    ssum += cv::norm( b_t, o_t);
+                    ssum += cv::norm( b_b, o_b);
                 }
                 tmp.at<float>(r,c) = ssum;
                 if (ssum > mmax) mmax = ssum;
             } // CSLOOP
         } // RSLOOP
         double scale = 255.0 / mmax;
-        //double trans = -mmin * scale;
         tmp.convertTo( m_edgeness, CV_8UC1, scale);
         return m_edgeness;
     } // edgeness()
+    
+    // Percentage of blobs captured by the board
+    //---------------------------------------------
+    cv::Mat &blobness()
+    {
+        const cv::Mat &m = m_pyrpix;
+        cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_32FC1);
+        float mmax = -1E9;
+
+        if (!SZ(m_blobflags)) { fill_m_blobflags(); }
+        RSLOOP (m_horiz_lines) {
+            CSLOOP (m_vert_lines) {
+                float ssum = 0;
+                if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
+                if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
+                if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
+                if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
+                for (int rr = r; rr < r + m_boardsz; rr++) {
+                    for (int cc = c; cc < c + m_boardsz; cc++) {
+                        int idx = rc2idx( rr,cc); 
+                        if (m_blobflags[idx]) { ssum += 1; }
+                    }
+                }
+                tmp.at<float>(r,c) = ssum;
+                if (ssum > mmax) mmax = ssum;
+            } // CSLOOP
+        } // RSLOOP
+        double scale = 255.0 / mmax;
+        tmp.convertTo( m_blobness, CV_8UC1, scale);
+        return m_blobness;
+    } // blobness
+private:
+    // Fill m_blobflags. For each intersection, is there a blob.
+    //------------------------------------------------------------
+    void fill_m_blobflags()
+    {
+        const int EPS = 2.0;
+        // All points on horiz lines
+        std::vector<int> blob_to_horiz( SZ(m_blobs), -1);
+        ISLOOP (m_horiz_lines) {
+            KSLOOP (m_blobs) {
+                auto p = m_blobs[k];
+                float d = fabs(dist_point_line( p, m_horiz_lines[i]));
+                if (d < EPS) {
+                    blob_to_horiz[k] = i;
+                }
+            }
+        } // ISLOOP
+        // All points on vert lines
+        std::vector<int> blob_to_vert( SZ(m_blobs), -1);
+        ISLOOP (m_vert_lines) {
+            KSLOOP (m_blobs) {
+                auto p = m_blobs[k];
+                float d = fabs(dist_point_line( p, m_vert_lines[i]));
+                if (d < EPS) {
+                    blob_to_vert[k] = i;
+                }
+            }
+        } // ISLOOP
+
+        m_blobflags = std::vector<bool>(SZ(m_intersections),false);
+        KSLOOP (m_blobs) {
+            int blobrow = blob_to_horiz[k];
+            int blobcol = blob_to_vert[k];
+            if (blobrow >= 0 && blobcol >= 0) {
+                m_blobflags[rc2idx(blobrow, blobcol)] = true;
+            }
+        } // KSLOOP
+    } // fill_m_blobflags()
+    
+    // Convert r,c of intersection into linear index
+    //--------------------------------------------------
+    int rc2idx( int r, int c)
+    {
+        return r * SZ(m_vert_lines) + c;
+    }
+                    
 }; // class Boardness
 
 

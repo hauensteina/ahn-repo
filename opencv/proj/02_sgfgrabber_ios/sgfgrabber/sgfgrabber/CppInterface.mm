@@ -897,12 +897,13 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
     
     Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
-    cv::Mat edgeness = bness.edgeness();
-    
+    cv::Mat &edgeness = bness.edgeness();
+    cv::Mat &blobness = bness.blobness();
+
     // Mark corners for visualization
     //aux.at<cv::Vec3b>(cv::Point( cmax, rmax)) = cv::Vec3b( 255,0,0);
     //aux.at<cv::Vec3b>(cv::Point( cmax+board_sz-1, rmax+board_sz-1)) = cv::Vec3b( 255,0,0);
-    cv::resize(edgeness, mat_dbg, img.size(), 0,0, CV_INTER_NN);
+    cv::resize(blobness, mat_dbg, img.size(), 0,0, CV_INTER_NN);
     //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     //mat_dbg = aux.clone();
     //cv::cvtColor( auxgray, mat_dbg, cv::COLOR_GRAY2RGB);
