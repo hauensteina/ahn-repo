@@ -88,6 +88,8 @@ float line_len( cv::Point p, cv::Point q);
 // Median pixel val on line segment
 int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
 int median_on_segment( const cv::Mat &gray, cv::Vec4f seg);
+// Sum of values on line segment
+float sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
 // Median polar line bt theta
 cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)
@@ -215,6 +217,14 @@ void test_segment2polar();
 
 // Point
 //=========
+
+// Check if point on image
+//-------------------------------------------------
+template <typename Point_>
+bool p_on_img( Point_ p, const cv::Mat &img)
+{
+    return p.x >= 0 && p.y >= 0 && p.x < img.cols && p.y < img.rows;
+}
 
 // Intersection of two line segments AB CD
 //-----------------------------------------------------------------

@@ -250,6 +250,7 @@ public:
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - r, p.y - r + yshift, 2*r + 1, 2*r + 1 );
+            feat = 0;
             if (check_rect( rect, img.rows, img.cols)) {
                 const cv::Mat &hood( img(rect));
                 feat = Feat( hood);

@@ -12,6 +12,8 @@
 
 extern cv::Mat mat_dbg;
 
+cv::Mat BlobFinder::m_matchRes;
+
 // Find empty intersections in a thresholded, dilated image
 //------------------------------------------------------------------------------------------
 void BlobFinder::find_empty_places( const cv::Mat &threshed, Points &result, int athresh)
@@ -161,13 +163,13 @@ void BlobFinder::find_stones( const cv::Mat &img, Points &result)
 //--------------------------------------------------------------------------------------------------------
 void BlobFinder::matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points &result, double thresh)
 {
-    cv::Mat matchRes;
+    //cv::Mat matchRes;
     cv::Mat mtmp;
     int tsz = templ.rows;
     cv::copyMakeBorder( img, mtmp, tsz/2, tsz/2, tsz/2, tsz/2, cv::BORDER_REPLICATE, cv::Scalar(0));
-    cv::matchTemplate( mtmp, templ, matchRes, CV_TM_SQDIFF);
-    cv::normalize( matchRes, matchRes, 0 , 255, CV_MINMAX, CV_8UC1);
-    cv::adaptiveThreshold( matchRes, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    cv::matchTemplate( mtmp, templ, m_matchRes, CV_TM_SQDIFF);
+    cv::normalize( m_matchRes, m_matchRes, 0 , 255, CV_MINMAX, CV_8UC1);
+    cv::adaptiveThreshold( m_matchRes, mtmp, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           11,  // neighborhood_size
                           thresh); // threshold; less is more
     

@@ -293,6 +293,7 @@ int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
     int res = vec_median( v);
     return res;
 }
+
 //------------------------------------------------------------------------
 int median_on_segment( const cv::Mat &gray, cv::Vec4f seg)
 {
@@ -300,6 +301,19 @@ int median_on_segment( const cv::Mat &gray, cv::Vec4f seg)
     cv::Point p2(ROUND(seg[2]), ROUND(seg[3]));
     return median_on_segment( gray, p1, p2);
 }
+
+// Sum of values on line segment
+//------------------------------------------------------------------------
+float sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
+{
+    float res = 0;
+    cv::LineIterator it( gray, p1, p2, 8);
+    for(int i = 0; i < it.count; i++, it++) {
+        res += **it;
+    }
+    return res;
+}
+
 
 // Return a line segment with median theta 
 //-----------------------------------------------------------

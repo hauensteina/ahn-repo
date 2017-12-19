@@ -28,7 +28,9 @@
 // Pyramid filter params
 #define SPATIALRAD  5
 #define COLORRAD    30
+//#define COLORRAD    15
 #define MAXPYRLEVEL 2
+//#define MAXPYRLEVEL 1
 
 extern cv::Mat mat_dbg;
 
@@ -706,6 +708,186 @@ void floodFillPostprocess( cv::Mat& img, const cv::Scalar& colorDiff=cv::Scalar:
     }
 } // floodFillPostprocess()
 
+// For each pixel, sum diff to neighbors, unless they are 0 or you are 0.
+// Scale result into 0-255 range.
+//------------------------------------------------------------------------
+void neighbor_diffs( const cv::Mat &img, cv::Mat &dst)
+{
+    dst = cv::Mat( img.rows, img.cols, CV_8UC1);
+    float mmax = -1E9;
+    RLOOP (img.rows) {
+        int topr = r - 1;
+        int botr = r + 1;
+        CLOOP (img.cols) {
+            int leftc = c - 1;
+            int rightc = c + 1;
+            int v = img.at<uint8_t>(r,c);
+            int pn = 0; float psum = 0;
+            if (v) {
+                int left=0, right=0, top=0, bot=0;
+                if (leftc >= 0)        { left  = img.at<uint8_t>(r, leftc); }
+                if (rightc < img.cols) { right = img.at<uint8_t>(r, rightc); }
+                if (topr >= 0)         { top   = img.at<uint8_t>(topr, c); }
+                if (botr < img.rows)   { bot   = img.at<uint8_t>(botr, c); }
+                
+                if (left)  { psum += fabs( left - v);  pn++; }
+                if (right) { psum += fabs( right - v);  pn++; }
+                if (top)   { psum += fabs( top - v);  pn++; }
+                if (bot)   { psum += fabs( bot - v);  pn++; }
+                psum = RAT( psum, pn);
+            }
+            dst.at<uint8_t>(r,c) = psum;
+            if (psum > mmax) mmax = psum;
+        } // CLOOP
+    } // RLOOP
+    // Scale to 255
+    dst.convertTo( dst, CV_8UC1, 255.0 / mmax , 0);
+    // Eliminate suspiciously large ones
+    //dst.forEach<uint8_t>( [](uint8_t &v, const int *p) { if (v > 200) v = 0; } );
+    // Scale again
+    //dst.convertTo( dst, CV_8UC1, 255.0 / mmax , 0);
+}
+
+// Color difference between first line and just outside
+//------------------------------------------------------------------------
+float outer_color_diff( const cv::Mat &m, int r_, int c_, int board_sz)
+{
+    float ssum = 0;
+    if (!p_on_img(cv::Point( c_ - 1,        r_ ), m)) return -1;
+    if (!p_on_img(cv::Point( c_ + board_sz, r_ ), m)) return -1;
+    if (!p_on_img(cv::Point( c_,            r_ - 1), m)) return -1;
+    if (!p_on_img(cv::Point( c_,            r_ + board_sz), m)) return -1;
+    
+    // Left and right edge
+    for (int r = r_; r < r_ + board_sz; r++) {
+        auto b_l = m.at<cv::Vec3b>(r, c_); // on the board
+        auto b_r = m.at<cv::Vec3b>(r, c_ + board_sz -1);
+        auto o_l = m.at<cv::Vec3b>(r, c_ - 1); // just outside the board
+        auto o_r = m.at<cv::Vec3b>(r, c_ + board_sz);
+        ssum += cv::norm( b_l - o_l);
+        ssum += cv::norm( b_r - o_r);
+    }
+    // Top and bottom edge
+    for (int c = c_; c < c_ + board_sz; c++) {
+        auto b_t = m.at<cv::Vec3b>(r_, c); // on the board
+        auto b_b = m.at<cv::Vec3b>(r_ + board_sz - 1, c);
+        auto o_t = m.at<cv::Vec3b>(r_ - 1, c); // just outside the board
+        auto o_b = m.at<cv::Vec3b>(r_ + board_sz, c);
+        ssum += cv::norm( b_t - o_t);
+        ssum += cv::norm( b_b - o_b);
+    }
+    return ssum;
+} // outer_diff()
+
+// Replace anything inside the board with the median.
+//-----------------------------------------------------------------
+void medianize_board( cv::Mat &m, int r_, int c_, int board_sz)
+{
+    std::vector<int> rv, gv, bv;
+    
+    for (int r = r_ ; r < r_ + board_sz; r++) {
+        for (int c = c_; c < c_ + board_sz; c++) {
+            auto v = m.at<cv::Vec3b>(r, c);
+            rv.push_back( v[0]);
+            gv.push_back( v[1]);
+            bv.push_back( v[2]);
+        } // for c
+    } // for r
+    int rmed = vec_median( rv);
+    int gmed = vec_median( gv);
+    int bmed = vec_median( bv);
+    cv::Vec3b med(rmed,gmed,bmed);
+    for (int r = r_ ; r < r_ + board_sz; r++) {
+        for (int c = c_ ; c < c_ + board_sz; c++) {
+            m.at<cv::Vec3b>(r, c) = med;
+        } // for c
+    } // for r
+} // medianize_board()
+
+
+// A good board has only B,W,E
+//------------------------------------------------
+float boardness( const cv::Mat &m)
+{
+    std::vector<int> rv, gv, bv, grayv;
+    std::vector<cv::Vec3b> pixels;
+    
+    RLOOP (m.rows) {
+        CLOOP (m.cols) {
+            auto v = m.at<cv::Vec3b>(r, c);
+            rv.push_back( v[0]);
+            gv.push_back( v[1]);
+            bv.push_back( v[2]);
+            grayv.push_back( sqrt( SQR(v[0])+SQR(v[1])+SQR(v[2])));
+            pixels.push_back( v);
+        } // CLOOP
+    } // RLOOP
+    
+    float maxr = vec_max( rv);
+    float maxg = vec_max( gv);
+    float maxb = vec_max( bv);
+    cv::Vec3b mmax( maxr, maxg, maxb);
+    
+    float minr = vec_min( rv);
+    float ming = vec_min( gv);
+    float minb = vec_min( bv);
+    cv::Vec3b mmin( minr, ming, minb);
+
+    float avgr = vec_avg( rv);
+    float avgg = vec_avg( gv);
+    float avgb = vec_avg( bv);
+    cv::Vec3b aavg( avgr, avgg, avgb);
+    
+    auto white_pixels = pixels;
+    vec_filter( white_pixels, [mmin,mmax,aavg](cv::Vec3b p) {
+        return cv::norm( p,mmax) < cv::norm( p,mmin)
+        && cv::norm( p,mmax) < cv::norm( p,aavg);
+    });
+    
+    auto black_pixels = pixels;
+    vec_filter( black_pixels, [mmin,mmax,aavg](cv::Vec3b p) {
+        //float d3 = cv::norm( p,mmin);
+        //float d4 = cv::norm( p,mmax);
+        return cv::norm( p,mmin) < cv::norm( p,mmax)
+        && cv::norm( p,mmin) < cv::norm( p,aavg);
+    });
+    
+    auto empty_pixels = pixels;
+    vec_filter( empty_pixels, [mmin,mmax,aavg](cv::Vec3b p) {
+        return cv::norm( p,aavg) < cv::norm( p,mmin)
+        && cv::norm( p,aavg) < cv::norm( p,mmax);
+    });
+    
+    float res = 0;
+    for (auto x:white_pixels) { res += cv::norm( x,mmax); }
+    for (auto x:black_pixels) { res += cv::norm( x,mmin); }
+    for (auto x:empty_pixels) { res += cv::norm( x,aavg); }
+
+    // Debug
+    mat_dbg = cv::Mat( m.rows, m.cols, CV_8UC3);
+    RLOOP (m.rows) {
+        CLOOP (m.cols) {
+            auto p = m.at<cv::Vec3b>(r,c);
+            if (cv::norm( p,mmax) < cv::norm( p,mmin)
+                && cv::norm( p,mmax) < cv::norm( p,aavg))
+            {
+                mat_dbg.at<cv::Vec3b>(r,c) = cv::Vec3b( 255,0,0);
+            }
+            else if (cv::norm( p,mmin) < cv::norm( p,mmax)
+                && cv::norm( p,mmin) < cv::norm( p,aavg))
+            {
+                mat_dbg.at<cv::Vec3b>(r,c) = cv::Vec3b( 0,255,0);
+            }
+            else if (cv::norm( p,aavg) < cv::norm( p,mmin)
+                && cv::norm( p,aavg) < cv::norm( p,mmax))
+            {
+                mat_dbg.at<cv::Vec3b>(r,c) = cv::Vec3b( 0,0,255);
+            }
+        } // CLOOP
+    } // RLOOP
+    return res;
+} // boardness()
+
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f find_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
@@ -718,6 +900,7 @@ Points2f find_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2
     //cv::Mat hue;
     //get_hue_from_rgb( img, hue);
     
+ 
     cv::Mat gray;
     cv::cvtColor( img, gray, cv::COLOR_RGB2GRAY);
 //    cv::Mat rgb[3];
@@ -728,82 +911,125 @@ Points2f find_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2
 //    cv::split( tmp, hsv);
 //
 //    cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
-    
+
     std::vector<PFeat> crosses = find_crosses( threshed, intersections);
     float med = vec_median( crosses, [](PFeat &pft){ return pft.feat; }).feat;
     //float q3 = vec_q3( crosses, [](PFeat &pft){ return pft.feat; }).feat;
-    vec_filter( crosses, [med](PFeat &p){ return p.feat > 1.6 * med; });
-    //vec_filter( crosses, [q3](PFeat &p){ return p.feat >= q3; });
-    cv::cvtColor( threshed, mat_dbg, cv::COLOR_GRAY2RGB);
-    for (auto &pft: crosses) {
-        draw_point( pft.p, mat_dbg, 4, cm_penny_lane(pft.feat) );
-    }
-    
-    int tt = 42;
+    //vec_filter( crosses, [med](PFeat &p){ return p.feat > 1.6 * med; });
+    // Get the cross values from pyr img
+    std::vector<float> cross_vals = vec_extract( crosses,
+                                                [&gray](const PFeat &pft) {
+                                                    if (pft.feat == 0) return (uint8_t)0;
+                                                    return gray.at<uint8_t>(pft.p.y, pft.p.x);
+                                                });
 
-    
     // Make an image with one pixel per intersection
-    cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
+    //cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
     cv::Mat auxgray = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
+    cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
+    std::vector<float> auxvec;
     //cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
     int i=0;
     RSLOOP (horiz_lines) {
         CSLOOP(vert_lines) {
             Point2f pf = intersections[i];
             cv::Point p = pf2p(pf);
-            if (p.x < img.cols && p.y < img.rows && p.x >= 0 && p.y >= 0) {
+            if (p.x < gray.cols && p.y < gray.rows && p.x >= 0 && p.y >= 0) {
                 aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
-                auxgray.at<uint8_t>(r,c) = gray.at<uint8_t>(p);
+                int v = gray.at<uint8_t>(p);
+                auxgray.at<uint8_t>(r,c) = v;
+                auxvec.push_back( v);
                 //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
             }
             i++;
-        }
-    }
+        } // CSLOOP
+    } // RSLOOP
 
-    int minr = -1, minc = -1;
-    double mindist = 1E9;
-    std::vector<int> vals;
-    RLOOP (auxgray.rows) {
-        if (r + board_sz > auxgray.rows) break;
-        CLOOP (auxgray.cols) {
-            if (c + board_sz > auxgray.cols) break;
-            cv::Rect rect( c, r, board_sz, board_sz);
-            cv::Mat tmp = auxgray( rect).clone();
-            vals.assign( tmp.begin<uint8_t>(), tmp.end<uint8_t>());
-            double compactness;
-            int tries=3, iter=10, eps=1.0;
-            auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness, tries, iter, eps);
-            //PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
-            if (compactness < mindist) {
-                mindist = compactness;
-                minc = c;
-                minr = r;
+    float mind = 1E9;
+    int rmin = -1, cmin = -1;
+    float maxd = -1E9;
+    int rmax = -1, cmax = -1;
+    for (int r=0; r < SZ(horiz_lines) - board_sz + 1; r++) {
+        for (int c=0; c < SZ(vert_lines) - board_sz + 1; c++) {
+            //cv::Mat tmp = aux.clone();
+            //medianize_board( tmp, r, c, board_sz);
+            float ocd = outer_color_diff( aux, r, c, board_sz);
+            float bness = boardness( aux(cv::Rect(c,r,board_sz,board_sz)));
+            PLOG( "row col ocd bness: %5d %5d %10.0f %10.0f\n", r, c, ocd, bness);
+            if (ocd > maxd) {
+                maxd = ocd;
+                rmax = r; cmax = c;
             }
-        } // CLOOP
-    } // RLOOP
-    if (minr < 0 || minc < 0) return Points2f();
-    // Return the board lines only
-    horiz_lines = vec_slice( horiz_lines, minr, board_sz);
-    vert_lines  = vec_slice( vert_lines, minc, board_sz);
-
+            if (bness < mind) {
+                mind = bness;
+                rmin = r; cmin = c;
+            }
+        } // for c
+    } // for r
+    g_app.mainVC.lbDbg.text = nsprintf( @"row col %5d %5d\n", rmax, cmax);
+    //medianize_board( aux, rmax, cmax, board_sz);
+    cv::Mat tmp = aux( cv::Rect( cmax, rmax, board_sz, board_sz));
+    
     // Mark corners for visualization
-    aux.at<cv::Vec3b>(cv::Point( minc, minr)) = cv::Vec3b( 255,0,0);
-    aux.at<cv::Vec3b>(cv::Point( minc+board_sz-1, minr+board_sz-1)) = cv::Vec3b( 255,0,0);
-
-
-    auto rc2p = [&intersections, &auxgray](int r, int c) { return intersections[r*auxgray.cols + c]; };
-    auto tl = rc2p( minr, minc);
-    auto tr = rc2p( minr, minc+board_sz-1);
-    auto br = rc2p( minr+board_sz-1, minc+board_sz-1);
-    auto bl = rc2p( minr+board_sz-1, minc);
-    Points2f corners = { tl, tr, br, bl };
-
-    //cv::resize(auxgray, auxgray, img.size(), 0,0, CV_INTER_NN);
+    aux.at<cv::Vec3b>(cv::Point( cmax, rmax)) = cv::Vec3b( 255,0,0);
+    aux.at<cv::Vec3b>(cv::Point( cmax+board_sz-1, rmax+board_sz-1)) = cv::Vec3b( 255,0,0);
+    cv::resize(mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
     //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
+    //mat_dbg = aux.clone();
+    //cv::cvtColor( auxgray, mat_dbg, cv::COLOR_GRAY2RGB);
+//    for (auto &pft: crosses) {
+//        draw_point( pft.p, mat_dbg, 4, cm_penny_lane(pft.feat) );
+//    }
+    
+//    int tt = 42;
+//
+//
+//
+//    int minr = -1, minc = -1;
+//    double mindist = 1E9;
+//    std::vector<int> vals;
+//    RLOOP (auxgray.rows) {
+//        if (r + board_sz > auxgray.rows) break;
+//        CLOOP (auxgray.cols) {
+//            if (c + board_sz > auxgray.cols) break;
+//            cv::Rect rect( c, r, board_sz, board_sz);
+//            cv::Mat tmp = auxgray( rect).clone();
+//            vals.assign( tmp.begin<uint8_t>(), tmp.end<uint8_t>());
+//            double compactness;
+//            int tries=3, iter=10, eps=1.0;
+//            auto clusters = cluster(vals, 3, [](int v) { return float(v); }, compactness, tries, iter, eps);
+//            //PLOG( "r c compactness %5d %5d %.0f\n", r, c, compactness);
+//            if (compactness < mindist) {
+//                mindist = compactness;
+//                minc = c;
+//                minr = r;
+//            }
+//        } // CLOOP
+//    } // RLOOP
+//    if (minr < 0 || minc < 0) return Points2f();
+//    // Return the board lines only
+//    horiz_lines = vec_slice( horiz_lines, minr, board_sz);
+//    vert_lines  = vec_slice( vert_lines, minc, board_sz);
+//
+//    // Mark corners for visualization
+//    //aux.at<cv::Vec3b>(cv::Point( minc, minr)) = cv::Vec3b( 255,0,0);
+//    //aux.at<cv::Vec3b>(cv::Point( minc+board_sz-1, minr+board_sz-1)) = cv::Vec3b( 255,0,0);
+//
+//
+//    auto rc2p = [&intersections, &auxgray](int r, int c) { return intersections[r*auxgray.cols + c]; };
+//    auto tl = rc2p( minr, minc);
+//    auto tr = rc2p( minr, minc+board_sz-1);
+//    auto br = rc2p( minr+board_sz-1, minc+board_sz-1);
+//    auto bl = rc2p( minr+board_sz-1, minc);
+//    Points2f corners = { tl, tr, br, bl };
+//
+//    //cv::resize(auxgray, auxgray, img.size(), 0,0, CV_INTER_NN);
+//    //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     
     //aux.copyTo(mat_dbg);
+    Points2f corners;
     return corners;
-} // get_corners()
+} // find_corners()
 
 //// Use horizontal and vertical lines to find corners such that the board best matches the points we found
 ////-----------------------------------------------------------------------------------------------------------
@@ -813,11 +1039,11 @@ Points2f find_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2
 //    int max_idx = -1;
 //    float max_score= -1E9;
 //    cv::Vec2f top_line, bot_line, left_line, right_line;
-//    //@@@
-//    for (int i=0; i < SZ(horiz_lines) - board_sz + 1; i++) {
-//        std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, i, board_sz);
-//        for (int i=0; i < SZ(vert_lines) - board_sz + 1; i++) {
-//            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, i, board_sz);
+//
+//    for (int r=0; r < SZ(horiz_lines) - board_sz + 1; r++) {
+//        std::vector<cv::Vec2f> hlines = vec_slice( horiz_lines, r, board_sz);
+//        for (int c=0; c < SZ(vert_lines) - board_sz + 1; c++) {
+//            std::vector<cv::Vec2f> vlines = vec_slice( vert_lines, c, board_sz);
 //            auto intersections = get_intersections( hlines, vlines);
 //            float score;
 //            BlackWhiteEmpty::classify( gray, threshed, intersections, score);
