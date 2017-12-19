@@ -66,6 +66,20 @@ inline std::vector<float> mat2vec( cv::Mat &m)
     m.forEach<uint8_t>( [&i,&res](uint8_t &v, const int *p) { res[i++]=v; } );
     return res;
 }
+// Sum two uint8_t mats, scale back to 255
+inline cv::Mat mat_sumscale( const cv::Mat &m1, const cv::Mat &m2)
+{
+    cv::Mat mf1, mf2;
+    m1.convertTo( mf1, CV_32FC1);
+    m2.convertTo( mf2, CV_32FC1);
+    mf1 += mf2;
+    double mmin, mmax;
+    cv::minMaxLoc( mf1, &mmin, &mmax);
+    double scale = 255.0 / mmax;
+    cv::Mat res;
+    mf1.convertTo( res, CV_8UC1, scale);
+    return res;
+}
 
 
 // Contour
@@ -199,6 +213,7 @@ Points2f points2float( const Points &pi);
 // Vector of float points to int
 void points2int( const Points2f &pf, Points &pi);
 inline cv::Point pf2p( const Point2f p) { return cv::Point( ROUND(p.x), ROUND(p.y)) ; }
+inline cv::Point p2pf( const cv::Point p) { return Point2f( p.x, p.y) ; }
 
 // Debugging
 //=============

@@ -899,11 +899,21 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
     cv::Mat &edgeness = bness.edgeness();
     cv::Mat &blobness = bness.blobness();
-
+    cv::Mat both = mat_sumscale( edgeness, blobness);
+    cv::Point min_loc, max_loc;
+    double mmin, mmax;
+    cv::minMaxLoc(both, &mmin, &mmax, &min_loc, &max_loc);
+    Point2f tl = p2pf( max_loc);
+    Point2f tr( tl.x + board_sz-1, tl.y);
+    Point2f br( tl.x + board_sz-1, tl.y + board_sz-1);
+    Point2f bl( tl.x, tl.y + board_sz-1);
+    
     // Mark corners for visualization
-    //aux.at<cv::Vec3b>(cv::Point( cmax, rmax)) = cv::Vec3b( 255,0,0);
-    //aux.at<cv::Vec3b>(cv::Point( cmax+board_sz-1, rmax+board_sz-1)) = cv::Vec3b( 255,0,0);
-    cv::resize(blobness, mat_dbg, img.size(), 0,0, CV_INTER_NN);
+    mat_dbg = bness.m_pyrpix.clone();
+    mat_dbg.at<cv::Vec3b>( pf2p(tl)) = cv::Vec3b( 255,0,0);
+    mat_dbg.at<cv::Vec3b>( pf2p(br)) = cv::Vec3b( 255,0,0);
+    cv::resize( mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
+
     //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     //mat_dbg = aux.clone();
     //cv::cvtColor( auxgray, mat_dbg, cv::COLOR_GRAY2RGB);
@@ -957,7 +967,7 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
 //    //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     
     //aux.copyTo(mat_dbg);
-    Points2f corners;
+    Points2f corners = { tl, tr, br, bl };
     return corners;
 } // find_corners()
 

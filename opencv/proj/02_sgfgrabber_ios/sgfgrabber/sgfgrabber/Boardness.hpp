@@ -16,6 +16,8 @@
 #include "Common.hpp"
 #include "Ocv.hpp"
 
+extern cv::Mat mat_dbg;
+
 class Boardness
 //=================
 {
@@ -139,35 +141,43 @@ private:
     void fill_m_blobflags()
     {
         const int EPS = 2.0;
+        typedef struct { int idx; float d; } Idxd;
         // All points on horiz lines
-        std::vector<int> blob_to_horiz( SZ(m_blobs), -1);
+        std::vector<Idxd> blob_to_horiz( SZ(m_blobs), {-1,1E9});
         ISLOOP (m_horiz_lines) {
             KSLOOP (m_blobs) {
                 auto p = m_blobs[k];
                 float d = fabs(dist_point_line( p, m_horiz_lines[i]));
-                if (d < EPS) {
-                    blob_to_horiz[k] = i;
+                if (d < blob_to_horiz[k].d) {
+                    blob_to_horiz[k].idx = i;
+                    blob_to_horiz[k].d = d;
                 }
             }
         } // ISLOOP
         // All points on vert lines
-        std::vector<int> blob_to_vert( SZ(m_blobs), -1);
+        std::vector<Idxd> blob_to_vert( SZ(m_blobs), {-1,1E9});
         ISLOOP (m_vert_lines) {
             KSLOOP (m_blobs) {
                 auto p = m_blobs[k];
                 float d = fabs(dist_point_line( p, m_vert_lines[i]));
-                if (d < EPS) {
-                    blob_to_vert[k] = i;
+                if (d < blob_to_vert[k].d) {
+                    blob_to_vert[k].idx = i;
+                    blob_to_vert[k].d = d;
                 }
             }
         } // ISLOOP
 
         m_blobflags = std::vector<bool>(SZ(m_intersections),false);
+        mat_dbg = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
         KSLOOP (m_blobs) {
-            int blobrow = blob_to_horiz[k];
-            int blobcol = blob_to_vert[k];
-            if (blobrow >= 0 && blobcol >= 0) {
+            int blobrow = blob_to_horiz[k].idx;
+            int blobcol = blob_to_vert[k].idx;
+            float blobd_h = blob_to_horiz[k].d;
+            float blobd_v = blob_to_horiz[k].d;
+            if (blobrow >= 0 && blobcol >= 0 && blobd_h < EPS && blobd_v < EPS) {
                 m_blobflags[rc2idx(blobrow, blobcol)] = true;
+                auto col = get_color();
+                mat_dbg.at<cv::Vec3b>(blobrow,blobcol) = cv::Vec3b( col[0],col[1],col[2]);
             }
         } // KSLOOP
     } // fill_m_blobflags()
