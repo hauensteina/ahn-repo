@@ -70,6 +70,7 @@
 		ACAC40BD1FC3321A00B6968B /* board03.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board03.jpg; sourceTree = "<group>"; };
 		ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Clust1D.hpp; sourceTree = "<group>"; };
 		ACEF73621FBE3BA200DA4AD8 /* BlackWhiteEmpty.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BlackWhiteEmpty.hpp; sourceTree = "<group>"; };
+		ACF862D31FE95AF200EEC707 /* Boardness.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Boardness.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,6 +112,7 @@
 				ACEF73621FBE3BA200DA4AD8 /* BlackWhiteEmpty.hpp */,
 				AC8ACF8A1FBF5553005D5722 /* BlobFinder.cpp */,
 				AC8ACF8B1FBF5553005D5722 /* BlobFinder.hpp */,
+				ACF862D31FE95AF200EEC707 /* Boardness.hpp */,
 				ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */,
 				AC043D331F9BB9AB006CF7F0 /* Common.h */,
 				ACA69E4B1F9D077B00F5E068 /* Common.m */,

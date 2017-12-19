@@ -58,6 +58,14 @@ int channel_median( cv::Mat channel );
 int channel_q1( cv::Mat channel );
 // Elementwise L2 distance between two single channel mats.
 float mat_dist( const cv::Mat &m1, const cv::Mat &m2);
+// Store mat of uint8_t in vec of float
+inline std::vector<float> mat2vec( cv::Mat &m)
+{
+    std::vector<float> res(m.rows*m.cols);
+    int i=0;
+    m.forEach<uint8_t>( [&i,&res](uint8_t &v, const int *p) { res[i++]=v; } );
+    return res;
+}
 
 
 // Contour

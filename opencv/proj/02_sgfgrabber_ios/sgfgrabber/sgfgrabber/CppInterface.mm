@@ -24,6 +24,7 @@
 #import "BlobFinder.hpp"
 #import "Clust1D.hpp"
 #import "DrawBoard.hpp"
+#import "Boardness.hpp"
 
 // Pyramid filter params
 #define SPATIALRAD  5
@@ -890,90 +891,18 @@ float boardness( const cv::Mat &m)
 
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
-Points2f find_corners( std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
+Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines, 
                      const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19) //@@@
 {
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
-    //cv::cvtColor( img_, img, CV_RGBA2RGB);
-    //int height = img.rows;
-    //int width  = img.cols;
-    //cv::Mat hue;
-    //get_hue_from_rgb( img, hue);
     
- 
-    cv::Mat gray;
-    cv::cvtColor( img, gray, cv::COLOR_RGB2GRAY);
-//    cv::Mat rgb[3];
-//    cv::split( img, rgb);
-//    cv::Mat tmp;
-//    cv::cvtColor( img, tmp, cv::COLOR_RGB2HSV);
-//    cv::Mat hsv[3];
-//    cv::split( tmp, hsv);
-//
-//    cv::Mat hsvrgb[6] = { hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2] };
-
-    std::vector<PFeat> crosses = find_crosses( threshed, intersections);
-    float med = vec_median( crosses, [](PFeat &pft){ return pft.feat; }).feat;
-    //float q3 = vec_q3( crosses, [](PFeat &pft){ return pft.feat; }).feat;
-    //vec_filter( crosses, [med](PFeat &p){ return p.feat > 1.6 * med; });
-    // Get the cross values from pyr img
-    std::vector<float> cross_vals = vec_extract( crosses,
-                                                [&gray](const PFeat &pft) {
-                                                    if (pft.feat == 0) return (uint8_t)0;
-                                                    return gray.at<uint8_t>(pft.p.y, pft.p.x);
-                                                });
-
-    // Make an image with one pixel per intersection
-    //cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
-    cv::Mat auxgray = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
-    cv::Mat aux = cv::Mat::zeros( SZ(horiz_lines), SZ(vert_lines), CV_8UC3);
-    std::vector<float> auxvec;
-    //cv::Mat aux( SZ(horiz_lines), SZ(vert_lines), CV_8UC1);
-    int i=0;
-    RSLOOP (horiz_lines) {
-        CSLOOP(vert_lines) {
-            Point2f pf = intersections[i];
-            cv::Point p = pf2p(pf);
-            if (p.x < gray.cols && p.y < gray.rows && p.x >= 0 && p.y >= 0) {
-                aux.at<cv::Vec3b>(r,c) = img.at<cv::Vec3b>(p);
-                int v = gray.at<uint8_t>(p);
-                auxgray.at<uint8_t>(r,c) = v;
-                auxvec.push_back( v);
-                //aux.at<uint8_t>(r,c) = hsvrgb[0].at<uint8_t>(p) * 2;
-            }
-            i++;
-        } // CSLOOP
-    } // RSLOOP
-
-    float mind = 1E9;
-    int rmin = -1, cmin = -1;
-    float maxd = -1E9;
-    int rmax = -1, cmax = -1;
-    for (int r=0; r < SZ(horiz_lines) - board_sz + 1; r++) {
-        for (int c=0; c < SZ(vert_lines) - board_sz + 1; c++) {
-            //cv::Mat tmp = aux.clone();
-            //medianize_board( tmp, r, c, board_sz);
-            float ocd = outer_color_diff( aux, r, c, board_sz);
-            float bness = boardness( aux(cv::Rect(c,r,board_sz,board_sz)));
-            PLOG( "row col ocd bness: %5d %5d %10.0f %10.0f\n", r, c, ocd, bness);
-            if (ocd > maxd) {
-                maxd = ocd;
-                rmax = r; cmax = c;
-            }
-            if (bness < mind) {
-                mind = bness;
-                rmin = r; cmin = c;
-            }
-        } // for c
-    } // for r
-    g_app.mainVC.lbDbg.text = nsprintf( @"row col %5d %5d\n", rmax, cmax);
-    //medianize_board( aux, rmax, cmax, board_sz);
-    cv::Mat tmp = aux( cv::Rect( cmax, rmax, board_sz, board_sz));
+    Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
+    cv::Mat edgeness = bness.edgeness();
     
     // Mark corners for visualization
-    aux.at<cv::Vec3b>(cv::Point( cmax, rmax)) = cv::Vec3b( 255,0,0);
-    aux.at<cv::Vec3b>(cv::Point( cmax+board_sz-1, rmax+board_sz-1)) = cv::Vec3b( 255,0,0);
-    cv::resize(mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
+    //aux.at<cv::Vec3b>(cv::Point( cmax, rmax)) = cv::Vec3b( 255,0,0);
+    //aux.at<cv::Vec3b>(cv::Point( cmax+board_sz-1, rmax+board_sz-1)) = cv::Vec3b( 255,0,0);
+    cv::resize(edgeness, mat_dbg, img.size(), 0,0, CV_INTER_NN);
     //cv::resize(aux, aux, img.size(), 0,0, CV_INTER_NN);
     //mat_dbg = aux.clone();
     //cv::cvtColor( auxgray, mat_dbg, cv::COLOR_GRAY2RGB);
@@ -1115,7 +1044,8 @@ std::vector<PFeat> find_crosses( const cv::Mat &threshed,
         if (SZ( _horizontal_lines) < 5) break;
         if (SZ( _vertical_lines) > 35) break;
         if (SZ( _vertical_lines) < 5) break;
-        _corners = find_corners( _horizontal_lines, _vertical_lines, intersections, _small_pyr, _gray_threshed );
+        _corners = find_corners( _stone_or_empty, _horizontal_lines, _vertical_lines,
+                                intersections, _small_pyr, _gray_threshed );
     } while(0);
     
     // Show results
@@ -1490,7 +1420,8 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         pyr_filtered = true;
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
-            _corners = find_corners( _horizontal_lines, _vertical_lines, _intersections, _small_pyr, _gray_threshed);
+            _corners = find_corners( _stone_or_empty, _horizontal_lines, _vertical_lines,
+                                    _intersections, _small_pyr, _gray_threshed);
         }
         if (!board_valid( _corners, _gray)) break;
         // Use median border coordinates to prevent flicker
