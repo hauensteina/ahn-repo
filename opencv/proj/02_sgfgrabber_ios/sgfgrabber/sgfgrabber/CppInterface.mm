@@ -551,6 +551,26 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
 } // homegrown_horiz_lines()
 
 
+// Among the largest two in m1, choose the on where m2 is larger
+//------------------------------------------------------------------
+cv::Point tiebreak( const cv::Mat &m1, const cv::Mat &m2)
+{
+    cv::Mat tmp = m1.clone();
+    double m1min, m1max;
+    cv::Point m1minloc, m1maxloc;
+    cv::minMaxLoc( tmp, &m1min, &m1max, &m1minloc, &m1maxloc);
+    cv::Point largest = m1maxloc;
+    tmp.at<uint8_t>(largest) = 0;
+    cv::minMaxLoc( tmp, &m1min, &m1max, &m1minloc, &m1maxloc);
+    cv::Point second = m1maxloc;
+    
+    cv::Point res = largest;
+    if (m2.at<uint8_t>(second) > m2.at<uint8_t>(largest)) {
+        res = second;
+    }
+    return res;
+} // tiebreak
+
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines, 
@@ -561,10 +581,13 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
     cv::Mat &edgeness = bness.edgeness();
     cv::Mat &blobness = bness.blobness();
-    cv::Mat both = mat_sumscale( edgeness, blobness);
-    cv::Point min_loc, max_loc;
-    double mmin, mmax;
-    cv::minMaxLoc(both, &mmin, &mmax, &min_loc, &max_loc);
+    //float edgeweight = 0.0, blobweight = 1.0;
+    //cv::Mat both = mat_sumscale( edgeness, blobness, edgeweight, blobweight);
+    //cv::Point min_loc, max_loc;
+    //double mmin, mmax;
+    //cv::minMaxLoc(both, &mmin, &mmax, &min_loc, &max_loc);
+    cv::Mat &both = blobness;
+    cv::Point max_loc = tiebreak( blobness, edgeness);
 
     cv::Point tl = max_loc;
     cv::Point tr( tl.x + board_sz-1, tl.y);

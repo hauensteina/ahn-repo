@@ -67,11 +67,11 @@ inline std::vector<float> mat2vec( cv::Mat &m)
     return res;
 }
 // Sum two uint8_t mats, scale back to 255
-inline cv::Mat mat_sumscale( const cv::Mat &m1, const cv::Mat &m2)
+inline cv::Mat mat_sumscale( const cv::Mat &m1, const cv::Mat &m2, float w1 = 1.0, float w2 = 1.0)
 {
     cv::Mat mf1, mf2;
-    m1.convertTo( mf1, CV_32FC1);
-    m2.convertTo( mf2, CV_32FC1);
+    m1.convertTo( mf1, CV_32FC1, w1);
+    m2.convertTo( mf2, CV_32FC1, w2);
     mf1 += mf2;
     double mmin, mmax;
     cv::minMaxLoc( mf1, &mmin, &mmax);
