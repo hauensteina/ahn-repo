@@ -15,7 +15,7 @@
 
 //----------------------------
 // Individual steps for debugging
-- (UIImage *) f00_blobs:(UIImage *)img;
+- (UIImage *) f00_blobs:(std::vector<cv::Mat>)imgQ;
 //- (UIImage *) f01_straight;
 - (UIImage *) f02_horiz_lines;
 - (UIImage *) f03_vert_lines;

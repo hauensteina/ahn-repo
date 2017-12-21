@@ -66,6 +66,7 @@ extern cv::Mat mat_dbg;
 @property cv::Mat empty_templ;
 @property std::vector<int> diagram; // The position we detected
 
+
 @end
 
 @implementation CppInterface
@@ -145,36 +146,57 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #pragma mark - Processing Pipeline for debugging
 //=================================================
 
-//-----------------------------------------
-- (UIImage *) f00_blobs:(UIImage *)img
+//--------------------------
+- (UIImage *) f00_blobs: (std::vector<cv::Mat>)imgQ
 {
     _board_sz=19;
     g_app.mainVC.lbDbg.text = @"00";
     
-    // Live Camera
-    UIImageToMat( img, _m);
-    
-    // From file
+    // File
+    //---------
     //load_img( @"board06.jpg", _m);
     //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
-
-    resize( _m, _small, 350);
-    cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
+    //resize( _m, _small, 350);
+    //cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
+    
+    // Camera
+    //-----------
+    // Pick best frame from Q
+    cv::Mat best;
+    int maxBlobs = -1E9;
+    int bestidx = -1;
+    ILOOP (SZ(imgQ) - 1) { // ignore newest frame
+        _small = imgQ[i];
+        cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
+        thresh_dilate( _gray, _gray_threshed);
+        _stone_or_empty.clear();
+        BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
+        BlobFinder::find_stones( _gray, _stone_or_empty);
+        _stone_or_empty = BlobFinder::clean( _stone_or_empty);
+        if (SZ(_stone_or_empty) > maxBlobs) {
+            maxBlobs = SZ(_stone_or_empty);
+            best = _small;
+            bestidx = i;
+        }
+    }
+    PLOG("best idx %d\n", bestidx);
+    // Reproces the best one
+    _small = best;
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
-    cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
-
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
     _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-    
+
+    cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
+
     // Show results
     cv::Mat drawing = _small_pyr.clone();
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
-}
+} // f00_blobs()
 
 //-----------------------------
 - (UIImage *) f02_horiz_lines
@@ -809,9 +831,6 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
         std::vector<int> votes(4,0);
         for (auto d:diagrams) {
             int idx = d[i];
-            if (idx > 3) {
-                int xx = 42;
-            }
             votes[idx]++;
         }
         int winner = argmax( votes);

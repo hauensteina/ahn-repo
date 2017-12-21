@@ -6,6 +6,11 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+// Don't change the order of these two,
+// and don't move them down
+#import "Ocv.hpp"
+#import <opencv2/imgcodecs/ios.h>
+
 #import "MainVC.h"
 
 #import "Globals.h"
@@ -20,6 +25,9 @@
 @property UIImageView *cameraView;
 // Data
 @property UIImage *img; // The current image
+// History of frames. The one at the button press is often shaky.
+@property std::vector<cv::Mat> imgQ;
+
 // Buttons etc
 @property UIButton *btnGo;
 @property UISlider *sldCannyLow;
@@ -234,7 +242,7 @@
                     //state=100;
                     self.frame_grabber_on = NO;
                     [self.frameExtractor suspend];
-                    img = [self.grabFuncs f00_blobs:self.img];
+                    img = [self.grabFuncs f00_blobs:_imgQ];
                     [self.cameraView setImage:img];
                     break;
                 case 1:
@@ -316,7 +324,12 @@
         //PLOG("frame:%d\n",i);
         if (self.debug_mode) {
             [self.cameraView setImage:image];
-            self.img = image;
+            _img = image;
+            cv::Mat m;
+            UIImageToMat( _img, m);
+            resize( m, m, 350);
+            cv::cvtColor( m, m, CV_RGBA2RGB); // Yes, RGB not BGR
+            ringpush( _imgQ , m, 4); // keep 4 frames
         }
         else {
             self.frame_grabber_on = NO;
