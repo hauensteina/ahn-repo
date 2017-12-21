@@ -152,13 +152,13 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     _board_sz=19;
     g_app.mainVC.lbDbg.text = @"00";
     
-    // File
-    //---------
-    //load_img( @"board06.jpg", _m);
-    //cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
-    //resize( _m, _small, 350);
-    //cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
-    
+#define FFILE
+#ifdef FFILE
+    load_img( @"board03.jpg", _m);
+    cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
+    resize( _m, _small, 350);
+    cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
+#else
     // Camera
     //-----------
     // Pick best frame from Q
@@ -182,6 +182,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     PLOG("best idx %d\n", bestidx);
     // Reproces the best one
     _small = best;
+#endif
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
     _stone_or_empty.clear();
@@ -321,7 +322,33 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     auto d_rho   = vec_median( d_rhos);
     auto d_theta = vec_median( d_thetas);
     
-    cv::Vec2f med_line = lines[SZ(lines)/2];
+    // Find a line close to the middle where theta is close to median theta
+    float med_theta = vec_median(thetas);
+    PLOG( "med theta %.2f\n", med_theta);
+    int half = SZ(lines)/2;
+    if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
+    float EPS = PI / 180;
+    cv::Vec2f med_line(0,0);
+    ILOOP (half+1) {
+        PLOG( "theta %.2f\n", thetas[half+i]);
+        if (fabs( med_theta - thetas[half+i]) < EPS) {
+            med_line = lines[half+i];
+            PLOG("match at %d\n", i);
+            break;
+        }
+        PLOG( "theta %.2f\n", thetas[half-i]);
+        if (fabs( med_theta - thetas[half-i]) < EPS) {
+            med_line = lines[half-i];
+            PLOG("match at %d\n", i);
+            break;
+        }
+    }
+    if (med_line[0] == 0) { // found none
+        lines.clear();
+        return;
+    }
+    
+    // Interpolate the rest
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
     float rho, theta;

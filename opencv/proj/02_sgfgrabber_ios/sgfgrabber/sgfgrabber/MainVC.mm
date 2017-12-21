@@ -269,6 +269,7 @@
                     break;
                 case 5:
                     state++;
+                    state = 100;
                     img = [self.grabFuncs f05_vert_params];
                     [self.cameraView setImage:img];
                     break;
