@@ -423,8 +423,6 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
     auto d_rhos   = vec_delta( rhos);
-    auto d_thetas = vec_delta( thetas);
-    //auto d_theta = vec_median( d_thetas);
     
     // Find a line close to the middle where theta is close to median theta
     float med_theta = vec_median(thetas);
@@ -432,7 +430,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     int half = SZ(lines)/2;
     if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
     float EPS = PI / 180;
-    cv::Vec2f med_line(0,0); int med_idx;
+    cv::Vec2f med_line(0,0); int med_idx = 0;
     ILOOP (half+1) {
         PLOG( "theta %.2f\n", thetas[half+i]);
         if (fabs( med_theta - thetas[half+i]) < EPS) {
@@ -453,69 +451,66 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         lines.clear();
         return;
     }
-    
-    float d_rho   = vec_median( d_rhos);
-    if (med_idx) {
-        d_rho = med_line[0] - lines[med_idx-1][0];
-    }
-    float hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
-    
     // Interpolate the rest
+    float hvrat = 1.0; float d_rho = 0;
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
     float rho, theta;
+    
     // If there is a close line, use it. Else interpolate.
     const float Y_THRESH = 3; // 6;
     const float THETA_THRESH = PI / 180;
-//    float rhorat = 1.0;
-//    // Lines below
-//    rho = med_line[0];
-//    theta = med_line[1];
-//    ILOOP(100) {
-//        if (!i) continue;
-//        float y = y_from_x( middle_x, cv::Vec2f( rho, theta)); // before moving
-//        float d_rho = hspace_at_y( y, vert_lines);
-//        rho += d_rho;
-//        theta += d_theta;
-//        y = y_from_x( middle_x, cv::Vec2f( rho, theta)); // after moving
-//        int close_idx = vec_closest( ys, y);
-//        if (fabs( y - ys[close_idx]) < Y_THRESH &&
-//            fabs( theta - thetas[close_idx]) < THETA_THRESH)
-//        {
-//            rho   = lines[close_idx][0];
-//            theta = lines[close_idx][1];
-//        }
-//        if (rho == 0) break;
-//        cv::Vec2f line( rho,theta);
-//        if (y_from_x( middle_x, line) > height) break;
-//        synth_lines.push_back( line);
-//    }
-    // Lines above
+    // Lines below
+    d_rho   = vec_median( d_rhos);
+    if (med_idx+1 < SZ(lines)) {
+        d_rho = fabs( med_line[0] - lines[med_idx+1][0]);
+    }
+    if (hspace_at_y( med_line[0], vert_lines) > 0) {
+        hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
+    }
+
     rho = med_line[0];
     theta = med_line[1];
-    
     ILOOP(100) {
         if (!i) continue;
-        float y = rho;
-        float d_rho = hvrat * hspace_at_y( y, vert_lines);
+        float d_rho = hvrat * hspace_at_y( rho, vert_lines);
+        PLOG( "below %d d_rho %.2f\n", i, d_rho);
+        rho += d_rho;
+        int close_idx = vec_closest( rhos, rho);
+        if (fabs( rho - rhos[close_idx]) < Y_THRESH &&
+            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        {
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+        }
+        if (rho > height) break;
+        cv::Vec2f line( rho,theta);
+        synth_lines.push_back( line);
+    }
+    // Lines above
+    d_rho   = vec_median( d_rhos);
+    if (med_idx > 0) {
+        d_rho = fabs( med_line[0] - lines[med_idx-1][0]);
+    }
+    if (hspace_at_y( med_line[0], vert_lines) > 0) {
+        hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
+    }
+
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        if (!i) continue;
+        float d_rho = hvrat * hspace_at_y( rho, vert_lines);
         PLOG( "above %d d_rho %.2f\n", i, d_rho);
         rho -= d_rho;
-        //d_rho *= rhorat;
-        //theta -= d_theta;
-        y = rho; // after moving
-        int close_idx = vec_closest( rhos, y);
-//        if (fabs( y - rhos[close_idx]) < Y_THRESH &&
-//            fabs( theta - thetas[close_idx]) < THETA_THRESH)
-//        {
-//            PLOG( "above repl %d\n", i);
-//            //float old_d_rho = d_rho;
-//            //d_rho = fabs( synth_lines.back()[0] - lines[close_idx][0]);
-//            //if (d_rho > 0) {
-//            //    rhorat = d_rho / old_d_rho;
-//            //}
-//            rho   = lines[close_idx][0];
-//            theta = lines[close_idx][1];
-//        }
+        int close_idx = vec_closest( rhos, rho);
+        if (fabs( rho - rhos[close_idx]) < Y_THRESH &&
+            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        {
+            PLOG( "above repl %d\n", i);
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+        }
         if (rho < 0) break;
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
@@ -526,7 +521,6 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
               });
     lines_.clear();
     ISLOOP (synth_lines) { lines_.push_back( cangle2polar( synth_lines[i], middle_x)); }
-    int tt = 42;
 } // fix_horiz_lines()
 
 
@@ -575,18 +569,6 @@ cv::Vec2f cangle2polar( const cv::Vec2f cline, float middle_x)
 - (UIImage *) f05_horiz_lines
 {
     g_app.mainVC.lbDbg.text = @"02";
-    
-    cv::Vec4f seg(0,0,2,1);
-    cv::Vec2f cline = polar2cangle( segment2polar(seg), 0.5);
-    cv::Vec2f pline = cangle2polar( cline, 0.5);
-    float y = y_from_x( 2, pline);
-    
-    cv::Vec4f seg1(0,0,2,-1);
-    cv::Vec2f cline1 = polar2cangle( segment2polar(seg1), 0.5);
-    cv::Vec2f pline1 = cangle2polar( cline1, 0.5);
-    float y1 = y_from_x( 2, pline1);
-    int tt =42;
-    
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
     dedup_horiz_lines( _horizontal_lines, _gray);

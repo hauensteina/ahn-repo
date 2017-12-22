@@ -269,7 +269,6 @@
                     break;
                 case 5:
                     state++;
-                    state=100;
                     img = [self.grabFuncs f05_horiz_lines];
                     [self.cameraView setImage:img];
                     break;
