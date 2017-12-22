@@ -199,31 +199,11 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     return res;
 } // f00_blobs()
 
-//-----------------------------
-- (UIImage *) f02_horiz_lines
-{
-    g_app.mainVC.lbDbg.text = @"02";
-    
-    _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
-    dedup_horiz_lines( _horizontal_lines, _gray);
-    fix_horiz_lines( _horizontal_lines, _gray);
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    get_color( true);
-    ISLOOP (_horizontal_lines) {
-        cv::Scalar col = get_color();
-        draw_polar_line( _horizontal_lines[i], drawing, col);
-    }
-    //draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
+
 
 // Thin down vertical Hough lines
 //----------------------------------
-- (UIImage *) f03_vert_lines
+- (UIImage *) f02_vert_lines
 {
     g_app.mainVC.lbDbg.text = @"03";
     _vertical_lines = homegrown_vert_lines( _stone_or_empty);
@@ -290,7 +270,7 @@ void dedup_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 
 // Cluster vertical Hough lines to remove close duplicates.
 //------------------------------------------------------------
-- (UIImage *) f04_vert_lines_2
+- (UIImage *) f03_vert_lines_2
 {
     g_app.mainVC.lbDbg.text = @"04";
     dedup_vertical_lines( _vertical_lines, _gray);
@@ -324,7 +304,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     
     // Find a line close to the middle where theta is close to median theta
     float med_theta = vec_median(thetas);
-    PLOG( "med theta %.2f\n", med_theta);
+    PLOG( "med v theta %.2f\n", med_theta);
     int half = SZ(lines)/2;
     if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
     float EPS = PI / 180;
@@ -403,80 +383,156 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     lines = synth_lines;
 } // fix_vertical_lines()
 
+// Find the median distance between vert lines for given y.
+// We use that to find the adjacent horizontal lines next to y.
+// The idea is that on a grid, horizontal and vertical spacing are the same,
+// and if we know one, we know the other.
+//-----------------------------------------------------------------------------
+float hspace_at_y( float y, const std::vector<cv::Vec2f> &vert_lines)
+{
+    std::vector<float> dists;
+    Point2f prev;
+    ISLOOP (vert_lines) {
+        cv::Vec4f seg = polar2segment( vert_lines[i]);
+        Point2f p = intersection( seg, cv::Vec4f( 0, y, 1000, y));
+        if (i) {
+            float d = cv::norm( p - prev);
+            dists.push_back( d);
+        }
+        prev = p;
+    }
+    float res = vec_median( dists);
+    return res;
+} // hspace_at_y()
+
 // Find the change per line in rho and theta and synthesize the whole bunch
 // starting at the middle. Replace synthesized lines with real ones if close enough.
-//----------------------------------------------------------------------------------
-void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+//---------------------------------------------------------------------------------------------
+void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2f> &vert_lines,
+                     const cv::Mat &img) //@@@
 {
-    const float middle_x = img.rows / 2.0;
+    const float middle_x = img.cols / 2.0;
     const float height = img.rows;
+    
+    // Convert hlines to clines (center y + angle)
+    std::vector<cv::Vec2f> lines;
+    ISLOOP (lines_) {
+        lines.push_back( polar2cangle( lines_[i], middle_x));
+    }
     
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
-    auto ys     = vec_extract( lines, [middle_x](cv::Vec2f line) { return y_from_x( middle_x, line); });
     auto d_rhos   = vec_delta( rhos);
     auto d_thetas = vec_delta( thetas);
-    auto d_rho   = vec_median( d_rhos);
-    auto d_theta = vec_median( d_thetas);
+    //auto d_theta = vec_median( d_thetas);
     
-    cv::Vec2f med_line = lines[SZ(lines)/2];
+    // Find a line close to the middle where theta is close to median theta
+    float med_theta = vec_median(thetas);
+    PLOG( "med h theta %.2f\n", med_theta);
+    int half = SZ(lines)/2;
+    if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
+    float EPS = PI / 180;
+    cv::Vec2f med_line(0,0); int med_idx;
+    ILOOP (half+1) {
+        PLOG( "theta %.2f\n", thetas[half+i]);
+        if (fabs( med_theta - thetas[half+i]) < EPS) {
+            med_idx = half+i;
+            med_line = lines[med_idx];
+            PLOG("match at %d\n", i);
+            break;
+        }
+        PLOG( "theta %.2f\n", thetas[half-i]);
+        if (fabs( med_theta - thetas[half-i]) < EPS) {
+            med_idx = half-i;
+            med_line = lines[med_idx];
+            PLOG("match at %d\n", i);
+            break;
+        }
+    } // ILOOP
+    if (med_line[0] == 0) { // found none
+        lines.clear();
+        return;
+    }
+    
+    float d_rho   = vec_median( d_rhos);
+    if (med_idx) {
+        d_rho = med_line[0] - lines[med_idx-1][0];
+    }
+    float hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
+    
+    // Interpolate the rest
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
     float rho, theta;
     // If there is a close line, use it. Else interpolate.
     const float Y_THRESH = 3; // 6;
     const float THETA_THRESH = PI / 180;
-    // Lines below
-    rho = med_line[0];
-    theta = med_line[1];
-    ILOOP(100) {
-        if (!i) continue;
-        rho += d_rho;
-        theta += d_theta;
-        float y = y_from_x( middle_x, cv::Vec2f( rho, theta));
-        int close_idx = vec_closest( ys, y);
-        if (fabs( y - ys[close_idx]) < Y_THRESH &&
-            fabs( theta - thetas[close_idx]) < THETA_THRESH)
-        {
-            rho   = lines[close_idx][0];
-            theta = lines[close_idx][1];
-        }
-        if (rho == 0) break;
-        cv::Vec2f line( rho,theta);
-        if (y_from_x( middle_x, line) > height) break;
-        synth_lines.push_back( line);
-    }
+//    float rhorat = 1.0;
+//    // Lines below
+//    rho = med_line[0];
+//    theta = med_line[1];
+//    ILOOP(100) {
+//        if (!i) continue;
+//        float y = y_from_x( middle_x, cv::Vec2f( rho, theta)); // before moving
+//        float d_rho = hspace_at_y( y, vert_lines);
+//        rho += d_rho;
+//        theta += d_theta;
+//        y = y_from_x( middle_x, cv::Vec2f( rho, theta)); // after moving
+//        int close_idx = vec_closest( ys, y);
+//        if (fabs( y - ys[close_idx]) < Y_THRESH &&
+//            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+//        {
+//            rho   = lines[close_idx][0];
+//            theta = lines[close_idx][1];
+//        }
+//        if (rho == 0) break;
+//        cv::Vec2f line( rho,theta);
+//        if (y_from_x( middle_x, line) > height) break;
+//        synth_lines.push_back( line);
+//    }
     // Lines above
     rho = med_line[0];
     theta = med_line[1];
+    
     ILOOP(100) {
         if (!i) continue;
+        float y = rho;
+        float d_rho = hvrat * hspace_at_y( y, vert_lines);
+        PLOG( "above %d d_rho %.2f\n", i, d_rho);
         rho -= d_rho;
-        theta -= d_theta;
-        float y = y_from_x( middle_x, cv::Vec2f( rho, theta));
-        int close_idx = vec_closest( ys, y);
-        if (fabs( y - ys[close_idx]) < Y_THRESH &&
-            fabs( theta - thetas[close_idx]) < THETA_THRESH)
-        {
-            rho   = lines[close_idx][0];
-            theta = lines[close_idx][1];
-        }
-        if (rho == 0) break;
+        //d_rho *= rhorat;
+        //theta -= d_theta;
+        y = rho; // after moving
+        int close_idx = vec_closest( rhos, y);
+//        if (fabs( y - rhos[close_idx]) < Y_THRESH &&
+//            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+//        {
+//            PLOG( "above repl %d\n", i);
+//            //float old_d_rho = d_rho;
+//            //d_rho = fabs( synth_lines.back()[0] - lines[close_idx][0]);
+//            //if (d_rho > 0) {
+//            //    rhorat = d_rho / old_d_rho;
+//            //}
+//            rho   = lines[close_idx][0];
+//            theta = lines[close_idx][1];
+//        }
+        if (rho < 0) break;
         cv::Vec2f line( rho,theta);
-        if (y_from_x( middle_x, line) < 0) break;
         synth_lines.push_back( line);
-    }
+    } // ILOOP
     std::sort( synth_lines.begin(), synth_lines.end(),
-              [middle_x](cv::Vec2f line1, cv::Vec2f line2) {
-                  return y_from_x( middle_x, line1) < y_from_x( middle_x, line2);
+              [](cv::Vec2f line1, cv::Vec2f line2) {
+                  return line1[0] < line2[0];
               });
-    lines = synth_lines;
+    lines_.clear();
+    ISLOOP (synth_lines) { lines_.push_back( cangle2polar( synth_lines[i], middle_x)); }
+    int tt = 42;
 } // fix_horiz_lines()
 
 
 // Find vertical line parameters
 //---------------------------------
-- (UIImage *) f05_vert_params
+- (UIImage *) f04_vert_params
 {
     g_app.mainVC.lbDbg.text = @"05";
     fix_vertical_lines( _vertical_lines, _gray);
@@ -491,7 +547,63 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f05_vert_params()
-//
+
+// Convert horizontal (roughly) polar line to a pair
+// y_at_middle, angle
+//--------------------------------------------------------------
+cv::Vec2f polar2cangle( const cv::Vec2f pline, float middle_x)
+{
+    cv::Vec2f res;
+    float y_at_middle = y_from_x( middle_x, pline);
+    float angle;
+    angle = -(pline[1] - PI/2);
+    res = cv::Vec2f( y_at_middle, angle);
+    return res;
+}
+
+// Convert a pair (y_at_middle, angle) to polar
+//---------------------------------------------------------------
+cv::Vec2f cangle2polar( const cv::Vec2f cline, float middle_x)
+{
+    cv::Vec2f res;
+    cv::Vec4f seg( middle_x, cline[0], middle_x + 1, cline[0] - tan(cline[1]));
+    res = segment2polar( seg);
+    return res;
+}
+
+//-----------------------------
+- (UIImage *) f05_horiz_lines
+{
+    g_app.mainVC.lbDbg.text = @"02";
+    
+    cv::Vec4f seg(0,0,2,1);
+    cv::Vec2f cline = polar2cangle( segment2polar(seg), 0.5);
+    cv::Vec2f pline = cangle2polar( cline, 0.5);
+    float y = y_from_x( 2, pline);
+    
+    cv::Vec4f seg1(0,0,2,-1);
+    cv::Vec2f cline1 = polar2cangle( segment2polar(seg1), 0.5);
+    cv::Vec2f pline1 = cangle2polar( cline1, 0.5);
+    float y1 = y_from_x( 2, pline1);
+    int tt =42;
+    
+    
+    _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
+    dedup_horiz_lines( _horizontal_lines, _gray);
+    fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
+    
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
+    get_color( true);
+    ISLOOP (_horizontal_lines) {
+        cv::Scalar col = get_color();
+        draw_polar_line( _horizontal_lines[i], drawing, col);
+    }
+    //draw_polar_line( ratline, drawing, cv::Scalar( 255,128,64));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+}
 
 //--------------------------------------------------------
 int count_points_on_line( cv::Vec2f line, Points pts)
@@ -623,7 +735,7 @@ cv::Point tiebreak( const cv::Mat &m1, const cv::Mat &m2)
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
 Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines, 
-                     const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19) //@@@
+                     const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19)
 {
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
     
@@ -1024,20 +1136,20 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         float theta = direction( _gray, _stone_or_empty) - PI/2;
         if (fabs(theta) > 4 * PI/180) break;
         
-        // Find horiz lines
-        _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
-        dedup_horiz_lines( _horizontal_lines, _gray);
-        fix_horiz_lines( _horizontal_lines, _gray);
-        //PLOG( "HLINES:%d\n", SZ(_horizontal_lines));
-        if (SZ( _horizontal_lines) > 40) break;
-        if (SZ( _horizontal_lines) < 5) break;
-
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_vertical_lines( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
+        
+        // Find horiz lines
+        _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
+        dedup_horiz_lines( _horizontal_lines, _gray);
+        fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
+        //PLOG( "HLINES:%d\n", SZ(_horizontal_lines));
+        if (SZ( _horizontal_lines) > 40) break;
+        if (SZ( _horizontal_lines) < 5) break;
 
         // Find corners
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);

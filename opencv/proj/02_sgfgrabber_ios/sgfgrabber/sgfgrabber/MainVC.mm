@@ -254,23 +254,23 @@
                     break;
                 case 2:
                     state++;
-                    img = [self.grabFuncs f02_horiz_lines];
+                    img = [self.grabFuncs f02_vert_lines];
                     [self.cameraView setImage:img];
                     break;
                 case 3:
                     state++;
-                    img = [self.grabFuncs f03_vert_lines];
+                    img = [self.grabFuncs f03_vert_lines_2];
                     [self.cameraView setImage:img];
                     break;
                 case 4:
                     state++;
-                    img = [self.grabFuncs f04_vert_lines_2];
+                    img = [self.grabFuncs f04_vert_params];
                     [self.cameraView setImage:img];
                     break;
                 case 5:
                     state++;
-                    state = 100;
-                    img = [self.grabFuncs f05_vert_params];
+                    state=100;
+                    img = [self.grabFuncs f05_horiz_lines];
                     [self.cameraView setImage:img];
                     break;
                 case 6:
