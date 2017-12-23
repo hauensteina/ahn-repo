@@ -154,7 +154,18 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     
 #define FFILE
 #ifdef FFILE
-    load_img( @"board03.jpg", _m);
+    //load_img( @"board01.jpg", _m); // both bad
+    load_img( @"board02.jpg", _m); // verticals bad; horiz good above bad below
+    //load_img( @"board03.jpg", _m); // perfect
+    //load_img( @"board04.jpg", _m); // perfect
+    //load_img( @"board05.jpg", _m); // horizontals bad
+    //load_img( @"board06.jpg", _m); // perfect
+    //load_img( @"board07.jpg", _m); // perfect
+    //load_img( @"board08.jpg", _m); // horiz good above bad below
+    //load_img( @"board09.jpg", _m); // horiz slightly off at the top
+    //load_img( @"board10.jpg", _m); // perfect
+    //load_img( @"board11.jpg", _m); // bad verticals, good horiz. Bad blobs.
+    //load_img( @"board12.jpg", _m); // perfect
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
@@ -193,7 +204,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
 
     // Show results
-    cv::Mat drawing = _small_pyr.clone();
+    cv::Mat drawing = _small.clone();
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -214,7 +225,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     get_color(true);
     ISLOOP( _vertical_lines) {
         //if (i<400) continue;
-        draw_polar_line( _vertical_lines[i], drawing, cv::Scalar(255,0,0));
+        draw_polar_line( _vertical_lines[i], drawing, get_color());
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -222,7 +233,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 
 // Replace close clusters of vert lines by their average.
 //-----------------------------------------------------------------------------------
-void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+void dedup_verticals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     if (SZ(lines) < 3) return;
     // Cluster by x in the middle
@@ -247,7 +258,7 @@ void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 
 // Replace close clusters of horiz lines by their average.
 //-----------------------------------------------------------------------------------
-void dedup_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     if (SZ(lines) < 3) return;
     // Cluster by y in the middle
@@ -270,12 +281,48 @@ void dedup_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     }
 }
 
+// Adjacent lines should have similar slope
+//-------------------------------------------
+void filter_verticals( std::vector<cv::Vec2f> &vlines)
+{
+    // Find a line close to median theta
+    std::vector<float> thetas = vec_extract( vlines, [](cv::Vec2f x) { return x[1]; });
+    float theta = vec_median( thetas);
+    int med_idx = vec_closest( thetas, theta);
+    // Going left and right, theta should not change abruptly
+    std::vector<cv::Vec2f> good;
+    good.push_back( vlines[med_idx]);
+    const float EPS = 5 * PI/180;
+    float prev_theta;
+    // right
+    prev_theta = theta;
+    for (int i = med_idx+1; i < SZ(vlines); i++ ) {
+        if (fabs( vlines[i][1] - prev_theta) < EPS) {
+            good.push_back( vlines[i]);
+            prev_theta = vlines[i][1];
+        }
+    }
+    // left
+    prev_theta = theta;
+    for (int i = med_idx-1; i >= 0; i-- ) {
+        if (fabs( vlines[i][1] - prev_theta) < EPS) {
+            good.push_back( vlines[i]);
+            prev_theta = vlines[i][1];
+        }
+    }
+    std::sort( good.begin(), good.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
+    //good.clear();
+    //good.push_back( _vertical_lines[med_idx]);
+    vlines = good;
+} // filter_verticals()
+
 // Cluster vertical Hough lines to remove close duplicates.
 //------------------------------------------------------------
 - (UIImage *) f03_vert_lines_2
 {
     g_app.mainVC.lbDbg.text = @"04";
-    dedup_vertical_lines( _vertical_lines, _gray);
+    dedup_verticals( _vertical_lines, _gray);
+    filter_verticals( _vertical_lines);
     
     // Show results
     cv::Mat drawing;
@@ -609,7 +656,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
     g_app.mainVC.lbDbg.text = @"02";
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
-    dedup_horiz_lines( _horizontal_lines, _gray);
+    dedup_horizontals( _horizontal_lines, _gray);
     fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
     
     // Show results
@@ -1158,14 +1205,15 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
-        dedup_vertical_lines( _vertical_lines, _gray);
+        dedup_verticals( _vertical_lines, _gray);
+        filter_verticals( _vertical_lines);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
         
         // Find horiz lines
         _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
-        dedup_horiz_lines( _horizontal_lines, _gray);
+        dedup_horizontals( _horizontal_lines, _gray);
         fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
         //PLOG( "HLINES:%d\n", SZ(_horizontal_lines));
         if (SZ( _horizontal_lines) > 50) break;
