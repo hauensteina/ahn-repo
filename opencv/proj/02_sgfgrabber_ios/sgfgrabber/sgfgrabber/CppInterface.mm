@@ -224,6 +224,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 //-----------------------------------------------------------------------------------
 void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
+    if (SZ(lines) < 3) return;
     // Cluster by x in the middle
     const float wwidth = 32.0;
     const float middle_y = img.rows / 2.0;
@@ -248,6 +249,7 @@ void dedup_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 //-----------------------------------------------------------------------------------
 void dedup_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
+    if (SZ(lines) < 3) return;
     // Cluster by y in the middle
     const float wwidth = 32.0;
     const float middle_x = img.cols / 2.0;
@@ -289,15 +291,22 @@ void dedup_horiz_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 // Find the change per line in rho and theta and synthesize the whole bunch
 // starting at the middle. Replace synthesized lines with real ones if close enough.
 //----------------------------------------------------------------------------------
-void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
 {
     const float middle_y = img.rows / 2.0;
     const float width = img.cols;
     
+    // Convert lines to cxlines (center x + angle)
+    std::vector<cv::Vec2f> lines;
+    ISLOOP (lines_) {
+        lines.push_back( polar2cvangle( lines_[i], middle_y));
+    }
+    std::sort( lines.begin(), lines.end(), [](cv::Vec2f li1, cv::Vec2f li2) { return li1[0] < li2[0]; } );
+    
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
-    auto xes    = vec_extract( lines, [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); });
     auto d_rhos   = vec_delta( rhos);
+    vec_filter( d_rhos, [](float d){ return d > 10;});
     auto d_thetas = vec_delta( thetas);
     auto d_rho   = vec_median( d_rhos);
     auto d_theta = vec_median( d_thetas);
@@ -342,17 +351,15 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         if (!i) continue;
         rho += d_rho;
         theta += d_theta;
-        float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
-        int close_idx = vec_closest( xes, x);
-        if (fabs( x - xes[close_idx]) < X_THRESH &&
+        int close_idx = vec_closest( rhos, rho);
+        if (fabs( rho - rhos[close_idx]) < X_THRESH &&
             fabs( theta - thetas[close_idx]) < THETA_THRESH)
         {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
         }
-        if (rho == 0) break;
+        if (rho > width) break;
         cv::Vec2f line( rho,theta);
-        if (x_from_y( middle_y, line) > width) break;
         synth_lines.push_back( line);
     }
     // Lines to the left
@@ -362,9 +369,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         if (!i) continue;
         rho -= d_rho;
         theta -= d_theta;
-        float x = x_from_y( middle_y, cv::Vec2f( rho, theta));
-        int close_idx = vec_closest( xes, x);
-        if (fabs( x - xes[close_idx]) < X_THRESH &&
+        int close_idx = vec_closest( rhos, rho);
+        if (fabs( rho - rhos[close_idx]) < X_THRESH &&
             fabs( theta - thetas[close_idx]) < THETA_THRESH)
         {
             rho   = lines[close_idx][0];
@@ -380,7 +386,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
                   return x_from_y( middle_y, line1) < x_from_y( middle_y, line2);
               });
     
-    lines = synth_lines;
+    lines_.clear();
+    ISLOOP (synth_lines) { lines_.push_back( cvangle2polar( synth_lines[i], middle_y)); }
 } // fix_vertical_lines()
 
 // Find the median distance between vert lines for given y.
@@ -414,15 +421,17 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     const float middle_x = img.cols / 2.0;
     const float height = img.rows;
     
-    // Convert hlines to clines (center y + angle)
+    // Convert hlines to chlines (center y + angle)
     std::vector<cv::Vec2f> lines;
     ISLOOP (lines_) {
-        lines.push_back( polar2cangle( lines_[i], middle_x));
+        lines.push_back( polar2changle( lines_[i], middle_x));
     }
+    std::sort( lines.begin(), lines.end(), [](cv::Vec2f li1, cv::Vec2f li2) { return li1[0] < li2[0]; } );
     
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
     auto d_rhos   = vec_delta( rhos);
+    vec_filter( d_rhos, [](float d){ return d > 10;});
     
     // Find a line close to the middle where theta is close to median theta
     float med_theta = vec_median(thetas);
@@ -452,7 +461,8 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         return;
     }
     // Interpolate the rest
-    float hvrat = 1.0; float d_rho = 0;
+    //float hvrat = 1.0;
+    float d_rho = 0;
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
     float rho, theta;
@@ -462,26 +472,28 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     const float THETA_THRESH = PI / 180;
     // Lines below
     d_rho   = vec_median( d_rhos);
-    if (med_idx+1 < SZ(lines)) {
-        d_rho = fabs( med_line[0] - lines[med_idx+1][0]);
-    }
-    if (hspace_at_y( med_line[0], vert_lines) > 0) {
-        hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
-    }
+//    if (med_idx+1 < SZ(lines)) {
+//        d_rho = fabs( med_line[0] - lines[med_idx+1][0]);
+//    }
+//    if (hspace_at_y( med_line[0], vert_lines) > 0) {
+//        hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
+//    }
 
     rho = med_line[0];
     theta = med_line[1];
     ILOOP(100) {
-        if (!i) continue;
-        float d_rho = hvrat * hspace_at_y( rho, vert_lines);
+        //if (!i) continue;
+        //float d_rho = hvrat * hspace_at_y( rho, vert_lines);
         PLOG( "below %d d_rho %.2f\n", i, d_rho);
         rho += d_rho;
         int close_idx = vec_closest( rhos, rho);
         if (fabs( rho - rhos[close_idx]) < Y_THRESH &&
             fabs( theta - thetas[close_idx]) < THETA_THRESH)
         {
+            float old = synth_lines.back()[0];
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
+            d_rho = fabs( old - rho);
         }
         if (rho > height) break;
         cv::Vec2f line( rho,theta);
@@ -489,18 +501,18 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     }
     // Lines above
     d_rho   = vec_median( d_rhos);
-    if (med_idx > 0) {
-        d_rho = fabs( med_line[0] - lines[med_idx-1][0]);
-    }
-    if (hspace_at_y( med_line[0], vert_lines) > 0) {
-        hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
-    }
+//    if (med_idx > 0) {
+//        d_rho = fabs( med_line[0] - lines[med_idx-1][0]);
+//    }
+//    if (hspace_at_y( med_line[0], vert_lines) > 0) {
+//        hvrat = d_rho / hspace_at_y( med_line[0], vert_lines);
+//    }
 
     rho = med_line[0];
     theta = med_line[1];
     ILOOP(100) {
-        if (!i) continue;
-        float d_rho = hvrat * hspace_at_y( rho, vert_lines);
+        //if (!i) continue;
+        //float d_rho = hvrat * hspace_at_y( rho, vert_lines);
         PLOG( "above %d d_rho %.2f\n", i, d_rho);
         rho -= d_rho;
         int close_idx = vec_closest( rhos, rho);
@@ -508,8 +520,11 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
             fabs( theta - thetas[close_idx]) < THETA_THRESH)
         {
             PLOG( "above repl %d\n", i);
+            float old = synth_lines.back()[0];
+            if (!i) old = med_line[0];
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
+            d_rho = fabs( rho - old);
         }
         if (rho < 0) break;
         cv::Vec2f line( rho,theta);
@@ -520,7 +535,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
                   return line1[0] < line2[0];
               });
     lines_.clear();
-    ISLOOP (synth_lines) { lines_.push_back( cangle2polar( synth_lines[i], middle_x)); }
+    ISLOOP (synth_lines) { lines_.push_back( changle2polar( synth_lines[i], middle_x)); }
 } // fix_horiz_lines()
 
 
@@ -545,7 +560,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
 // Convert horizontal (roughly) polar line to a pair
 // y_at_middle, angle
 //--------------------------------------------------------------
-cv::Vec2f polar2cangle( const cv::Vec2f pline, float middle_x)
+cv::Vec2f polar2changle( const cv::Vec2f pline, float middle_x)
 {
     cv::Vec2f res;
     float y_at_middle = y_from_x( middle_x, pline);
@@ -557,10 +572,33 @@ cv::Vec2f polar2cangle( const cv::Vec2f pline, float middle_x)
 
 // Convert a pair (y_at_middle, angle) to polar
 //---------------------------------------------------------------
-cv::Vec2f cangle2polar( const cv::Vec2f cline, float middle_x)
+cv::Vec2f changle2polar( const cv::Vec2f cline, float middle_x)
 {
     cv::Vec2f res;
     cv::Vec4f seg( middle_x, cline[0], middle_x + 1, cline[0] - tan(cline[1]));
+    res = segment2polar( seg);
+    return res;
+}
+
+// Convert vertical (roughly) polar line to a pair
+// x_at_middle, angle
+//--------------------------------------------------------------
+cv::Vec2f polar2cvangle( const cv::Vec2f pline, float middle_y)
+{
+    cv::Vec2f res;
+    float x_at_middle = x_from_y( middle_y, pline);
+    float angle;
+    angle = -pline[1];
+    res = cv::Vec2f( x_at_middle, angle);
+    return res;
+}
+
+// Convert a pair (x_at_middle, angle) to polar
+//---------------------------------------------------------------
+cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
+{
+    cv::Vec2f res;
+    cv::Vec4f seg( cline[0], middle_y , cline[0] + tan(cline[1]), middle_y + 1);
     res = segment2polar( seg);
     return res;
 }
@@ -1097,8 +1135,8 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 {
     _board_sz = 19;
     cv::Mat drawing;
-    bool pyr_filtered = false;
-
+    
+    bool success = false;
     do {
         static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _m, false);
@@ -1130,27 +1168,27 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         dedup_horiz_lines( _horizontal_lines, _gray);
         fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
         //PLOG( "HLINES:%d\n", SZ(_horizontal_lines));
-        if (SZ( _horizontal_lines) > 40) break;
+        if (SZ( _horizontal_lines) > 50) break;
         if (SZ( _horizontal_lines) < 5) break;
 
         // Find corners
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
         cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
-        pyr_filtered = true;
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             _corners = find_corners( _stone_or_empty, _horizontal_lines, _vertical_lines,
                                     _intersections, _small_pyr, _gray_threshed);
         }
-        if (!board_valid( _corners, _gray)) break;
+        _intersections = get_intersections( _horizontal_lines, _vertical_lines);
+        if (!board_valid( _corners, _gray)) {
+            break;
+        }
         // Use median border coordinates to prevent flicker
         //const int BORDBUFLEN = 1;
         //ringpush( _boards, _corners, BORDBUFLEN);
         //Points2f med_board = med_quad( _boards);
         //_corners = med_board;
 
-        _intersections = get_intersections( _horizontal_lines, _vertical_lines);
-        
         // Zoom in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
@@ -1162,15 +1200,27 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Classify
         const int TIME_BUF_SZ = 10;
         _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
+        success = true;
     } while(0);
     
     cv::Mat *canvas;
-    if (pyr_filtered) {
-        canvas = &_small_pyr;
+    canvas = &_small;
+    
+    static std::vector<cv::Vec2f> old_hlines, old_vlines;
+    static Points2f old_corners, old_intersections;
+    if (!success) {
+        _horizontal_lines = old_hlines;
+        _vertical_lines = old_vlines;
+        _corners = old_corners;
+        _intersections = old_intersections;
     }
     else {
-        canvas = &_small;
+        old_hlines = _horizontal_lines;
+        old_vlines = _vertical_lines;
+        old_corners = _corners;
+        old_intersections = _intersections;
     }
+    
     if (SZ(_corners) == 4) {
         draw_line( cv::Vec4f( _corners[0].x, _corners[0].y, _corners[1].x, _corners[1].y),
                   *canvas, cv::Scalar( 255,0,0,255));
@@ -1184,9 +1234,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // One horiz and vert line
         draw_polar_line( _horizontal_lines[SZ(_horizontal_lines)/2], *canvas, cv::Scalar( 255,255,0,255));
         draw_polar_line( _vertical_lines[SZ(_vertical_lines)/2], *canvas, cv::Scalar( 255,255,0,255));
-
-#define SHOW_CLASS
-#ifdef SHOW_CLASS
+        
         // Show classification result
         ISLOOP (_diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
@@ -1200,19 +1248,8 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         ISLOOP (_intersections) {
             draw_point( _intersections[i], *canvas, 2, cv::Scalar(0,0,255,255));
         }
-#else
-        // Show one feature for debugging
-        ISLOOP (diagram) {
-            cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-            //int feat = BWE_sigma[i];
-            //int feat = BWE_sum[i];
-            //int feat = BWE_crossness_new[i];
-            //int feat = BWE_brightness[i];
-            int feat = BWE_white_templ_feat[i];
-            draw_point( p, img, 5, cm_penny_lane( feat));
-        }
-#endif
-    }
+    } // if (SZ(corners) == 4)
+
     UIImage *res = MatToUIImage( *canvas);
     //UIImage *res = MatToUIImage( drawing);
     return res;
