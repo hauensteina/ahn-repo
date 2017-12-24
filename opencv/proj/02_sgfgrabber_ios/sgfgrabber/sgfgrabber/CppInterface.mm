@@ -154,8 +154,8 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     
 #define FFILE
 #ifdef FFILE
-    //load_img( @"board01.jpg", _m); // both bad
-    //load_img( @"board02.jpg", _m); // verticals bad; horiz good above bad below
+    load_img( @"board01.jpg", _m); // both bad
+    //load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
     //load_img( @"board05.jpg", _m); // horizontals bad
@@ -164,7 +164,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //load_img( @"board08.jpg", _m); // horiz good above bad below
     //load_img( @"board09.jpg", _m); // horiz slightly off at the top
     //load_img( @"board10.jpg", _m); // perfect
-    load_img( @"board11.jpg", _m); // bad verticals, good horiz. Bad blobs.
+    //load_img( @"board11.jpg", _m); // perfect (almost; slightly off verts to the left)
     //load_img( @"board12.jpg", _m); // perfect
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
@@ -282,13 +282,17 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 }
 
 // Adjacent lines should have similar slope
-//-------------------------------------------
-void filter_verticals( std::vector<cv::Vec2f> &vlines)
+//----------------------------------------------------------------
+void sort_and_filter_verticals( std::vector<cv::Vec2f> &vlines)
 {
-    // Find a line close to median theta
-    std::vector<float> thetas = vec_extract( vlines, [](cv::Vec2f x) { return x[1]; });
-    float theta = vec_median( thetas);
-    int med_idx = vec_closest( thetas, theta);
+//    // Find a line close to median theta
+//    std::vector<float> thetas = vec_extract( vlines, [](cv::Vec2f x) { return x[1]; });
+//    float theta = vec_median( thetas);
+//    int med_idx = vec_closest( thetas, theta);
+    std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
+    int med_idx = good_center_line( vlines);
+    if (med_idx < 0) return;
+    float theta = vlines[med_idx][1];
     // Going left and right, theta should not change abruptly
     std::vector<cv::Vec2f> good;
     good.push_back( vlines[med_idx]);
@@ -322,7 +326,7 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines)
 {
     g_app.mainVC.lbDbg.text = @"03";
     dedup_verticals( _vertical_lines, _gray);
-    filter_verticals( _vertical_lines);
+    sort_and_filter_verticals( _vertical_lines);
     
     // Show results
     cv::Mat drawing;
@@ -334,6 +338,39 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines)
     UIImage *res = MatToUIImage( drawing);
     return res;
 }
+
+// Find a line close to the middle with roughly median theta.
+// The lines should be sorted by rho.
+//--------------------------------------------------------------------------
+int good_center_line( const std::vector<cv::Vec2f> &lines)
+{
+    const int r = 2;
+    //const float EPS = 4 * PI/180;
+    auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
+    auto med_theta = vec_median( thetas);
+    
+    // Find a line close to the middle where theta is close to median theta
+    int half = SZ(lines)/2;
+    float mind = 1E9;
+    int minidx = -1;
+    ILOOP (r+1) {
+        if (half - i >= 0) {
+            float d = fabs( med_theta - thetas[half-i]);
+            if (d < mind) {
+                mind = d;
+                minidx = half - i;
+            }
+        }
+        if (half + i < SZ(lines)) {
+            float d = fabs( med_theta - thetas[half+i]);
+            if (d < mind) {
+                mind = d;
+                minidx = half + i;
+            }
+        }
+    } // ILOOP
+    return minidx;
+} // good_center_line()
 
 // Find the change per line in rho and theta and synthesize the whole bunch
 // starting at the middle. Replace synthesized lines with real ones if close enough.
@@ -361,36 +398,20 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
     // Find a line close to the middle where theta is close to median theta
     float med_theta = vec_median(thetas);
     PLOG( "med v theta %.2f\n", med_theta);
-    int half = SZ(lines)/2;
-    if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
-    float EPS = PI / 180;
-    cv::Vec2f med_line(0,0);
-    ILOOP (half+1) {
-        PLOG( "theta %.2f\n", thetas[half+i]);
-        if (fabs( med_theta - thetas[half+i]) < EPS) {
-            med_line = lines[half+i];
-            PLOG("match at %d\n", i);
-            break;
-        }
-        PLOG( "theta %.2f\n", thetas[half-i]);
-        if (fabs( med_theta - thetas[half-i]) < EPS) {
-            med_line = lines[half-i];
-            PLOG("match at %d\n", i);
-            break;
-        }
-    }
-    if (med_line[0] == 0) { // found none
+    int good_idx = good_center_line( lines);
+    if (good_idx < 0) {
         lines.clear();
         return;
     }
-    
+    cv::Vec2f med_line = lines[good_idx];
+
     // Interpolate the rest
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
     float rho, theta;
     // If there is a close line, use it. Else interpolate.
     const float X_THRESH = 3; //6;
-    const float THETA_THRESH = PI / 180;
+    const float THETA_THRESH = 0.5 * PI / 180;
     // Lines to the right
     rho = med_line[0];
     theta = med_line[1];
@@ -435,6 +456,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
     
     lines_.clear();
     ISLOOP (synth_lines) { lines_.push_back( cvangle2polar( synth_lines[i], middle_y)); }
+    //lines_.push_back( cvangle2polar( med_line, middle_y));
+    //lines_.push_back( midline);
 } // fix_vertical_lines()
 
 // Find the median distance between vert lines for given y.
@@ -484,20 +507,21 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     float med_theta = vec_median(thetas);
     PLOG( "med h theta %.2f\n", med_theta);
     int half = SZ(lines)/2;
-    if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
+    //if (SZ(lines) % 2 == 0) half--;  // 5 -> 2; 4 -> 1
     float EPS = PI / 180;
     cv::Vec2f med_line(0,0); int med_idx = 0;
     ILOOP (half+1) {
-        PLOG( "theta %.2f\n", thetas[half+i]);
-        if (fabs( med_theta - thetas[half+i]) < EPS) {
-            med_idx = half+i;
+        PLOG( "theta %.2f\n", thetas[half-i]);
+        if (fabs( med_theta - thetas[half-i]) < EPS) {
+            med_idx = half-i;
             med_line = lines[med_idx];
             PLOG("match at %d\n", i);
             break;
         }
-        PLOG( "theta %.2f\n", thetas[half-i]);
-        if (fabs( med_theta - thetas[half-i]) < EPS) {
-            med_idx = half-i;
+        if (half + i >= SZ(lines)) break;
+        PLOG( "theta %.2f\n", thetas[half+i]);
+        if (fabs( med_theta - thetas[half+i]) < EPS) {
+            med_idx = half+i;
             med_line = lines[med_idx];
             PLOG("match at %d\n", i);
             break;
@@ -692,7 +716,7 @@ cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt)
 {
     // Find next point below.
     //const float RHO_EPS = 10;
-    const float THETA_EPS = 10 * PI / 180;
+    const float THETA_EPS = /* 10 */ 20 * PI / 180; //@@@
     int maxhits = -1;
     cv::Vec2f res;
     for (auto p: allpoints) {
@@ -1206,7 +1230,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_verticals( _vertical_lines, _gray);
-        filter_verticals( _vertical_lines);
+        sort_and_filter_verticals( _vertical_lines);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
