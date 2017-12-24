@@ -155,7 +155,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #define FFILE
 #ifdef FFILE
     //load_img( @"board01.jpg", _m); // both bad
-    load_img( @"board02.jpg", _m); // verticals bad; horiz good above bad below
+    //load_img( @"board02.jpg", _m); // verticals bad; horiz good above bad below
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
     //load_img( @"board05.jpg", _m); // horizontals bad
@@ -164,7 +164,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //load_img( @"board08.jpg", _m); // horiz good above bad below
     //load_img( @"board09.jpg", _m); // horiz slightly off at the top
     //load_img( @"board10.jpg", _m); // perfect
-    //load_img( @"board11.jpg", _m); // bad verticals, good horiz. Bad blobs.
+    load_img( @"board11.jpg", _m); // bad verticals, good horiz. Bad blobs.
     //load_img( @"board12.jpg", _m); // perfect
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
@@ -216,7 +216,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 //----------------------------------
 - (UIImage *) f02_vert_lines
 {
-    g_app.mainVC.lbDbg.text = @"03";
+    g_app.mainVC.lbDbg.text = @"02";
     _vertical_lines = homegrown_vert_lines( _stone_or_empty);
     
     // Show results
@@ -320,7 +320,7 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines)
 //------------------------------------------------------------
 - (UIImage *) f03_vert_lines_2
 {
-    g_app.mainVC.lbDbg.text = @"04";
+    g_app.mainVC.lbDbg.text = @"03";
     dedup_verticals( _vertical_lines, _gray);
     filter_verticals( _vertical_lines);
     
@@ -353,7 +353,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
     auto d_rhos   = vec_delta( rhos);
-    vec_filter( d_rhos, [](float d){ return d > 10;});
+    vec_filter( d_rhos, [](float d){ return d > 10 && d < 20;});
     auto d_thetas = vec_delta( thetas);
     auto d_rho   = vec_median( d_rhos);
     auto d_theta = vec_median( d_thetas);
@@ -590,7 +590,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
 //---------------------------------
 - (UIImage *) f04_vert_params
 {
-    g_app.mainVC.lbDbg.text = @"05";
+    g_app.mainVC.lbDbg.text = @"04";
     fix_vertical_lines( _vertical_lines, _gray);
     
     // Show results
@@ -653,7 +653,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 //-----------------------------
 - (UIImage *) f05_horiz_lines
 {
-    g_app.mainVC.lbDbg.text = @"02";
+    g_app.mainVC.lbDbg.text = @"05";
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
     dedup_horizontals( _horizontal_lines, _gray);
