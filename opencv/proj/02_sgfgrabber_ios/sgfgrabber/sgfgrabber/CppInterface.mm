@@ -154,7 +154,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     
 #define FFILE
 #ifdef FFILE
-    load_img( @"board01.jpg", _m); // both bad
+    load_img( @"board01.jpg", _m); // both perfect
     //load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
@@ -285,10 +285,6 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 //----------------------------------------------------------------
 void sort_and_filter_verticals( std::vector<cv::Vec2f> &vlines)
 {
-//    // Find a line close to median theta
-//    std::vector<float> thetas = vec_extract( vlines, [](cv::Vec2f x) { return x[1]; });
-//    float theta = vec_median( thetas);
-//    int med_idx = vec_closest( thetas, theta);
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
     if (med_idx < 0) return;
@@ -386,6 +382,9 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
         lines.push_back( polar2cvangle( lines_[i], middle_y));
     }
     std::sort( lines.begin(), lines.end(), [](cv::Vec2f li1, cv::Vec2f li2) { return li1[0] < li2[0]; } );
+    // Left to right, theta must increase
+    float prev_theta = -1E9;
+    vec_filter( lines, [&prev_theta]( cv::Vec2f x) { if (x[1] > prev_theta) {prev_theta = x[1]; return true; } return false; });
     
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
@@ -394,7 +393,9 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
     auto d_thetas = vec_delta( thetas);
     auto d_rho   = vec_median( d_rhos);
     auto d_theta = vec_median( d_thetas);
-    
+    //auto d_rho   = vec_avg( d_rhos);
+    //auto d_theta = vec_avg( d_thetas);
+
     // Find a line close to the middle where theta is close to median theta
     float med_theta = vec_median(thetas);
     PLOG( "med v theta %.2f\n", med_theta);
