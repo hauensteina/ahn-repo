@@ -154,14 +154,14 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     
 #define FFILE
 #ifdef FFILE
-    load_img( @"board01.jpg", _m); // both perfect
+    //load_img( @"board01.jpg", _m); // both perfect
     //load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
     //load_img( @"board05.jpg", _m); // horizontals bad
     //load_img( @"board06.jpg", _m); // perfect
     //load_img( @"board07.jpg", _m); // perfect
-    //load_img( @"board08.jpg", _m); // horiz good above bad below
+    load_img( @"board08.jpg", _m); // horiz good above bad below
     //load_img( @"board09.jpg", _m); // horiz slightly off at the top
     //load_img( @"board10.jpg", _m); // perfect
     //load_img( @"board11.jpg", _m); // perfect (almost; slightly off verts to the left)
@@ -229,7 +229,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f03_vert_lines()
+} // f02_vert_lines()
 
 // Replace close clusters of vert lines by their average.
 //-----------------------------------------------------------------------------------
@@ -237,7 +237,8 @@ void dedup_verticals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     if (SZ(lines) < 3) return;
     // Cluster by x in the middle
-    const float wwidth = 32.0;
+    //const float wwidth = 32.0;
+    const float wwidth = 8.0;
     const float middle_y = img.rows / 2.0;
     const int min_clust_size = 0;
     auto Getter =  [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); };
@@ -368,98 +369,89 @@ int good_center_line( const std::vector<cv::Vec2f> &lines)
     return minidx;
 } // good_center_line()
 
-// Find the change per line in rho and theta and synthesize the whole bunch
-// starting at the middle. Replace synthesized lines with real ones if close enough.
-//----------------------------------------------------------------------------------
-void fix_vertical_lines( std::vector<cv::Vec2f> &lines_, const cv::Mat &img)
-{
-    const float middle_y = img.rows / 2.0;
-    const float width = img.cols;
-    
-    // Convert lines to cxlines (center x + angle)
-    std::vector<cv::Vec2f> lines;
-    ISLOOP (lines_) {
-        lines.push_back( polar2cvangle( lines_[i], middle_y));
-    }
-    std::sort( lines.begin(), lines.end(), [](cv::Vec2f li1, cv::Vec2f li2) { return li1[0] < li2[0]; } );
-    // Left to right, theta must increase
-    float prev_theta = -1E9;
-    vec_filter( lines, [&prev_theta]( cv::Vec2f x) { if (x[1] > prev_theta) {prev_theta = x[1]; return true; } return false; });
-    
-    auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
-    auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
-    auto d_rhos   = vec_delta( rhos);
-    vec_filter( d_rhos, [](float d){ return d > 10 && d < 20;});
-    auto d_thetas = vec_delta( thetas);
-    auto d_rho   = vec_median( d_rhos);
-    auto d_theta = vec_median( d_thetas);
-    //auto d_rho   = vec_avg( d_rhos);
-    //auto d_theta = vec_avg( d_thetas);
 
-    // Find a line close to the middle where theta is close to median theta
-    float med_theta = vec_median(thetas);
-    PLOG( "med v theta %.2f\n", med_theta);
+// Find the x-change per line in in upper and lower screen area and synthesize
+// the whole bunch starting at the middle. Replace synthesized lines with real
+// ones if close enough.
+//----------------------------------------------------------------------------------
+void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+{
+    const float width = img.cols;
+    const int top_y = img.cols / 4;
+    const int bot_y = 0.75 * img.cols;
+    
+    std::sort( lines.begin(), lines.end(),
+              [bot_y](cv::Vec2f a, cv::Vec2f b) {
+                  return x_from_y( bot_y, a) < x_from_y( bot_y, b);
+              });
+    std::vector<float> top_rhos = vec_extract( lines,
+                                              [top_y](cv::Vec2f a) { return x_from_y( top_y, x_from_y( top_y, a)); });
+    std::vector<float> bot_rhos = vec_extract( lines,
+                                              [bot_y](cv::Vec2f a) { return x_from_y( bot_y, x_from_y( bot_y, a)); });
+    auto d_top_rhos = vec_delta( top_rhos);
+    auto d_bot_rhos = vec_delta( bot_rhos);
+    vec_filter( d_top_rhos, [](float d){ return d > 5 && d < 20;});
+    vec_filter( d_bot_rhos, [](float d){ return d > 10 && d < 25;});
+    float d_top_rho = vec_median( d_top_rhos);
+    float d_bot_rho = vec_median( d_bot_rhos);
+
+    // Find a good line close to the middle
     int good_idx = good_center_line( lines);
     if (good_idx < 0) {
         lines.clear();
         return;
     }
     cv::Vec2f med_line = lines[good_idx];
-
+    
     // Interpolate the rest
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
-    float rho, theta;
+    float top_rho, bot_rho;
     // If there is a close line, use it. Else interpolate.
     const float X_THRESH = 3; //6;
-    const float THETA_THRESH = 0.5 * PI / 180;
     // Lines to the right
-    rho = med_line[0];
-    theta = med_line[1];
+    top_rho = x_from_y( top_y, med_line);
+    bot_rho = x_from_y( bot_y, med_line);
     ILOOP(100) {
         if (!i) continue;
-        rho += d_rho;
-        theta += d_theta;
-        int close_idx = vec_closest( rhos, rho);
-        if (fabs( rho - rhos[close_idx]) < X_THRESH &&
-            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        top_rho += d_top_rho;
+        bot_rho += d_bot_rho;
+        int close_idx = vec_closest( bot_rhos, bot_rho);
+        if (fabs( bot_rho - bot_rhos[close_idx]) < X_THRESH &&
+            fabs( top_rho - top_rhos[close_idx]) < X_THRESH)
         {
-            rho   = lines[close_idx][0];
-            theta = lines[close_idx][1];
+            top_rho   = top_rhos[close_idx];
+            bot_rho   = bot_rhos[close_idx];
         }
-        if (rho > width) break;
-        cv::Vec2f line( rho,theta);
+        if (top_rho > width) break;
+        cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
         synth_lines.push_back( line);
-    }
+    } // ILOOP
     // Lines to the left
-    rho = med_line[0];
-    theta = med_line[1];
+    top_rho = x_from_y( top_y, med_line);
+    bot_rho = x_from_y( bot_y, med_line);
     ILOOP(100) {
         if (!i) continue;
-        rho -= d_rho;
-        theta -= d_theta;
-        int close_idx = vec_closest( rhos, rho);
-        if (fabs( rho - rhos[close_idx]) < X_THRESH &&
-            fabs( theta - thetas[close_idx]) < THETA_THRESH)
+        top_rho -= d_top_rho;
+        bot_rho -= d_bot_rho;
+        int close_idx = vec_closest( bot_rhos, bot_rho);
+        if (fabs( bot_rho - bot_rhos[close_idx]) < X_THRESH &&
+            fabs( top_rho - top_rhos[close_idx]) < X_THRESH)
         {
-            rho   = lines[close_idx][0];
-            theta = lines[close_idx][1];
+            top_rho   = top_rhos[close_idx];
+            bot_rho   = bot_rhos[close_idx];
         }
-        if (rho == 0) break;
-        cv::Vec2f line( rho,theta);
-        if (x_from_y( middle_y, line) < 0) break;
+        if (top_rho < 0) break;
+        cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
         synth_lines.push_back( line);
-    }
+    } // ILOOP
     std::sort( synth_lines.begin(), synth_lines.end(),
-              [middle_y](cv::Vec2f line1, cv::Vec2f line2) {
-                  return x_from_y( middle_y, line1) < x_from_y( middle_y, line2);
+              [bot_y](cv::Vec2f a, cv::Vec2f b) {
+                  return x_from_y( bot_y, a) < x_from_y( bot_y, b);
               });
-    
-    lines_.clear();
-    ISLOOP (synth_lines) { lines_.push_back( cvangle2polar( synth_lines[i], middle_y)); }
-    //lines_.push_back( cvangle2polar( med_line, middle_y));
-    //lines_.push_back( midline);
+    lines = synth_lines;
 } // fix_vertical_lines()
+
 
 // Find the median distance between vert lines for given y.
 // We use that to find the adjacent horizontal lines next to y.
