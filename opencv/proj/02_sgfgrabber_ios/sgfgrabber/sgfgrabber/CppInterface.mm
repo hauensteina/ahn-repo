@@ -158,14 +158,14 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
-    //load_img( @"board05.jpg", _m); // horizontals bad
+    //load_img( @"board05.jpg", _m); // verticals perfect, horizontals bad
     //load_img( @"board06.jpg", _m); // perfect
     //load_img( @"board07.jpg", _m); // perfect
-    load_img( @"board08.jpg", _m); // horiz good above bad below
+    //load_img( @"board08.jpg", _m); // horiz good above bad below
     //load_img( @"board09.jpg", _m); // horiz slightly off at the top
     //load_img( @"board10.jpg", _m); // perfect
-    //load_img( @"board11.jpg", _m); // perfect (almost; slightly off verts to the left)
-    //load_img( @"board12.jpg", _m); // perfect
+    //load_img( @"board11.jpg", _m); // perfect
+    load_img( @"board12.jpg", _m); // perfect
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
@@ -284,7 +284,7 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 
 // Adjacent lines should have similar slope
 //----------------------------------------------------------------
-void sort_and_filter_verticals( std::vector<cv::Vec2f> &vlines)
+void filter_verticals( std::vector<cv::Vec2f> &vlines, const cv::Mat &img)
 {
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
@@ -311,7 +311,58 @@ void sort_and_filter_verticals( std::vector<cv::Vec2f> &vlines)
             prev_theta = vlines[i][1];
         }
     }
-    std::sort( good.begin(), good.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
+    //std::sort( good.begin(), good.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
+    //good.clear();
+    //good.push_back( _vertical_lines[med_idx]);
+    vlines = good;
+} // filter_verticals()
+
+// Adjacent lines should have similar slope
+//----------------------------------------------------------------------------------
+void filter_verticals_bak( std::vector<cv::Vec2f> &vlines, const cv::Mat &img)
+{
+    const float middle_y = img.rows / 2.0;
+    std::sort( vlines.begin(), vlines.end(),
+              [middle_y](cv::Vec2f &a, cv::Vec2f &b) {
+                  return x_from_y( middle_y, a) < x_from_y( middle_y, b);
+              });
+    std::vector<float> rhos = vec_extract( vlines, [middle_y](cv::Vec2f a) { return x_from_y( middle_y, a);});
+    int med_idx = good_center_line( vlines);
+    if (med_idx < 0) return;
+    float theta = vlines[med_idx][1];
+    float rho   = vlines[med_idx][0];
+    // Going left and right, theta should not change abruptly
+    std::vector<cv::Vec2f> good;
+    good.push_back( vlines[med_idx]);
+    const float EPS = 4 * PI/180;
+    // right
+    for (int i = med_idx+1; i < SZ(vlines); i++ ) {
+        //float d_rho = rho - rhos[i];
+        //float EPS = d_rho * 0.001;
+        float d_theta = vlines[i][1] - theta;
+        if (1 || d_theta < EPS) {
+            good.push_back( vlines[i]);
+            //prev_theta = vlines[i][1];
+            //prev_rho = vlines[i][0];
+        }
+        else {
+            int tt=42;
+        }
+    }
+    // left
+    //prev_theta = theta;
+    //prev_rho = rhos[med_idx];
+    for (int i = med_idx-1; i >= 0; i-- ) {
+        //float d_rho = fabs( prev_rho - rhos[i]);
+        //float EPS = d_rho / 200.0;
+        float d_theta = vlines[i][1] - theta;
+        if (1 || d_theta > -EPS) {
+            good.push_back( vlines[i]);
+            //prev_theta = vlines[i][1];
+            //prev_rho = vlines[i][0];
+        }
+    }
+    //std::sort( good.begin(), good.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
     //good.clear();
     //good.push_back( _vertical_lines[med_idx]);
     vlines = good;
@@ -323,7 +374,7 @@ void sort_and_filter_verticals( std::vector<cv::Vec2f> &vlines)
 {
     g_app.mainVC.lbDbg.text = @"03";
     dedup_verticals( _vertical_lines, _gray);
-    sort_and_filter_verticals( _vertical_lines);
+    filter_verticals( _vertical_lines, _gray);
     
     // Show results
     cv::Mat drawing;
@@ -377,8 +428,8 @@ int good_center_line( const std::vector<cv::Vec2f> &lines)
 void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     const float width = img.cols;
-    const int top_y = img.cols / 4;
-    const int bot_y = 0.75 * img.cols;
+    const int top_y = 0.2 * img.rows;
+    const int bot_y = 0.8 * img.rows;
     
     std::sort( lines.begin(), lines.end(),
               [bot_y](cv::Vec2f a, cv::Vec2f b) {
@@ -704,13 +755,13 @@ int count_points_on_line( cv::Vec2f line, Points pts)
 
 // Find a vertical line thru pt which hits a lot of other points
 // PRECONDITION: allpoints must be sorted by y
-//------------------------------------------------------------------
-cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt)
+//---------------------------------------------------------------------------------------
+cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt, int &maxhits)
 {
     // Find next point below.
     //const float RHO_EPS = 10;
     const float THETA_EPS = /* 10 */ 20 * PI / 180; //@@@
-    int maxhits = -1;
+    maxhits = -1;
     cv::Vec2f res;
     for (auto p: allpoints) {
         if (p.y <= pt.y) continue;
@@ -768,8 +819,10 @@ std::vector<cv::Vec2f> homegrown_vert_lines( Points pts)
     std::copy_n ( pts.begin(), SZ(pts)/4, top_points.begin() );
     // For each point, find a line that hits many other points
     for (auto tp: top_points) {
-        cv::Vec2f newline = find_vert_line_thru_point( pts, tp);
-        if (newline[0] != 0) {
+        int nhits;
+        cv::Vec2f newline = find_vert_line_thru_point( pts, tp, nhits);
+        //PLOG (">>>>>>>%d\n",nhits);
+        if (/*nhits > 5 &&*/ newline[0] != 0) {
             res.push_back( newline);
         }
     }
@@ -1223,7 +1276,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_verticals( _vertical_lines, _gray);
-        sort_and_filter_verticals( _vertical_lines);
+        filter_verticals( _vertical_lines, _gray);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
