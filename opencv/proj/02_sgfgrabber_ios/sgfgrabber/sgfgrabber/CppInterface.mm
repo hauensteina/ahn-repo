@@ -155,8 +155,8 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #define FFILE
 #ifdef FFILE
     //load_img( @"board01.jpg", _m); // both perfect
-    load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
-    //load_img( @"board03.jpg", _m); // perfect
+    //load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
+    load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
     //load_img( @"board05.jpg", _m); // verticals perfect, horizontals bad
     //load_img( @"board06.jpg", _m); // perfect
@@ -284,7 +284,7 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 
 // Adjacent lines should have similar slope
 //----------------------------------------------------------------
-void filter_verticals( std::vector<cv::Vec2f> &vlines, const cv::Mat &img)
+void filter_verticals( std::vector<cv::Vec2f> &vlines, const float eps = 5)
 {
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
@@ -293,7 +293,7 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines, const cv::Mat &img)
     // Going left and right, theta should not change abruptly
     std::vector<cv::Vec2f> good;
     good.push_back( vlines[med_idx]);
-    const float EPS = 5 * PI/180;
+    const float EPS = eps * PI/180;
     float prev_theta;
     // right
     prev_theta = theta;
@@ -324,7 +324,7 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines, const cv::Mat &img)
 {
     g_app.mainVC.lbDbg.text = @"03";
     dedup_verticals( _vertical_lines, _gray);
-    filter_verticals( _vertical_lines, _gray);
+    filter_verticals( _vertical_lines);
     
     // Show results
     cv::Mat drawing;
@@ -640,6 +640,14 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     float d_top_rho = hspace_at_line( vert_lines, cv::Vec2f( top_y, PI/2));
     float d_bot_rho = hspace_at_line( vert_lines, cv::Vec2f( bot_y, PI/2));
     float dd_rho_per_y;
+    float drat_rho_per_y;
+    
+//    float c = (d_top_rho - d_bot_rho) / ( SQR(bot_y) * d_bot_rho - SQR(top_y) * d_top_rho );
+//    float r = d_top_rho * (1 + c * SQR(top_y));
+    float c = (d_bot_rho - d_top_rho) / ( SQR(top_y) * d_top_rho - SQR(bot_y) * d_bot_rho );
+    float r = d_bot_rho * (1 + c * SQR(bot_y));
+    auto frho = [r,c](float y){ return r / (1 + c * y); };
+    
     // Interpolate the rest
     //float hvrat = 1.0;
     //float d_rho = 0;
@@ -649,32 +657,44 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     cv::Vec2f line;
 
 //    // If there is a close line, use it. Else interpolate.
-    const float THRESH = 0; // 6;
+    const float THRESH = 7; // 6;
     //const float THETA_THRESH = PI / 180;
     // Lines below
     // Assume linear change
-    const float BOTMAGIC = 1.0;
-    dd_rho_per_y = BOTMAGIC * (d_bot_rho - d_top_rho) / (float)height;
+    const float BOTMAGIC = 3.0;
+    dd_rho_per_y = BOTMAGIC * (d_bot_rho - d_top_rho) / (bot_y - top_y);
+    drat_rho_per_y = pow( d_bot_rho / d_top_rho, 1.0 / (bot_y - top_y));
     rho = med_rho = med_line[0];
     theta = med_line[1];
-    d_rho = med_d_rho = BOTMAGIC * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
-    //d_rho = med_d_rho = vec_median( d_rhos);
+    //d_rho = frho( rho);
+    //d_rho = med_d_rho = BOTMAGIC * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
+    d_rho = med_d_rho = vec_median( d_rhos);
     //cv::Vec2f oldline( rho,theta);
     ILOOP(100) {
         PLOG( "below %d d_rho %.2f\n", i, d_rho);
+        float old_rho = rho;
         rho += d_rho;
         float d;
         int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
-        if (d < THRESH) {
+        PLOG("d %.2f\n", d);
+        if (d < d_rho * 0.5) {
             PLOG("repl\n");
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
+            d_rho = rho - old_rho;
+        }
+        else {
+            d_rho += (rho - old_rho) * dd_rho_per_y;
         }
         if (rho > height) break;
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
-        d_rho = med_d_rho + dd_rho_per_y * (rho - med_rho);
+        //if (i >= 7) break;
+        //d_rho = med_d_rho + dd_rho_per_y * (rho - med_rho);
+        //d_rho = med_d_rho * pow( drat_rho_per_y, (rho - med_rho));
         //d_rho = hspace_at_line( vert_lines, changle2polar( oldline, middle_x));
+        //d_rho = frho( rho);
+        int tt = 42;
         //oldline = line;
     }
 //    // Lines above
@@ -784,6 +804,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
     dedup_horizontals( _horizontal_lines, _gray);
+    filter_verticals( _horizontal_lines, 1);
     fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
 
     // Show results
@@ -819,7 +840,7 @@ cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt, int 
 {
     // Find next point below.
     //const float RHO_EPS = 10;
-    const float THETA_EPS = /* 10 */ 20 * PI / 180; //@@@
+    const float THETA_EPS = /* 10 */ 20 * PI / 180;
     maxhits = -1;
     cv::Vec2f res;
     for (auto p: allpoints) {
@@ -1335,7 +1356,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_verticals( _vertical_lines, _gray);
-        filter_verticals( _vertical_lines, _gray);
+        filter_verticals( _vertical_lines);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
