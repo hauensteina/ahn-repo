@@ -155,8 +155,8 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #define FFILE
 #ifdef FFILE
     //load_img( @"board01.jpg", _m); // both perfect
-    //load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
-    load_img( @"board03.jpg", _m); // perfect
+    load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
+    //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
     //load_img( @"board05.jpg", _m); // verticals perfect, horizontals bad
     //load_img( @"board06.jpg", _m); // perfect
@@ -557,8 +557,8 @@ float hspace_at_line( const std::vector<cv::Vec2f> &vert_lines, cv::Vec2f hline)
         }
         prev = p;
     }
-    //float res = vec_median( dists);
-    float res = dists[SZ(dists)/2];
+    float res = vec_median( dists);
+    //float res = dists[SZ(dists)/2];
     return res;
 } // hspace_at_y()
 
@@ -642,12 +642,6 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     float dd_rho_per_y;
     float drat_rho_per_y;
     
-//    float c = (d_top_rho - d_bot_rho) / ( SQR(bot_y) * d_bot_rho - SQR(top_y) * d_top_rho );
-//    float r = d_top_rho * (1 + c * SQR(top_y));
-    float c = (d_bot_rho - d_top_rho) / ( SQR(top_y) * d_top_rho - SQR(bot_y) * d_bot_rho );
-    float r = d_bot_rho * (1 + c * SQR(bot_y));
-    auto frho = [r,c](float y){ return r / (1 + c * y); };
-    
     // Interpolate the rest
     //float hvrat = 1.0;
     //float d_rho = 0;
@@ -657,18 +651,21 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     cv::Vec2f line;
 
 //    // If there is a close line, use it. Else interpolate.
-    const float THRESH = 7; // 6;
+    //const float THRESH = 7; // 6;
     //const float THETA_THRESH = PI / 180;
     // Lines below
-    // Assume linear change
-    const float BOTMAGIC = 3.0;
-    dd_rho_per_y = BOTMAGIC * (d_bot_rho - d_top_rho) / (bot_y - top_y);
-    drat_rho_per_y = pow( d_bot_rho / d_top_rho, 1.0 / (bot_y - top_y));
     rho = med_rho = med_line[0];
     theta = med_line[1];
+    d_rho = med_d_rho = vec_median( d_rhos);
+    float alpha = RAT( hspace_at_line( vert_lines, cv::Vec2f( 0, PI/2)),
+                      hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2)));
+    dd_rho_per_y = RAT( med_d_rho * (1.0 - alpha), med_rho);
+    
+    //const float BOTMAGIC = 3.0;
+    //dd_rho_per_y = BOTMAGIC * (d_bot_rho - d_top_rho) / (bot_y - top_y);
+    //drat_rho_per_y = pow( d_bot_rho / d_top_rho, 1.0 / (bot_y - top_y));
     //d_rho = frho( rho);
     //d_rho = med_d_rho = BOTMAGIC * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
-    d_rho = med_d_rho = vec_median( d_rhos);
     //cv::Vec2f oldline( rho,theta);
     ILOOP(100) {
         PLOG( "below %d d_rho %.2f\n", i, d_rho);
