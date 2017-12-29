@@ -154,15 +154,15 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     
 #define FFILE
 #ifdef FFILE
-    //load_img( @"board01.jpg", _m); // both perfect
-    load_img( @"board02.jpg", _m); // verticals perfect; horiz good above bad below
+    //load_img( @"board01.jpg", _m); // perfect
+    //load_img( @"board02.jpg", _m); // perfect
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
-    //load_img( @"board05.jpg", _m); // verticals perfect, horizontals bad
+    //load_img( @"board05.jpg", _m); // horizontals bad <<<<<<<
     //load_img( @"board06.jpg", _m); // perfect
     //load_img( @"board07.jpg", _m); // perfect
-    //load_img( @"board08.jpg", _m); // horiz good above bad below
-    //load_img( @"board09.jpg", _m); // horiz slightly off at the top
+    //load_img( @"board08.jpg", _m); // horiz good above bad below <<<<<<<<
+    //load_img( @"board09.jpg", _m); // perfect
     //load_img( @"board10.jpg", _m); // perfect
     //load_img( @"board11.jpg", _m); // perfect
     //load_img( @"board12.jpg", _m); // perfect
@@ -624,7 +624,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     ISLOOP (lines) { lines_.push_back( changle2polar( lines[i], middle_x)); }
     
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
-    auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
+    //auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
     auto d_rhos   = vec_delta( rhos);
     //vec_filter( d_rhos, [](float d){ return d > 10;});
     
@@ -635,47 +635,29 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     }
     cv::Vec2f med_line = lines[good_idx];
     
-    float top_y = 0;
-    float bot_y = height;
-    float d_top_rho = hspace_at_line( vert_lines, cv::Vec2f( top_y, PI/2));
-    float d_bot_rho = hspace_at_line( vert_lines, cv::Vec2f( bot_y, PI/2));
-    float dd_rho_per_y;
-    float drat_rho_per_y;
     
     // Interpolate the rest
-    //float hvrat = 1.0;
-    //float d_rho = 0;
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
-    float rho, theta, d_rho, med_rho, med_d_rho;
-    cv::Vec2f line;
 
-//    // If there is a close line, use it. Else interpolate.
-    //const float THRESH = 7; // 6;
-    //const float THETA_THRESH = PI / 180;
-    // Lines below
-    rho = med_rho = med_line[0];
-    theta = med_line[1];
-    d_rho = med_d_rho = vec_median( d_rhos);
+    float med_rho = med_line[0];
+    float med_d_rho = vec_median( d_rhos);
     float alpha = RAT( hspace_at_line( vert_lines, cv::Vec2f( 0, PI/2)),
-                      hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2)));
-    dd_rho_per_y = RAT( med_d_rho * (1.0 - alpha), med_rho);
-    
-    //const float BOTMAGIC = 3.0;
-    //dd_rho_per_y = BOTMAGIC * (d_bot_rho - d_top_rho) / (bot_y - top_y);
-    //drat_rho_per_y = pow( d_bot_rho / d_top_rho, 1.0 / (bot_y - top_y));
-    //d_rho = frho( rho);
-    //d_rho = med_d_rho = BOTMAGIC * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
-    //cv::Vec2f oldline( rho,theta);
+                hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2)));
+    float dd_rho_per_y = RAT( med_d_rho * (1.0 - alpha), med_rho);
+
+    float rho, theta, d_rho;
+    cv::Vec2f line;
+    // Lines below
+    d_rho = med_d_rho;
+    rho = med_line[0];
+    theta = med_line[1];
     ILOOP(100) {
-        PLOG( "below %d d_rho %.2f\n", i, d_rho);
         float old_rho = rho;
         rho += d_rho;
         float d;
         int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
-        PLOG("d %.2f\n", d);
         if (d < d_rho * 0.5) {
-            PLOG("repl\n");
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
             d_rho = rho - old_rho;
@@ -686,41 +668,30 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         if (rho > height) break;
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
-        //if (i >= 7) break;
-        //d_rho = med_d_rho + dd_rho_per_y * (rho - med_rho);
-        //d_rho = med_d_rho * pow( drat_rho_per_y, (rho - med_rho));
-        //d_rho = hspace_at_line( vert_lines, changle2polar( oldline, middle_x));
-        //d_rho = frho( rho);
-        int tt = 42;
-        //oldline = line;
-    }
-//    // Lines above
-//    const float TOPMAGIC = 0.625;
-//    dd_rho_per_y = TOPMAGIC * (d_bot_rho - d_top_rho) / (float)height;
-//    rho = med_rho = med_line[0];
-//    theta = med_line[1];
-//    d_rho = med_d_rho = TOPMAGIC * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
-//    ILOOP(100) {
-//        PLOG( "above %d d_rho %.2f\n", i, d_rho);
-//        rho -= d_rho;
-////        int close_idx = vec_closest( rhos, rho);
-////        if (fabs( rho - rhos[close_idx]) < Y_THRESH &&
-////            fabs( theta - thetas[close_idx]) < THETA_THRESH)
-////        {
-////            PLOG( "above repl %d\n", i);
-////            float old = synth_lines.back()[0];
-////            if (!i) old = med_line[0];
-////            rho   = lines[close_idx][0];
-////            theta = lines[close_idx][1];
-////            d_rho = fabs( rho - old);
-////        }
-//        if (rho < 0) break;
-//        cv::Vec2f line( rho,theta);
-//        synth_lines.push_back( line);
-//        d_rho = med_d_rho - dd_rho_per_y * (med_rho - rho);
-//        //d_rho = hspace_at_line( vert_lines, changle2polar( oldline, middle_x));
-//        //oldline = line;
-//    } // ILOOP
+    } // ILOOP
+    
+    // Lines above
+    d_rho = med_d_rho;
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        float old_rho = rho;
+        rho -= d_rho;
+        float d;
+        int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
+        if (d < d_rho * 0.5) {
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+            d_rho = old_rho - rho;
+        }
+        else {
+            d_rho += (rho - old_rho) * dd_rho_per_y;
+            //PLOG("i %d d_rho %.2f\n", i, d_rho);
+        }
+        if (rho < 0) break;
+        cv::Vec2f line( rho,theta);
+        synth_lines.push_back( line);
+    } // ILOOP
     std::sort( synth_lines.begin(), synth_lines.end(),
               [](cv::Vec2f line1, cv::Vec2f line2) {
                   return line1[0] < line2[0];
