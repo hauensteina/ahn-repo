@@ -155,13 +155,13 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
 #define FFILE
 #ifdef FFILE
     //load_img( @"board01.jpg", _m); // perfect
-    //load_img( @"board02.jpg", _m); // perfect
+    load_img( @"board02.jpg", _m); // perfect
     //load_img( @"board03.jpg", _m); // perfect
     //load_img( @"board04.jpg", _m); // perfect
     //load_img( @"board05.jpg", _m); // perfect
     //load_img( @"board06.jpg", _m); // perfect
     //load_img( @"board07.jpg", _m); // perfect
-    load_img( @"board08.jpg", _m); // horiz good above bad below <<<<<<<<
+    //load_img( @"board08.jpg", _m); // perfect
     //load_img( @"board09.jpg", _m); // perfect
     //load_img( @"board10.jpg", _m); // perfect
     //load_img( @"board11.jpg", _m); // perfect
@@ -578,13 +578,14 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         rho += d_rho;
         float d;
         int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
-        if (d < d_rho * 0.5) {
+        if (d < d_rho * 0.6) {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
             d_rho = rho - old_rho;
         }
         else {
             d_rho += (rho - old_rho) * dd_rho_per_y;
+            PLOG("synth %d\n",i);
         }
         if (rho > height) break;
         cv::Vec2f line( rho,theta);
@@ -601,7 +602,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         rho -= d_rho;
         float d;
         int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
-        if (d < d_rho * 0.5) {
+        if (d < d_rho * 0.6) {
             rho   = lines[close_idx][0];
             theta = lines[close_idx][1];
             d_rho = old_rho - rho;
@@ -694,7 +695,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
     dedup_horizontals( _horizontal_lines, _gray);
-    filter_verticals( _horizontal_lines, 1);
+    filter_verticals( _horizontal_lines, 1.1);
     fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
 
     // Show results
