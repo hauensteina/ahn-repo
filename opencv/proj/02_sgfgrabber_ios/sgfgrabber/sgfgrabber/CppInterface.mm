@@ -154,18 +154,18 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     
 #define FFILE
 #ifdef FFILE
-    //load_img( @"board01.jpg", _m); // perfect
-    load_img( @"board02.jpg", _m); // perfect
-    //load_img( @"board03.jpg", _m); // perfect
-    //load_img( @"board04.jpg", _m); // perfect
-    //load_img( @"board05.jpg", _m); // perfect
-    //load_img( @"board06.jpg", _m); // perfect
-    //load_img( @"board07.jpg", _m); // perfect
-    //load_img( @"board08.jpg", _m); // perfect
-    //load_img( @"board09.jpg", _m); // perfect
-    //load_img( @"board10.jpg", _m); // perfect
-    //load_img( @"board11.jpg", _m); // perfect
-    //load_img( @"board12.jpg", _m); // perfect
+    //load_img( @"board01.jpg", _m); // too difficult
+    //load_img( @"board02.jpg", _m); // board found
+    //load_img( @"board03.jpg", _m); // board found
+    //load_img( @"board04.jpg", _m); // board found
+    //load_img( @"board05.jpg", _m); // board found
+    //load_img( @"board06.jpg", _m); // board found
+    //load_img( @"board07.jpg", _m); // board found
+    //load_img( @"board08.jpg", _m); // board found
+    //load_img( @"board09.jpg", _m); // board found
+    //load_img( @"board10.jpg", _m); // board found
+    load_img( @"board11.jpg", _m); // board off
+    //load_img( @"board12.jpg", _m); // board found
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
@@ -528,7 +528,7 @@ float v_line_similarity( cv::Vec2f a, cv::Vec2f b, float middle_y)
 // starting at the middle. Replace synthesized lines with real ones if close enough.
 //---------------------------------------------------------------------------------------------
 void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2f> &vert_lines,
-                     const cv::Mat &img) //@@@
+                     const cv::Mat &img)
 {
     const float middle_x = img.cols / 2.0;
     const float height = img.rows;
@@ -897,7 +897,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 
 // Find the corners
 //----------------------------
-- (UIImage *) f06_corners
+- (UIImage *) f06_corners //@@@
 {
     g_app.mainVC.lbDbg.text = @"06";
 
@@ -905,9 +905,9 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
     //auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
     do {
-        if (SZ( _horizontal_lines) > 45) break;
+        if (SZ( _horizontal_lines) > 55) break;
         if (SZ( _horizontal_lines) < 5) break;
-        if (SZ( _vertical_lines) > 35) break;
+        if (SZ( _vertical_lines) > 45) break;
         if (SZ( _vertical_lines) < 5) break;
         _corners = find_corners( _stone_or_empty, _horizontal_lines, _vertical_lines,
                                 intersections, _small_pyr, _gray_threshed );
