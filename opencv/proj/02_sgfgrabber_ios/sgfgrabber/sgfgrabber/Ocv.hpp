@@ -225,6 +225,9 @@ void printMatU( const cv::Mat &m);
 void printMatF( const cv::Mat &m);
 // Print double matrix
 void printMatD( const cv::Mat &m);
+// Print 3 channel uint8 matrix
+void printMatU3( const cv::Mat &m);
+
 
 // Misc
 //========

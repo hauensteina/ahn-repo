@@ -483,6 +483,26 @@ int argmax( const std::vector<T> &vec)
     return int(maxiter - vec.begin());
 }
 
+// Index of smallest element in vector
+//-----------------------------------------
+template <typename T>
+int argmin( const std::vector<T> &vec)
+{
+    auto miniter = std::min_element( vec.begin(), vec.end());
+    return int(miniter - vec.begin());
+}
+
+// Index of median element in vector
+//----------------------------------------------
+template <typename T>
+T argmed( std::vector<T> vec)
+{
+    if (!vec.size()) return T();
+    std::sort( vec.begin(), vec.end(),
+              [](T a, T b) { return a < b; });
+    return vec.size() / 2;
+}
+
 // Partition a vector of elements by class func.
 // Return parts as vec of vec.
 //---------------------------------------------------------------------

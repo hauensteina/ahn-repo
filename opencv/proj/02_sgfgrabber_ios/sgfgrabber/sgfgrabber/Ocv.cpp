@@ -1050,3 +1050,17 @@ void printMatD( const cv::Mat &m)
     printf("\n========================\n");
 }
 
+// Print 3 channel uint8 matrix
+//---------------------------------
+void printMatU3( const cv::Mat &m)
+{
+    RLOOP (m.rows) {
+        printf("\n");
+        CLOOP (m.cols) {
+            auto v = m.at<cv::Vec3b>(r,c);
+            printf("(%4d %4d %4d) ", v(0), v(1), v(2) );
+        }
+    }
+    printf("\n========================\n");
+}
+
