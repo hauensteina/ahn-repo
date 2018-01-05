@@ -303,7 +303,7 @@
             cv::Mat m;
             UIImageToMat( _img, m);
             resize( m, m, 350);
-            cv::cvtColor( m, m, CV_RGBA2RGB); // Yes, RGB not BGR
+            cv::cvtColor( m, m, CV_RGBA2RGB); // Yes, RGBA not BGR
             ringpush( _imgQ , m, 4); // keep 4 frames
         }
         else {
