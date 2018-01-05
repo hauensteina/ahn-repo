@@ -1074,7 +1074,7 @@ void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
 
 //------------------------------------------------------------------------------------------------------
 std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, const cv::Mat &threshed,
-                          float dx, float dy,
+                          // float dx, float dy,
                           int TIMEBUFSZ = 1)
 {
     Points2f intersections;
@@ -1128,8 +1128,8 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     if (_small_zoomed.rows > 0) {
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
-        const int TIME_BUF_SZ = 10;
-        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
+        const int TIME_BUF_SZ = 1;
+        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, /* _dx, _dy,*/ TIME_BUF_SZ);
     }
     
     // Show results
@@ -1308,7 +1308,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 
         // Classify
         const int TIME_BUF_SZ = 10;
-        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, _dx, _dy, TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, /* _dx, _dy,*/ TIME_BUF_SZ);
         success = true;
     } while(0);
     
