@@ -167,8 +167,8 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //load_img( @"board11.jpg", _m); // board found
     //load_img( @"board12.jpg", _m); // board found
 
-    load_img( @"board13.jpg", _m); // Not enough dots. Or horizontals off.
-    //load_img( @"board14.jpg", _m); // board found
+    //load_img( @"board13.jpg", _m); // board found
+    load_img( @"board14.jpg", _m); // board found
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
@@ -383,7 +383,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     const float width = img.cols;
     const int top_y = 0.2 * img.rows;
     const int bot_y = 0.8 * img.rows;
-    
+    //const int mid_y = 0.5 * img.rows;
+
     std::sort( lines.begin(), lines.end(),
               [bot_y](cv::Vec2f a, cv::Vec2f b) {
                   return x_from_y( bot_y, a) < x_from_y( bot_y, b);
@@ -433,6 +434,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         }
         if (top_rho > width) break;
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
+        if (x_from_y( top_y, line) > width) break;
         synth_lines.push_back( line);
     } // ILOOP
     // Lines to the left
@@ -451,6 +453,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         }
         if (top_rho < 0) break;
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
+        if (x_from_y( top_y, line) < 0) break;
         synth_lines.push_back( line);
     } // ILOOP
     std::sort( synth_lines.begin(), synth_lines.end(),
@@ -615,6 +618,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
             PLOG("i %d d_rho %.2f\n", i, d_rho);
         }
         if (rho < 0) break;
+        if (d_rho < 3) break;
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
     } // ILOOP
@@ -917,7 +921,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
     do {
         if (SZ( _horizontal_lines) > 55) break;
         if (SZ( _horizontal_lines) < 5) break;
-        if (SZ( _vertical_lines) > 45) break;
+        if (SZ( _vertical_lines) > 55) break;
         if (SZ( _vertical_lines) < 5) break;
         _corners = find_corners( _stone_or_empty, _horizontal_lines, _vertical_lines,
                                 intersections, _small_pyr, _gray_threshed );
