@@ -30,8 +30,7 @@
 
 // Buttons etc
 @property UIButton *btnGo;
-@property UISlider *sldCannyLow;
-@property UISlider *sldCannyHi;
+@property UISlider *sldDbg;
 @property UISwitch *swiDbg;
 
 // State
@@ -100,26 +99,15 @@
     [v addSubview:l];
     self.lbDbg = l;
     
-    // Canny low slider
+    // Debug slider
     UISlider *s = [UISlider new];
-    self.sldCannyLow = s;
+    self.sldDbg = s;
     s.minimumValue = 0;
-    s.maximumValue = 0.5;
-    //s.maximumValue = 10;
-    [s addTarget:self action:@selector(sldCannyLow:) forControlEvents:UIControlEventValueChanged];
+    s.maximumValue = 13;
+    [s addTarget:self action:@selector(sldDbg:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
-    self.sldCannyLow.hidden = true;
-
-    // Canny high slider
-    s = [UISlider new];
-    self.sldCannyHi = s;
-    s.minimumValue = 0;
-    s.maximumValue = 255;
-    [s addTarget:self action:@selector(sldCannyHi:) forControlEvents:UIControlEventValueChanged];
-    s.backgroundColor = RGB (0xf0f0f0);
-    [v addSubview:s];
-    self.sldCannyHi.hidden = true;
+    self.sldDbg.hidden = false;
 }
 
 //----------------------------------------------------------------------
@@ -168,12 +156,9 @@
     int left = lmarg + W/5 + W/10 + W/5;
     int width = W-rmarg-left;
     self.lbDbg.frame = CGRectMake (left, y, width , mh);
-    // Canny hi slider
+    // Debug slider
     y -= delta_y;
-    self.sldCannyHi.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
-    // Canny low slider
-    y -= delta_y;
-    self.sldCannyLow.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
+    self.sldDbg.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
 
 } // doLayout
     
@@ -202,23 +187,13 @@
 
 #pragma mark - Button etc callbacks
 
-// Slider for low canny threshold
+// Slider for Debugging
 //-----------------------------------
-- (void) sldCannyLow:(id) sender
+- (void) sldDbg:(id) sender
 {
-    float tt = [self.sldCannyLow value];
-    self.grabFuncs.sld_low = tt;
-    //self.grabFuncs.thresh = tt;
-    self.lbDbg.text = [NSString stringWithFormat:@"%.2f %d", tt, self.grabFuncs.canny_hi];
-}
-
-// Slider for hi canny threshold
-//-----------------------------------
-- (void) sldCannyHi:(id) sender
-{
-    int tt = [self.sldCannyHi value];
-    self.grabFuncs.canny_hi = tt;
-    self.lbDbg.text = [NSString stringWithFormat:@"%.2f %d", self.grabFuncs.sld_low, tt];
+    int tt = [self.sldDbg value];
+    self.grabFuncs.sldDbg = tt;
+    self.lbDbg.text = nsprintf( @"%d", tt);
 }
 
 // Debug on/off

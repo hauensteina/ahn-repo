@@ -152,51 +152,50 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     _board_sz=19;
     g_app.mainVC.lbDbg.text = @"00";
     
-#define FFILE
-#ifdef FFILE
-    //load_img( @"board01.jpg", _m); // too difficult
-    //load_img( @"board02.jpg", _m); // board found
-    //load_img( @"board03.jpg", _m); // board found
-    //load_img( @"board04.jpg", _m); // board found
-    //load_img( @"board05.jpg", _m); // board found
-    //load_img( @"board06.jpg", _m); // board found
-    //load_img( @"board07.jpg", _m); // board found
-    //load_img( @"board08.jpg", _m); // board found
-    //load_img( @"board09.jpg", _m); // board found
-    //load_img( @"board10.jpg", _m); // board found
-    //load_img( @"board11.jpg", _m); // board found
-    //load_img( @"board12.jpg", _m); // board found
-
-    //load_img( @"board13.jpg", _m); // board found
-    load_img( @"board14.jpg", _m); // board found
-    cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
-    resize( _m, _small, 350);
-    cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
-#else
-    // Camera
-    //-----------
-    // Pick best frame from Q
-    cv::Mat best;
-    int maxBlobs = -1E9;
-    int bestidx = -1;
-    ILOOP (SZ(imgQ) - 1) { // ignore newest frame
-        _small = imgQ[i];
-        cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
-        thresh_dilate( _gray, _gray_threshed);
-        _stone_or_empty.clear();
-        BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
-        BlobFinder::find_stones( _gray, _stone_or_empty);
-        _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-        if (SZ(_stone_or_empty) > maxBlobs) {
-            maxBlobs = SZ(_stone_or_empty);
-            best = _small;
-            bestidx = i;
-        }
+    NSArray *fnames = @[
+                        @"board01.jpg",
+                        @"board02.jpg",
+                        @"board03.jpg",
+                        @"board04.jpg",
+                        @"board05.jpg",
+                        @"board06.jpg",
+                        @"board07.jpg",
+                        @"board08.jpg",
+                        @"board09.jpg",
+                        @"board10.jpg",
+                        @"board11.jpg",
+                        @"board12.jpg",
+                        @"board13.jpg"
+                        ];
+    if (_sldDbg > 0 && _sldDbg <= fnames.count) {
+        load_img( fnames[_sldDbg -1], _m);
+        cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
+        resize( _m, _small, 350);
+        cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
     }
-    PLOG("best idx %d\n", bestidx);
-    // Reprocess the best one
-    _small = best;
-#endif
+    else { // Camera
+        // Pick best frame from Q
+        cv::Mat best;
+        int maxBlobs = -1E9;
+        int bestidx = -1;
+        ILOOP (SZ(imgQ) - 1) { // ignore newest frame
+            _small = imgQ[i];
+            cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
+            thresh_dilate( _gray, _gray_threshed);
+            _stone_or_empty.clear();
+            BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
+            BlobFinder::find_stones( _gray, _stone_or_empty);
+            _stone_or_empty = BlobFinder::clean( _stone_or_empty);
+            if (SZ(_stone_or_empty) > maxBlobs) {
+                maxBlobs = SZ(_stone_or_empty);
+                best = _small;
+                bestidx = i;
+            }
+        }
+        PLOG("best idx %d\n", bestidx);
+        // Reprocess the best one
+        _small = best;
+    }
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
     _stone_or_empty.clear();

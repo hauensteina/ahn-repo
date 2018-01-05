@@ -28,7 +28,6 @@
 - (UIImage *) f10_features;
 - (UIImage *) f11_classify;
 - (UIImage *) real_time_flow:(UIImage *)img;
-@property float sld_low;
-@property int canny_hi;
+@property int sldDbg;
 
 @end
