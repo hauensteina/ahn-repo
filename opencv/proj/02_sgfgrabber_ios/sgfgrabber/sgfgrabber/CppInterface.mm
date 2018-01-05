@@ -164,8 +164,11 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //load_img( @"board08.jpg", _m); // board found
     //load_img( @"board09.jpg", _m); // board found
     //load_img( @"board10.jpg", _m); // board found
-    load_img( @"board11.jpg", _m); // board off
+    //load_img( @"board11.jpg", _m); // board found
     //load_img( @"board12.jpg", _m); // board found
+
+    load_img( @"board13.jpg", _m); // Not enough dots. Or horizontals off.
+    //load_img( @"board14.jpg", _m); // board found
     cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
     resize( _m, _small, 350);
     cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGB not BGR
@@ -191,7 +194,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
         }
     }
     PLOG("best idx %d\n", bestidx);
-    // Reproces the best one
+    // Reprocess the best one
     _small = best;
 #endif
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
@@ -848,18 +851,22 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
     
     Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
-    //cv::Mat &edgeness  = bness.edgeness();
+    cv::Mat &edgeness  = bness.edgeness();
     cv::Mat &blobness  = bness.blobness();
-    cv::Mat &threeness = bness.threeness();
+    //cv::Mat &threeness = bness.threeness();
 
     //float edgeweight = 0.0, blobweight = 1.0;
     //cv::Mat both = mat_sumscale( edgeness, blobness, edgeweight, blobweight);
     //cv::Point min_loc, max_loc;
     //double mmin, mmax;
     //cv::minMaxLoc(both, &mmin, &mmax, &min_loc, &max_loc);
-    cv::Mat &both = blobness;
-    //cv::Point max_loc = tiebreak( blobness, edgeness);
-    cv::Point max_loc = tiebreak( blobness, threeness);
+    //cv::Mat &both = blobness;
+    cv::Point max_loc = tiebreak( blobness, edgeness);
+    //cv::Point max_loc = tiebreak( blobness, threeness);
+//    double mmin, mmax;
+//    cv::Point min_loc, max_loc;
+//    cv::Mat &both = edgeness;
+//    cv::minMaxLoc( both, &mmin, &mmax, &min_loc, &max_loc);
 
     cv::Point tl = max_loc;
     cv::Point tr( tl.x + board_sz-1, tl.y);
@@ -876,7 +883,7 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     mat_dbg.at<cv::Vec3b>( pf2p(br)) = cv::Vec3b( 255,0,0);
     cv::resize( mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
 
-    auto isec2pf = [&both, &intersections](cv::Point p) { return p2pf( intersections[p.y*both.cols + p.x]); };
+    auto isec2pf = [&blobness, &intersections](cv::Point p) { return p2pf( intersections[p.y*blobness.cols + p.x]); };
     Points2f corners = { isec2pf(tl), isec2pf(tr), isec2pf(br), isec2pf(bl) };
     return corners;
 } // find_corners()

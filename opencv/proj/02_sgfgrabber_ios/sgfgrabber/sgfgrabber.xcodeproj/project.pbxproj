@@ -16,6 +16,8 @@
 		AC0FFB051FEB4AD7009A02FD /* board12.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC0FFAFF1FEB4AD7009A02FD /* board12.jpg */; };
 		AC0FFB061FEB4AD7009A02FD /* board08.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC0FFB001FEB4AD7009A02FD /* board08.jpg */; };
 		AC3C5EBC1FBC942000BB8B4F /* Ocv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */; };
+		AC3CC3561FFECD2300ED79D6 /* board14.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC3CC3541FFECD2200ED79D6 /* board14.jpg */; };
+		AC3CC3571FFECD2300ED79D6 /* board13.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC3CC3551FFECD2300ED79D6 /* board13.jpg */; };
 		AC5540741F9BE6AD00922557 /* opencv2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AC5540731F9BE6AD00922557 /* opencv2.framework */; };
 		AC5540771F9BE71900922557 /* CppInterface.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC5540761F9BE71800922557 /* CppInterface.mm */; };
 		AC61AD571FBCCB0B00DEBCDA /* Common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC61AD551FBCCB0B00DEBCDA /* Common.cpp */; };
@@ -52,6 +54,8 @@
 		AC0FFB001FEB4AD7009A02FD /* board08.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = board08.jpg; path = Assets/board08.jpg; sourceTree = SOURCE_ROOT; };
 		AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Ocv.cpp; sourceTree = "<group>"; };
 		AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Ocv.hpp; sourceTree = "<group>"; };
+		AC3CC3541FFECD2200ED79D6 /* board14.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board14.jpg; sourceTree = "<group>"; };
+		AC3CC3551FFECD2300ED79D6 /* board13.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board13.jpg; sourceTree = "<group>"; };
 		AC5540731F9BE6AD00922557 /* opencv2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = opencv2.framework; sourceTree = SOURCE_ROOT; };
 		AC5540751F9BE71800922557 /* CppInterface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CppInterface.h; sourceTree = "<group>"; };
 		AC5540761F9BE71800922557 /* CppInterface.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CppInterface.mm; sourceTree = "<group>"; };
@@ -184,6 +188,8 @@
 				AC0FFAFC1FEB4AD6009A02FD /* board10.jpg */,
 				AC0FFAFE1FEB4AD7009A02FD /* board11.jpg */,
 				AC0FFAFF1FEB4AD7009A02FD /* board12.jpg */,
+				AC3CC3551FFECD2300ED79D6 /* board13.jpg */,
+				AC3CC3541FFECD2200ED79D6 /* board14.jpg */,
 			);
 			path = Assets;
 			sourceTree = "<group>";
@@ -249,11 +255,13 @@
 			files = (
 				AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */,
 				AC8ACF8E1FC1EC12005D5722 /* board01.jpg in Resources */,
+				AC3CC3571FFECD2300ED79D6 /* board13.jpg in Resources */,
 				AC0FFB031FEB4AD7009A02FD /* board09.jpg in Resources */,
 				ACAC40BF1FC3321A00B6968B /* board05.jpg in Resources */,
 				AC0FFB041FEB4AD7009A02FD /* board11.jpg in Resources */,
 				AC9DB0371FE09E0F008723CE /* white_templ.yml in Resources */,
 				AC0FFB011FEB4AD7009A02FD /* board07.jpg in Resources */,
+				AC3CC3561FFECD2300ED79D6 /* board14.jpg in Resources */,
 				ACAC40BE1FC3321A00B6968B /* board04.jpg in Resources */,
 				AC0FFB051FEB4AD7009A02FD /* board12.jpg in Resources */,
 				AC9DB02F1FE0581F008723CE /* board06.jpg in Resources */,

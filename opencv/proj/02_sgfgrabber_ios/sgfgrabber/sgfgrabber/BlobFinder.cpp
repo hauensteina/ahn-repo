@@ -114,11 +114,11 @@ void BlobFinder::find_empty_places( const cv::Mat &threshed, Points &result, int
     
     // Match
     double thresh = 75; //90;
-    //matchTemplate( mtmp, mright, result, thresh);
-    //matchTemplate( mtmp, mleft, result, thresh);
+    //matchTemplate( threshed, mleft, result, thresh);
     //matchTemplate( mtmp, mtop, result, thresh);
     //matchTemplate( mtmp, mbottom, result, thresh);
     matchTemplate( threshed, mcross, result, thresh);
+    //matchTemplate( threshed, mright, result, thresh);
 } // find_empty_places()
 
 // Find stones in a grayscale image
@@ -173,6 +173,7 @@ void BlobFinder::matchTemplate( const cv::Mat &img, const cv::Mat &templ, Points
                           11,  // neighborhood_size
                           thresh); // threshold; less is more
     
+    //mat_dbg = mtmp.clone();
     // Find the blobs. They are the empty places.
     cv::SimpleBlobDetector::Params params;
     params.filterByColor = true;

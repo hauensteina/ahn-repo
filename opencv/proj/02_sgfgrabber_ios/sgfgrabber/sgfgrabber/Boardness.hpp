@@ -68,12 +68,15 @@ public:
     cv::Mat& edgeness()
     {
         const cv::Mat &m = m_pyrpix;
-        cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_32FC1);
-        float mmax = -1E9;
+        cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_64FC1);
+        double mmax = -1E9;
         
         RSLOOP (m_horiz_lines) {
             CSLOOP (m_vert_lines) {
-                float ssum = 0;
+                float lsum, rsum, tsum, bsum;
+                lsum = rsum = tsum = bsum = 0;
+                int lcount, rcount, tcount, bcount;
+                lcount = rcount = tcount = bcount = 0;
                 if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
                 if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
                 if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
@@ -85,8 +88,15 @@ public:
                     auto b_r = m.at<cv::Vec3b>( rr, c + m_boardsz -1);
                     auto o_l = m.at<cv::Vec3b>( rr, c - 1); // just outside the board
                     auto o_r = m.at<cv::Vec3b>( rr, c + m_boardsz);
-                    ssum += cv::norm( b_l, o_l);
-                    ssum += cv::norm( b_r, o_r);
+                    
+                    if (cv::norm(b_l) > 0 && cv::norm(o_l) > 0) {
+                        lsum += cv::norm( b_l, o_l);
+                        lcount++;
+                    }
+                    if (cv::norm(b_r) > 0 && cv::norm(o_r) > 0) {
+                        rsum += cv::norm( b_r, o_r);
+                        rcount++;
+                    }
                 }
                 // Top and bottom edge
                 for (int cc = c; cc < c + m_boardsz; cc++) {
@@ -94,11 +104,20 @@ public:
                     auto b_b = m.at<cv::Vec3b>( r + m_boardsz - 1, cc);
                     auto o_t = m.at<cv::Vec3b>( r - 1, cc); // just outside the board
                     auto o_b = m.at<cv::Vec3b>( r + m_boardsz, cc);
-                    ssum += cv::norm( b_t, o_t);
-                    ssum += cv::norm( b_b, o_b);
+                    if (cv::norm(b_t) > 0 && cv::norm(o_t) > 0) {
+                        tsum += cv::norm( b_t, o_t);
+                        tcount++;
+                    }
+                    if (cv::norm(b_b) > 0 && cv::norm(o_b) > 0) {
+                        bsum += cv::norm( b_b, o_b);
+                        bcount++;
+                    }
                 }
-                tmp.at<float>(r,c) = ssum;
-                if (ssum > mmax) mmax = ssum;
+                // Sum lets an outlier dominate
+                //tmp.at<double>(r,c) =  lsum + rsum + tsum + bsum;
+                // Multiplying instead of summ rewards similarity between factors
+                tmp.at<double>(r,c) =  RAT(lsum,lcount) * RAT(rsum,rcount) * RAT(tsum,tcount) * RAT(bsum,bcount);
+                if (tmp.at<double>(r,c) > mmax) mmax = tmp.at<double>(r,c) ;
             } // CSLOOP
         } // RSLOOP
         double scale = 255.0 / mmax;
@@ -113,42 +132,59 @@ public:
         const cv::Mat &m = m_pyrpix;
         
         // Find min, max, median by gray value, for each left upper corner
-        cv::Mat mmin = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
-        cv::Mat mmax = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
-        cv::Mat mmed = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
-        RSLOOP (m_horiz_lines) {
-            CSLOOP (m_vert_lines) {
-                if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
-                if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
-                if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
-                if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
-                std::vector<cv::Vec3b> pix;
-                std::vector<float> bright;
-                for (int rr = r; rr < r + m_boardsz; rr++) {
-                    for (int cc = c; cc < c + m_boardsz; cc++) {
-                        cv::Vec3b rgb = m.at<cv::Vec3b>( rr, cc);
-                        pix.push_back( rgb);
-                        bright.push_back( cv::norm( rgb));
-                    }
-                }
-                int max_idx = argmax( bright);
-                int min_idx = argmin( bright);
-                int med_idx = argmed( bright);
-                cv::Vec3b min3 = pix[ min_idx];
-                cv::Vec3b max3 = pix[ max_idx];
-                cv::Vec3b med3 = pix[ med_idx];
-                mmin.at<cv::Vec3b>( r, c) = min3;
-                mmax.at<cv::Vec3b>( r, c) = max3;
-                mmed.at<cv::Vec3b>( r, c) = med3;
-            } // CSLOOP
-        } // RSLOOP
+//        cv::Mat mmin = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
+//        cv::Mat mmax = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
+//        cv::Mat mmed = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
+//        RSLOOP (m_horiz_lines) {
+//            CSLOOP (m_vert_lines) {
+//                if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
+//                if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
+//                if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
+//                if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
+//                std::vector<cv::Vec3b> pix;
+//                std::vector<float> bright;
+//                for (int rr = r+1; rr < r + m_boardsz - 1; rr++) {
+//                    for (int cc = c+1; cc < c + m_boardsz - 1; cc++) {
+//                        cv::Vec3b rgb = m.at<cv::Vec3b>( rr, cc);
+//                        pix.push_back( rgb);
+//                        bright.push_back( cv::norm( rgb));
+//                    }
+//                }
+//                int max_idx = argmax( bright);
+//                int min_idx = argmin( bright);
+//                int med_idx = argmed( bright);
+//                cv::Vec3b min3 = pix[ min_idx];
+//                cv::Vec3b max3 = pix[ max_idx];
+//                cv::Vec3b med3 = pix[ med_idx];
+//                mmin.at<cv::Vec3b>( r, c) = min3;
+//                mmax.at<cv::Vec3b>( r, c) = max3;
+//                mmed.at<cv::Vec3b>( r, c) = med3;
+//            } // CSLOOP
+//        } // RSLOOP
         
+        std::vector<cv::Vec3b> pix;
+        std::vector<float> bright;
+        for (int r = SZ(m_horiz_lines) / 2 - 2; r <= SZ(m_horiz_lines) / 2 + 2; r++) {
+            for (int c = SZ(m_vert_lines) / 2 - 2; c <= SZ(m_vert_lines) / 2 + 2; c++) {
+                cv::Vec3b rgb = m.at<cv::Vec3b>( r, c);
+                pix.push_back( rgb);
+                bright.push_back( cv::norm( rgb));
+            }
+        }
+        int max_idx = argmax( bright);
+        int min_idx = argmin( bright);
+        int med_idx = argmed( bright);
+        cv::Vec3b maxrgb = pix[ max_idx];
+        cv::Vec3b minrgb = pix[ min_idx];
+        cv::Vec3b medrgb = pix[ med_idx];
+
         // For each upper left corner, find sum of distances to closest centroid
         cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_32FC1);
         float biggest = -1E9;
         RSLOOP (m_horiz_lines) {
             CSLOOP (m_vert_lines) {
                 float ssum = 0;
+                int count = 0;
                 if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
                 if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
                 if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
@@ -156,24 +192,30 @@ public:
                 for (int rr = r; rr < r + m_boardsz; rr++) {
                     for (int cc = c; cc < c + m_boardsz; cc++) {
                         cv::Vec3b rgb = m.at<cv::Vec3b>( rr, cc);
-                        float mind = cv::norm( rgb, mmin.at<cv::Vec3b>( r,c));
-                        float maxd = cv::norm( rgb, mmax.at<cv::Vec3b>( r,c));
-                        float medd = cv::norm( rgb, mmed.at<cv::Vec3b>( r,c));
+                        float mind = cv::norm( rgb, minrgb);
+                        float maxd = cv::norm( rgb, maxrgb);
+                        float medd = cv::norm( rgb, medrgb);
                         float d = 0;
-                        if (mind < maxd && mind < medd) {
+                        if (mind <= maxd && mind <= medd) {
                             d = mind;
+                            ssum += d;
+                            count++;
                         }
-                        else if (maxd < mind && maxd < medd) {
+                        else if (maxd <= mind && maxd <= medd) {
                             d = maxd;
+                            ssum += d;
+                            count++;
                         }
-                        else {
+                        else if (medd <= mind && medd <= maxd) {
                             d = medd;
+                            ssum += d;
+                            count++;
                         }
-                        ssum += d;
                     } // for cc
                 } // for rr
-                tmp.at<float>( r,c) = ssum;
-                if (ssum > biggest) biggest = ssum;
+                ssum /= count;
+                tmp.at<float>( r,c) = 1.0/ssum;
+                if (1.0/ssum > biggest) biggest = 1.0/ssum;
             } // CSLOOP
         } // RSLOOP
         double scale = 255.0 / biggest;
@@ -211,6 +253,7 @@ public:
         tmp.convertTo( m_blobness, CV_8UC1, scale);
         return m_blobness;
     } // blobness
+    
 private:
     // Fill m_blobflags. For each intersection, is there a blob.
     //------------------------------------------------------------
