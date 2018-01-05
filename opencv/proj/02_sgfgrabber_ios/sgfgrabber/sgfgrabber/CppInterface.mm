@@ -287,7 +287,7 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 
 // Adjacent lines should have similar slope
 //----------------------------------------------------------------
-void filter_verticals( std::vector<cv::Vec2f> &vlines, const float eps = 5)
+void filter_lines( std::vector<cv::Vec2f> &vlines, const float eps = 5)
 {
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
@@ -318,7 +318,7 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines, const float eps = 5)
     //good.clear();
     //good.push_back( _vertical_lines[med_idx]);
     vlines = good;
-} // filter_verticals()
+} // filter_lines()
 
 
 // Cluster vertical Hough lines to remove close duplicates.
@@ -327,7 +327,7 @@ void filter_verticals( std::vector<cv::Vec2f> &vlines, const float eps = 5)
 {
     g_app.mainVC.lbDbg.text = @"03";
     dedup_verticals( _vertical_lines, _gray);
-    filter_verticals( _vertical_lines);
+    filter_lines( _vertical_lines);
     
     // Show results
     cv::Mat drawing;
@@ -597,7 +597,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     
     // Lines above
     //d_rho = med_d_rho;
-    d_rho = hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
+    d_rho = 0.9 * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
     rho = med_line[0];
     theta = med_line[1];
     ILOOP(100) {
@@ -692,13 +692,13 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 }
 
 //-----------------------------
-- (UIImage *) f05_horiz_lines
+- (UIImage *) f05_horiz_lines //@@@
 {
     g_app.mainVC.lbDbg.text = @"05";
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
     dedup_horizontals( _horizontal_lines, _gray);
-    filter_verticals( _horizontal_lines, 1.1);
+    filter_lines( _horizontal_lines, 1.1);
     fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
 
     // Show results
@@ -1257,7 +1257,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_verticals( _vertical_lines, _gray);
-        filter_verticals( _vertical_lines);
+        filter_lines( _vertical_lines);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 40) break;
         if (SZ( _vertical_lines) < 5) break;
