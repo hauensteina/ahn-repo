@@ -165,7 +165,8 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
                         @"board10.jpg",
                         @"board11.jpg",
                         @"board12.jpg",
-                        @"board13.jpg"
+                        @"board13.jpg",
+                        @"board14.jpg"
                         ];
     if (_sldDbg > 0 && _sldDbg <= fnames.count) {
         load_img( fnames[_sldDbg -1], _m);

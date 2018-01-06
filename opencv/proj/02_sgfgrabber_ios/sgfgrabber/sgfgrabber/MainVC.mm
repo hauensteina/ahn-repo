@@ -103,7 +103,7 @@
     UISlider *s = [UISlider new];
     self.sldDbg = s;
     s.minimumValue = 0;
-    s.maximumValue = 13;
+    s.maximumValue = 14;
     [s addTarget:self action:@selector(sldDbg:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];

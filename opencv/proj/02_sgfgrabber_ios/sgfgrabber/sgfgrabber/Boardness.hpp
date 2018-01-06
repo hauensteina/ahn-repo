@@ -55,10 +55,17 @@ public:
         RSLOOP (horiz_lines) {
             CSLOOP (vert_lines) {
                 Point2f pf = intersections[i++];
-                cv::Point p = pf2p(pf);
-                if (p.x < m_pyr.cols && p.y < m_pyr.rows && p.x >= 0 && p.y >= 0) {
-                    m_pyrpix.at<cv::Vec3b>(r,c) = m_pyr.at<cv::Vec3b>(p);
+                const int rad = 2;
+                auto hood = make_hood( pf, rad, rad);
+                if (check_rect( hood, pyr.rows, pyr.cols)) {
+                    cv::Scalar m = cv::mean( pyr(hood));
+                    m_pyrpix.at<cv::Vec3b>(r,c) = cv::Vec3b( m[0], m[1], m[2]);
                 }
+
+//                cv::Point p = pf2p(pf);
+//                if (p.x < m_pyr.cols && p.y < m_pyr.rows && p.x >= 0 && p.y >= 0) {
+//                    m_pyrpix.at<cv::Vec3b>(r,c) = m_pyr.at<cv::Vec3b>(p);
+//                }
             } // CSLOOP
         } // RSLOOP
     } // constructor

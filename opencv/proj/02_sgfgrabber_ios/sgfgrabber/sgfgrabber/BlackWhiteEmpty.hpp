@@ -219,7 +219,7 @@ public:
         return false;
     } // check_rect()
     
-    // Take neighborhoods around points and average them, reulting in a
+    // Take neighborhoods around points and average them, resulting in a
     // template for matching.
     //--------------------------------------------------------------------------------------------
     inline static void avg_hoods( const cv::Mat &img, const Points2f &pts, int r, cv::Mat &dst)
