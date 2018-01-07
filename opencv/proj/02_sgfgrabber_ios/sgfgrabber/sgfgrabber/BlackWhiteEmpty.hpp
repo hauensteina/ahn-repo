@@ -87,7 +87,7 @@ public:
             float wh = BWE_white_holes[i];
             float gm = BWE_graymean[i];
             PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
-            if (gm < 75) {
+            if (gm < 80 && bh < 100) {
                 res[i] = BBLACK;
             }
         }
