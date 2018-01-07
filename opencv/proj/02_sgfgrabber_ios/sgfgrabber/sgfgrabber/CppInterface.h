@@ -24,9 +24,10 @@
 - (UIImage *) f06_corners;
 - (UIImage *) f07_zoom_in;
 - (UIImage *) f08_show_threshed;
-- (UIImage *) f09_intersections;
-- (UIImage *) f10_features;
-- (UIImage *) f11_classify;
+- (UIImage *) f09_erode;
+- (UIImage *) f10_intersections;
+- (UIImage *) f11_features;
+- (UIImage *) f12_classify;
 - (UIImage *) real_time_flow:(UIImage *)img;
 @property int sldDbg;
 

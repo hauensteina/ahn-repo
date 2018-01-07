@@ -169,10 +169,10 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
                         @"board13.jpg",
                         @"board14.jpg"
                         ];
-    if (_sldDbg > 0 && _sldDbg <= fnames.count) {
-    //if (1) {
-        load_img( fnames[_sldDbg -1], _m);
-        //load_img( fnames[7], _m);
+    //if (_sldDbg > 0 && _sldDbg <= fnames.count) {
+    if (1) {
+        //load_img( fnames[_sldDbg -1], _m);
+        load_img( fnames[7], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -963,6 +963,59 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     cv::warpPerspective(img, dst, M, cv::Size( img.cols, img.rows));
 }
 
+// Zoomed in, we reconstruct intersections from center and median rho and theta
+//-------------------------------------------------------------------------------
+void fix_intersections( Points2f &intersections)
+{
+    int boardsz = ROUND(sqrt(SZ(intersections)));
+    // Reconstruct the lines
+    std::vector<cv::Vec2f> hlines, vlines;
+    ILOOP (boardsz) {
+        Point2f l,r,t,b;
+        l = intersections[i*boardsz];
+        r = intersections[i*boardsz + boardsz -1];
+        t = intersections[i];
+        b = intersections[i + boardsz*(boardsz-1)];
+        cv::Vec2f hline = segment2polar( cv::Vec4f( l.x, l.y, r.x, r.y ));
+        cv::Vec2f vline = segment2polar( cv::Vec4f( t.x, t.y, b.x, b.y ));
+        hlines.push_back( hline);
+        vlines.push_back( vline);
+    } // ILOOP
+    // Find median drho and theta
+    auto getrho = [](cv::Vec2f x) { return x[0]; };
+    auto gettheta = [](cv::Vec2f x) { return x[1]; };
+    auto sorter = [](float a, float b){return a < b; };
+    std::vector<float> vrhos = vec_extract( vlines, getrho);
+    std::vector<float> hrhos = vec_extract( hlines, getrho);
+    std::sort( vrhos.begin(), vrhos.end(), sorter);
+    std::sort( hrhos.begin(), hrhos.end(), sorter);
+    float dvrho = vec_median_delta( vrhos);
+    float dhrho = vec_median_delta( hrhos);
+    float vtheta = vec_median( vlines, gettheta)[1];
+    float htheta = vec_median( hlines, gettheta)[1];
+    // Reconstruct
+    int mid = boardsz/2;
+    cv::Vec2f mid_vline = vlines[mid];
+    cv::Vec2f mid_hline = hlines[mid];
+    float mid_vrho = mid_vline[0];
+    float mid_hrho = mid_hline[0];
+    ILOOP (mid+1) {
+        vlines[mid-i][0] = mid_vrho - i*dvrho;
+        vlines[mid+i][0] = mid_vrho + i*dvrho;
+        hlines[mid-i][0] = mid_hrho - i*dhrho;
+        hlines[mid+i][0] = mid_hrho + i*dhrho;
+        vlines[mid-i][1] = vtheta;
+        vlines[mid+i][1] = vtheta;
+        hlines[mid-i][1] = htheta;
+        hlines[mid+i][1] = htheta;
+    } // ILOOP
+    auto rhosorter = [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; };
+    std::sort( vlines.begin(), vlines.end(), rhosorter);
+    std::sort( hlines.begin(), hlines.end(), rhosorter);
+    intersections = get_intersections( hlines, vlines);
+} // fix_intersections()
+
+
 // Zoom in
 //----------------------------
 - (UIImage *) f07_zoom_in
@@ -977,6 +1030,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
+        fix_intersections( _intersections_zoomed);
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
     }
     // Show results
@@ -986,7 +1040,7 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     return res;
 }
 
-// Repeat whole process 01 to 06 on the zoomed in version
+// Thresholding to find stones
 //-----------------------------------------------------------
 - (UIImage *) f08_show_threshed
 {
@@ -995,11 +1049,12 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     
     cv::Mat tt,xx,yy;
     cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
-    // The White stones become black holes, all else is white
+    // The White stones become white blobs, all else is black
     int nhood_sz = 25;
     float thresh = -16; //8;
     cv::adaptiveThreshold( tt, xx, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           nhood_sz, thresh);
+
     // The Black stones become black holes, all else is white
     nhood_sz = 25;
     thresh = 16; // 8;
@@ -1015,22 +1070,54 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
 //    int s = 2*BlackWhiteEmpty::RING_R+1;
 //    cv::Rect re( 100, 100, s, s);
 //    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( yy, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( xx, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
+    draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f08_repeat_on_zoomed()
+} // f08_show_threshed()
+
+// Eroding to find stones
+//-----------------------------------------------------------
+- (UIImage *) f09_erode
+{
+    g_app.mainVC.lbDbg.text = @"09";
+
+    cv::Mat tt,xx;
+    cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
+    // The White stones become white blobs, all else is black
+    int nhood_sz = 25;
+    float thresh = -16; //8;
+    cv::adaptiveThreshold( tt, xx, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          nhood_sz, thresh);
+    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
+    //   cv::erode( xx, xx, element );
+    cv::dilate( xx, xx, element );
+    //    cv::erode( xx, xx, element );
+    //    cv::dilate( xx, xx, element );
+    //    cv::erode( xx, xx, element );
+    //    cv::dilate( xx, xx, element );
+
+    // Show results
+    cv::Mat drawing;
+    cv::cvtColor( xx, drawing, cv::COLOR_GRAY2RGB);
+    draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
+    UIImage *res = MatToUIImage( drawing);
+    return res;
+} // f09_erode()
+
 
 // Intersections on zoomed from corners
 //----------------------------------------
-- (UIImage *) f09_intersections
+- (UIImage *) f10_intersections
 {
-    g_app.mainVC.lbDbg.text = @"09";
+    g_app.mainVC.lbDbg.text = @"10";
     
-//    if (SZ(_corners_zoomed) == 4) {
-//        get_intersections_from_corners( _corners_zoomed, _board_sz, _intersections_zoomed, _dx, _dy);
-//    }
+    // Just to get dx and dy to draw rectangles
+    Points2f dummy;
+    if (SZ(_corners_zoomed) == 4) {
+        get_intersections_from_corners( _corners_zoomed, _board_sz, dummy, _dx, _dy);
+    }
     
     // Show results
     cv::Mat drawing;
@@ -1058,9 +1145,9 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 
 // Visualize some features
 //---------------------------
-- (UIImage *) f10_features
+- (UIImage *) f11_features
 {
-    g_app.mainVC.lbDbg.text = @"10";
+    g_app.mainVC.lbDbg.text = @"11";
     static int state = 0;
     std::vector<float> feats;
     cv::Mat drawing;
@@ -1100,7 +1187,7 @@ void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
 
 //------------------------------------------------------------------------------------------------------
 std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, const cv::Mat &threshed,
-                          // float dx, float dy,
+                          /*float dx, float dy,*/
                           int TIMEBUFSZ = 1)
 {
     Points2f intersections;
@@ -1145,9 +1232,9 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
 
 // Classify intersections into black, white, empty
 //-----------------------------------------------------------
-- (UIImage *) f11_classify
+- (UIImage *) f12_classify
 {
-    g_app.mainVC.lbDbg.text = @"11";
+    g_app.mainVC.lbDbg.text = @"12";
     if (SZ(_corners_zoomed) != 4) { return MatToUIImage( _gray); }
     
     //std::vector<int> diagram;
@@ -1155,7 +1242,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
         const int TIME_BUF_SZ = 1;
-        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, /* _dx, _dy,*/ TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, TIME_BUF_SZ);
     }
     
     // Show results

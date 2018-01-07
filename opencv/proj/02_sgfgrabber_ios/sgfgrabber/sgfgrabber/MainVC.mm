@@ -264,17 +264,22 @@
                     break;
                 case 9:
                     state++;
-                    img = [self.grabFuncs f09_intersections];
+                    img = [self.grabFuncs f09_erode];
                     [self.cameraView setImage:img];
                     break;
                 case 10:
-                    img = [self.grabFuncs f10_features];
-                    if (!img) { state=11; continue; } // aka goto 11
-                    else { [self.cameraView setImage:img]; }
+                    state++;
+                    img = [self.grabFuncs f10_intersections];
+                    [self.cameraView setImage:img];
                     break;
                 case 11:
+                    img = [self.grabFuncs f11_features];
+                    if (!img) { state=12; continue; } // aka goto 12
+                    else { [self.cameraView setImage:img]; }
+                    break;
+                case 12:
                     state++;
-                    img = [self.grabFuncs f11_classify];
+                    img = [self.grabFuncs f12_classify];
                     [self.cameraView setImage:img];
                     break;
                 default:
