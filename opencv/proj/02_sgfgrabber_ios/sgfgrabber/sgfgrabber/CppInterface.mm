@@ -169,10 +169,10 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
                         @"board13.jpg",
                         @"board14.jpg"
                         ];
-    //if (_sldDbg > 0 && _sldDbg <= fnames.count) {
-    if (1) {
-        //load_img( fnames[_sldDbg -1], _m);
-        load_img( fnames[9], _m);
+    if (_sldDbg > 0 && _sldDbg <= fnames.count) {
+    //if (1) {
+        load_img( fnames[_sldDbg -1], _m);
+        //load_img( fnames[9], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -1000,10 +1000,10 @@ void fix_intersections( Points2f &intersections)
     float mid_vrho = mid_vline[0];
     float mid_hrho = mid_hline[0];
     ILOOP (mid+1) {
-        vlines[mid-i][0] = mid_vrho - i*dvrho;
-        vlines[mid+i][0] = mid_vrho + i*dvrho;
-        hlines[mid-i][0] = mid_hrho - i*dhrho;
-        hlines[mid+i][0] = mid_hrho + i*dhrho;
+        //vlines[mid-i][0] = mid_vrho - i*dvrho;
+        //vlines[mid+i][0] = mid_vrho + i*dvrho;
+        //hlines[mid-i][0] = mid_hrho - i*dhrho;
+        //hlines[mid+i][0] = mid_hrho + i*dhrho;
         vlines[mid-i][1] = vtheta;
         vlines[mid+i][1] = vtheta;
         hlines[mid-i][1] = htheta;

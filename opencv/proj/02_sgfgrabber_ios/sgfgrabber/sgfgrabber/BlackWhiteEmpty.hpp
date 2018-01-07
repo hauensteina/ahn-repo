@@ -75,7 +75,7 @@ public:
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_white_holes, yshift, scale);
         // Secondary crit, avg gray mean
-        r = 3;
+        r = 4;
         get_feature( gray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, scale);
@@ -87,7 +87,7 @@ public:
             float wh = BWE_white_holes[i];
             float gm = BWE_graymean[i];
             PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
-            if (bh < 100 & gm < 100) {
+            if (gm < 75) {
                 res[i] = BBLACK;
             }
         }
