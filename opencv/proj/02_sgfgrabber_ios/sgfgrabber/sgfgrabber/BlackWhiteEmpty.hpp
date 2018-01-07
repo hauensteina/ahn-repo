@@ -26,6 +26,9 @@ static std::vector<float> BWE_white_templ_score;
 static std::vector<float> BWE_black_templ_score;
 static std::vector<float> BWE_empty_templ_score;
 static std::vector<float> BWE_ringmatch;
+static std::vector<float> BWE_crossmatch;
+static std::vector<float> BWE_black_holes;
+static std::vector<float> BWE_white_holes;
 const static std::string WHITE_TEMPL_FNAME = "white_templ.yml";
 const static std::string BLACK_TEMPL_FNAME = "black_templ.yml";
 const static std::string EMPTY_TEMPL_FNAME = "empty_templ.yml";
@@ -38,168 +41,46 @@ public:
     enum { RING_R = 12 };
 
     //----------------------------------------------------------------------------------
-    inline static std::vector<int> classify( const cv::Mat &gray,
+    inline static std::vector<int> classify( const cv::Mat &pyr,
                                             const cv::Mat &threshed,
                                             const Points2f &intersections,
                                             float &match_quality)
     {
-        //static cv::Mat default_empty_template = readMat( )
-        int r, yshift;
-        std::vector<int> res(SZ(intersections), EEMPTY);
+        cv::Mat gray, black_holes, white_holes;
+        cv::cvtColor( pyr, gray, cv::COLOR_RGB2GRAY);
+        // The White stones become black holes, all else is white
+        int nhood_sz = 25;
+        float thresh = -16; //8;
+        cv::adaptiveThreshold( gray, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                              nhood_sz, thresh);
+        // The Black stones become black holes, all else is white
+        nhood_sz = 25;
+        thresh = 16; // 8;
+        cv::adaptiveThreshold( gray, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
+                              nhood_sz, thresh);
         
-        // Compute features for each board intersection
-        r=3;
-        get_feature( gray, intersections, r, brightness_feature, BWE_brightness);
-        //float max_brightness = vec_max( BWE_brightness);
-        
-        r=10; yshift=0;
-        get_feature( threshed, intersections, r, sum_feature, BWE_sum, yshift);
-        //float max_sum = vec_max( BWE_sum);
-
-        r=3; yshift=0;
-        get_feature( threshed, intersections, r, sum_feature, BWE_sum_inner, yshift);
-
-        r=RING_R ; yshift=0;
-        get_feature( threshed, intersections, r,
-                    [](const cv::Mat &hood) { return mat_dist( ringmask(), hood); },
-                    BWE_ringmatch, yshift);
-
-        BWE_outer_minus_inner = BWE_sum;
-        // Looking for a ring
-        vec_sub( BWE_outer_minus_inner, BWE_sum_inner); // Yes, do this twice
-        vec_sub( BWE_outer_minus_inner, BWE_sum_inner);
-        //float max_outer_minus_inner = vec_max( BWE_outer_minus_inner);
-
-        // Black stones
-        ISLOOP( BWE_brightness) {
-            float bthresh = 35; // larger means more Black stones
-            if (BWE_brightness[i] < bthresh ) {
+        // white_holes - black_holes large => black
+        // black_holes - white_holes large => white
+        // else empty
+        int r=3, yshift=0;
+        get_feature( black_holes, intersections, r,
+                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+                    BWE_black_holes, yshift, false);
+        r = 4;
+        get_feature( white_holes, intersections, r,
+                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+                    BWE_white_holes, yshift, false);
+        //vec_sub( BWE_black_holes, BWE_white_holes);
+        std::vector<int> res( SZ(intersections), EEMPTY);
+        ISLOOP (BWE_black_holes) {
+            const float thresh = 42;
+            float bh = BWE_black_holes[i];
+            float wh = BWE_white_holes[i];
+            PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
+            if (bh < 45) {
                 res[i] = BBLACK;
             }
         }
-        // White places, first guess
-        //float sum_thresh    = 80;  // smaller means more White stones
-        //float sum_thresh    = 0.8 * max_sum;  // smaller means more White stones
-        //float bright_thresh = 0.9 * max_brightness; // smaller means more White stones
-        //float ring_thresh = 0.9 * max_outer_minus_inner;
-        ISLOOP( BWE_brightness) {
-            if ( 1
-                //&& BWE_brightness[i] > bright_thresh
-                //&& BWE_crossness_new[i] < 100
-                //&& BWE_sum[i] > sum_thresh
-                && BWE_outer_minus_inner[i] > 0
-                //&& BWE_ringmatch[i] < 100
-                && res[i] != BBLACK)
-            {
-                res[i] = WWHITE;
-            }
-        }
-#define BOOTSTRAP
-#ifdef BOOTSTRAP
-        // Bootstrap.
-        // Train templates on preliminary classification result, then reclassify,
-        // repeat. This should compensate for highlights and changes in the environment.
-        const int NITER = 10; // Not sure about the best number
-        //const int WMAGIC = 800; // larger means less W stones
-        const int EMAGIC = 0;   // larger means more W stones
-        NLOOP (NITER) {
-            // Make a template for white places
-            Points2f white_intersections;
-            ISLOOP( res) {
-                if (res[i] != WWHITE) continue;
-                white_intersections.push_back( intersections[i]);
-            }
-            cv::Mat white_template;
-            r = 10;
-            avg_hoods( threshed, white_intersections, r, white_template);
-            
-            // Make a template for black places
-            Points2f black_intersections;
-            ISLOOP( res) {
-                if (res[i] != BBLACK) continue;
-                black_intersections.push_back( intersections[i]);
-            }
-            cv::Mat black_template;
-            r = 10;
-            avg_hoods( threshed, black_intersections, r, black_template);
-            
-            // Make a template for empty places
-            Points2f empty_intersections;
-            ISLOOP( res) {
-                if (res[i] != EEMPTY) continue;
-                empty_intersections.push_back( intersections[i]);
-            }
-            cv::Mat empty_template;
-            r = 10;
-            avg_hoods( threshed, empty_intersections, r, empty_template);
-            
-            // Get the template scores
-            get_feature( threshed, intersections, r,
-                        [white_template](const cv::Mat &hood) {
-                            cv::Mat tmp;
-                            hood.convertTo( tmp, CV_32FC1);
-                            float res = MAX( 1e-5, mat_dist( tmp, white_template));
-                            return -res;
-                        },
-                        BWE_white_templ_score, 0, false);
-            get_feature( threshed, intersections, r,
-                        [empty_template](const cv::Mat &hood) {
-                            cv::Mat tmp;
-                            hood.convertTo( tmp, CV_32FC1);
-                            float res = MAX( 1e-5, mat_dist( tmp, empty_template));
-                            return -res;
-                        },
-                        BWE_empty_templ_score, 0, false);
-            get_feature( threshed, intersections, r,
-                        [black_template](const cv::Mat &hood) {
-                            cv::Mat tmp;
-                            hood.convertTo( tmp, CV_32FC1);
-                            float res = MAX( 1e-5, mat_dist( tmp, black_template));
-                            return -res;
-                        },
-                        BWE_black_templ_score, 0, false);
-            
-            // Re-classify based on templates
-            ISLOOP( res) {
-                if (res[i] == BBLACK) {
-                    if (BWE_empty_templ_score[i] > BWE_black_templ_score[i]) {
-                        res[i] = EEMPTY;
-                    }
-                }
-                //PLOG(" Template dist W-E: %.2f\n", BWE_white_templ_score[i] - BWE_empty_templ_score[i] );
-//                else if (BWE_white_templ_score[i] - WMAGIC > BWE_empty_templ_score[i]) {
-//                    res[i] = WWHITE;
-//                }
-                else if (BWE_empty_templ_score[i] - EMAGIC > BWE_white_templ_score[i]  ) {
-                    res[i] = EEMPTY;
-                }
-            } // ISLOOP
-//            // Save templates to file
-//            std::string path;
-//            path = g_docroot + "/" + WHITE_TEMPL_FNAME;
-//            cv::FileStorage efilew( path, cv::FileStorage::WRITE);
-//            efilew << "white_template" << white_template;
-//
-//            path = g_docroot + "/" + BLACK_TEMPL_FNAME;
-//            cv::FileStorage efileb( path, cv::FileStorage::WRITE);
-//            efileb << "black_template" << black_template;
-//
-//            path = g_docroot + "/" + EMPTY_TEMPL_FNAME;
-//            cv::FileStorage efilee( path, cv::FileStorage::WRITE);
-//            efilee << "empty_template" << empty_template;
-        } // NLOOP
-#endif
-        // Get an overall match quaity score
-        std::vector<float> best_matches = BWE_white_templ_score;
-        ISLOOP (best_matches) {
-            if (BWE_black_templ_score[i] > best_matches[i]) {
-                best_matches[i] = BWE_black_templ_score[i];
-            }
-            if (BWE_empty_templ_score[i] > best_matches[i]) {
-                best_matches[i] = BWE_empty_templ_score[i];
-            }
-        }
-        match_quality = vec_sum( best_matches);
         return res;
     } // classify()
 
@@ -326,6 +207,33 @@ public:
         cv::circle( mask, center, r, 255, -1);
         //cv::circle( mask, center, middle_r, 127, -1);
         cv::circle( mask, center, inner_r, 0, -1);
+        
+        return mask;
+    }
+
+    // Return a cross shaped mask.
+    // thickness is weird: 1->1, 2->3, 3->5, 4->5, 5->7, 6->7, ...
+    //-------------------------------------------------------------------------
+    inline static cv::Mat& crossmask( const int thickness_=5, const int r_=12)
+    {
+        static cv::Mat mask;
+        static int thickness=0;
+        static int r=0;
+        if (r != r_ || thickness != thickness_) {
+            r = r_;
+            thickness = thickness_;
+        }
+        else {
+            return mask;
+        }
+        // Build the mask, once.
+        mask = cv::Mat( 2*r+1, 2*r+1, CV_8UC1);
+        mask = 0;
+        cv::Point center( r, r);
+        // horiz
+        cv::line( mask, cv::Point( 0, r), cv::Point( 2*r+1, r), 255, thickness);
+        // vert
+        cv::line( mask, cv::Point( r, 0), cv::Point( r, 2*r+1), 255, thickness);
 
         return mask;
     }

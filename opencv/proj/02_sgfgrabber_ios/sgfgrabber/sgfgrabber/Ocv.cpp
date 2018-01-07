@@ -146,9 +146,12 @@ int channel_q1( cv::Mat channel )
 // Elementwise L2 distance between two single channel mats.
 // Used for matching.
 //------------------------------------------------------------
-float mat_dist( const cv::Mat &m1, const cv::Mat &m2)
+float mat_dist( const cv::Mat &m1_, const cv::Mat &m2_)
 {
-    cv::Mat diff = m1 - m2;
+    cv::Mat diff, m1, m2;
+    m1_.convertTo( m1, CV_32FC1);
+    m2_.convertTo( m2, CV_32FC1);
+    diff = m1 - m2;
     diff = diff.mul( diff);
     double ssum = cv::sum(diff)[0];
     float res = sqrt( ssum);

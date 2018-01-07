@@ -45,6 +45,7 @@ extern cv::Mat mat_dbg;
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
 @property cv::Mat gray_zoomed;   // Grayscale version of small, zoomed into the board
+@property cv::Mat pyr_zoomed;   // Grayscale version of small, zoomed into the board
 
 @property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
 @property cv::Mat m;     // Mat with image we are working on
@@ -169,7 +170,9 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
                         @"board14.jpg"
                         ];
     if (_sldDbg > 0 && _sldDbg <= fnames.count) {
+    //if (1) {
         load_img( fnames[_sldDbg -1], _m);
+        //load_img( fnames[7], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -622,6 +625,10 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
     } // ILOOP
+    // All horizontals should have the same angle
+    float med_theta = vec_median( synth_lines, [](cv::Vec2f &x){ return x[1];}) [1];
+    ISLOOP (synth_lines) { synth_lines[i][1] = med_theta; }
+    // Sort top to bottom
     std::sort( synth_lines.begin(), synth_lines.end(),
               [](cv::Vec2f line1, cv::Vec2f line2) {
                   return line1[0] < line2[0];
@@ -967,14 +974,15 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
+        zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
     }
     // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    UIImage *res = MatToUIImage( drawing);
+    //cv::Mat drawing;
+    //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    UIImage *res = MatToUIImage( _pyr_zoomed);
     return res;
 }
 
@@ -985,12 +993,29 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     g_app.mainVC.lbDbg.text = @"08";
     _corners = _corners_zoomed;
     
+    cv::Mat tt,xx,yy;
+    cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
+    // The White stones become black holes, all else is white
+    int nhood_sz = 25;
+    float thresh = -16; //8;
+    cv::adaptiveThreshold( tt, xx, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          nhood_sz, thresh);
+    // The Black stones become black holes, all else is white
+    nhood_sz = 25;
+    thresh = 16; // 8;
+    cv::adaptiveThreshold( tt, yy, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
+                          nhood_sz, thresh);
+    
+    // xx - yy large => black
+    // yy - xx large => white
+    // else empty
+
     // Show results
     cv::Mat drawing;
 //    int s = 2*BlackWhiteEmpty::RING_R+1;
 //    cv::Rect re( 100, 100, s, s);
 //    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( yy, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
@@ -1130,14 +1155,13 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
         const int TIME_BUF_SZ = 1;
-        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, /* _dx, _dy,*/ TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, /* _dx, _dy,*/ TIME_BUF_SZ);
     }
     
     // Show results
     cv::Mat drawing;
-    DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
-    drb.draw( _diagram);
-    //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    //DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
+    //drb.draw( _diagram);
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
 
     int dx = ROUND( _dx/4.0);
