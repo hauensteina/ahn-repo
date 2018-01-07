@@ -29,6 +29,7 @@ static std::vector<float> BWE_ringmatch;
 static std::vector<float> BWE_crossmatch;
 static std::vector<float> BWE_black_holes;
 static std::vector<float> BWE_white_holes;
+static std::vector<float> BWE_graymean;
 const static std::string WHITE_TEMPL_FNAME = "white_templ.yml";
 const static std::string BLACK_TEMPL_FNAME = "black_templ.yml";
 const static std::string EMPTY_TEMPL_FNAME = "empty_templ.yml";
@@ -59,25 +60,34 @@ public:
         cv::adaptiveThreshold( gray, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
                               nhood_sz, thresh);
         
-        // white_holes - black_holes large => black
-        // black_holes - white_holes large => white
+        // white_holes mean small => white
+        // black_holes mean small => black
         // else empty
-        int r=3, yshift=0;
+        int r=3;
+        const int yshift=0;
+        // We scale features to 0..255 to allow hardcoded thresholds.
+        const bool scale = true;
         get_feature( black_holes, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-                    BWE_black_holes, yshift, false);
+                    BWE_black_holes, yshift, scale);
         r = 4;
         get_feature( white_holes, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-                    BWE_white_holes, yshift, false);
-        //vec_sub( BWE_black_holes, BWE_white_holes);
+                    BWE_white_holes, yshift, scale);
+        // Secondary crit, avg gray mean
+        r = 3;
+        get_feature( gray, intersections, r,
+                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+                    BWE_graymean, yshift, scale);
+
+        
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (BWE_black_holes) {
-            const float thresh = 42;
             float bh = BWE_black_holes[i];
             float wh = BWE_white_holes[i];
+            float gm = BWE_graymean[i];
             PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
-            if (bh < 45) {
+            if (bh < 100 & gm < 100) {
                 res[i] = BBLACK;
             }
         }

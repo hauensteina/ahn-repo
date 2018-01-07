@@ -172,7 +172,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     //if (_sldDbg > 0 && _sldDbg <= fnames.count) {
     if (1) {
         //load_img( fnames[_sldDbg -1], _m);
-        load_img( fnames[7], _m);
+        load_img( fnames[9], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -1047,18 +1047,18 @@ void fix_intersections( Points2f &intersections)
     g_app.mainVC.lbDbg.text = @"08";
     _corners = _corners_zoomed;
     
-    cv::Mat tt,xx,yy;
+    cv::Mat tt,white_holes,black_holes;
     cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
-    // The White stones become white blobs, all else is black
+    // The White stones become  black holes, all else is white
     int nhood_sz = 25;
     float thresh = -16; //8;
-    cv::adaptiveThreshold( tt, xx, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    cv::adaptiveThreshold( tt, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           nhood_sz, thresh);
 
     // The Black stones become black holes, all else is white
     nhood_sz = 25;
     thresh = 16; // 8;
-    cv::adaptiveThreshold( tt, yy, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
+    cv::adaptiveThreshold( tt, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
                           nhood_sz, thresh);
     
     // xx - yy large => black
@@ -1070,7 +1070,7 @@ void fix_intersections( Points2f &intersections)
 //    int s = 2*BlackWhiteEmpty::RING_R+1;
 //    cv::Rect re( 100, 100, s, s);
 //    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( xx, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( black_holes, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
