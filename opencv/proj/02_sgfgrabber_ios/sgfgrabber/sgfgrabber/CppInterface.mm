@@ -625,9 +625,9 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
     } // ILOOP
-    // All horizontals should have the same angle
-    float med_theta = vec_median( synth_lines, [](cv::Vec2f &x){ return x[1];}) [1];
-    ISLOOP (synth_lines) { synth_lines[i][1] = med_theta; }
+//    // All horizontals should have the same angle
+//    float med_theta = vec_median( synth_lines, [](cv::Vec2f &x){ return x[1];}) [1];
+//    ISLOOP (synth_lines) { synth_lines[i][1] = med_theta; }
     // Sort top to bottom
     std::sort( synth_lines.begin(), synth_lines.end(),
               [](cv::Vec2f line1, cv::Vec2f line2) {
