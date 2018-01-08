@@ -169,10 +169,10 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
                         @"board13.jpg",
                         @"board14.jpg"
                         ];
-    //if (_sldDbg > 0 && _sldDbg <= fnames.count) {
-    if (1) {
-        //load_img( fnames[_sldDbg -1], _m);
-        load_img( fnames[1], _m);
+    if (_sldDbg > 0 && _sldDbg <= fnames.count) {
+    //if (1) {
+        load_img( fnames[_sldDbg -1], _m);
+        //load_img( fnames[4], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -1082,7 +1082,7 @@ void fix_intersections( Points2f &intersections)
 //    int s = 2*BlackWhiteEmpty::RING_R+1;
 //    cv::Rect re( 100, 100, s, s);
 //    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( black_holes, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( white_holes, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP (_intersections_zoomed) {
         Point2f p = _intersections_zoomed[i];

@@ -77,6 +77,7 @@ public:
         r = 1;
         match_mask_near_points( black_holes, emptyMask, intersections, r, BWE_black_holes);
         match_mask_near_points( white_holes, emptyMask, intersections, r, BWE_white_holes);
+        match_mask_near_points( threshed, emptyMask, intersections, r, BWE_sum_inner);
         int tt=42;
         
 //        r = 3;
@@ -89,11 +90,10 @@ public:
         get_feature( gray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, scale);
-        // Inner sum on grid image
-        r=3;
-        get_feature( threshed, intersections, r,
-                    [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
-                    BWE_sum_inner, yshift, dontscale);
+//        r=3;
+//        get_feature( threshed, intersections, r,
+//                    [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
+//                    BWE_sum_inner, yshift, dontscale);
         
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (BWE_black_holes) {
@@ -105,8 +105,8 @@ public:
             if (gm < 100 && bh < 100) {
                 res[i] = BBLACK;
             }
-            else if ( (/* gm > 150 && */ wh < 50)
-                     || ( 0 && gm > 200 && si <= 4 * 255  ) )
+            else if ( ( gm > 150 &&  wh < 100)
+                     || ( gm > 200 &&  si < 15  ) )
             {
                 res[i] = WWHITE;
             }
@@ -294,7 +294,7 @@ public:
         } // for x
         mindiff /= (mask.rows * mask.cols);
         mindiff = ROUND(mindiff);
-        if (mindiff > 255) mindiff = 255;
+        //if (mindiff > 255) mindiff = 255;
         return mindiff;
     } // match_mask_near_point()
 
