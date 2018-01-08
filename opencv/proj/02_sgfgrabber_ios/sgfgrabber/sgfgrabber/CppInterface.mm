@@ -1243,6 +1243,19 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     return diagram;
 } // classify()
 
+// Set any points to empty if outside of the image
+//----------------------------------------------------------------------------------------------
+void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const cv::Mat &img)
+{
+    float marg = 10;
+    ISLOOP (diagram) {
+        Point2f p = intersections[i];
+        if (p.x < marg || p.y < marg || p.x > img.cols - marg || p.y > img.rows - marg) {
+            diagram[i] = BlackWhiteEmpty::EEMPTY;
+        }
+    }
+} // fix_diagram()
+
 // Classify intersections into black, white, empty
 //-----------------------------------------------------------
 - (UIImage *) f12_classify
@@ -1257,6 +1270,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
         const int TIME_BUF_SZ = 1;
         _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, TIME_BUF_SZ);
     }
+    fix_diagram( _diagram, _intersections, _small);
     
     // Show results
     cv::Mat drawing;
