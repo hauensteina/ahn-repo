@@ -172,7 +172,7 @@ void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
     if (_sldDbg > 0 && _sldDbg <= fnames.count) {
     //if (1) {
         load_img( fnames[_sldDbg -1], _m);
-        //load_img( fnames[9], _m);
+        //load_img( fnames[6], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
         resize( _m, _small, 350);
         cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -1031,12 +1031,24 @@ void fix_intersections( Points2f &intersections)
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         fix_intersections( _intersections_zoomed);
-        thresh_dilate( _gray_zoomed, _gz_threshed, 4);
+        thresh_dilate( _gray_zoomed, _gz_threshed, 3);
+//        cv::Mat tt;
+//        cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
+//        thresh_dilate( tt, _gz_threshed, 4);
     }
+//    cv::Mat tt;
+//    cv::adaptiveThreshold( _gray_zoomed, tt, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+//                          5 /* 11 */ ,  // neighborhood_size
+//                          3);  // threshold
     // Show results
-    //cv::Mat drawing;
-    //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    UIImage *res = MatToUIImage( _pyr_zoomed);
+    cv::Mat drawing;
+    cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
+    ISLOOP (_intersections_zoomed) {
+        Point2f p = _intersections_zoomed[i];
+        //draw_square( p, 10, drawing, cv::Scalar(255,0,0));
+        draw_square( p, 3, drawing, cv::Scalar(255,0,0));
+    }
+    UIImage *res = MatToUIImage( drawing);
     return res;
 }
 
@@ -1158,7 +1170,8 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
         {
             r=11;
             BlackWhiteEmpty::get_feature( _gz_threshed, _intersections_zoomed, r,
-                                         BlackWhiteEmpty::sum_feature, feats);
+                                         [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
+                                         feats);
             viz_feature( _gz_threshed, _intersections_zoomed, feats, drawing, 1);
             break;
         }

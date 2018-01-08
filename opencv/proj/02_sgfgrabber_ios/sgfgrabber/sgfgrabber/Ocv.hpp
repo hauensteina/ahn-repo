@@ -189,8 +189,8 @@ cv::Scalar cm_penny_lane( int c);
 // Draw a point on an image
 void draw_point( cv::Point p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
 void draw_point( cv::Point2f p, cv::Mat &img, int r, cv::Scalar col);
-// Draw several points on an image
-//void draw_points( Points p, cv::Mat &img, int r=1, cv::Scalar col = cv::Scalar(255,0,0));
+// Draw a square with center p
+void draw_square( Point2f pf, int r, cv::Mat &dst, cv::Scalar col);
 // Draw a line segment
 void draw_line( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col = cv::Scalar(255,0,0));
 // Draw several line segments

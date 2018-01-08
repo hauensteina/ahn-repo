@@ -846,6 +846,18 @@ void draw_point( cv::Point2f p, cv::Mat &img, int r, cv::Scalar col)
     cv::circle( img, ip, r, col, -1);
 }
 
+// Draw a square with center p
+//------------------------------------------------------------------
+void draw_square( Point2f pf, int r, cv::Mat &dst, cv::Scalar col)
+{
+    cv::Point p(ROUND(pf.x), ROUND(pf.y));
+    cv::Rect rect( p.x - r,
+                  p.y - r,
+                  2*r + 1,
+                  2*r + 1);
+    cv::rectangle( dst, rect, col);
+}
+
 // Draw a line segment
 //-------------------------------------------------------------------------------------------
 void draw_line( const cv::Vec4f &line, cv::Mat &dst, cv::Scalar col)

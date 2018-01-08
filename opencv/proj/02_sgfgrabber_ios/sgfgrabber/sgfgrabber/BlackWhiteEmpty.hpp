@@ -67,7 +67,7 @@ public:
         const int yshift = 0;
         // We scale features to 0..255 to allow hardcoded thresholds.
         const bool scale = true;
-        
+        const bool dontscale = false;
         r=3;
         get_feature( black_holes, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
@@ -81,17 +81,34 @@ public:
         get_feature( gray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, scale);
+//        // Rings in threshed are white stones
+//        r=10;
+//        get_feature( threshed, intersections, r,
+//                    [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
+//                    BWE_sum, yshift, dontscale);
+        r=3;
+        get_feature( threshed, intersections, r,
+                    [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
+                    BWE_sum_inner, yshift, dontscale);
+        //BWE_outer_minus_inner = BWE_sum;
+        // Looking for a ring
+        //vec_sub( BWE_outer_minus_inner, BWE_sum_inner); // Yes, do this twice
+        //vec_sub( BWE_outer_minus_inner, BWE_sum_inner);
+        //vec_scale( BWE_outer_minus_inner, 255);
         
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (BWE_black_holes) {
             float bh = BWE_black_holes[i];
             float wh = BWE_white_holes[i];
             float gm = BWE_graymean[i];
+            float si = BWE_sum_inner[i];
             PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
             if (gm < 80 && bh < 100) {
                 res[i] = BBLACK;
             }
-            else if (gm > 150 && wh < 125) {
+            else if ( (gm > 150 && wh < 125)
+                     || ( gm > 200 && si <= 4 * 255  ) )
+            {
                 res[i] = WWHITE;
             }
             
@@ -174,12 +191,12 @@ public:
         return sstddev[0];
     } // sigma_feature()
 
-    // Sum all pixels in hood.
-    //---------------------------------------------------------------------------------
-    inline static float sum_feature( const cv::Mat &hood)
-    {
-        return cv::sum( hood)[0];
-    } // sum_feature()
+//    // Sum all pixels in hood.
+//    //---------------------------------------------------------------------------------
+//    inline static float sum_feature( const cv::Mat &hood)
+//    {
+//        return cv::sum( hood)[0];
+//    } // sum_feature()
     
     // Look whether cross pixels are set in neighborhood of p_.
     // hood should be binary, 0 or 1, from an adaptive threshold operation.
