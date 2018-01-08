@@ -68,33 +68,31 @@ public:
         // We scale features to 0..255 to allow hardcoded thresholds.
         const bool scale = true;
         const bool dontscale = false;
-        r=3;
-        get_feature( black_holes, intersections, r,
-                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-                    BWE_black_holes, yshift, scale);
-        r = 3;
-        get_feature( white_holes, intersections, r,
-                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-                    BWE_white_holes, yshift, scale);
+//        r=3;
+//        get_feature( black_holes, intersections, r,
+//                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+//                    BWE_black_holes, yshift, scale);
+        cv::Mat emptyMask( 7, 7, CV_8UC1, cv::Scalar(0));
+
+        r = 1;
+        match_mask_near_points( black_holes, emptyMask, intersections, r, BWE_black_holes);
+        match_mask_near_points( white_holes, emptyMask, intersections, r, BWE_white_holes);
+        int tt=42;
+        
+//        r = 3;
+//        get_feature( white_holes, intersections, r,
+//                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+//                    BWE_white_holes, yshift, scale);
+
         // Gray mean
         r = 4;
         get_feature( gray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, scale);
-//        // Rings in threshed are white stones
-//        r=10;
-//        get_feature( threshed, intersections, r,
-//                    [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
-//                    BWE_sum, yshift, dontscale);
         r=3;
         get_feature( threshed, intersections, r,
                     [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
                     BWE_sum_inner, yshift, dontscale);
-        //BWE_outer_minus_inner = BWE_sum;
-        // Looking for a ring
-        //vec_sub( BWE_outer_minus_inner, BWE_sum_inner); // Yes, do this twice
-        //vec_sub( BWE_outer_minus_inner, BWE_sum_inner);
-        //vec_scale( BWE_outer_minus_inner, 255);
         
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (BWE_black_holes) {
@@ -106,8 +104,8 @@ public:
             if (gm < 80 && bh < 100) {
                 res[i] = BBLACK;
             }
-            else if ( (gm > 150 && wh < 125)
-                     || ( gm > 200 && si <= 4 * 255  ) )
+            else if ( (/* gm > 150 && */ wh < 50)
+                     || ( 0 && gm > 200 && si <= 4 * 255  ) )
             {
                 res[i] = WWHITE;
             }
@@ -269,7 +267,53 @@ public:
 
         return mask;
     }
+    
+    // Match a mask to all points around p within a square of radius r. Return best match.
+    // Image and mask are float mats with values 0 .. 255.0 .
+    // The result is in the range 0..255. Smaller numbers indicate better match.
+    // Mask dimensions must be odd.
+    //---------------------------------------------------------------------------------------------------
+    inline static int match_mask_near_point( const cv::Mat &img, const cv::Mat &mask, Point2f pf, int r)
+    {
+        assert( mask.rows % 2);
+        assert( mask.cols % 2);
+        int dx = mask.cols / 2;
+        int dy = mask.rows / 2;
+        cv::Point p = pf2p( pf);
+        double mindiff = 1E9;
+        for (int x = p.x - r; x <= p.x + r; x++) {
+            for (int y = p.y - r; y <= p.y + r; y++) {
+                cv::Point q( x, y);
+                cv::Rect rect( q.x - dx, q.y - dy, mask.cols, mask.rows);
+                if (!check_rect( rect, img.rows, img.cols)) continue;
+                cv::Mat diff = cv::abs( mask - img(rect));
+                double ssum = cv::sum( diff)[0];
+                if (ssum < mindiff) { mindiff = ssum; }
+            } // for y
+        } // for x
+        mindiff /= (mask.rows * mask.cols);
+        mindiff = ROUND(mindiff);
+        if (mindiff > 255) mindiff = 255;
+        return mindiff;
+    } // match_mask_near_point()
 
+    // Match a mask to all intersections. Find best match for each intersection within a radius.
+    //--------------------------------------------------------------------------------------------
+    inline static void match_mask_near_points( const cv::Mat &img_, const cv::Mat mask_,
+                                              const Points2f &intersections, int r,
+                                              std::vector<float> &res)
+    {
+        res.clear();
+        cv::Mat img, mask;
+        img_.convertTo( img, CV_32FC1);
+        mask_.convertTo( mask, CV_32FC1);
+        ISLOOP (intersections) {
+            float feat = match_mask_near_point( img, mask, intersections[i], r);
+            res.push_back( feat);
+        }
+    } // match_mask_near_points()
+
+    
 }; // class BlackWhiteEmpty
 
 

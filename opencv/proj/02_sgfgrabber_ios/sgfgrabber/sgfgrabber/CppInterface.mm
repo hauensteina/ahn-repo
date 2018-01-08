@@ -594,7 +594,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         }
         else {
             d_rho += (rho - old_rho) * dd_rho_per_y;
-            PLOG("synth %d\n",i);
+            //PLOG("synth %d\n",i);
         }
         if (rho > height) break;
         cv::Vec2f line( rho,theta);
@@ -618,7 +618,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         }
         else {
             d_rho += (rho - old_rho) * dd_rho_per_y;
-            PLOG("i %d d_rho %.2f\n", i, d_rho);
+            //PLOG("i %d d_rho %.2f\n", i, d_rho);
         }
         if (rho < 0) break;
         if (d_rho < 3) break;
@@ -1082,9 +1082,13 @@ void fix_intersections( Points2f &intersections)
 //    int s = 2*BlackWhiteEmpty::RING_R+1;
 //    cv::Rect re( 100, 100, s, s);
 //    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( white_holes, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( black_holes, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
+    ISLOOP (_intersections_zoomed) {
+        Point2f p = _intersections_zoomed[i];
+        draw_square( p, 3, drawing, cv::Scalar(255,0,0));
+    }
+    //draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f08_show_threshed()
