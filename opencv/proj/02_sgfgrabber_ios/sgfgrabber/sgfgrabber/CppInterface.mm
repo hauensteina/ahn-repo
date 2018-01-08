@@ -1051,7 +1051,7 @@ void fix_intersections( Points2f &intersections)
     cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
     // The White stones become  black holes, all else is white
     int nhood_sz = 25;
-    float thresh = -16; //8;
+    float thresh = -32; //8;
     cv::adaptiveThreshold( tt, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           nhood_sz, thresh);
 
@@ -1070,7 +1070,7 @@ void fix_intersections( Points2f &intersections)
 //    int s = 2*BlackWhiteEmpty::RING_R+1;
 //    cv::Rect re( 100, 100, s, s);
 //    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( black_holes, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( white_holes, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
@@ -1087,7 +1087,7 @@ void fix_intersections( Points2f &intersections)
     cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
     // The White stones become white blobs, all else is black
     int nhood_sz = 25;
-    float thresh = -16; //8;
+    float thresh = -32; //8;
     cv::adaptiveThreshold( tt, xx, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           nhood_sz, thresh);
     cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));

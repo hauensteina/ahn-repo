@@ -50,8 +50,8 @@ public:
         cv::Mat gray, black_holes, white_holes;
         cv::cvtColor( pyr, gray, cv::COLOR_RGB2GRAY);
         // The White stones become black holes, all else is white
-        int nhood_sz = 25;
-        float thresh = -16; //8;
+        int nhood_sz =  25;
+        float thresh = -32; //8;
         cv::adaptiveThreshold( gray, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               nhood_sz, thresh);
         // The Black stones become black holes, all else is white
@@ -63,23 +63,24 @@ public:
         // white_holes mean small => white
         // black_holes mean small => black
         // else empty
-        int r=3;
-        const int yshift=0;
+        int r;
+        const int yshift = 0;
         // We scale features to 0..255 to allow hardcoded thresholds.
         const bool scale = true;
+        
+        r=3;
         get_feature( black_holes, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_black_holes, yshift, scale);
-        r = 4;
+        r = 3;
         get_feature( white_holes, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_white_holes, yshift, scale);
-        // Secondary crit, avg gray mean
+        // Gray mean
         r = 4;
         get_feature( gray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, scale);
-
         
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (BWE_black_holes) {
@@ -90,6 +91,10 @@ public:
             if (gm < 80 && bh < 100) {
                 res[i] = BBLACK;
             }
+            else if (gm > 150 && wh < 125) {
+                res[i] = WWHITE;
+            }
+            
         }
         return res;
     } // classify()
