@@ -126,10 +126,10 @@ bool board_valid( Points2f board, const cv::Mat &img)
     //float horiz_ang   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], cv::Point(0,0), cv::Point(1,0));
     //NSLog(@"%f.2, %f.2, %f.2, %f.2", par_ang1,  par_ang2,  right_ang1,  right_ang2 );
     //if (abs(horiz_ang) > 20) return false;
-    if (abs(par_ang1) > 10) return false;
-    if (abs(par_ang2) > 10) return false;
-    if (abs(right_ang1 - 90) > 10) return false;
-    if (abs(right_ang2 - 90) > 10) return false;
+    if (abs(par_ang1) > 20) return false;
+    if (abs(par_ang2) > 30) return false;
+    if (abs(right_ang1 - 90) > 20) return false;
+    if (abs(right_ang2 - 90) > 20) return false;
     return true;
 }
 
@@ -1296,7 +1296,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f11_classify()
+} // f12_classify()
 
 // Save small crops around intersections for inspection
 //-------------------------------------------------------------------------------
@@ -1441,13 +1441,15 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
+        zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
 
         // Classify
         const int TIME_BUF_SZ = 10;
-        _diagram = classify( _intersections_zoomed, _gray_zoomed, _gz_threshed, /* _dx, _dy,*/ TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, TIME_BUF_SZ);
+        fix_diagram( _diagram, _intersections, _small);
         success = true;
     } while(0);
     
