@@ -89,6 +89,7 @@ public:
         get_feature( gray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, scale);
+        // Inner sum on grid image
         r=3;
         get_feature( threshed, intersections, r,
                     [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
@@ -101,7 +102,7 @@ public:
             float gm = BWE_graymean[i];
             float si = BWE_sum_inner[i];
             //PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
-            if (gm < 80 && bh < 100) {
+            if (gm < 100 && bh < 100) {
                 res[i] = BBLACK;
             }
             else if ( (/* gm > 150 && */ wh < 50)
