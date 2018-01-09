@@ -95,6 +95,7 @@ public:
         cv::Mat emptyMask5( 5, 5, CV_8UC1, cv::Scalar(0));
         cv::Mat emptyMask3( 3, 3, CV_8UC1, cv::Scalar(0));
         cv::Mat fullMask7( 7, 7, CV_8UC1, cv::Scalar(255));
+        cv::Mat fullMask11( 11, 11, CV_8UC1, cv::Scalar(255));
         //cv::Mat darkMask3( 3, 3, CV_8UC1, cv::Scalar(0));
         cv::Mat crossMask = crossmask(2,3);
         cv::Mat crossMaskInv = 255 - crossMask;
@@ -103,7 +104,7 @@ public:
         match_mask_near_points( white_holes, emptyMask3, intersections, wiggle, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
         match_mask_near_points( bright_places, fullMask7, intersections, wiggle, BWE_brightmatch);
-        match_mask_near_points( dark_places, fullMask7, intersections, wiggle, BWE_darkmatch);
+        match_mask_near_points( dark_places, fullMask11, intersections, wiggle, BWE_darkmatch);
         //match_mask_near_points( gray, crossMaskInv, intersections, 2, BWE_centerspot);
         int tt=42;
         
@@ -132,7 +133,7 @@ public:
             float white_glare = BWE_sum_inner[i];
             //float cs = BWE_centerspot[i];
             //PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
-            if (darkmatch < 110) {
+            if (darkmatch < 120) {
                 res[i] = BBLACK;
             }
             else {

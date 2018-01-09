@@ -1061,20 +1061,20 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         // Try stuff
         cv::Mat tt;
         //cv::cvtColor( _gray_zoomed, tt, cv::COLOR_RGB2GRAY);
-        //cv::GaussianBlur( _gray_zoomed, tt, cv::Size(5,5),0,0);
+        cv::GaussianBlur( _gray_zoomed, tt, cv::Size(5,5),0,0);
         //thresh_dilate( dst, dst, 3);
         //cv::threshold( tt, dst, 50, 255, cv::THRESH_BINARY); // Black is black
         //cv::threshold( tt, dst, 200, 255, cv::THRESH_BINARY);
         //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
-        cv::cvtColor( _pyr_zoomed, dst, cv::COLOR_RGB2GRAY);
+        //cv::cvtColor( _pyr_zoomed, dst, cv::COLOR_RGB2GRAY);
         //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
-        cv::GaussianBlur( dst, tt, cv::Size(9,9),0,0);
-        //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+        //cv::GaussianBlur( dst, tt, cv::Size(9,9),0,0);
+        cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
         //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 51, -30);
         int nhood_sz =  25;
         float thresh = -32;
-        cv::adaptiveThreshold( tt, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                              nhood_sz, thresh);
+        //cv::adaptiveThreshold( tt, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+        //                      nhood_sz, thresh);
 //        thresh_dilate( tt, _gz_threshed, 3);
     }
 //    cv::Mat tt;
