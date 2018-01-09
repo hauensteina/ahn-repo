@@ -15,16 +15,17 @@
 #import <opencv2/imgcodecs/ios.h>
 
 #import "Common.h"
-#import "AppDelegate.h"
 #import "Globals.h"
-#import "CppInterface.h"
-//#import "LineFinder.hpp"
-//#import "LineFixer.hpp"
+#include "Helpers.hpp"
+
+#import "AppDelegate.h"
 #import "BlackWhiteEmpty.hpp"
 #import "BlobFinder.hpp"
-#import "Clust1D.hpp"
-#import "DrawBoard.hpp"
 #import "Boardness.hpp"
+#import "Clust1D.hpp"
+#import "CppInterface.h"
+#import "DrawBoard.hpp"
+
 
 // Pyramid filter params
 #define SPATIALRAD  5
@@ -133,16 +134,6 @@ bool board_valid( Points2f board, const cv::Mat &img)
     return true;
 }
 
-// Apply inverse thresh and dilate grayscale image.
-//---------------------------------------------------------
-void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
-{
-    cv::adaptiveThreshold( img, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          5 /* 11 */ ,  // neighborhood_size
-                          thresh);  // threshold
-    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    cv::dilate( dst, dst, element );
-}
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -1015,6 +1006,36 @@ void fix_intersections( Points2f &intersections)
     intersections = get_intersections( hlines, vlines);
 } // fix_intersections()
 
+// Fill image outside of board with average. Helps with adaptive thresholds.
+//----------------------------------------------------------------------------
+void fill_outside_with_average_gray( cv::Mat &img, const Points2f &corners)
+{
+    uint8_t mean = cv::mean( img)[0];
+    img.forEach<uint8_t>( [&mean, &corners](uint8_t &v, const int *p)
+                         {
+                             int x = p[0]; int y = p[1];
+                             if (x < corners[0].x - 10) v = mean;
+                             else if (x > corners[1].x + 10) v = mean;
+                             if (y < corners[0].y - 10) v = mean;
+                             else if (y > corners[3].y + 10) v = mean;
+                         });
+} // fill_outside_with_average_gray()
+
+//----------------------------------------------------------------------------
+void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
+{
+    typedef cv::Point3_<uint8_t> Pixel;
+    cv::Scalar smean = cv::mean( img);
+    Pixel mean( smean[0], smean[1], smean[2]);
+    img.forEach<Pixel>( [&mean, &corners](Pixel &v, const int *p)
+                         {
+                             int x = p[0]; int y = p[1];
+                             if (x < corners[0].x - 10) v = mean;
+                             else if (x > corners[1].x + 10) v = mean;
+                             if (y < corners[0].y - 10) v = mean;
+                             else if (y > corners[3].y + 10) v = mean;
+                         });
+} // fill_outside_with_average_rgb()
 
 // Zoom in
 //----------------------------
@@ -1031,10 +1052,25 @@ void fix_intersections( Points2f &intersections)
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         fix_intersections( _intersections_zoomed);
-        thresh_dilate( _gray_zoomed, _gz_threshed, 3);
-//        cv::Mat tt;
-//        cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
-//        thresh_dilate( tt, _gz_threshed, 4);
+        fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
+        fill_outside_with_average_rgb( _small_zoomed, _corners_zoomed);
+        fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
+
+        thresh_dilate( _gray_zoomed, _gz_threshed, 4);
+
+        // Try stuff
+        cv::Mat tt;
+        //cv::cvtColor( _gray_zoomed, tt, cv::COLOR_RGB2GRAY);
+        //cv::GaussianBlur( _gray_zoomed, tt, cv::Size(5,5),0,0);
+        //thresh_dilate( dst, dst, 3);
+        //cv::threshold( tt, dst, 50, 255, cv::THRESH_BINARY); // Black is black
+        //cv::threshold( tt, dst, 200, 255, cv::THRESH_BINARY);
+        //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
+        cv::cvtColor( _pyr_zoomed, dst, cv::COLOR_RGB2GRAY);
+        //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
+        cv::GaussianBlur( _gray_zoomed, tt, cv::Size(7,7),0,0);
+        cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+//        thresh_dilate( tt, _gz_threshed, 3);
     }
 //    cv::Mat tt;
 //    cv::adaptiveThreshold( _gray_zoomed, tt, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
@@ -1042,7 +1078,8 @@ void fix_intersections( Points2f &intersections)
 //                          3);  // threshold
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( dst, drawing, cv::COLOR_GRAY2RGB);
+    //cv::cvtColor( dst, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP (_intersections_zoomed) {
         Point2f p = _intersections_zoomed[i];
         //draw_square( p, 10, drawing, cv::Scalar(255,0,0));
@@ -1136,12 +1173,12 @@ void fix_intersections( Points2f &intersections)
     }
     
     // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    cv::Mat drawing = _small_zoomed.clone();
+    //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _intersections_zoomed, drawing, 1, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f09_intersections()
+} // f10_intersections()
 
 // Visualize features, one per intersection.
 //------------------------------------------------------------------------------------------------------
@@ -1203,7 +1240,7 @@ void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
 }
 
 //------------------------------------------------------------------------------------------------------
-std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, const cv::Mat &threshed,
+std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, const cv::Mat &gray,
                           /*float dx, float dy,*/
                           int TIMEBUFSZ = 1)
 {
@@ -1212,7 +1249,7 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
     // Wiggle the regions a little.
     translate_points( intersections_, 0, 0, intersections);
     float match_quality;
-    diagrams.push_back( BlackWhiteEmpty::classify( img, threshed,
+    diagrams.push_back( BlackWhiteEmpty::classify( img, gray,
                                                   intersections, match_quality));
     //    intersections = translate_points( intersections_, -1, 0);
     //    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
@@ -1272,7 +1309,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
         const int TIME_BUF_SZ = 1;
-        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
     }
     fix_diagram( _diagram, _intersections, _small);
     
@@ -1452,7 +1489,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 
         // Classify
         const int TIME_BUF_SZ = 10;
-        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gz_threshed, TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
         fix_diagram( _diagram, _intersections, _small);
         success = true;
     } while(0);

@@ -52,6 +52,7 @@
 		AC0FFAFE1FEB4AD7009A02FD /* board11.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = board11.jpg; path = Assets/board11.jpg; sourceTree = SOURCE_ROOT; };
 		AC0FFAFF1FEB4AD7009A02FD /* board12.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = board12.jpg; path = Assets/board12.jpg; sourceTree = SOURCE_ROOT; };
 		AC0FFB001FEB4AD7009A02FD /* board08.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = board08.jpg; path = Assets/board08.jpg; sourceTree = SOURCE_ROOT; };
+		AC1756CB200527770069EE99 /* Helpers.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Helpers.hpp; sourceTree = "<group>"; };
 		AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Ocv.cpp; sourceTree = "<group>"; };
 		AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Ocv.hpp; sourceTree = "<group>"; };
 		AC3CC3541FFECD2200ED79D6 /* board14.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board14.jpg; sourceTree = "<group>"; };
@@ -142,6 +143,7 @@
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC9702191FBC88050057C4C2 /* Globals.h */,
 				AC9702171FBC87DF0057C4C2 /* Globals.mm */,
+				AC1756CB200527770069EE99 /* Helpers.hpp */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
 				AC628C331F9A80150043FCEE /* MainVC.mm */,
 				AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */,

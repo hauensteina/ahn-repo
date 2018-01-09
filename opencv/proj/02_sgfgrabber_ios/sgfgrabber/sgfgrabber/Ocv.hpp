@@ -417,7 +417,5 @@ mcluster (std::vector<T> elts, int nof_clust, int ndims, double &compactness, Fu
     return res;
 } // mcluster()
 
-
 #endif /* __clusplus */
-
 #endif /* Ocv_hpp */
