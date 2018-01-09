@@ -1490,6 +1490,11 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
+        fix_intersections( _intersections_zoomed);
+        fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
+        fill_outside_with_average_rgb( _small_zoomed, _corners_zoomed);
+        fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
+        
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
 
         // Classify
