@@ -1068,8 +1068,13 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
         cv::cvtColor( _pyr_zoomed, dst, cv::COLOR_RGB2GRAY);
         //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
-        cv::GaussianBlur( _gray_zoomed, tt, cv::Size(7,7),0,0);
-        cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+        cv::GaussianBlur( _gray_zoomed, tt, cv::Size(9,9),0,0);
+        //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+        //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 51, -30);
+        int nhood_sz =  25;
+        float thresh = -50; //-32; 
+        cv::adaptiveThreshold( dst, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                              nhood_sz, thresh);
 //        thresh_dilate( tt, _gz_threshed, 3);
     }
 //    cv::Mat tt;
@@ -1087,7 +1092,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-}
+} // f07_zoom_in()
 
 // Thresholding to find stones
 //-----------------------------------------------------------

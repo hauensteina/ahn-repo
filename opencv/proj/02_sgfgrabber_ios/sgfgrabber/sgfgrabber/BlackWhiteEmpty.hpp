@@ -50,31 +50,31 @@ public:
                                             const Points2f &intersections,
                                             float &match_quality)
     {
-        cv::Mat pyrgray, gray_threshed, black_holes, white_holes, bright_places;
+        cv::Mat pyrgray, gray_threshed, white_holes, bright_places;
         cv::cvtColor( pyr, pyrgray, cv::COLOR_RGB2GRAY);
         thresh_dilate( gray, gray_threshed, 4);
+        cv::Mat blurred;
+        cv::GaussianBlur( gray, blurred, cv::Size(9,9),0,0);
 
         // Catch false positives. White stones must be bright.
         cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50);
 
         // Black stones
-        cv::Mat blurred, dark_places;
-        cv::GaussianBlur( gray, blurred, cv::Size(9,9),0,0);
+        cv::Mat dark_places;
         cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
         //cv::adaptiveThreshold( pyrgray, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 80); // good
 
-        //auto thresholds = find_thresholds( gray, intersections);
         // The White stones become black holes, all else is white
         int nhood_sz =  25;
-        float thresh = -32; //8;
+        float thresh = -32; //-40; // -32;
         cv::adaptiveThreshold( pyrgray, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               nhood_sz, thresh);
-        // The Black stones become black holes, all else is white
-        nhood_sz = 25;
-        thresh = 16; // 8;
-        cv::adaptiveThreshold( pyrgray, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
-                              nhood_sz, thresh);
+//        // The Black stones become black holes, all else is white
+//        nhood_sz = 25;
+//        thresh = 16; // 8;
+//        cv::adaptiveThreshold( pyrgray, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
+//                              nhood_sz, thresh);
         
         // white_holes mean small => white
         // black_holes mean small => black
@@ -95,7 +95,6 @@ public:
         cv::Mat crossMaskInv = 255 - crossMask;
 
         int wiggle = 1;
-        match_mask_near_points( black_holes, emptyMask7, intersections, wiggle, BWE_black_holes);
         match_mask_near_points( white_holes, emptyMask7, intersections, wiggle, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
         match_mask_near_points( bright_places, fullMask7, intersections, wiggle, BWE_brightmatch);
@@ -119,8 +118,8 @@ public:
 //                    BWE_sum_inner, yshift, dontscale);
         
         std::vector<int> res( SZ(intersections), EEMPTY);
-        ISLOOP (BWE_black_holes) {
-            float blackness   = BWE_black_holes[i];
+        ISLOOP (intersections) {
+            //float blackness   = BWE_black_holes[i];
             float whiteness   = BWE_white_holes[i];
             float brightmatch = BWE_brightmatch[i];
             float darkmatch   = BWE_darkmatch[i];
@@ -129,10 +128,12 @@ public:
             //float cs = BWE_centerspot[i];
             //PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
             if (darkmatch < 100) {
-                res[i] = BBLACK;
+                //res[i] = BBLACK;
             }
-//            if ( darkness < 100 &&  whiteness < 80) res[i] = WWHITE; // frozen
-//            if ( brightness > 200 &&  white_glare < 15) res[i] = WWHITE;
+            else {
+                if (brightmatch < 100 &&  whiteness < 80) res[i] = WWHITE; // frozen
+                if (brightness > 200 &&   white_glare < 15) res[i] = WWHITE;
+            }
         }
         return res;
     } // classify()
@@ -336,37 +337,6 @@ public:
         }
     } // match_mask_near_points()
 
-    // Find a threshold for each intersection. Our own adaptive threshold.
-    //-----------------------------------------------------------------------------------------------------------------------------
-    inline static std::vector<float> find_thresholds( const cv::Mat &img, const Points2f &intersections)
-    {
-        int rad = img.cols * 0.05;
-        std::vector<float> xvals = vec_extract( intersections,  [](const Point2f &p) { return p.x;} );
-        std::vector<float> yvals = vec_extract( intersections,  [](const Point2f &p) { return p.y;} );
-        float leftedge  = vec_min( xvals);
-        float rightedge = vec_max( xvals);
-        float topedge = vec_min( yvals);
-        float botedge = vec_max( yvals);
-        std::vector<float> res;
-        ISLOOP (intersections) {
-            cv::Point p = pf2p( intersections[i]);
-            int left = p.x - rad;
-            if (left < leftedge) left = leftedge;
-            int right = p.x + rad;
-            if (right > rightedge) right = rightedge;
-            int top = p.y - rad;
-            if (top < topedge) top = topedge;
-            int bot = p.y + rad;
-            if (bot > botedge) bot = botedge;
-            cv::Rect rect( left, top, right - left, bot - top);
-            double mmin, mmax;
-            cv::Point minloc, maxloc;
-            cv::minMaxLoc( img(rect), &mmin, &mmax, &minloc, &maxloc);
-            //res.push_back( (mmax + mmin) / 2.0);
-            res.push_back( mmax);
-        } // ISLOOP
-        return res;
-    } // find_thresholds
     
 
 }; // class BlackWhiteEmpty
