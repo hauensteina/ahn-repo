@@ -30,9 +30,7 @@
 // Pyramid filter params
 #define SPATIALRAD  5
 #define COLORRAD    30
-//#define COLORRAD    15
 #define MAXPYRLEVEL 2
-//#define MAXPYRLEVEL 1
 
 extern cv::Mat mat_dbg;
 
@@ -61,7 +59,6 @@ extern cv::Mat mat_dbg;
 @property Points2f intersections_zoomed;
 @property float dy;
 @property float dx;
-//@property LineFinder finder;
 @property std::vector<Points2f> boards; // history of board corners
 @property cv::Mat white_templ;
 @property cv::Mat black_templ;
@@ -980,16 +977,16 @@ void fix_intersections( Points2f &intersections)
     std::vector<float> hrhos = vec_extract( hlines, getrho);
     std::sort( vrhos.begin(), vrhos.end(), sorter);
     std::sort( hrhos.begin(), hrhos.end(), sorter);
-    float dvrho = vec_median_delta( vrhos);
-    float dhrho = vec_median_delta( hrhos);
+    //float dvrho = vec_median_delta( vrhos);
+    //float dhrho = vec_median_delta( hrhos);
     float vtheta = vec_median( vlines, gettheta)[1];
     float htheta = vec_median( hlines, gettheta)[1];
     // Reconstruct
     int mid = boardsz/2;
     cv::Vec2f mid_vline = vlines[mid];
     cv::Vec2f mid_hline = hlines[mid];
-    float mid_vrho = mid_vline[0];
-    float mid_hrho = mid_hline[0];
+    //float mid_vrho = mid_vline[0];
+    //float mid_hrho = mid_hline[0];
     ILOOP (mid+1) {
         //vlines[mid-i][0] = mid_vrho - i*dvrho;
         //vlines[mid+i][0] = mid_vrho + i*dvrho;
@@ -1071,8 +1068,8 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         //cv::GaussianBlur( dst, tt, cv::Size(9,9),0,0);
         cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
         //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 51, -30);
-        int nhood_sz =  25;
-        float thresh = -32;
+        //int nhood_sz =  25;
+        //float thresh = -32;
         //cv::adaptiveThreshold( tt, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
         //                      nhood_sz, thresh);
 //        thresh_dilate( tt, _gz_threshed, 3);
@@ -1459,8 +1456,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         dedup_horizontals( _horizontal_lines, _gray);
         filter_lines( _horizontal_lines, 1.1);
         fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
-        //fix_horiz_lines( _horizontal_lines, _gray);
-        //PLOG( "HLINES:%d\n", SZ(_horizontal_lines));
         if (SZ( _horizontal_lines) > 55) break;
         if (SZ( _horizontal_lines) < 5) break;
 
@@ -1477,25 +1472,16 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         if (!board_valid( _corners, _gray)) {
             break;
         }
-        // Use median border coordinates to prevent flicker
-        //const int BORDBUFLEN = 1;
-        //ringpush( _boards, _corners, BORDBUFLEN);
-        //Points2f med_board = med_quad( _boards);
-        //_corners = med_board;
 
         // Zoom in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
-        zoom_in( _small, _corners, _small_zoomed, M);
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         fix_intersections( _intersections_zoomed);
         fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
-        fill_outside_with_average_rgb( _small_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
-        
-        thresh_dilate( _gray_zoomed, _gz_threshed, 4);
 
         // Classify
         const int TIME_BUF_SZ = 10;
@@ -1504,6 +1490,8 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         success = true;
     } while(0);
     
+    // Draw real time results on screen
+    //------------------------------------
     cv::Mat *canvas;
     canvas = &_small;
     

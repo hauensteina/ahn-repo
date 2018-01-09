@@ -19,30 +19,15 @@
 //extern cv::Mat mat_dbg;  // debug image to viz intermediate results
 static std::vector<float> BWE_brightmatch;
 static std::vector<float> BWE_darkmatch;
-static std::vector<float> BWE_sum;
-static std::vector<float> BWE_sum_inner;
-static std::vector<float> BWE_outer_minus_inner;
-static std::vector<float> BWE_sigma;
-static std::vector<float> BWE_crossness_new;
-static std::vector<float> BWE_white_templ_score;
-static std::vector<float> BWE_black_templ_score;
-static std::vector<float> BWE_empty_templ_score;
-static std::vector<float> BWE_ringmatch;
-static std::vector<float> BWE_crossmatch;
-static std::vector<float> BWE_black_holes;
-static std::vector<float> BWE_white_holes;
 static std::vector<float> BWE_graymean;
-static std::vector<float> BWE_centerspot;
-const static std::string WHITE_TEMPL_FNAME = "white_templ.yml";
-const static std::string BLACK_TEMPL_FNAME = "black_templ.yml";
-const static std::string EMPTY_TEMPL_FNAME = "empty_templ.yml";
+static std::vector<float> BWE_sum_inner;
+static std::vector<float> BWE_white_holes;
 
 class BlackWhiteEmpty
 //=====================
 {
 public:
     enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
-    enum { RING_R = 12 };
 
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &pyr,
@@ -50,89 +35,59 @@ public:
                                             const Points2f &intersections,
                                             float &match_quality)
     {
-        cv::Mat pyrgray, gray_threshed, white_holes, bright_places;
+        // Preprocess image
+        //-------------------
+        cv::Mat pyrgray;
         cv::cvtColor( pyr, pyrgray, cv::COLOR_RGB2GRAY);
+        cv::Mat gray_threshed;
         thresh_dilate( gray, gray_threshed, 4);
         cv::Mat blurred;
         cv::GaussianBlur( gray, blurred, cv::Size(9,9),0,0);
-
-        // Catch false positives. White stones must be bright.
+        cv::Mat bright_places;
         cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50);
-
-        // Black stones
         cv::Mat dark_places;
         cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
-        //cv::adaptiveThreshold( pyrgray, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 80); // good
-
         // The White stones become black holes, all else is white
         int nhood_sz =  25;
-        float thresh = -32; //-40; // -32;
+        float thresh = -32;
+        cv::Mat white_holes;
         cv::adaptiveThreshold( pyrgray, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               nhood_sz, thresh);
         cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
         cv::dilate( white_holes, white_holes, element );
 
-//        // The Black stones become black holes, all else is white
-//        nhood_sz = 25;
-//        thresh = 16; // 8;
-//        cv::adaptiveThreshold( pyrgray, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
-//                              nhood_sz, thresh);
-        
-        // white_holes mean small => white
-        // black_holes mean small => black
-        // else empty
-        int r;
-        const int yshift = 0;
-        // We scale features to 0..255 to allow hardcoded thresholds.
-        const bool scale = true;
-        const bool dontscale = false;
-//        r=3;
-//        get_feature( black_holes, intersections, r,
-//                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-//                    BWE_black_holes, yshift, scale);
-        cv::Mat emptyMask7( 7, 7, CV_8UC1, cv::Scalar(0));
-        cv::Mat emptyMask5( 5, 5, CV_8UC1, cv::Scalar(0));
+        // Compute features
+        //--------------------
         cv::Mat emptyMask3( 3, 3, CV_8UC1, cv::Scalar(0));
+        cv::Mat emptyMask7( 7, 7, CV_8UC1, cv::Scalar(0));
         cv::Mat fullMask7( 7, 7, CV_8UC1, cv::Scalar(255));
         cv::Mat fullMask11( 11, 11, CV_8UC1, cv::Scalar(255));
-        //cv::Mat darkMask3( 3, 3, CV_8UC1, cv::Scalar(0));
-        cv::Mat crossMask = crossmask(2,3);
-        cv::Mat crossMaskInv = 255 - crossMask;
 
         int wiggle = 1;
         match_mask_near_points( white_holes, emptyMask3, intersections, wiggle, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
         match_mask_near_points( bright_places, fullMask7, intersections, wiggle, BWE_brightmatch);
         match_mask_near_points( dark_places, fullMask11, intersections, wiggle, BWE_darkmatch);
-        //match_mask_near_points( gray, crossMaskInv, intersections, 2, BWE_centerspot);
-        int tt=42;
         
-//        r = 3;
-//        get_feature( white_holes, intersections, r,
-//                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-//                    BWE_white_holes, yshift, scale);
-
         // Gray mean
-        r = 4;
+        const int r = 4;
+        const int yshift = 0;
+        const bool dontscale = false;
         get_feature( pyrgray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, dontscale);
-//        r=3;
-//        get_feature( threshed, intersections, r,
-//                    [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
-//                    BWE_sum_inner, yshift, dontscale);
-        
+
+        // Classify intersections
+        //----------------------------------------------
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (intersections) {
-            //float blackness   = BWE_black_holes[i];
             float whiteness   = BWE_white_holes[i];
             float brightmatch = BWE_brightmatch[i];
             float darkmatch   = BWE_darkmatch[i];
             float brightness  = BWE_graymean[i];
             float white_glare = BWE_sum_inner[i];
-            //float cs = BWE_centerspot[i];
-            //PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
+
             if (darkmatch < 120) {
                 res[i] = BBLACK;
             }
@@ -218,13 +173,6 @@ public:
         cv::meanStdDev( hood, mmean, sstddev);
         return sstddev[0];
     } // sigma_feature()
-
-//    // Sum all pixels in hood.
-//    //---------------------------------------------------------------------------------
-//    inline static float sum_feature( const cv::Mat &hood)
-//    {
-//        return cv::sum( hood)[0];
-//    } // sum_feature()
     
     // Look whether cross pixels are set in neighborhood of p_.
     // hood should be binary, 0 or 1, from an adaptive threshold operation.
@@ -256,7 +204,7 @@ public:
         if (mask.rows) { return mask; }
         
         // Build the mask, once.
-        const int r = RING_R;
+        const int r = 12;
         //const int middle_r = 8;
         const int inner_r = 3;
         const int width = 2*r + 1;
