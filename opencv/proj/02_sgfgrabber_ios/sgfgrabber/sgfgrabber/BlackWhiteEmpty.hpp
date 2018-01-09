@@ -70,6 +70,9 @@ public:
         float thresh = -32; //-40; // -32;
         cv::adaptiveThreshold( pyrgray, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               nhood_sz, thresh);
+        cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
+        cv::dilate( white_holes, white_holes, element );
+
 //        // The Black stones become black holes, all else is white
 //        nhood_sz = 25;
 //        thresh = 16; // 8;
@@ -89,13 +92,15 @@ public:
 //                    [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
 //                    BWE_black_holes, yshift, scale);
         cv::Mat emptyMask7( 7, 7, CV_8UC1, cv::Scalar(0));
+        cv::Mat emptyMask5( 5, 5, CV_8UC1, cv::Scalar(0));
+        cv::Mat emptyMask3( 3, 3, CV_8UC1, cv::Scalar(0));
         cv::Mat fullMask7( 7, 7, CV_8UC1, cv::Scalar(255));
         //cv::Mat darkMask3( 3, 3, CV_8UC1, cv::Scalar(0));
         cv::Mat crossMask = crossmask(2,3);
         cv::Mat crossMaskInv = 255 - crossMask;
 
         int wiggle = 1;
-        match_mask_near_points( white_holes, emptyMask7, intersections, wiggle, BWE_white_holes);
+        match_mask_near_points( white_holes, emptyMask3, intersections, wiggle, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
         match_mask_near_points( bright_places, fullMask7, intersections, wiggle, BWE_brightmatch);
         match_mask_near_points( dark_places, fullMask7, intersections, wiggle, BWE_darkmatch);
@@ -127,8 +132,8 @@ public:
             float white_glare = BWE_sum_inner[i];
             //float cs = BWE_centerspot[i];
             //PLOG(">>>>>> %5d %.0f %.0f %.0f\n", i, wh, bh, bh-wh);
-            if (darkmatch < 100) {
-                //res[i] = BBLACK;
+            if (darkmatch < 110) {
+                res[i] = BBLACK;
             }
             else {
                 if (brightmatch < 100 &&  whiteness < 80) res[i] = WWHITE; // frozen
