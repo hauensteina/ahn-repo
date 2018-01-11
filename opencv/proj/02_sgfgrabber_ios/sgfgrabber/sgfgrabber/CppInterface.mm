@@ -951,58 +951,6 @@ void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat
     cv::warpPerspective(img, dst, M, cv::Size( img.cols, img.rows));
 }
 
-// Zoomed in, we reconstruct intersections from center and median rho and theta
-//-------------------------------------------------------------------------------
-void fix_intersections( Points2f &intersections)
-{
-    int boardsz = ROUND(sqrt(SZ(intersections)));
-    // Reconstruct the lines
-    std::vector<cv::Vec2f> hlines, vlines;
-    ILOOP (boardsz) {
-        Point2f l,r,t,b;
-        l = intersections[i*boardsz];
-        r = intersections[i*boardsz + boardsz -1];
-        t = intersections[i];
-        b = intersections[i + boardsz*(boardsz-1)];
-        cv::Vec2f hline = segment2polar( cv::Vec4f( l.x, l.y, r.x, r.y ));
-        cv::Vec2f vline = segment2polar( cv::Vec4f( t.x, t.y, b.x, b.y ));
-        hlines.push_back( hline);
-        vlines.push_back( vline);
-    } // ILOOP
-    // Find median drho and theta
-    auto getrho = [](cv::Vec2f x) { return x[0]; };
-    auto gettheta = [](cv::Vec2f x) { return x[1]; };
-    auto sorter = [](float a, float b){return a < b; };
-    std::vector<float> vrhos = vec_extract( vlines, getrho);
-    std::vector<float> hrhos = vec_extract( hlines, getrho);
-    std::sort( vrhos.begin(), vrhos.end(), sorter);
-    std::sort( hrhos.begin(), hrhos.end(), sorter);
-    //float dvrho = vec_median_delta( vrhos);
-    //float dhrho = vec_median_delta( hrhos);
-    float vtheta = vec_median( vlines, gettheta)[1];
-    float htheta = vec_median( hlines, gettheta)[1];
-    // Reconstruct
-    int mid = boardsz/2;
-    cv::Vec2f mid_vline = vlines[mid];
-    cv::Vec2f mid_hline = hlines[mid];
-    //float mid_vrho = mid_vline[0];
-    //float mid_hrho = mid_hline[0];
-    ILOOP (mid+1) {
-        //vlines[mid-i][0] = mid_vrho - i*dvrho;
-        //vlines[mid+i][0] = mid_vrho + i*dvrho;
-        //hlines[mid-i][0] = mid_hrho - i*dhrho;
-        //hlines[mid+i][0] = mid_hrho + i*dhrho;
-        vlines[mid-i][1] = vtheta;
-        vlines[mid+i][1] = vtheta;
-        hlines[mid-i][1] = htheta;
-        hlines[mid+i][1] = htheta;
-    } // ILOOP
-    auto rhosorter = [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; };
-    std::sort( vlines.begin(), vlines.end(), rhosorter);
-    std::sort( hlines.begin(), hlines.end(), rhosorter);
-    intersections = get_intersections( hlines, vlines);
-} // fix_intersections()
-
 // Fill image outside of board with average. Helps with adaptive thresholds.
 //----------------------------------------------------------------------------
 void fill_outside_with_average_gray( cv::Mat &img, const Points2f &corners)
@@ -1048,7 +996,6 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
-        fix_intersections( _intersections_zoomed);
         fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _small_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
@@ -1479,7 +1426,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
-        fix_intersections( _intersections_zoomed);
         fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
 
