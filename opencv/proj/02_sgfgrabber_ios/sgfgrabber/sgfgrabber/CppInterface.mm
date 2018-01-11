@@ -203,8 +203,8 @@ bool board_valid( Points2f board, const cv::Mat &img)
     cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
 
     // Show results
-    cv::Mat drawing; // = _small.clone();
-    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
+    cv::Mat drawing = _small.clone();
+    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
