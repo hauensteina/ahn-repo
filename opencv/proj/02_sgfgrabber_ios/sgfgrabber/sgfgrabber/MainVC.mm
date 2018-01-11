@@ -50,11 +50,6 @@
     self.grabFuncs = [CppInterface new];
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
-    
-    //self.sldCannyLow.value = self.grabFuncs.canny_low;
-    //self.sldCannyHi.value  = self.grabFuncs.canny_hi;
-    //NSString *tstr = [GrabFuncs opencvVersion];
-    //NSLog(tstr);
 }
 //----------------------------------
 - (void)didReceiveMemoryWarning
@@ -103,7 +98,7 @@
     UISlider *s = [UISlider new];
     self.sldDbg = s;
     s.minimumValue = 0;
-    s.maximumValue = 14;
+    s.maximumValue = 16;
     [s addTarget:self action:@selector(sldDbg:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
@@ -229,6 +224,7 @@
                     break;
                 case 2:
                     state++;
+                    //state=100;
                     img = [self.grabFuncs f02_vert_lines];
                     [self.cameraView setImage:img];
                     break;

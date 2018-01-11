@@ -144,6 +144,8 @@ bool board_valid( Points2f board, const cv::Mat &img)
     g_app.mainVC.lbDbg.text = @"00";
     
     NSArray *fnames = @[
+                        @"board_full.jpg",
+                        @"board_full_1.jpg",
                         @"board01.jpg",
                         @"board02.jpg",
                         @"board03.jpg",
@@ -193,6 +195,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
     cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
     _stone_or_empty.clear();
+    std::vector<cv::Vec2f> vert_lines, horiz_lines;
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
     _stone_or_empty = BlobFinder::clean( _stone_or_empty);
@@ -200,7 +203,8 @@ bool board_valid( Points2f board, const cv::Mat &img)
     cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
 
     // Show results
-    cv::Mat drawing = _small.clone();
+    cv::Mat drawing; // = _small.clone();
+    cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -314,13 +318,15 @@ void filter_lines( std::vector<cv::Vec2f> &vlines, const float eps = 5)
 } // filter_lines()
 
 
-// Cluster vertical Hough lines to remove close duplicates.
+// Cluster vertical lines to remove close duplicates.
 //------------------------------------------------------------
 - (UIImage *) f03_vert_lines_2
 {
     g_app.mainVC.lbDbg.text = @"03";
+    if (SZ(_vertical_lines) <= 3) { return MatToUIImage( _gray); }
+
+    filter_lines( _vertical_lines); // Must be before dedup
     dedup_verticals( _vertical_lines, _gray);
-    filter_lines( _vertical_lines);
     
     // Show results
     cv::Mat drawing;
@@ -441,6 +447,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         if (fabs( bot_rho - bot_rhos[close_idx]) < X_THRESH &&
             fabs( top_rho - top_rhos[close_idx]) < X_THRESH)
         {
+            PLOG("repl %d\n",i);
             top_rho   = top_rhos[close_idx];
             bot_rho   = bot_rhos[close_idx];
         }
@@ -633,6 +640,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
 - (UIImage *) f04_vert_params
 {
     g_app.mainVC.lbDbg.text = @"04";
+    if (SZ(_vertical_lines) <= 3) { return MatToUIImage( _gray); }
     fix_vertical_lines( _vertical_lines, _gray);
     
     // Show results
@@ -644,7 +652,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f05_vert_params()
+} // f04_vert_params()
 
 // Convert horizontal (roughly) polar line to a pair
 // y_at_middle, angle
@@ -696,11 +704,11 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 - (UIImage *) f05_horiz_lines
 {
     g_app.mainVC.lbDbg.text = @"05";
-    
+
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
-    dedup_horizontals( _horizontal_lines, _gray);
     filter_lines( _horizontal_lines, 1.1);
     fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
+    dedup_horizontals( _horizontal_lines, _gray);
 
     // Show results
     cv::Mat drawing;
@@ -1045,8 +1053,8 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 - (UIImage *) f08_dark_places
 {
     g_app.mainVC.lbDbg.text = @"08";
-    _corners = _corners_zoomed;
-    
+    if (!_gray_zoomed.rows) { return MatToUIImage( _gray); }
+
     cv::Mat dark_places;
     cv::GaussianBlur( _gray_zoomed, dark_places, cv::Size(9,9),0,0);
     cv::adaptiveThreshold( dark_places, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
@@ -1067,6 +1075,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 - (UIImage *) f09_mask_dark
 {
     g_app.mainVC.lbDbg.text = @"09";
+    if (!_gray_zoomed.rows) { return MatToUIImage( _gray); }
     
     uint8_t mean = cv::mean( _pyr_gray)[0];
     cv::Mat black_places;
@@ -1097,6 +1106,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 - (UIImage *) f10_white_holes
 {
     g_app.mainVC.lbDbg.text = @"10";
+    if (!_gray_zoomed.rows) { return MatToUIImage( _gray); }
     
     // The White stones become black holes, all else is white
     int nhood_sz =  25;
@@ -1139,6 +1149,8 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 - (UIImage *) f11_features
 {
     g_app.mainVC.lbDbg.text = @"11";
+    if (!_gray_zoomed.rows) { return NULL; }
+
     static int state = 0;
     std::vector<float> feats;
     cv::Mat drawing;
@@ -1361,8 +1373,8 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+        filter_lines( _vertical_lines); // Must be first
         dedup_verticals( _vertical_lines, _gray);
-        filter_lines( _vertical_lines);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 55) break;
         if (SZ( _vertical_lines) < 5) break;
