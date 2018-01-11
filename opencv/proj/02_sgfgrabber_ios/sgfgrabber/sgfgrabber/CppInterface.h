@@ -23,9 +23,9 @@
 - (UIImage *) f05_horiz_lines;
 - (UIImage *) f06_corners;
 - (UIImage *) f07_zoom_in;
-- (UIImage *) f08_show_threshed;
-- (UIImage *) f09_erode;
-- (UIImage *) f10_intersections;
+- (UIImage *) f08_dark_places;
+- (UIImage *) f09_mask_dark;
+- (UIImage *) f10_white_holes;
 - (UIImage *) f11_features;
 - (UIImage *) f12_classify;
 - (UIImage *) real_time_flow:(UIImage *)img;

@@ -48,14 +48,27 @@ public:
         cv::Mat dark_places;
         cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
+        // Replace dark places with average to make white dynamic threshold work
+        uint8_t mean = cv::mean( pyrgray)[0];
+        cv::Mat black_places;
+        cv::adaptiveThreshold( pyrgray, black_places, mean, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+        cv::Mat pyr_masked = pyrgray.clone();
+        // Copy over if not zero
+        pyr_masked.forEach<uint8_t>( [&black_places](uint8_t &v, const int *p)
+                                    {
+                                        int row = p[0]; int col = p[1];
+                                        if (auto p = black_places.at<uint8_t>( row,col)) {
+                                            v = p;
+                                        }
+                                    });
         // The White stones become black holes, all else is white
         int nhood_sz =  25;
         float thresh = -32;
         cv::Mat white_holes;
-        cv::adaptiveThreshold( pyrgray, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+        cv::adaptiveThreshold( pyr_masked, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               nhood_sz, thresh);
-        cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
-        cv::dilate( white_holes, white_holes, element );
+//        cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
+//        cv::dilate( white_holes, white_holes, element );
 
         // Compute features
         //--------------------
@@ -65,7 +78,7 @@ public:
         cv::Mat fullMask11( 11, 11, CV_8UC1, cv::Scalar(255));
 
         int wiggle = 1;
-        match_mask_near_points( white_holes, emptyMask3, intersections, wiggle, BWE_white_holes);
+        match_mask_near_points( white_holes, emptyMask3, intersections, wiggle+1, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
         match_mask_near_points( bright_places, fullMask7, intersections, wiggle, BWE_brightmatch);
         match_mask_near_points( dark_places, fullMask11, intersections, wiggle+2, BWE_darkmatch);

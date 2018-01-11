@@ -44,7 +44,9 @@ extern cv::Mat mat_dbg;
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
 @property cv::Mat gray_zoomed;   // Grayscale version of small, zoomed into the board
-@property cv::Mat pyr_zoomed;   // Grayscale version of small, zoomed into the board
+@property cv::Mat pyr_zoomed;    // zoomed version of small_pyr
+@property cv::Mat pyr_gray;      // zoomed version of small_pyr, in gray
+@property cv::Mat pyr_masked;    // pyr_gray with black stones masked out
 
 @property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
 @property cv::Mat m;     // Mat with image we are working on
@@ -691,7 +693,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 }
 
 //-----------------------------
-- (UIImage *) f05_horiz_lines //@@@
+- (UIImage *) f05_horiz_lines
 {
     g_app.mainVC.lbDbg.text = @"05";
     
@@ -958,7 +960,7 @@ void fill_outside_with_average_gray( cv::Mat &img, const Points2f &corners)
     uint8_t mean = cv::mean( img)[0];
     img.forEach<uint8_t>( [&mean, &corners](uint8_t &v, const int *p)
                          {
-                             int x = p[0]; int y = p[1];
+                             int x = p[1]; int y = p[0];
                              if (x < corners[0].x - 10) v = mean;
                              else if (x > corners[1].x + 10) v = mean;
                              if (y < corners[0].y - 10) v = mean;
@@ -974,7 +976,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     Pixel mean( smean[0], smean[1], smean[2]);
     img.forEach<Pixel>( [&mean, &corners](Pixel &v, const int *p)
                          {
-                             int x = p[0]; int y = p[1];
+                             int x = p[1]; int y = p[0];
                              if (x < corners[0].x - 10) v = mean;
                              else if (x > corners[1].x + 10) v = mean;
                              if (y < corners[0].y - 10) v = mean;
@@ -994,6 +996,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         zoom_in( _gray,  _corners, _gray_zoomed, M);
         zoom_in( _small, _corners, _small_zoomed, M);
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
+        cv::cvtColor( _pyr_zoomed, _pyr_gray, cv::COLOR_RGB2GRAY);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
@@ -1027,107 +1030,93 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //                          3);  // threshold
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( dst, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
     //cv::cvtColor( dst, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP (_intersections_zoomed) {
         Point2f p = _intersections_zoomed[i];
-        //draw_square( p, 10, drawing, cv::Scalar(255,0,0));
         draw_square( p, 3, drawing, cv::Scalar(255,0,0));
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f07_zoom_in()
 
-// Thresholding to find stones
+// Dark places to find B stones
 //-----------------------------------------------------------
-- (UIImage *) f08_show_threshed
+- (UIImage *) f08_dark_places
 {
     g_app.mainVC.lbDbg.text = @"08";
     _corners = _corners_zoomed;
     
-    cv::Mat tt,white_holes,black_holes;
-    cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
-    // The White stones become  black holes, all else is white
-    int nhood_sz = 25;
-    float thresh = -32; //8;
-    cv::adaptiveThreshold( tt, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          nhood_sz, thresh);
-
-    // The Black stones become black holes, all else is white
-    nhood_sz = 25;
-    thresh = 16; // 8;
-    cv::adaptiveThreshold( tt, black_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY,
-                          nhood_sz, thresh);
-    
-    // xx - yy large => black
-    // yy - xx large => white
-    // else empty
+    cv::Mat dark_places;
+    cv::GaussianBlur( _gray_zoomed, dark_places, cv::Size(9,9),0,0);
+    cv::adaptiveThreshold( dark_places, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
     // Show results
     cv::Mat drawing;
-//    int s = 2*BlackWhiteEmpty::RING_R+1;
-//    cv::Rect re( 100, 100, s, s);
-//    BlackWhiteEmpty::ringmask().copyTo( _gz_threshed( re));
-    cv::cvtColor( white_holes, drawing, cv::COLOR_GRAY2RGB);
-    //cv::cvtColor( _hue_zoomed, drawing, cv::COLOR_GRAY2RGB);
+    cv::cvtColor( dark_places, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP (_intersections_zoomed) {
         Point2f p = _intersections_zoomed[i];
         draw_square( p, 3, drawing, cv::Scalar(255,0,0));
     }
-    //draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f08_show_threshed()
+} // f08_dark_places()
 
-// Eroding to find stones
-//-----------------------------------------------------------
-- (UIImage *) f09_erode
+// Replace dark places with average to make white dynamic threshold work
+//-----------------------------------------------------------------------
+- (UIImage *) f09_mask_dark
 {
     g_app.mainVC.lbDbg.text = @"09";
-
-    cv::Mat tt,xx;
-    cv::cvtColor( _pyr_zoomed, tt, cv::COLOR_RGB2GRAY);
-    // The White stones become white blobs, all else is black
-    int nhood_sz = 25;
-    float thresh = -32; //8;
-    cv::adaptiveThreshold( tt, xx, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-                          nhood_sz, thresh);
-    cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(3,3));
-    //   cv::erode( xx, xx, element );
-    cv::dilate( xx, xx, element );
-    //    cv::erode( xx, xx, element );
-    //    cv::dilate( xx, xx, element );
-    //    cv::erode( xx, xx, element );
-    //    cv::dilate( xx, xx, element );
-
+    
+    uint8_t mean = cv::mean( _pyr_gray)[0];
+    cv::Mat black_places;
+    cv::adaptiveThreshold( _pyr_gray, black_places, mean, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+    _pyr_masked = _pyr_gray.clone();
+    // Copy over if not zero
+    _pyr_masked.forEach<uint8_t>( [&black_places](uint8_t &v, const int *p)
+                                 {
+                                     int row = p[0]; int col = p[1];
+                                     if (auto p = black_places.at<uint8_t>( row,col)) {
+                                         v = p;
+                                     }
+                                 });
     // Show results
     cv::Mat drawing;
-    cv::cvtColor( xx, drawing, cv::COLOR_GRAY2RGB);
-    draw_points( _intersections_zoomed, drawing, 3, cv::Scalar(255,0,0));
+    cv::cvtColor( _pyr_masked, drawing, cv::COLOR_GRAY2RGB);
+    ISLOOP (_intersections_zoomed) {
+        Point2f p = _intersections_zoomed[i];
+        draw_square( p, 3, drawing, cv::Scalar(255,0,0));
+    }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f09_erode()
+} // f09_mask_dark()
 
 
-// Intersections on zoomed from corners
+// Find White places
 //----------------------------------------
-- (UIImage *) f10_intersections
+- (UIImage *) f10_white_holes
 {
     g_app.mainVC.lbDbg.text = @"10";
     
-    // Just to get dx and dy to draw rectangles
-    Points2f dummy;
-    if (SZ(_corners_zoomed) == 4) {
-        get_intersections_from_corners( _corners_zoomed, _board_sz, dummy, _dx, _dy);
-    }
+    // The White stones become black holes, all else is white
+    int nhood_sz =  25;
+    float thresh = -32;
+    cv::Mat white_holes;
+    cv::adaptiveThreshold( _pyr_masked, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+                          nhood_sz, thresh);
+    //cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
+    //cv::dilate( white_holes, white_holes, element );
     
     // Show results
-    cv::Mat drawing = _small_zoomed.clone();
-    //cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-    draw_points( _intersections_zoomed, drawing, 1, cv::Scalar(255,0,0));
+    cv::Mat drawing;
+    cv::cvtColor( white_holes, drawing, cv::COLOR_GRAY2RGB);
+    ISLOOP (_intersections_zoomed) {
+        Point2f p = _intersections_zoomed[i];
+        draw_square( p, 3, drawing, cv::Scalar(255,0,0));
+    }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f10_intersections()
+} // f10_white_holes()
 
 // Visualize features, one per intersection.
 //------------------------------------------------------------------------------------------------------
@@ -1153,16 +1142,18 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
     static int state = 0;
     std::vector<float> feats;
     cv::Mat drawing;
-    int r;
 
     switch (state) {
         case 0:
         {
-            r=11;
-            BlackWhiteEmpty::get_feature( _gz_threshed, _intersections_zoomed, r,
-                                         [](const cv::Mat &hood) { return cv::sum( hood)[0]; },
-                                         feats);
-            viz_feature( _gz_threshed, _intersections_zoomed, feats, drawing, 1);
+            // Gray mean
+            const int r = 4;
+            const int yshift = 0;
+            const bool dontscale = false;
+            BlackWhiteEmpty::get_feature( _pyr_gray, _intersections_zoomed, r,
+                                         [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+                                         feats, yshift, dontscale);
+            viz_feature( _pyr_gray, _intersections_zoomed, feats, drawing, 1);
             break;
         }
         default:
@@ -1173,10 +1164,9 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
     
     // Show results
     cv::cvtColor( drawing, drawing, cv::COLOR_GRAY2RGB);
-    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f10_features()
+} // f11_features()
 
 // Translate a bunch of points
 //----------------------------------------------------------------
@@ -1189,34 +1179,12 @@ void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
 }
 
 //------------------------------------------------------------------------------------------------------
-std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, const cv::Mat &gray,
-                          /*float dx, float dy,*/
+std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, const cv::Mat &gray,
                           int TIMEBUFSZ = 1)
 {
-    Points2f intersections;
-    std::vector<std::vector<int> > diagrams;
-    // Wiggle the regions a little.
-    translate_points( intersections_, 0, 0, intersections);
     float match_quality;
-    diagrams.push_back( BlackWhiteEmpty::classify( img, gray,
-                                                  intersections, match_quality));
-    //    intersections = translate_points( intersections_, -1, 0);
-    //    diagrams.push_back( BlackWhiteEmpty::classify( gray_normed,
-    //                                                  intersections, match_quality));
-    
-    // Vote across wiggle
-    std::vector<int> diagram; // vote result
-    ISLOOP( diagrams[0]) {
-        std::vector<int> votes(4,0);
-        for (auto d:diagrams) {
-            int idx = d[i];
-            votes[idx]++;
-        }
-        int winner = argmax( votes);
-        int tt = 42;
-        diagram.push_back( winner);
-        tt = 43;
-    }
+    std::vector<int> diagram = BlackWhiteEmpty::classify( img, gray,
+                                                         intersections, match_quality);
     // Vote across time
     static std::vector<std::vector<int> > timevotes(19*19);
     assert( SZ(diagram) <= 19*19);
@@ -1229,7 +1197,6 @@ std::vector<int> classify( const Points2f &intersections_, const cv::Mat &img, c
         int winner = argmax( counts);
         diagram[i] = winner;
     }
-    
     return diagram;
 } // classify()
 
@@ -1268,6 +1235,8 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
     //drb.draw( _diagram);
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
 
+    Points2f dummy;
+    get_intersections_from_corners( _corners_zoomed, _board_sz, dummy, _dx, _dy);
     int dx = ROUND( _dx/4.0);
     int dy = ROUND( _dy/4.0);
     ISLOOP (_diagram) {

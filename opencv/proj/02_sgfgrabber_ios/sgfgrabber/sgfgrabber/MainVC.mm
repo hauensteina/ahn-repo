@@ -259,17 +259,17 @@
                     break;
                 case 8:
                     state++;
-                    img = [self.grabFuncs f08_show_threshed];
+                    img = [self.grabFuncs f08_dark_places];
                     [self.cameraView setImage:img];
                     break;
                 case 9:
                     state++;
-                    img = [self.grabFuncs f09_erode];
+                    img = [self.grabFuncs f09_mask_dark];
                     [self.cameraView setImage:img];
                     break;
                 case 10:
                     state++;
-                    img = [self.grabFuncs f10_intersections];
+                    img = [self.grabFuncs f10_white_holes];
                     [self.cameraView setImage:img];
                     break;
                 case 11:
