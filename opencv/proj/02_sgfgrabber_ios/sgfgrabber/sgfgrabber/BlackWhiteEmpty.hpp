@@ -44,7 +44,7 @@ public:
         cv::Mat blurred;
         cv::GaussianBlur( gray, blurred, cv::Size(9,9),0,0);
         cv::Mat bright_places;
-        cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50);
+        cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 81, -50);
         cv::Mat dark_places;
         cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
@@ -68,7 +68,7 @@ public:
         match_mask_near_points( white_holes, emptyMask3, intersections, wiggle, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
         match_mask_near_points( bright_places, fullMask7, intersections, wiggle, BWE_brightmatch);
-        match_mask_near_points( dark_places, fullMask11, intersections, wiggle, BWE_darkmatch);
+        match_mask_near_points( dark_places, fullMask11, intersections, wiggle+2, BWE_darkmatch);
         
         // Gray mean
         const int r = 4;
