@@ -239,8 +239,8 @@
                     [self.cameraView setImage:img];
                     break;
                 case 5:
-                    state++;
                     img = [self.grabFuncs f05_horiz_lines];
+                    if (!img) { state = 6; continue; } // goto 6
                     [self.cameraView setImage:img];
                     break;
                 case 6:
@@ -270,8 +270,8 @@
                     break;
                 case 11:
                     img = [self.grabFuncs f11_features];
-                    if (!img) { state=12; continue; } // aka goto 12
-                    else { [self.cameraView setImage:img]; }
+                    if (!img) { state=12; continue; } // goto 12
+                    [self.cameraView setImage:img];
                     break;
                 case 12:
                     state++;
