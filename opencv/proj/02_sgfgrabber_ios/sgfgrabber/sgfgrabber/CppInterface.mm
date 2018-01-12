@@ -144,6 +144,8 @@ bool board_valid( Points2f board, const cv::Mat &img)
     g_app.mainVC.lbDbg.text = @"00";
     
     NSArray *fnames = @[
+                        @"board_full.jpg",
+                        @"board_full_1.jpg",
                         @"board01.jpg",
                         @"board02.jpg",
                         @"board03.jpg",
@@ -208,19 +210,45 @@ bool board_valid( Points2f board, const cv::Mat &img)
 
 
 
-// Thin down vertical Hough lines
+// Find vertical grid lines
 //----------------------------------
 - (UIImage *) f02_vert_lines
 {
     g_app.mainVC.lbDbg.text = @"02";
-    _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+    static int state = 0;
+    cv::Mat drawing;
+    
+    switch (state) {
+        case 0:
+        {
+            _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+            break;
+        }
+        case 1:
+        {
+            dedup_verticals( _vertical_lines, _gray);
+            break;
+        }
+        case 2:
+        {
+            filter_vert_lines( _vertical_lines);
+            break;
+        }
+        case 3:
+        {
+            fix_vertical_lines( _vertical_lines, _gray);
+            break;
+        }
+        default:
+            state = 0;
+            return NULL;
+    } // switch
+    state++;
     
     // Show results
-    cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color(true);
     ISLOOP( _vertical_lines) {
-        //if (i<400) continue;
         draw_polar_line( _vertical_lines[i], drawing, get_color());
     }
     UIImage *res = MatToUIImage( drawing);
@@ -279,9 +307,10 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 }
 
 // Adjacent lines should have similar slope
-//----------------------------------------------------------------
-void filter_lines( std::vector<cv::Vec2f> &vlines, const float eps = 5)
+//-----------------------------------------------------------------------------
+void filter_vert_lines( std::vector<cv::Vec2f> &vlines)
 {
+    const float eps = 5.0;
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
     if (med_idx < 0) return;
@@ -311,7 +340,43 @@ void filter_lines( std::vector<cv::Vec2f> &vlines, const float eps = 5)
     //good.clear();
     //good.push_back( _vertical_lines[med_idx]);
     vlines = good;
-} // filter_lines()
+} // filter_vert_lines()
+
+// Adjacent lines should have similar slope
+//-----------------------------------------------------------------------------
+void filter_horiz_lines( std::vector<cv::Vec2f> &vlines)
+{
+    const float eps = 1.1;
+    std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
+    int med_idx = good_center_line( vlines);
+    if (med_idx < 0) return;
+    float theta = vlines[med_idx][1];
+    // Going left and right, theta should not change abruptly
+    std::vector<cv::Vec2f> good;
+    good.push_back( vlines[med_idx]);
+    const float EPS = eps * PI/180;
+    float prev_theta;
+    // right
+    prev_theta = theta;
+    for (int i = med_idx+1; i < SZ(vlines); i++ ) {
+        if (fabs( vlines[i][1] - prev_theta) < EPS) {
+            good.push_back( vlines[i]);
+            prev_theta = vlines[i][1];
+        }
+    }
+    // left
+    prev_theta = theta;
+    for (int i = med_idx-1; i >= 0; i-- ) {
+        if (fabs( vlines[i][1] - prev_theta) < EPS) {
+            good.push_back( vlines[i]);
+            prev_theta = vlines[i][1];
+        }
+    }
+    //std::sort( good.begin(), good.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; });
+    //good.clear();
+    //good.push_back( _vertical_lines[med_idx]);
+    vlines = good;
+} // filter_horiz_lines()
 
 
 // Cluster vertical Hough lines to remove close duplicates.
@@ -320,7 +385,7 @@ void filter_lines( std::vector<cv::Vec2f> &vlines, const float eps = 5)
 {
     g_app.mainVC.lbDbg.text = @"03";
     dedup_verticals( _vertical_lines, _gray);
-    filter_lines( _vertical_lines);
+    filter_vert_lines( _vertical_lines);
     
     // Show results
     cv::Mat drawing;
@@ -699,7 +764,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
     
     _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
     dedup_horizontals( _horizontal_lines, _gray);
-    filter_lines( _horizontal_lines, 1.1);
+    filter_horiz_lines( _horizontal_lines);
     fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
 
     // Show results
@@ -1362,7 +1427,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_verticals( _vertical_lines, _gray);
-        filter_lines( _vertical_lines);
+        filter_vert_lines( _vertical_lines);
         fix_vertical_lines( _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 55) break;
         if (SZ( _vertical_lines) < 5) break;
@@ -1370,7 +1435,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Find horiz lines
         _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
         dedup_horizontals( _horizontal_lines, _gray);
-        filter_lines( _horizontal_lines, 1.1);
+        filter_horiz_lines( _horizontal_lines);
         fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
         if (SZ( _horizontal_lines) > 55) break;
         if (SZ( _horizontal_lines) < 5) break;

@@ -103,7 +103,7 @@
     UISlider *s = [UISlider new];
     self.sldDbg = s;
     s.minimumValue = 0;
-    s.maximumValue = 14;
+    s.maximumValue = 16;
     [s addTarget:self action:@selector(sldDbg:) forControlEvents:UIControlEventValueChanged];
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
@@ -228,20 +228,20 @@
 //                    [self.cameraView setImage:img];
                     break;
                 case 2:
-                    state++;
                     img = [self.grabFuncs f02_vert_lines];
+                    if (!img) { state=5; continue; } // goto 5
                     [self.cameraView setImage:img];
                     break;
-                case 3:
-                    state++;
-                    img = [self.grabFuncs f03_vert_lines_2];
-                    [self.cameraView setImage:img];
-                    break;
-                case 4:
-                    state++;
-                    img = [self.grabFuncs f04_vert_params];
-                    [self.cameraView setImage:img];
-                    break;
+//                case 3:
+//                    state++;
+//                    img = [self.grabFuncs f03_vert_lines_2];
+//                    [self.cameraView setImage:img];
+//                    break;
+//                case 4:
+//                    state++;
+//                    img = [self.grabFuncs f04_vert_params];
+//                    [self.cameraView setImage:img];
+//                    break;
                 case 5:
                     state++;
                     img = [self.grabFuncs f05_horiz_lines];
@@ -275,7 +275,7 @@
                 case 11:
                     img = [self.grabFuncs f11_features];
                     if (!img) { state=12; continue; } // aka goto 12
-                    else { [self.cameraView setImage:img]; }
+                    [self.cameraView setImage:img];
                     break;
                 case 12:
                     state++;

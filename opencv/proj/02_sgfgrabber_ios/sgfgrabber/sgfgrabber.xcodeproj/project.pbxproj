@@ -30,6 +30,8 @@
 		AC8ACF8E1FC1EC12005D5722 /* board01.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC8ACF8D1FC1EC12005D5722 /* board01.jpg */; };
 		AC8ACF901FC1F6E6005D5722 /* board02.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC8ACF8F1FC1F6E6005D5722 /* board02.jpg */; };
 		AC9702181FBC87DF0057C4C2 /* Globals.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC9702171FBC87DF0057C4C2 /* Globals.mm */; };
+		AC99ECED200968E200EDF097 /* board_full.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC99ECEB200968E200EDF097 /* board_full.jpg */; };
+		AC99ECEE200968E200EDF097 /* board_full_1.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC99ECEC200968E200EDF097 /* board_full_1.jpg */; };
 		AC9DB02F1FE0581F008723CE /* board06.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC9DB02E1FE0581F008723CE /* board06.jpg */; };
 		AC9DB0331FE09DFA008723CE /* black_templ.yml in Resources */ = {isa = PBXBuildFile; fileRef = AC9DB0321FE09DFA008723CE /* black_templ.yml */; };
 		AC9DB0351FE09E02008723CE /* empty_templ.yml in Resources */ = {isa = PBXBuildFile; fileRef = AC9DB0341FE09E02008723CE /* empty_templ.yml */; };
@@ -77,6 +79,8 @@
 		AC8ACF8F1FC1F6E6005D5722 /* board02.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; name = board02.jpg; path = Assets/board02.jpg; sourceTree = SOURCE_ROOT; };
 		AC9702171FBC87DF0057C4C2 /* Globals.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Globals.mm; sourceTree = "<group>"; };
 		AC9702191FBC88050057C4C2 /* Globals.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Globals.h; sourceTree = "<group>"; };
+		AC99ECEB200968E200EDF097 /* board_full.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board_full.jpg; sourceTree = "<group>"; };
+		AC99ECEC200968E200EDF097 /* board_full_1.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board_full_1.jpg; sourceTree = "<group>"; };
 		AC9DB02E1FE0581F008723CE /* board06.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = board06.jpg; sourceTree = "<group>"; };
 		AC9DB0321FE09DFA008723CE /* black_templ.yml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = black_templ.yml; sourceTree = "<group>"; };
 		AC9DB0341FE09E02008723CE /* empty_templ.yml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = empty_templ.yml; sourceTree = "<group>"; };
@@ -178,6 +182,8 @@
 				AC9DB0361FE09E0F008723CE /* white_templ.yml */,
 				AC9DB0321FE09DFA008723CE /* black_templ.yml */,
 				AC9DB0341FE09E02008723CE /* empty_templ.yml */,
+				AC99ECEB200968E200EDF097 /* board_full.jpg */,
+				AC99ECEC200968E200EDF097 /* board_full_1.jpg */,
 				AC8ACF8D1FC1EC12005D5722 /* board01.jpg */,
 				AC8ACF8F1FC1F6E6005D5722 /* board02.jpg */,
 				ACAC40BD1FC3321A00B6968B /* board03.jpg */,
@@ -255,6 +261,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC99ECED200968E200EDF097 /* board_full.jpg in Resources */,
 				AC628C231F9A7D3F0043FCEE /* Assets.xcassets in Resources */,
 				AC8ACF8E1FC1EC12005D5722 /* board01.jpg in Resources */,
 				AC3CC3571FFECD2300ED79D6 /* board13.jpg in Resources */,
@@ -263,6 +270,7 @@
 				AC0FFB041FEB4AD7009A02FD /* board11.jpg in Resources */,
 				AC9DB0371FE09E0F008723CE /* white_templ.yml in Resources */,
 				AC0FFB011FEB4AD7009A02FD /* board07.jpg in Resources */,
+				AC99ECEE200968E200EDF097 /* board_full_1.jpg in Resources */,
 				AC3CC3561FFECD2300ED79D6 /* board14.jpg in Resources */,
 				ACAC40BE1FC3321A00B6968B /* board04.jpg in Resources */,
 				AC0FFB051FEB4AD7009A02FD /* board12.jpg in Resources */,
