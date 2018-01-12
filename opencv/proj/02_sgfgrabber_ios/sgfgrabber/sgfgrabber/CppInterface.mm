@@ -314,24 +314,26 @@ void filter_vert_lines( std::vector<cv::Vec2f> &vlines)
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
     if (med_idx < 0) return;
-    float theta = vlines[med_idx][1];
+    const float med_theta = vlines[med_idx][1];
     // Going left and right, theta should not change abruptly
     std::vector<cv::Vec2f> good;
     good.push_back( vlines[med_idx]);
     const float EPS = eps * PI/180;
     float prev_theta;
     // right
-    prev_theta = theta;
+    prev_theta = med_theta;
     for (int i = med_idx+1; i < SZ(vlines); i++ ) {
-        if (fabs( vlines[i][1] - prev_theta) < EPS) {
+        float d = fabs( vlines[i][1] - prev_theta) + fabs( vlines[i][1] - med_theta);
+        if (d < EPS) {
             good.push_back( vlines[i]);
             prev_theta = vlines[i][1];
         }
     }
     // left
-    prev_theta = theta;
+    prev_theta = med_theta;
     for (int i = med_idx-1; i >= 0; i-- ) {
-        if (fabs( vlines[i][1] - prev_theta) < EPS) {
+        float d = fabs( vlines[i][1] - prev_theta) + fabs( vlines[i][1] - med_theta);
+        if (d < EPS) {
             good.push_back( vlines[i]);
             prev_theta = vlines[i][1];
         }
