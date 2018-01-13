@@ -36,6 +36,7 @@
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 @property BOOL debug_mode;
+@property int sliderstate;
 
 @end
 
@@ -50,6 +51,7 @@
     self.grabFuncs = [CppInterface new];
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
+    self.sliderstate = 0;
     
     //self.sldCannyLow.value = self.grabFuncs.canny_low;
     //self.sldCannyHi.value  = self.grabFuncs.canny_hi;
@@ -194,6 +196,7 @@
     int tt = [self.sldDbg value];
     self.grabFuncs.sldDbg = tt;
     self.lbDbg.text = nsprintf( @"%d", tt);
+    //_sliderstate = 0;
 }
 
 // Debug on/off
@@ -208,13 +211,12 @@
 - (void) btnGo: (id) sender
 {
     if (self.debug_mode) {
-        static int state = 0;
         UIImage *img;
         while(1) {
-            switch (state) {
+            switch (_sliderstate) {
                 case 0:
-                    state++;
-                    //state=100;
+                    _sliderstate++;
+                    //_sliderstate=100;
                     self.frame_grabber_on = NO;
                     [self.frameExtractor suspend];
                     img = [self.grabFuncs f00_blobs:_imgQ];
@@ -222,51 +224,51 @@
                     break;
                 case 1:
                     img = [self.grabFuncs f01_vert_lines];
-                    if (!img) { state=2; continue; }
+                    if (!img) { _sliderstate=2; continue; }
                     [self.cameraView setImage:img];
                     break;
                 case 2:
                     img = [self.grabFuncs f02_horiz_lines];
-                    if (!img) { state=3; continue; }
+                    if (!img) { _sliderstate=3; continue; }
                     [self.cameraView setImage:img];
                     break;
                 case 3:
-                    state++;
+                    _sliderstate++;
                     img = [self.grabFuncs f03_corners];
                     [self.cameraView setImage:img];
                     break;
                 case 4:
-                    state++;
+                    _sliderstate++;
                     img = [self.grabFuncs f04_zoom_in];
                     [self.cameraView setImage:img];
                     break;
                 case 5:
-                    state++;
+                    _sliderstate++;
                     img = [self.grabFuncs f05_dark_places];
                     [self.cameraView setImage:img];
                     break;
                 case 6:
-                    state++;
+                    _sliderstate++;
                     img = [self.grabFuncs f06_mask_dark];
                     [self.cameraView setImage:img];
                     break;
                 case 7:
-                    state++;
+                    _sliderstate++;
                     img = [self.grabFuncs f07_white_holes];
                     [self.cameraView setImage:img];
                     break;
                 case 8:
                     img = [self.grabFuncs f08_features];
-                    if (!img) { state=9; continue; } 
+                    if (!img) { _sliderstate=9; continue; }
                     [self.cameraView setImage:img];
                     break;
                 case 9:
-                    state++;
+                    _sliderstate++;
                     img = [self.grabFuncs f09_classify];
                     [self.cameraView setImage:img];
                     break;
                 default:
-                    state=0;
+                    _sliderstate=0;
                     self.frame_grabber_on = YES;
                     [self.frameExtractor resume];
             } // switch
@@ -274,8 +276,6 @@
         } // while(1)
     } // if
 } // btnGo()
-
-
 #pragma mark - FrameExtractorDelegate protocol
 //---------------------------------
 - (void)captured:(UIImage *)image

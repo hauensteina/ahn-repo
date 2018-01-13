@@ -76,13 +76,13 @@ public:
     {
         m_pyrpix_edgeness = m_pyrpix.clone();
         cv::Mat &m = m_pyrpix_edgeness;
-        // Replace really dark or bright places with average to suppress fake edges inside the board
+        // Replace really dark places with average to suppress fake edges inside the board
         cv::Scalar smean = cv::mean( m);
         Pixel mean( smean[0], smean[1], smean[2]);
         m.forEach<Pixel>( [&mean](Pixel &v, const int *p)
                          {
                              float gray = (v.x + v.y + v.z) / 3.0;
-                             if (gray < 50 || gray > 220 ) {
+                             if (gray < 50 ) {
                                  v = mean;
                              }
                          });
@@ -147,7 +147,10 @@ public:
                 //tmp.at<double>(r,c) =  lsum + rsum + tsum + bsum;
                 // Multiplying instead of summ rewards similarity between factors
                 tmp.at<double>(r,c) =  RAT(lsum,lcount) * RAT(rsum,rcount) * RAT(tsum,tcount) * RAT(bsum,bcount);
-                if (tmp.at<double>(r,c) > mmax) mmax = tmp.at<double>(r,c) ;
+                if (tmp.at<double>(r,c) > mmax) {
+                    mmax = tmp.at<double>(r,c) ;
+                    PLOG ("r: %d c: %d mmax: %.2f counts: %d %d %d %d\n", r, c, mmax, lcount, rcount, tcount, bcount);
+                }
             } // CSLOOP
         } // RSLOOP
         double scale = 255.0 / mmax;
@@ -188,7 +191,7 @@ private:
     //------------------------------------------------------------
     void fill_m_blobflags()
     {
-        const int EPS = 2.0;
+        const int EPS = 4.0;
         typedef struct { int idx; float d; } Idxd;
         // All points on horiz lines
         std::vector<Idxd> blob_to_horiz( SZ(m_blobs), {-1,1E9});

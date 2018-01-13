@@ -141,7 +141,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 - (UIImage *) f00_blobs: (std::vector<cv::Mat>)imgQ
 {
     _board_sz=19;
-    g_app.mainVC.lbDbg.text = @"00";
+    g_app.mainVC.lbDbg.text = @"blobs";
     
     NSArray *fnames = @[
                         @"board_full.jpg",
@@ -214,29 +214,35 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //----------------------------------
 - (UIImage *) f01_vert_lines
 {
-    g_app.mainVC.lbDbg.text = @"01";
+    g_app.mainVC.lbDbg.text = @"verts";
     static int state = 0;
     cv::Mat drawing;
+    static std::vector<cv::Vec2f> all_vert_lines;
     
     switch (state) {
         case 0:
         {
             _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+            all_vert_lines = _vertical_lines;
             break;
         }
         case 1:
         {
+            g_app.mainVC.lbDbg.text = @"dedup";
             dedup_verticals( _vertical_lines, _gray);
             break;
         }
         case 2:
         {
+            g_app.mainVC.lbDbg.text = @"filter";
             filter_vert_lines( _vertical_lines);
             break;
         }
         case 3:
         {
-            fix_vertical_lines( _vertical_lines, _gray);
+            g_app.mainVC.lbDbg.text = @"fix";
+            const float x_thresh = 4.0;
+            fix_vertical_lines( _vertical_lines, all_vert_lines, _gray, x_thresh);
             break;
         }
         default:
@@ -413,12 +419,39 @@ int good_center_line( const std::vector<cv::Vec2f> &lines)
     return minidx;
 } // good_center_line()
 
+// Find line where top_x and bot_x match best.
+//---------------------------------------------------------------------------------------------------------------
+int closest_vert_line( const std::vector<cv::Vec2f> &lines, float top_x, float bot_x, float top_y, float bot_y,
+                      float &min_dtop, float &min_dbot, float &min_err, float &min_top_rho, float &min_bot_rho) // out
+{
+    std::vector<float> top_rhos = vec_extract( lines,
+                                              [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
+    std::vector<float> bot_rhos = vec_extract( lines,
+                                              [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
+    int minidx = -1;
+    min_err = 1E9;
+    ISLOOP (top_rhos) {
+        float dtop = fabs( top_rhos[i] - top_x );
+        float dbot = fabs( bot_rhos[i] - bot_x );
+        float err = dtop + dbot;
+        if (err < min_err) {
+            minidx = i;
+            min_err = err;
+            min_dtop = dtop;
+            min_dbot = dbot;
+            min_top_rho = top_rhos[i];
+            min_bot_rho = bot_rhos[i];
+        }
+    }
+    return minidx;
+} // closest_vert_line()
 
 // Find the x-change per line in in upper and lower screen area and synthesize
 // the whole bunch starting at the middle. Replace synthesized lines with real
 // ones if close enough.
-//----------------------------------------------------------------------------------
-void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
+//------------------------------------------------------------------------------------------------
+void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Vec2f> &all_vert_lines,
+                        const cv::Mat &img, float x_thresh = 3.0)
 {
     const float width = img.cols;
     const int top_y = 0.2 * img.rows;
@@ -453,19 +486,23 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     synth_lines.push_back(med_line);
     float top_rho, bot_rho;
     // If there is a close line, use it. Else interpolate.
-    const float X_THRESH = 3; //6;
+    const float X_THRESH = x_thresh; //6;
     // Lines to the right
     top_rho = x_from_y( top_y, med_line);
     bot_rho = x_from_y( bot_y, med_line);
     ILOOP(100) {
         top_rho += d_top_rho;
         bot_rho += d_bot_rho;
-        int close_idx = vec_closest( bot_rhos, bot_rho);
-        float dbot = fabs( bot_rho - bot_rhos[close_idx]);
-        float dtop = fabs( top_rho - top_rhos[close_idx]);
+        //int close_idx = vec_closest( bot_rhos, bot_rho);
+        //int close_idx = closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y);
+        float dtop, dbot, err, top_x, bot_x;
+        closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y, // in
+                          dtop, dbot, err, top_x, bot_x); // out
+        //float dbot = fabs( bot_rho - bot_rhos[close_idx]);
+        //float dtop = fabs( top_rho - top_rhos[close_idx]);
         if (dbot < X_THRESH && dtop < X_THRESH) {
-            top_rho   = top_rhos[close_idx];
-            bot_rho   = bot_rhos[close_idx];
+            top_rho   = top_x;
+            bot_rho   = bot_x;
         }
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
         if (top_rho > width) break;
@@ -479,13 +516,15 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     ILOOP(100) {
         top_rho -= d_top_rho;
         bot_rho -= d_bot_rho;
-        int close_idx = vec_closest( bot_rhos, bot_rho);
-        float dbot = fabs( bot_rho - bot_rhos[close_idx]);
-        float dtop = fabs( top_rho - top_rhos[close_idx]);
+        //int close_idx = vec_closest( bot_rhos, bot_rho);
+        //int close_idx = closest_vert_line( lines, top_rho, bot_rho, top_y, bot_y);
+        float dtop, dbot, err, top_x, bot_x;
+        closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y, // in
+                          dtop, dbot, err, top_x, bot_x); // out
         if (dbot < X_THRESH && dtop < X_THRESH) {
             //PLOG("repl %d\n",i);
-            top_rho   = top_rhos[close_idx];
-            bot_rho   = bot_rhos[close_idx];
+            top_rho   = top_x;
+            bot_rho   = bot_x;
         }
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
         if (top_rho < 0) break;
@@ -1398,7 +1437,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
         dedup_verticals( _vertical_lines, _gray);
         filter_vert_lines( _vertical_lines);
-        fix_vertical_lines( _vertical_lines, _gray);
+        fix_vertical_lines( _vertical_lines, _vertical_lines, _gray);
         if (SZ( _vertical_lines) > 55) break;
         if (SZ( _vertical_lines) < 5) break;
         
