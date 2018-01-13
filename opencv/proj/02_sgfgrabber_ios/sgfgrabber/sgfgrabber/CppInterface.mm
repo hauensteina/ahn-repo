@@ -429,10 +429,6 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
               [bot_y](cv::Vec2f a, cv::Vec2f b) {
                   return x_from_y( bot_y, a) < x_from_y( bot_y, b);
               });
-//    std::vector<float> top_rhos = vec_extract( lines,
-//                                              [top_y](cv::Vec2f a) { return x_from_y( top_y, x_from_y( top_y, a)); });
-//    std::vector<float> bot_rhos = vec_extract( lines,
-//                                              [bot_y](cv::Vec2f a) { return x_from_y( bot_y, x_from_y( bot_y, a)); });
     std::vector<float> top_rhos = vec_extract( lines,
                                               [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
     std::vector<float> bot_rhos = vec_extract( lines,
@@ -473,7 +469,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         }
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
         if (top_rho > width) break;
-        if (x_from_y( mid_y, line) > width) break;
+        if (i > 19) break;
+        //if (x_from_y( mid_y, line) > width) break;
         synth_lines.push_back( line);
     } // ILOOP
     // Lines to the left
@@ -492,7 +489,8 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
         }
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
         if (top_rho < 0) break;
-        if (x_from_y( mid_y, line) < 0) break;
+        if (i > 19) break;
+        //if (x_from_y( mid_y, line) < 0) break;
         synth_lines.push_back( line);
     } // ILOOP
     std::sort( synth_lines.begin(), synth_lines.end(),
