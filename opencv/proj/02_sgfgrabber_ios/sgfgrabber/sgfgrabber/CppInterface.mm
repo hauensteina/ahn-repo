@@ -460,7 +460,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     auto d_top_rhos = vec_delta( top_rhos);
     auto d_bot_rhos = vec_delta( bot_rhos);
     vec_filter( d_top_rhos, [](float d){ return d > 5 && d < 20;});
-    vec_filter( d_bot_rhos, [](float d){ return d > 10 && d < 25;});
+    vec_filter( d_bot_rhos, [](float d){ return d > 8 && d < 25;});
     float d_top_rho = vec_median( d_top_rhos);
     float d_bot_rho = vec_median( d_bot_rhos);
 
@@ -482,13 +482,12 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     top_rho = x_from_y( top_y, med_line);
     bot_rho = x_from_y( bot_y, med_line);
     ILOOP(100) {
-        if (!i) continue;
         top_rho += d_top_rho;
         bot_rho += d_bot_rho;
         int close_idx = vec_closest( bot_rhos, bot_rho);
-        if (fabs( bot_rho - bot_rhos[close_idx]) < X_THRESH &&
-            fabs( top_rho - top_rhos[close_idx]) < X_THRESH)
-        {
+        float dbot = fabs( bot_rho - bot_rhos[close_idx]);
+        float dtop = fabs( top_rho - top_rhos[close_idx]);
+        if (dbot < X_THRESH && dtop < X_THRESH) {
             top_rho   = top_rhos[close_idx];
             bot_rho   = bot_rhos[close_idx];
         }
@@ -501,13 +500,13 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     top_rho = x_from_y( top_y, med_line);
     bot_rho = x_from_y( bot_y, med_line);
     ILOOP(100) {
-        if (!i) continue;
         top_rho -= d_top_rho;
         bot_rho -= d_bot_rho;
         int close_idx = vec_closest( bot_rhos, bot_rho);
-        if (fabs( bot_rho - bot_rhos[close_idx]) < X_THRESH &&
-            fabs( top_rho - top_rhos[close_idx]) < X_THRESH)
-        {
+        float dbot = fabs( bot_rho - bot_rhos[close_idx]);
+        float dtop = fabs( top_rho - top_rhos[close_idx]);
+        if (dbot < X_THRESH && dtop < X_THRESH) {
+            //PLOG("repl %d\n",i);
             top_rho   = top_rhos[close_idx];
             bot_rho   = bot_rhos[close_idx];
         }
