@@ -221,65 +221,48 @@
                     [self.cameraView setImage:img];
                     break;
                 case 1:
-                    state = 2;
-                    continue;
-//                    state++;
-//                    img = [self.grabFuncs f01_straight];
-//                    [self.cameraView setImage:img];
-                    break;
-                case 2:
-                    img = [self.grabFuncs f02_vert_lines];
-                    if (!img) { state=5; continue; } // goto 5
+                    img = [self.grabFuncs f01_vert_lines];
+                    if (!img) { state=2; continue; }
                     [self.cameraView setImage:img];
                     break;
-//                case 3:
-//                    state++;
-//                    img = [self.grabFuncs f03_vert_lines_2];
-//                    [self.cameraView setImage:img];
-//                    break;
-//                case 4:
-//                    state++;
-//                    img = [self.grabFuncs f04_vert_params];
-//                    [self.cameraView setImage:img];
-//                    break;
+                case 2:
+                    img = [self.grabFuncs f02_horiz_lines];
+                    if (!img) { state=3; continue; }
+                    [self.cameraView setImage:img];
+                    break;
+                case 3:
+                    state++;
+                    img = [self.grabFuncs f03_corners];
+                    [self.cameraView setImage:img];
+                    break;
+                case 4:
+                    state++;
+                    img = [self.grabFuncs f04_zoom_in];
+                    [self.cameraView setImage:img];
+                    break;
                 case 5:
-                    img = [self.grabFuncs f05_horiz_lines];
-                    if (!img) { state=6; continue; } // goto 6
+                    state++;
+                    img = [self.grabFuncs f05_dark_places];
                     [self.cameraView setImage:img];
                     break;
                 case 6:
                     state++;
-                    img = [self.grabFuncs f06_corners];
+                    img = [self.grabFuncs f06_mask_dark];
                     [self.cameraView setImage:img];
                     break;
                 case 7:
                     state++;
-                    img = [self.grabFuncs f07_zoom_in];
+                    img = [self.grabFuncs f07_white_holes];
                     [self.cameraView setImage:img];
                     break;
                 case 8:
-                    state++;
-                    img = [self.grabFuncs f08_dark_places];
+                    img = [self.grabFuncs f08_features];
+                    if (!img) { state=9; continue; } 
                     [self.cameraView setImage:img];
                     break;
                 case 9:
                     state++;
-                    img = [self.grabFuncs f09_mask_dark];
-                    [self.cameraView setImage:img];
-                    break;
-                case 10:
-                    state++;
-                    img = [self.grabFuncs f10_white_holes];
-                    [self.cameraView setImage:img];
-                    break;
-                case 11:
-                    img = [self.grabFuncs f11_features];
-                    if (!img) { state=12; continue; } // aka goto 12
-                    [self.cameraView setImage:img];
-                    break;
-                case 12:
-                    state++;
-                    img = [self.grabFuncs f12_classify];
+                    img = [self.grabFuncs f09_classify];
                     [self.cameraView setImage:img];
                     break;
                 default:

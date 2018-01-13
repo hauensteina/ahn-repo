@@ -16,18 +16,15 @@
 //----------------------------
 // Individual steps for debugging
 - (UIImage *) f00_blobs:(std::vector<cv::Mat>)imgQ;
-//- (UIImage *) f01_straight;
-- (UIImage *) f02_vert_lines;
-- (UIImage *) f03_vert_lines_2;
-- (UIImage *) f04_vert_params;
-- (UIImage *) f05_horiz_lines;
-- (UIImage *) f06_corners;
-- (UIImage *) f07_zoom_in;
-- (UIImage *) f08_dark_places;
-- (UIImage *) f09_mask_dark;
-- (UIImage *) f10_white_holes;
-- (UIImage *) f11_features;
-- (UIImage *) f12_classify;
+- (UIImage *) f01_vert_lines;
+- (UIImage *) f02_horiz_lines;
+- (UIImage *) f03_corners;
+- (UIImage *) f04_zoom_in;
+- (UIImage *) f05_dark_places;
+- (UIImage *) f06_mask_dark;
+- (UIImage *) f07_white_holes;
+- (UIImage *) f08_features;
+- (UIImage *) f09_classify;
 - (UIImage *) real_time_flow:(UIImage *)img;
 @property int sldDbg;
 

@@ -212,7 +212,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 
 // Find vertical grid lines
 //----------------------------------
-- (UIImage *) f02_vert_lines
+- (UIImage *) f01_vert_lines
 {
     g_app.mainVC.lbDbg.text = @"02";
     static int state = 0;
@@ -253,7 +253,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f02_vert_lines()
+} // f01_vert_lines()
 
 // Replace close clusters of vert lines by their average.
 //-----------------------------------------------------------------------------------
@@ -379,26 +379,6 @@ void filter_horiz_lines( std::vector<cv::Vec2f> &vlines)
     //good.push_back( _vertical_lines[med_idx]);
     vlines = good;
 } // filter_horiz_lines()
-
-
-// Cluster vertical Hough lines to remove close duplicates.
-//------------------------------------------------------------
-- (UIImage *) f03_vert_lines_2
-{
-    g_app.mainVC.lbDbg.text = @"03";
-    dedup_verticals( _vertical_lines, _gray);
-    filter_vert_lines( _vertical_lines);
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    get_color(true);
-    ISLOOP( _vertical_lines) {
-        draw_polar_line( _vertical_lines[i], drawing, get_color());
-    }
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-}
 
 // Find a line close to the middle with roughly median theta.
 // The lines should be sorted by rho.
@@ -681,9 +661,6 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
         cv::Vec2f line( rho,theta);
         synth_lines.push_back( line);
     } // ILOOP
-//    // All horizontals should have the same angle
-//    float med_theta = vec_median( synth_lines, [](cv::Vec2f &x){ return x[1];}) [1];
-//    ISLOOP (synth_lines) { synth_lines[i][1] = med_theta; }
     // Sort top to bottom
     std::sort( synth_lines.begin(), synth_lines.end(),
               [](cv::Vec2f line1, cv::Vec2f line2) {
@@ -692,25 +669,6 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     lines_.clear();
     ISLOOP (synth_lines) { lines_.push_back( changle2polar( synth_lines[i], middle_x)); }
 } // fix_horiz_lines()
-
-
-// Find vertical line parameters
-//---------------------------------
-- (UIImage *) f04_vert_params
-{
-    g_app.mainVC.lbDbg.text = @"04";
-    fix_vertical_lines( _vertical_lines, _gray);
-    
-    // Show results
-    cv::Mat drawing;
-    cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
-    get_color(true);
-    ISLOOP( _vertical_lines) {
-        draw_polar_line( _vertical_lines[i], drawing, get_color());
-    }
-    UIImage *res = MatToUIImage( drawing);
-    return res;
-} // f05_vert_params()
 
 // Convert horizontal (roughly) polar line to a pair
 // y_at_middle, angle
@@ -759,7 +717,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 }
 
 //-----------------------------
-- (UIImage *) f05_horiz_lines
+- (UIImage *) f02_horiz_lines
 {
     g_app.mainVC.lbDbg.text = @"05";
     static int state = 0;
@@ -997,7 +955,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 
 // Find the corners
 //----------------------------
-- (UIImage *) f06_corners //@@@
+- (UIImage *) f03_corners //@@@
 {
     g_app.mainVC.lbDbg.text = @"06";
 
@@ -1025,7 +983,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
     //draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( mat_dbg);
     return res;
-} // f06_corners()
+} // f03_corners()
 
 // Unwarp the square defined by corners
 //------------------------------------------------------------------------
@@ -1075,7 +1033,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 
 // Zoom in
 //----------------------------
-- (UIImage *) f07_zoom_in
+- (UIImage *) f04_zoom_in
 {
     g_app.mainVC.lbDbg.text = @"07";
     cv::Mat threshed;
@@ -1127,11 +1085,11 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f07_zoom_in()
+} // f04_zoom_in()
 
 // Dark places to find B stones
 //-----------------------------------------------------------
-- (UIImage *) f08_dark_places
+- (UIImage *) f05_dark_places
 {
     g_app.mainVC.lbDbg.text = @"08";
     _corners = _corners_zoomed;
@@ -1149,11 +1107,11 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f08_dark_places()
+} // f05_dark_places()
 
 // Replace dark places with average to make white dynamic threshold work
 //-----------------------------------------------------------------------
-- (UIImage *) f09_mask_dark
+- (UIImage *) f06_mask_dark
 {
     g_app.mainVC.lbDbg.text = @"09";
     
@@ -1178,12 +1136,12 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f09_mask_dark()
+} // f06_mask_dark()
 
 
 // Find White places
 //----------------------------------------
-- (UIImage *) f10_white_holes
+- (UIImage *) f07_white_holes
 {
     g_app.mainVC.lbDbg.text = @"10";
     
@@ -1205,7 +1163,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f10_white_holes()
+} // f07_white_holes()
 
 // Visualize features, one per intersection.
 //------------------------------------------------------------------------------------------------------
@@ -1225,7 +1183,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 
 // Visualize some features
 //---------------------------
-- (UIImage *) f11_features
+- (UIImage *) f08_features
 {
     g_app.mainVC.lbDbg.text = @"11";
     static int state = 0;
@@ -1255,7 +1213,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
     cv::cvtColor( drawing, drawing, cv::COLOR_GRAY2RGB);
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f11_features()
+} // f08_features()
 
 // Translate a bunch of points
 //----------------------------------------------------------------
@@ -1304,7 +1262,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
 
 // Classify intersections into black, white, empty
 //-----------------------------------------------------------
-- (UIImage *) f12_classify
+- (UIImage *) f09_classify
 {
     g_app.mainVC.lbDbg.text = @"12";
     if (SZ(_corners_zoomed) != 4) { return MatToUIImage( _gray); }
@@ -1344,7 +1302,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
     }
     UIImage *res = MatToUIImage( drawing);
     return res;
-} // f12_classify()
+} // f09_classify()
 
 // Save small crops around intersections for inspection
 //-------------------------------------------------------------------------------
