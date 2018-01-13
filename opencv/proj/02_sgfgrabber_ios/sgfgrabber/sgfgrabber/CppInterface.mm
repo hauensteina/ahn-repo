@@ -1523,7 +1523,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     UIImage *res = MatToUIImage( *canvas);
     //UIImage *res = MatToUIImage( drawing);
     return res;
-} // findBoard()
+} // real_time_flow()
 
 
 @end

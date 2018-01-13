@@ -46,7 +46,8 @@ public:
         cv::Mat bright_places;
         cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 81, -50);
         cv::Mat dark_places;
-        cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+        //cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+        cv::adaptiveThreshold( pyrgray, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
         // Replace dark places with average to make white dynamic threshold work
         uint8_t mean = cv::mean( pyrgray)[0];

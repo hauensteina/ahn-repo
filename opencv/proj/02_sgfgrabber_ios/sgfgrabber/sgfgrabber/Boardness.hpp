@@ -242,7 +242,7 @@ public:
         RSLOOP (m_horiz_lines) {
             CSLOOP (m_vert_lines) {
                 float ssum = 0;
-                if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
+                //if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
                 if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
                 if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
                 if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
