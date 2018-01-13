@@ -245,7 +245,7 @@ public:
                 //if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
                 if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
                 if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
-                if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
+                //if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
                 for (int rr = r; rr < r + m_boardsz; rr++) {
                     for (int cc = c; cc < c + m_boardsz; cc++) {
                         int idx = rc2idx( rr,cc); 
