@@ -258,6 +258,7 @@
                     [self.cameraView setImage:img];
                     break;
                 case 8:
+                    _sliderstate++; continue; // skip;
                     img = [self.grabFuncs f08_features];
                     if (!img) { _sliderstate=9; continue; }
                     [self.cameraView setImage:img];
@@ -271,6 +272,7 @@
                     _sliderstate=0;
                     self.frame_grabber_on = YES;
                     [self.frameExtractor resume];
+                    g_app.mainVC.lbDbg.text = @"";
             } // switch
             break;
         } // while(1)

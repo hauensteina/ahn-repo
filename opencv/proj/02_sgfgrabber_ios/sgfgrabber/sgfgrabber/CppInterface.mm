@@ -214,7 +214,6 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //----------------------------------
 - (UIImage *) f01_vert_lines
 {
-    g_app.mainVC.lbDbg.text = @"verts";
     static int state = 0;
     cv::Mat drawing;
     static std::vector<cv::Vec2f> all_vert_lines;
@@ -222,6 +221,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
     switch (state) {
         case 0:
         {
+            g_app.mainVC.lbDbg.text = @"verts";
             _vertical_lines = homegrown_vert_lines( _stone_or_empty);
             all_vert_lines = _vertical_lines;
             break;
@@ -451,7 +451,7 @@ int closest_vert_line( const std::vector<cv::Vec2f> &lines, float top_x, float b
 // ones if close enough.
 //------------------------------------------------------------------------------------------------
 void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Vec2f> &all_vert_lines,
-                        const cv::Mat &img, float x_thresh = 3.0)
+                        const cv::Mat &img, float x_thresh = 4.0)
 {
     const float width = img.cols;
     const int top_y = 0.2 * img.rows;
@@ -756,28 +756,31 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 //-----------------------------
 - (UIImage *) f02_horiz_lines
 {
-    g_app.mainVC.lbDbg.text = @"02";
     static int state = 0;
     cv::Mat drawing;
     
     switch (state) {
         case 0:
         {
+            g_app.mainVC.lbDbg.text = @"horizontals";
             _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
             break;
         }
         case 1:
         {
+            g_app.mainVC.lbDbg.text = @"dedup";
             dedup_horizontals( _horizontal_lines, _gray);
             break;
         }
         case 2:
         {
+            g_app.mainVC.lbDbg.text = @"filter";
             filter_horiz_lines( _horizontal_lines);
             break;
         }
         case 3:
         {
+            g_app.mainVC.lbDbg.text = @"fix";
             fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
             break;
         }
@@ -955,6 +958,8 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     // Mark corners for visualization
     mat_dbg = bness.m_pyrpix_edgeness.clone();
     mat_dbg.at<cv::Vec3b>( pf2p(tl)) = cv::Vec3b( 255,0,0);
+    mat_dbg.at<cv::Vec3b>( pf2p(tr)) = cv::Vec3b( 255,0,0);
+    mat_dbg.at<cv::Vec3b>( pf2p(bl)) = cv::Vec3b( 255,0,0);
     mat_dbg.at<cv::Vec3b>( pf2p(br)) = cv::Vec3b( 255,0,0);
     cv::resize( mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
 
@@ -984,7 +989,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 //----------------------------
 - (UIImage *) f03_corners
 {
-    g_app.mainVC.lbDbg.text = @"03";
+    g_app.mainVC.lbDbg.text = @"find corners";
 
     _intersections = get_intersections( _horizontal_lines, _vertical_lines);
     //auto crosses = find_crosses( _gray_threshed, intersections);
@@ -1061,7 +1066,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //----------------------------
 - (UIImage *) f04_zoom_in
 {
-    g_app.mainVC.lbDbg.text = @"04";
+    g_app.mainVC.lbDbg.text = @"zoom";
     cv::Mat threshed;
     cv::Mat dst;
     if (SZ(_corners) == 4) {
@@ -1117,7 +1122,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //-----------------------------------------------------------
 - (UIImage *) f05_dark_places
 {
-    g_app.mainVC.lbDbg.text = @"05";
+    g_app.mainVC.lbDbg.text = @"adaptive dark";
     //_corners = _corners_zoomed;
     
     cv::Mat dark_places;
@@ -1140,7 +1145,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //-----------------------------------------------------------------------
 - (UIImage *) f06_mask_dark
 {
-    g_app.mainVC.lbDbg.text = @"06";
+    g_app.mainVC.lbDbg.text = @"hide dark";
     
     uint8_t mean = cv::mean( _pyr_gray)[0];
     cv::Mat black_places;
@@ -1170,7 +1175,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //----------------------------------------
 - (UIImage *) f07_white_holes
 {
-    g_app.mainVC.lbDbg.text = @"07";
+    g_app.mainVC.lbDbg.text = @"adaptive bright";
     
     // The White stones become black holes, all else is white
     int nhood_sz =  25;
@@ -1212,7 +1217,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 //---------------------------
 - (UIImage *) f08_features
 {
-    g_app.mainVC.lbDbg.text = @"08";
+    g_app.mainVC.lbDbg.text = @"brightness";
     static int state = 0;
     std::vector<float> feats;
     cv::Mat drawing;
@@ -1291,7 +1296,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
 //-----------------------------------------------------------
 - (UIImage *) f09_classify
 {
-    g_app.mainVC.lbDbg.text = @"09";
+    g_app.mainVC.lbDbg.text = @"classify";
     if (SZ(_corners_zoomed) != 4) { return MatToUIImage( _gray); }
     
     //std::vector<int> diagram;
@@ -1435,9 +1440,11 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
+        std::vector<cv::Vec2f> all_vert_lines = _vertical_lines;
         dedup_verticals( _vertical_lines, _gray);
         filter_vert_lines( _vertical_lines);
-        fix_vertical_lines( _vertical_lines, _vertical_lines, _gray);
+        const int x_thresh = 4.0;
+        fix_vertical_lines( _vertical_lines, all_vert_lines, _gray, x_thresh);
         if (SZ( _vertical_lines) > 55) break;
         if (SZ( _vertical_lines) < 5) break;
         
