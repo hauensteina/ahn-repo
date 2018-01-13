@@ -310,7 +310,7 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 //-----------------------------------------------------------------------------
 void filter_vert_lines( std::vector<cv::Vec2f> &vlines)
 {
-    const float eps = 5.0;
+    const float eps = 10.0;
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
     if (med_idx < 0) return;
