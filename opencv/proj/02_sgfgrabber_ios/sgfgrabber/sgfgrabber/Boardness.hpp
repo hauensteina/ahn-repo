@@ -34,11 +34,12 @@ public:
     const int m_boardsz;
     
     // Internal
-    cv::Mat m_pyrpix;  // A pixel per intersection, from m_pyr
+    cv::Mat m_pyrpix;          // A pixel per intersection, from m_pyr
+    cv::Mat m_pyrpix_edgeness;  // pyrpix preprocessed for edgeness
     std::vector<bool> m_blobflags; // For each intersection, is there a blob
     cv::Mat m_edgeness;  // Prob of board at r,c by edgeness
     cv::Mat m_blobness;  // Prob of board at r,c by blobness
-
+    
     // Methods
     //----------
     
@@ -60,20 +61,32 @@ public:
                     cv::Scalar m = cv::mean( pyr(hood));
                     m_pyrpix.at<cv::Vec3b>(r,c) = cv::Vec3b( m[0], m[1], m[2]);
                 }
-
-//                cv::Point p = pf2p(pf);
-//                if (p.x < m_pyr.cols && p.y < m_pyr.rows && p.x >= 0 && p.y >= 0) {
-//                    m_pyrpix.at<cv::Vec3b>(r,c) = m_pyr.at<cv::Vec3b>(p);
-//                }
+                
+                //                cv::Point p = pf2p(pf);
+                //                if (p.x < m_pyr.cols && p.y < m_pyr.rows && p.x >= 0 && p.y >= 0) {
+                //                    m_pyrpix.at<cv::Vec3b>(r,c) = m_pyr.at<cv::Vec3b>(p);
+                //                }
             } // CSLOOP
         } // RSLOOP
     } // constructor
-
+    
     // Color Difference between first lines and the backgroud
     //------------------------------------------------------------------------
     cv::Mat& edgeness()
     {
-        const cv::Mat &m = m_pyrpix;
+        m_pyrpix_edgeness = m_pyrpix.clone();
+        cv::Mat &m = m_pyrpix_edgeness;
+        // Replace really dark or bright places with average to suppress fake edges inside the board
+        cv::Scalar smean = cv::mean( m);
+        Pixel mean( smean[0], smean[1], smean[2]);
+        m.forEach<Pixel>( [&mean](Pixel &v, const int *p)
+                         {
+                             float gray = (v.x + v.y + v.z) / 3.0;
+                             if (gray < 50 || gray > 220 ) {
+                                 v = mean;
+                             }
+                         });
+        
         cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_64FC1);
         double mmax = -1E9;
         
@@ -83,42 +96,53 @@ public:
                 lsum = rsum = tsum = bsum = 0;
                 int lcount, rcount, tcount, bcount;
                 lcount = rcount = tcount = bcount = 0;
-                if (!p_on_img( cv::Point( c - 1,       r ), m)) continue;
-                if (!p_on_img( cv::Point( c + m_boardsz, r ), m)) continue;
-                if (!p_on_img( cv::Point( c,           r - 1), m)) continue;
-                if (!p_on_img( cv::Point( c,           r + m_boardsz), m)) continue;
                 
                 // Left and right edge
                 for (int rr = r; rr < r + m_boardsz; rr++) {
-                    auto b_l = m.at<cv::Vec3b>( rr, c); // on the board
-                    auto b_r = m.at<cv::Vec3b>( rr, c + m_boardsz -1);
-                    auto o_l = m.at<cv::Vec3b>( rr, c - 1); // just outside the board
-                    auto o_r = m.at<cv::Vec3b>( rr, c + m_boardsz);
-                    
-                    if (cv::norm(b_l) > 0 && cv::norm(o_l) > 0) {
-                        lsum += cv::norm( b_l, o_l);
-                        lcount++;
+                    if (p_on_img( cv::Point( c, rr), m) &&
+                        p_on_img( cv::Point( c - 1, rr), m))
+                    {
+                        auto b_l = m.at<cv::Vec3b>( rr, c); // on the board
+                        auto o_l = m.at<cv::Vec3b>( rr, c - 1); // just outside the board
+                        if (cv::norm(b_l) > 0 && cv::norm(o_l) > 0) {
+                            lsum += cv::norm( b_l, o_l);
+                            lcount++;
+                        }
                     }
-                    if (cv::norm(b_r) > 0 && cv::norm(o_r) > 0) {
-                        rsum += cv::norm( b_r, o_r);
-                        rcount++;
+                    if (p_on_img( cv::Point( c + m_boardsz - 1, rr), m) &&
+                        p_on_img( cv::Point( c + m_boardsz, rr), m))
+                    {
+                        auto b_r = m.at<cv::Vec3b>( rr, c + m_boardsz - 1);
+                        auto o_r = m.at<cv::Vec3b>( rr, c + m_boardsz);
+                        if (cv::norm(b_r) > 0 && cv::norm(o_r) > 0) {
+                            rsum += cv::norm( b_r, o_r);
+                            rcount++;
+                        }
                     }
-                }
+                } // for rr
                 // Top and bottom edge
                 for (int cc = c; cc < c + m_boardsz; cc++) {
-                    auto b_t = m.at<cv::Vec3b>( r, cc); // on the board
-                    auto b_b = m.at<cv::Vec3b>( r + m_boardsz - 1, cc);
-                    auto o_t = m.at<cv::Vec3b>( r - 1, cc); // just outside the board
-                    auto o_b = m.at<cv::Vec3b>( r + m_boardsz, cc);
-                    if (cv::norm(b_t) > 0 && cv::norm(o_t) > 0) {
-                        tsum += cv::norm( b_t, o_t);
-                        tcount++;
+                    if (p_on_img( cv::Point( cc, r), m) &&
+                        p_on_img( cv::Point( cc, r - 1), m))
+                    {
+                        auto b_t = m.at<cv::Vec3b>( r, cc); // on the board
+                        auto o_t = m.at<cv::Vec3b>( r - 1, cc); // just outside the board
+                        if (cv::norm(b_t) > 0 && cv::norm(o_t) > 0) {
+                            tsum += cv::norm( b_t, o_t);
+                            tcount++;
+                        }
                     }
-                    if (cv::norm(b_b) > 0 && cv::norm(o_b) > 0) {
-                        bsum += cv::norm( b_b, o_b);
-                        bcount++;
+                    if (p_on_img( cv::Point( cc, r + m_boardsz - 1), m) &&
+                        p_on_img( cv::Point( cc, r + m_boardsz), m))
+                    {
+                        auto b_b = m.at<cv::Vec3b>( r + m_boardsz - 1, cc);
+                        auto o_b = m.at<cv::Vec3b>( r + m_boardsz, cc);
+                        if (cv::norm(b_b) > 0 && cv::norm(o_b) > 0) {
+                            bsum += cv::norm( b_b, o_b);
+                            bcount++;
+                        }
                     }
-                }
+                } // for cc
                 // Sum lets an outlier dominate
                 //tmp.at<double>(r,c) =  lsum + rsum + tsum + bsum;
                 // Multiplying instead of summ rewards similarity between factors
@@ -138,7 +162,7 @@ public:
         const cv::Mat &m = m_pyrpix;
         cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_32FC1);
         float mmax = -1E9;
-
+        
         if (!SZ(m_blobflags)) { fill_m_blobflags(); }
         RSLOOP (m_horiz_lines) {
             CSLOOP (m_vert_lines) {
@@ -190,9 +214,9 @@ private:
                 }
             }
         } // ISLOOP
-
+        
         m_blobflags = std::vector<bool>(SZ(m_intersections),false);
-        mat_dbg = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
+        //mat_dbg = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_8UC3);
         KSLOOP (m_blobs) {
             int blobrow = blob_to_horiz[k].idx;
             int blobcol = blob_to_vert[k].idx;
@@ -200,8 +224,8 @@ private:
             float blobd_v = blob_to_horiz[k].d;
             if (blobrow >= 0 && blobcol >= 0 && blobd_h < EPS && blobd_v < EPS) {
                 m_blobflags[rc2idx(blobrow, blobcol)] = true;
-                auto col = get_color();
-                mat_dbg.at<cv::Vec3b>(blobrow,blobcol) = cv::Vec3b( col[0],col[1],col[2]);
+                //auto col = get_color();
+                //mat_dbg.at<cv::Vec3b>(blobrow,blobcol) = cv::Vec3b( col[0],col[1],col[2]);
             }
         } // KSLOOP
     } // fill_m_blobflags()

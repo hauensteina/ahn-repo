@@ -28,6 +28,7 @@ typedef std::vector<cv::Point> Points;
 typedef cv::Point Line[2];
 typedef std::vector<cv::Point2f> Points2f;
 typedef struct { Point2f p; float feat; } PFeat;
+typedef cv::Point3_<uint8_t> Pixel;
 
 extern cv::RNG rng;
 

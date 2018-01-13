@@ -423,7 +423,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     const float width = img.cols;
     const int top_y = 0.2 * img.rows;
     const int bot_y = 0.8 * img.rows;
-    const int mid_y = 0.5 * img.rows;
+    //const int mid_y = 0.5 * img.rows;
 
     std::sort( lines.begin(), lines.end(),
               [bot_y](cv::Vec2f a, cv::Vec2f b) {
@@ -869,7 +869,7 @@ std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
 } // homegrown_horiz_lines()
 
 
-// Among the largest two in m1, choose the on where m2 is larger
+// Among the largest two in m1, choose the one where m2 is larger
 //------------------------------------------------------------------
 cv::Point tiebreak( const cv::Mat &m1, const cv::Mat &m2)
 {
@@ -899,20 +899,10 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
     cv::Mat &edgeness  = bness.edgeness();
     cv::Mat &blobness  = bness.blobness();
-    //cv::Mat &threeness = bness.threeness();
 
-    //float edgeweight = 0.0, blobweight = 1.0;
-    //cv::Mat both = mat_sumscale( edgeness, blobness, edgeweight, blobweight);
-    //cv::Point min_loc, max_loc;
-    //double mmin, mmax;
-    //cv::minMaxLoc(both, &mmin, &mmax, &min_loc, &max_loc);
-    //cv::Mat &both = blobness;
     cv::Point max_loc = tiebreak( blobness, edgeness);
-    //cv::Point max_loc = tiebreak( blobness, threeness);
-//    double mmin, mmax;
-//    cv::Point min_loc, max_loc;
-//    cv::Mat &both = edgeness;
-//    cv::minMaxLoc( both, &mmin, &mmax, &min_loc, &max_loc);
+    //cv::Point min_loc, max_loc; double mmin, mmax;
+    //cv::minMaxLoc(edgeness, &mmin, &mmax, &min_loc, &max_loc);
 
     cv::Point tl = max_loc;
     cv::Point tr( tl.x + board_sz-1, tl.y);
@@ -924,7 +914,7 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     vert_lines  = vec_slice( vert_lines, max_loc.x, board_sz);
     
     // Mark corners for visualization
-    mat_dbg = bness.m_pyrpix.clone();
+    mat_dbg = bness.m_pyrpix_edgeness.clone();
     mat_dbg.at<cv::Vec3b>( pf2p(tl)) = cv::Vec3b( 255,0,0);
     mat_dbg.at<cv::Vec3b>( pf2p(br)) = cv::Vec3b( 255,0,0);
     cv::resize( mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
@@ -953,7 +943,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 
 // Find the corners
 //----------------------------
-- (UIImage *) f03_corners //@@@
+- (UIImage *) f03_corners
 {
     g_app.mainVC.lbDbg.text = @"06";
 
@@ -1016,7 +1006,6 @@ void fill_outside_with_average_gray( cv::Mat &img, const Points2f &corners)
 //----------------------------------------------------------------------------
 void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 {
-    typedef cv::Point3_<uint8_t> Pixel;
     cv::Scalar smean = cv::mean( img);
     Pixel mean( smean[0], smean[1], smean[2]);
     img.forEach<Pixel>( [&mean, &corners](Pixel &v, const int *p)
