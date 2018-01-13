@@ -214,7 +214,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //----------------------------------
 - (UIImage *) f01_vert_lines
 {
-    g_app.mainVC.lbDbg.text = @"02";
+    g_app.mainVC.lbDbg.text = @"01";
     static int state = 0;
     cv::Mat drawing;
     
@@ -717,7 +717,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 //-----------------------------
 - (UIImage *) f02_horiz_lines
 {
-    g_app.mainVC.lbDbg.text = @"05";
+    g_app.mainVC.lbDbg.text = @"02";
     static int state = 0;
     cv::Mat drawing;
     
@@ -945,7 +945,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 //----------------------------
 - (UIImage *) f03_corners
 {
-    g_app.mainVC.lbDbg.text = @"06";
+    g_app.mainVC.lbDbg.text = @"03";
 
     _intersections = get_intersections( _horizontal_lines, _vertical_lines);
     //auto crosses = find_crosses( _gray_threshed, intersections);
@@ -1022,7 +1022,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //----------------------------
 - (UIImage *) f04_zoom_in
 {
-    g_app.mainVC.lbDbg.text = @"07";
+    g_app.mainVC.lbDbg.text = @"04";
     cv::Mat threshed;
     cv::Mat dst;
     if (SZ(_corners) == 4) {
@@ -1078,13 +1078,14 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //-----------------------------------------------------------
 - (UIImage *) f05_dark_places
 {
-    g_app.mainVC.lbDbg.text = @"08";
-    _corners = _corners_zoomed;
+    g_app.mainVC.lbDbg.text = @"05";
+    //_corners = _corners_zoomed;
     
     cv::Mat dark_places;
-    cv::GaussianBlur( _gray_zoomed, dark_places, cv::Size(9,9),0,0);
-    cv::adaptiveThreshold( dark_places, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
-
+    //cv::GaussianBlur( _gray_zoomed, dark_places, cv::Size(9,9),0,0);
+    //cv::adaptiveThreshold( dark_places, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+    cv::adaptiveThreshold( _pyr_gray, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
+//@@@
     // Show results
     cv::Mat drawing;
     cv::cvtColor( dark_places, drawing, cv::COLOR_GRAY2RGB);
@@ -1100,7 +1101,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //-----------------------------------------------------------------------
 - (UIImage *) f06_mask_dark
 {
-    g_app.mainVC.lbDbg.text = @"09";
+    g_app.mainVC.lbDbg.text = @"06";
     
     uint8_t mean = cv::mean( _pyr_gray)[0];
     cv::Mat black_places;
@@ -1130,7 +1131,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //----------------------------------------
 - (UIImage *) f07_white_holes
 {
-    g_app.mainVC.lbDbg.text = @"10";
+    g_app.mainVC.lbDbg.text = @"07";
     
     // The White stones become black holes, all else is white
     int nhood_sz =  25;
@@ -1172,7 +1173,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 //---------------------------
 - (UIImage *) f08_features
 {
-    g_app.mainVC.lbDbg.text = @"11";
+    g_app.mainVC.lbDbg.text = @"08";
     static int state = 0;
     std::vector<float> feats;
     cv::Mat drawing;
@@ -1251,7 +1252,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
 //-----------------------------------------------------------
 - (UIImage *) f09_classify
 {
-    g_app.mainVC.lbDbg.text = @"12";
+    g_app.mainVC.lbDbg.text = @"09";
     if (SZ(_corners_zoomed) != 4) { return MatToUIImage( _gray); }
     
     //std::vector<int> diagram;
