@@ -443,7 +443,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
     const float width = img.cols;
     const int top_y = 0.2 * img.rows;
     const int bot_y = 0.8 * img.rows;
-    //const int mid_y = 0.5 * img.rows;
+    const int mid_y = 0.5 * img.rows;
 
     std::sort( lines.begin(), lines.end(),
               [bot_y](cv::Vec2f a, cv::Vec2f b) {
@@ -491,9 +491,9 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
             top_rho   = top_rhos[close_idx];
             bot_rho   = bot_rhos[close_idx];
         }
-        if (top_rho > width) break;
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
-        if (x_from_y( top_y, line) > width) break;
+        if (top_rho > width) break;
+        if (x_from_y( mid_y, line) > width) break;
         synth_lines.push_back( line);
     } // ILOOP
     // Lines to the left
@@ -510,9 +510,9 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
             top_rho   = top_rhos[close_idx];
             bot_rho   = bot_rhos[close_idx];
         }
-        if (top_rho < 0) break;
         cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
-        if (x_from_y( top_y, line) < 0) break;
+        if (top_rho < 0) break;
+        if (x_from_y( mid_y, line) < 0) break;
         synth_lines.push_back( line);
     } // ILOOP
     std::sort( synth_lines.begin(), synth_lines.end(),
