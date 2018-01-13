@@ -762,14 +762,37 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
 - (UIImage *) f05_horiz_lines
 {
     g_app.mainVC.lbDbg.text = @"05";
+    static int state = 0;
+    cv::Mat drawing;
     
-    _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
-    dedup_horizontals( _horizontal_lines, _gray);
-    filter_horiz_lines( _horizontal_lines);
-    fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
+    switch (state) {
+        case 0:
+        {
+            _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
+            break;
+        }
+        case 1:
+        {
+            dedup_horizontals( _horizontal_lines, _gray);
+            break;
+        }
+        case 2:
+        {
+            filter_horiz_lines( _horizontal_lines);
+            break;
+        }
+        case 3:
+        {
+            fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
+            break;
+        }
+        default:
+            state = 0;
+            return NULL;
+    } // switch
+    state++;
 
     // Show results
-    cv::Mat drawing;
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color( true);
     ISLOOP (_horizontal_lines) {

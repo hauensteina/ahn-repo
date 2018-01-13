@@ -41,12 +41,9 @@ public:
         cv::cvtColor( pyr, pyrgray, cv::COLOR_RGB2GRAY);
         cv::Mat gray_threshed;
         thresh_dilate( gray, gray_threshed, 4);
-        cv::Mat blurred;
-        cv::GaussianBlur( gray, blurred, cv::Size(9,9),0,0);
         cv::Mat bright_places;
         cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 81, -50);
         cv::Mat dark_places;
-        //cv::adaptiveThreshold( blurred, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
         cv::adaptiveThreshold( pyrgray, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
 
         // Replace dark places with average to make white dynamic threshold work

@@ -243,8 +243,8 @@
 //                    [self.cameraView setImage:img];
 //                    break;
                 case 5:
-                    state++;
                     img = [self.grabFuncs f05_horiz_lines];
+                    if (!img) { state=6; continue; } // goto 6
                     [self.cameraView setImage:img];
                     break;
                 case 6:
