@@ -9,6 +9,8 @@
 #import "AppDelegate.h"
 #import "Globals.h"
 #import "MainVC.h"
+#import "TopViewController.h"
+#import "NavigationController.h"
 
 @interface AppDelegate ()
 
@@ -19,14 +21,19 @@
 //----------------------------------------------------------------------------------------------
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    self.window.backgroundColor = [UIColor whiteColor];
+
     g_init(); // Global enums, constants, etc
     g_app = self;
+    
     self.mainVC = [MainVC new];
-    //self.mainVC.view.backgroundColor = [UIColor redColor];
-    self.nav = [[UINavigationController alloc] initWithRootViewController: self.mainVC];
+    self.navVC = [[NavigationController alloc] initWithRootViewController:self.mainVC];
+    self.topVC = [TopViewController new];
+    self.topVC.rootViewController = self.navVC;
+    [self.topVC setupWithType:1];
 
-    self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.window.rootViewController = self.nav;
+    self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];
     
     return YES;

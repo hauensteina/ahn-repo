@@ -12,6 +12,7 @@
 #import <opencv2/imgcodecs/ios.h>
 
 #import "MainVC.h"
+#import "UIViewController+LGSideMenuController.h"
 
 #import "Globals.h"
 #import "CppInterface.h"
@@ -42,6 +43,28 @@
 
 //=========================
 @implementation MainVC
+
+//----------------
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        self.title = @"SgfGrabber";
+        self.view.backgroundColor = [UIColor whiteColor];
+        
+        
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Left"
+                                                                                 style:UIBarButtonItemStylePlain
+                                                                                target:self
+                                                                                action:@selector(showLeftView)];
+        
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Right"
+                                                                                  style:UIBarButtonItemStylePlain
+                                                                                 target:self
+                                                                                 action:@selector(showRightView)];
+    }
+    return self;
+} // init()
 
 //----------------------
 - (void)viewDidLoad
@@ -278,8 +301,10 @@
         } // while(1)
     } // if
 } // btnGo()
+
+
 #pragma mark - FrameExtractorDelegate protocol
-//---------------------------------
+//-----------------------------------------------
 - (void)captured:(UIImage *)image
 {
     //self.cameraView.hidden = NO;
@@ -306,6 +331,20 @@
             [self.frameExtractor resume];
         }
     }
+} // captured()
+
+#pragma mark LGSideMenuController Callbacks
+
+//---------------------
+- (void)showLeftView
+{
+    [self.sideMenuController showLeftViewAnimated:YES completionHandler:nil];
+}
+
+//------------------------
+- (void)showRightView
+{
+    [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
 }
 
 

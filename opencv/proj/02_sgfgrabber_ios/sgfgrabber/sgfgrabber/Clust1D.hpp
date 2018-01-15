@@ -115,8 +115,8 @@ public:
 
 
 private:
-    // Smooth
-    //---------
+    // Smoothe
+    //-----------------------------------------------------------------------------------------
     static inline std::vector<float> smooth( const std::vector<float> &seq, float width = 3)
     {
         std::vector<float> res( seq.size());
@@ -136,7 +136,7 @@ private:
     // Various window funcs. Bell works best.
     //=========================================
     // Triangle, 1.0 at the center, falling to both sides
-    //----------------------------------------------------------
+    //----------------------------------------------------------------
     static inline float triang( float val, float center, float width)
     {
         float d = fabs( center-val);
@@ -144,7 +144,7 @@ private:
         return res > 0 ? res : 0;
     }
     // Rectangle, 1.0 at the center, extends by width both sides
-    //-----------------------------------------------------------
+    //---------------------------------------------------------------
     static inline float rect( float val, float center, float width)
     {
         float d = fabs( center-val);
@@ -152,7 +152,7 @@ private:
         return res > 0 ? 1 : 0;
     }
     // Bell (Gaussian)
-    //-----------------------------------------------------------
+    //--------------------------------------------------------------
     static inline float bell( float val, float center, float sigma)
     {
         float d = center-val;
