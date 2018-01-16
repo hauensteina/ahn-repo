@@ -31,7 +31,7 @@
     self.navVC = [[NavigationController alloc] initWithRootViewController:self.mainVC];
     self.topVC = [TopViewController new];
     self.topVC.rootViewController = self.navVC;
-    [self.topVC setupWithType:1];
+    [self.topVC setup];
 
     self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];

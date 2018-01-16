@@ -16,7 +16,9 @@
 
 @implementation LeftViewController
 
-- (id)init {
+//----------
+- (id)init
+{
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
         self.titlesArray = @[@"Profile",
@@ -36,45 +38,52 @@
     return self;
 }
 
-- (BOOL)prefersStatusBarHidden {
+//-------------------------------
+- (BOOL)prefersStatusBarHidden
+{
     return YES;
 }
-
-- (UIStatusBarStyle)preferredStatusBarStyle {
+//--------------------------------------------
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
     return UIStatusBarStyleDefault;
 }
-
-- (UIStatusBarAnimation)preferredStatusBarUpdateAnimation {
+//-----------------------------------------------------------
+- (UIStatusBarAnimation)preferredStatusBarUpdateAnimation
+{
     return UIStatusBarAnimationFade;
 }
-
 #pragma mark - UITableViewDataSource
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+//-----------------------------------------------------------------
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
     return 1;
 }
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+//------------------------------------------------------------------------------------------
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
     return self.titlesArray.count;
 }
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+//------------------------------------------------------------------------------------------------------
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
     LeftViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
 
     cell.textLabel.text = self.titlesArray[indexPath.row];
-    cell.separatorView.hidden = (indexPath.row <= 3 || indexPath.row == self.titlesArray.count-1);
-    cell.userInteractionEnabled = (indexPath.row != 1 && indexPath.row != 3);
+    //cell.separatorView.hidden = (indexPath.row <= 3 || indexPath.row == self.titlesArray.count-1);
+    //cell.userInteractionEnabled = (indexPath.row != 1 && indexPath.row != 3);
 
     return cell;
 }
-
 #pragma mark - UITableViewDelegate
-
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+//-----------------------------------------------------------------------------------------------
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
     return (indexPath.row == 1 || indexPath.row == 3) ? 22.0 : 44.0;
 }
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+//--------------------------------------------------------------------------------------------
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
     TopViewController *topViewController = (TopViewController *)self.sideMenuController;
     
     UIViewController *viewController = [UIViewController new];

@@ -10,6 +10,6 @@
 
 @interface TopViewController : LGSideMenuController
 
-- (void)setupWithType:(NSUInteger)type;
+- (void)setup;
 
 @end

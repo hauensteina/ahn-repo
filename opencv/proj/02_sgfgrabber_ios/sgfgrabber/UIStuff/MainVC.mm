@@ -58,10 +58,10 @@
                                                                                 target:self
                                                                                 action:@selector(showLeftView)];
         
-        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Right"
-                                                                                  style:UIBarButtonItemStylePlain
-                                                                                 target:self
-                                                                                 action:@selector(showRightView)];
+//        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Right"
+//                                                                                  style:UIBarButtonItemStylePlain
+//                                                                                 target:self
+//                                                                                 action:@selector(showRightView)];
     }
     return self;
 } // init()
