@@ -22,17 +22,17 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-    self.window.backgroundColor = [UIColor whiteColor];
-
+    self.window.backgroundColor =  [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:0.95];
+    
     g_init(); // Global enums, constants, etc
     g_app = self;
-    
+        
     self.mainVC = [MainVC new];
     self.navVC = [[NavigationController alloc] initWithRootViewController:self.mainVC];
     self.topVC = [TopViewController new];
     self.topVC.rootViewController = self.navVC;
     [self.topVC setup];
-
+    
     self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];
     

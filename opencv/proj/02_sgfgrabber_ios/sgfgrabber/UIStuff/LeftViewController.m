@@ -21,11 +21,7 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-        self.titlesArray = @[@"Profile",
-                             @"News",
-                             @"Articles",
-                             @"Video",
-                             @"Music"];
+        self.titlesArray = @[@"Run Test Cases"];
 
         self.view.backgroundColor = [UIColor clearColor];
 
@@ -37,7 +33,6 @@
     }
     return self;
 }
-
 //-------------------------------
 - (BOOL)prefersStatusBarHidden
 {

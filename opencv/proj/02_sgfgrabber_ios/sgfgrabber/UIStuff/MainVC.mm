@@ -50,10 +50,10 @@
     self = [super init];
     if (self) {
         self.title = @"SgfGrabber";
-        self.view.backgroundColor = [UIColor whiteColor];
+        self.view.backgroundColor =  [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:0.95];
         
         
-        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Left"
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Menu"
                                                                                  style:UIBarButtonItemStylePlain
                                                                                 target:self
                                                                                 action:@selector(showLeftView)];
