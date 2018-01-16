@@ -139,13 +139,13 @@ void BlobFinder::find_stones( const cv::Mat &img, Points &result)
     if (!circles.size()) return;
     
     // Keep the ones where radius close to avg radius
-    std::vector<float> rads;
+    std::vector<double> rads;
     ISLOOP (circles){ rads.push_back( circles[i][2]); }
-    float avg_r = vec_median( rads);
+    double avg_r = vec_median( rads);
     
     std::vector<cv::Vec3f> good_circles;
-    //const float TOL_LO = 2.0;
-    const float TOL_HI = 0.5;
+    //const double TOL_LO = 2.0;
+    const double TOL_HI = 0.5;
     ISLOOP (circles)
     {
         cv::Vec3f c = circles[i];

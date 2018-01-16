@@ -21,22 +21,22 @@ public:
     // One dim clustering. Return the cutting points.
     //---------------------------------------------------------------------------
     template <typename T, typename G>
-    static inline std::vector<float> cluster( const std::vector<T> &seq_, float width, G getter)
+    static inline std::vector<double> cluster( const std::vector<T> &seq_, double width, G getter)
     {
-        std::vector<float> cuts;
-        const float SMOOTH = 3.0;
-        typedef float(*WinFunc)(float,float,float);
+        std::vector<double> cuts;
+        const double SMOOTH = 3.0;
+        typedef double(*WinFunc)(double,double,double);
         WinFunc winf = bell;
         
-        std::vector<float> vals;
+        std::vector<double> vals;
         ISLOOP (seq_) { vals.push_back( getter(seq_[i] )); }
-        std::sort( vals.begin(), vals.end(), [](float a, float b) { return a<b; });
-        std::vector<float> freq(vals.size());
+        std::sort( vals.begin(), vals.end(), [](double a, double b) { return a<b; });
+        std::vector<double> freq(vals.size());
         
         do {
             // Distance weighted sum of number of samples to the left and to the right
             ISLOOP (vals) {
-                float sum = 0; int j;
+                double sum = 0; int j;
                 j=i;
                 while( j < vals.size() && winf( vals[j], vals[i], width) > 0) {
                     sum += winf( vals[j], vals[i], width);
@@ -54,13 +54,13 @@ public:
             // Convert to discrete pdf, missing values set to -1
             int mmax = ROUND( vec_max( vals)) + 1;
             mmax += 10; // Padding to find the rightmost cluster
-            std::vector<float> pdf(mmax,-1);
+            std::vector<double> pdf(mmax,-1);
             ISLOOP (freq) {
                 pdf[ROUND(vals[i])] = freq[i];
             }
             pdf = smooth( pdf,SMOOTH);
             
-            std::vector<float> maxes;
+            std::vector<double> maxes;
             ISLOOP (pdf) {
                 if (i < 1) continue;
                 if (i >= pdf.size()-1) continue;
@@ -79,9 +79,9 @@ public:
     // Use the cuts returned by cluster() to classify new samples
     //---------------------------------------------------------------------------
     template <typename T, typename G>
-    static inline void classify( std::vector<T> samples, const std::vector<float> &cuts, int minsz,
-                   G getter,
-                   std::vector<std::vector<T> > &parts)
+    static inline void classify( std::vector<T> samples, const std::vector<double> &cuts, int minsz,
+                                G getter,
+                                std::vector<std::vector<T> > &parts)
     {
         std::sort( samples.begin(), samples.end(),
                   [getter](T a, T b) { return getter(a) < getter(b); });
@@ -90,7 +90,7 @@ public:
         std::vector<T> part;
         ISLOOP (samples) {
             T s = samples[i];
-            float x = getter(s);
+            double x = getter(s);
             if (cut < cuts.size()) {
                 if (x > cuts[cut]) {
                     res[cut] = part;
@@ -109,23 +109,23 @@ public:
                 big.push_back( res[i]);
             }
         }
-
+        
         parts = big;
     } // classify()
-
-
+    
+    
 private:
     // Smoothe
     //-----------------------------------------------------------------------------------------
-    static inline std::vector<float> smooth( const std::vector<float> &seq, float width = 3)
+    static inline std::vector<double> smooth( const std::vector<double> &seq, double width = 3)
     {
-        std::vector<float> res( seq.size());
+        std::vector<double> res( seq.size());
         ISLOOP (seq) {
-            float ssum = 0;
+            double ssum = 0;
             for (int k = i-width; k <= i+width; k++) {
                 if (k < 0) continue;
                 if (k >= seq.size()) continue;
-                float weight = triang( i, k, width);
+                double weight = triang( i, k, width);
                 ssum += seq[k] * weight;
             }
             res[i] = ssum;
@@ -137,29 +137,30 @@ private:
     //=========================================
     // Triangle, 1.0 at the center, falling to both sides
     //----------------------------------------------------------------
-    static inline float triang( float val, float center, float width)
+    static inline double triang( double val, double center, double width)
     {
-        float d = fabs( center-val);
-        float res = (1.0 - d / width);
+        double d = fabs( center-val);
+        double res = (1.0 - d / width);
         return res > 0 ? res : 0;
     }
     // Rectangle, 1.0 at the center, extends by width both sides
     //---------------------------------------------------------------
-    static inline float rect( float val, float center, float width)
+    static inline double rect( double val, double center, double width)
     {
-        float d = fabs( center-val);
-        float res = (1.0 - d / width);
+        double d = fabs( center-val);
+        double res = (1.0 - d / width);
         return res > 0 ? 1 : 0;
     }
     // Bell (Gaussian)
     //--------------------------------------------------------------
-    static inline float bell( float val, float center, float sigma)
+    static inline double bell( double val, double center, double sigma)
     {
-        float d = center-val;
-        float bell = exp(-(d*d) / 2*sigma);
+        double d = center-val;
+        double bell = exp(-(d*d) / 2*sigma);
         return bell;
     }
 }; // class Clust1D
 
 
 #endif /* Clust1D_hpp */
+

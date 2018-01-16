@@ -47,7 +47,7 @@ void fft(cplx buf[], int n)
 
 // Print a vector
 //--------------------------------------------
-void print_vecf( std::vector<float> v)
+void print_vecf( std::vector<double> v)
 {
     printf("(\n");
     ISLOOP (v) {

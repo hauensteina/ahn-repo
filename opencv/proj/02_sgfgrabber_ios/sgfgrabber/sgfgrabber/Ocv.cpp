@@ -22,7 +22,7 @@ cv::RNG rng(12345); // random number generator
 
 // Get average x of a bunch of points
 //-----------------------------------------
-float avg_x (const Points &p)
+double avg_x (const Points &p)
 {
     double ssum = 0.0;
     ISLOOP (p) { ssum += p[i].x; }
@@ -31,7 +31,7 @@ float avg_x (const Points &p)
 
 // Get average y of a bunch of points
 //-----------------------------------------
-float avg_y (const Points &p)
+double avg_y (const Points &p)
 {
     double ssum = 0.0;
     ISLOOP (p) { ssum += p[i].y; }
@@ -40,21 +40,21 @@ float avg_y (const Points &p)
 
 // Get average x of a bunch of points
 //-----------------------------------------
-float median_x (const Points &p)
+double median_x (const Points &p)
 {
-    std::vector<float> v(p.size());
+    std::vector<double> v(p.size());
     ISLOOP (p) { v[i] = p[i].x; }
-    std::sort( v.begin(), v.end(), [](float a, float b) { return a < b; });
+    std::sort( v.begin(), v.end(), [](double a, double b) { return a < b; });
     return v[v.size()/2];
 }
 
 // Get average x of a bunch of points
 //-----------------------------------------
-float median_y (const Points &p)
+double median_y (const Points &p)
 {
-    std::vector<float> v(p.size());
+    std::vector<double> v(p.size());
     ISLOOP (p) { v[i] = p[i].y; }
-    std::sort( v.begin(), v.end(), [](float a, float b) { return a < b; });
+    std::sort( v.begin(), v.end(), [](double a, double b) { return a < b; });
     return v[v.size()/2];
 }
 
@@ -62,13 +62,13 @@ float median_y (const Points &p)
 //------------------------------------
 cv::Point2f unit_vector( cv::Point p)
 {
-    float norm = cv::norm(p);
-    return cv::Point2f(p.x / (float)norm, p.y / (float)norm);
+    double norm = cv::norm(p);
+    return cv::Point2f(p.x / (double)norm, p.y / (double)norm);
 }
 
 // Sort points by x coord and remove duplicates.
 //-------------------------------------------------
-void rem_dups_x( Points &pts, float tol)
+void rem_dups_x( Points &pts, double tol)
 {
     std::sort( pts.begin(), pts.end(),
               [](cv::Point a, cv::Point b){ return a.x < b.x; } );
@@ -77,7 +77,7 @@ void rem_dups_x( Points &pts, float tol)
     res.push_back( pts[0]);
     ISLOOP (pts) {
         if (i==0) continue;
-        float d = cv::norm( pts[i] - pts[i-1]);
+        double d = cv::norm( pts[i] - pts[i-1]);
         if (d > tol) {
             res.push_back( pts[i]);
         }
@@ -146,15 +146,15 @@ int channel_q1( cv::Mat channel )
 // Elementwise L2 distance between two single channel mats.
 // Used for matching.
 //------------------------------------------------------------
-float mat_dist( const cv::Mat &m1_, const cv::Mat &m2_)
+double mat_dist( const cv::Mat &m1_, const cv::Mat &m2_)
 {
     cv::Mat diff, m1, m2;
-    m1_.convertTo( m1, CV_32FC1);
-    m2_.convertTo( m2, CV_32FC1);
+    m1_.convertTo( m1, CV_64FC1);
+    m2_.convertTo( m2, CV_64FC1);
     diff = m1 - m2;
     diff = diff.mul( diff);
     double ssum = cv::sum(diff)[0];
-    float res = sqrt( ssum);
+    double res = sqrt( ssum);
     return res;
 }
 
@@ -167,14 +167,14 @@ Points approx_poly( Points cont, int n)
 {
     Points hull; // = cont;
     cv::convexHull( cont, hull);
-    float peri = cv::arcLength( hull, true);
-    float epsilon = bisect(
-                           [hull,peri](float x) {
-                               Points approx;
-                               cv::approxPolyDP( hull, approx, x*peri, true);
-                               return -approx.size();
-                           },
-                           0.0, 1.0, -n);
+    double peri = cv::arcLength( hull, true);
+    double epsilon = bisect(
+                            [hull,peri](double x) {
+                                Points approx;
+                                cv::approxPolyDP( hull, approx, x*peri, true);
+                                return -approx.size();
+                            },
+                            0.0, 1.0, -n);
     Points res;
     cv::approxPolyDP( hull, res, epsilon*peri, true);
     return res;
@@ -196,12 +196,12 @@ void draw_contours( const Contours cont, cv::Mat &dst)
 // Line
 //=========
 //----------------------------------------------------
-float angle_between_lines( cv::Point pa, cv::Point pe,
-                          cv::Point qa, cv::Point qe)
+double angle_between_lines( cv::Point pa, cv::Point pe,
+                           cv::Point qa, cv::Point qe)
 {
     cv::Point2f v1 = unit_vector( cv::Point( pe - pa) );
     cv::Point2f v2 = unit_vector( cv::Point( qe - qa) );
-    float dot = v1.x * v2.x + v1.y * v2.y;
+    double dot = v1.x * v2.x + v1.y * v2.y;
     if (dot < -1) dot = -1;
     if (dot > 1) dot = 1;
     return std::acos(dot);
@@ -249,7 +249,7 @@ cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines )
 
 // Distance between point and polar line
 //----------------------------------------------------------
-float dist_point_line( cv::Point p, const cv::Vec2f &pline)
+double dist_point_line( cv::Point p, const cv::Vec2f &pline)
 {
     cv::Vec4f line = polar2segment( pline);
     return dist_point_line( p, line);
@@ -278,7 +278,7 @@ Point2f intersection( cv::Vec2f line1, cv::Vec2f line2)
 
 // Length of a line segment
 //---------------------------------------------------------
-float line_len( cv::Point p, cv::Point q)
+double line_len( cv::Point p, cv::Point q)
 {
     return cv::norm( q-p);
 }
@@ -307,9 +307,9 @@ int median_on_segment( const cv::Mat &gray, cv::Vec4f seg)
 
 // Sum of values on line segment
 //------------------------------------------------------------------------
-float sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
+double sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
 {
-    float res = 0;
+    double res = 0;
     cv::LineIterator it( gray, p1, p2, 8);
     for(int i = 0; i < it.count; i++, it++) {
         res += **it;
@@ -318,7 +318,7 @@ float sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2)
 }
 
 
-// Return a line segment with median theta 
+// Return a line segment with median theta
 //-----------------------------------------------------------
 cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines )
 {
@@ -333,7 +333,7 @@ cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines )
 cv::Vec4f polar2segment( const cv::Vec2f &pline)
 {
     cv::Vec4f result;
-    float rho = pline[0], theta = pline[1];
+    double rho = pline[0], theta = pline[1];
     double a = cos(theta), b = sin(theta);
     double x0 = a*rho, y0 = b*rho;
     result[0] = cvRound(x0 + 1000*(-b));
@@ -354,16 +354,16 @@ cv::Vec2f segment2polar( const cv::Vec4f &line_)
         sswap( line[0], line[2]);
         sswap( line[1], line[3]);
     }
-    float dx = line[2] - line[0];
-    float dy = line[3] - line[1];
+    double dx = line[2] - line[0];
+    double dy = line[3] - line[1];
     if (fabs(dx) > fabs(dy)) { // horizontal
         if (dx < 0) { dx *= -1; dy *= -1; }
     }
     else { // vertical
         if (dy > 0) { dx *= -1; dy *= -1; }
     }
-    float theta = atan2( dy, dx) + PI/2;
-    float rho = fabs(dist_point_line( cv::Point(0,0), line));
+    double theta = atan2( dy, dx) + PI/2;
+    double rho = fabs(dist_point_line( cv::Point(0,0), line));
     pline[0] = rho;
     pline[1] = theta;
     return pline;
@@ -371,11 +371,11 @@ cv::Vec2f segment2polar( const cv::Vec4f &line_)
 
 // Stretch a line by factor, on both ends
 //------------------------------------------------
-Points stretch_line(Points line, float factor )
+Points stretch_line(Points line, double factor )
 {
     cv::Point p0 = line[0];
     cv::Point p1 = line[1];
-    float length = line_len( p0, p1);
+    double length = line_len( p0, p1);
     cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
     Points res = {p0-v , p1+v};
     return res;
@@ -383,11 +383,11 @@ Points stretch_line(Points line, float factor )
 
 // Stretch a line by factor, on both ends
 //----------------------------------------------------
-cv::Vec4f stretch_line(cv::Vec4f line, float factor )
+cv::Vec4f stretch_line(cv::Vec4f line, double factor )
 {
     const cv::Point p0( line[0], line[1]);
     const cv::Point p1( line[2], line[3]);
-    float length = line_len( p0, p1);
+    double length = line_len( p0, p1);
     const cv::Point v = ((factor-1.0) * length) * unit_vector(p1-p0);
     cv::Vec4f res;
     res[0] = (p0-v).x;
@@ -399,32 +399,32 @@ cv::Vec4f stretch_line(cv::Vec4f line, float factor )
 
 // Distance between point and line segment
 //----------------------------------------------------------
-float dist_point_line( cv::Point p, const cv::Vec4f &line)
+double dist_point_line( cv::Point p, const cv::Vec4f &line)
 {
-    float x = p.x;
-    float y = p.y;
-    float x0 = line[0];
-    float y0 = line[1];
-    float x1 = line[2];
-    float y1 = line[3];
-    float num = (y0-y1)*x + (x1-x0)*y + (x0*y1 - x1*y0);
-    float den = sqrt( (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
+    double x = p.x;
+    double y = p.y;
+    double x0 = line[0];
+    double y0 = line[1];
+    double x1 = line[2];
+    double y1 = line[3];
+    double num = (y0-y1)*x + (x1-x0)*y + (x0*y1 - x1*y0);
+    double den = sqrt( (x1-x0)*(x1-x0) + (y1-y0)*(y1-y0));
     return num / den;
 }
 
 // x given y for polar line
 //----------------------------------------
-float x_from_y( float y, cv::Vec2f pline)
+double x_from_y( double y, cv::Vec2f pline)
 {
-    float res = (pline[0] - y * sin( pline[1])) / cos( pline[1]);
+    double res = (pline[0] - y * sin( pline[1])) / cos( pline[1]);
     return res;
 }
 
 // y given x for polar line
 //----------------------------------------
-float y_from_x( float x, cv::Vec2f pline)
+double y_from_x( double x, cv::Vec2f pline)
 {
-    float res = (pline[0] - x * cos( pline[1])) / sin( pline[1]);
+    double res = (pline[0] - x * cos( pline[1])) / sin( pline[1]);
     return res;
 }
 
@@ -461,7 +461,7 @@ cv::Rect make_hood( Point2f center, int dx, int dy)
 //=======
 // Stretch quadrangle by factor
 //--------------------------------------------------
-Points2f stretch_quad( Points quad, float factor)
+Points2f stretch_quad( Points quad, double factor)
 {
     quad = order_points( quad);
     Points diag1_stretched = stretch_line( { quad[0],quad[2] }, factor);
@@ -500,10 +500,10 @@ Points smallest_quad( std::vector<Points> quads)
 {
     Points res(4);
     int minidx=0;
-    float minArea = 1E9;
+    double minArea = 1E9;
     ILOOP (quads.size()) {
         Points b = quads[i];
-        float area = cv::contourArea(b);
+        double area = cv::contourArea(b);
         if (area < minArea) { minArea = area; minidx = i;}
     }
     return quads[minidx];
@@ -521,10 +521,10 @@ Points avg_quad( std::vector<Points> quads)
         res[2] += b[2];
         res[3] += b[3];
     }
-    res[0] /= (float)quads.size();
-    res[1] /= (float)quads.size();
-    res[2] /= (float)quads.size();
-    res[3] /= (float)quads.size();
+    res[0] /= (double)quads.size();
+    res[1] /= (double)quads.size();
+    res[2] /= (double)quads.size();
+    res[3] /= (double)quads.size();
     return res;
 }
 
@@ -559,15 +559,15 @@ Points2f med_quad( std::vector<Points2f> quads)
 
 // Sum of distances of corners, relative to shortest side.
 //--------------------------------------------------------------
-float diff_quads( const Points2f &q1, const Points2f &q2)
+double diff_quads( const Points2f &q1, const Points2f &q2)
 {
-    float d = 0;
+    double d = 0;
     ILOOP( 4) {
         d += line_len( q1[i], q2[i]);
     }
-    float minlen = 1E9;
+    double minlen = 1E9;
     ILOOP( 4) {
-        float len;
+        double len;
         len = line_len( q1[i], q1[(i+1)%4]);
         if (len < minlen) minlen = len;
         len = line_len( q2[i], q2[(i+1)%4]);
@@ -582,19 +582,19 @@ float diff_quads( const Points2f &q1, const Points2f &q2)
 // Rotate image by angle. Adjusts image size.
 // From PyImageSearch.
 //----------------------------------------------------------------
-void rot_img( const cv::Mat &img, float angle, cv::Mat &dst)
+void rot_img( const cv::Mat &img, double angle, cv::Mat &dst)
 {
     angle *= -1;
     int h = img.rows;
     int w = img.cols;
-    float cX = w / 2;
-    float cY = h / 2;
+    double cX = w / 2;
+    double cY = h / 2;
     // Get ro mat
     cv::Mat m = cv::getRotationMatrix2D( Point2f( cX, cY), -angle * 180/PI, 1.0);
     //std::string ttype = mat_typestr( m);
     // Get new img size
-    float ccos = fabs( m.at<double>( 0,0));
-    float ssin = fabs( m.at<double>( 0,1));
+    double ccos = fabs( m.at<double>( 0,0));
+    double ssin = fabs( m.at<double>( 0,1));
     int nW = int( (h * ssin) + (w * ccos));
     int nH = int( (h * ccos) + (w * ssin));
     // Adjust rot mat for translation
@@ -603,10 +603,10 @@ void rot_img( const cv::Mat &img, float angle, cv::Mat &dst)
     // Rotate
     cv::warpAffine( img, dst, m, cv::Size( nW, nH));
 }
-            
+
 // Get main horizontal direction of a grid of points (in rad)
 //-------------------------------------------------------------
-float direction (const cv::Mat &img, const Points &ps)
+double direction (const cv::Mat &img, const Points &ps)
 {
     // Draw the points
     cv::Mat canvas = cv::Mat::zeros( cv::Size(img.cols, img.rows), CV_8UC1 );
@@ -622,8 +622,8 @@ float direction (const cv::Mat &img, const Points &ps)
     std::vector<std::vector<cv::Vec2f> > horiz_vert_other_lines;
     horiz_vert_other_lines = partition( lines, 3,
                                        [](cv::Vec2f &line) {
-                                           const float thresh = 10.0;
-                                           float theta = line[1] * (180.0 / PI);
+                                           const double thresh = 10.0;
+                                           double theta = line[1] * (180.0 / PI);
                                            if (fabs(theta - 180) < thresh) return 1;
                                            else if (fabs(theta) < thresh) return 1;
                                            else if (fabs(theta-90) < thresh) return 0;
@@ -631,7 +631,7 @@ float direction (const cv::Mat &img, const Points &ps)
                                        });
     // Find median theta of vertical lines
     cv::Vec2f med = vec_median( horiz_vert_other_lines[0],
-                              [](cv::Vec2f &a) { return a[1]; } );
+                               [](cv::Vec2f &a) { return a[1]; } );
     return med[1];
 }
 
@@ -639,7 +639,7 @@ float direction (const cv::Mat &img, const Points &ps)
 //-----------------------------------------------------------
 void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst)
 {
-    float med = channel_median( gray);
+    double med = channel_median( gray);
     cv::threshold( gray, dst, med, 1, CV_THRESH_BINARY_INV);
 }
 
@@ -647,7 +647,7 @@ void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst)
 //-----------------------------------------------------------
 void inv_thresh_q1( const cv::Mat &gray, cv::Mat &dst)
 {
-    float q1 = channel_q1( gray);
+    double q1 = channel_q1( gray);
     cv::threshold( gray, dst, q1, 1, CV_THRESH_BINARY_INV);
 }
 
@@ -662,7 +662,7 @@ void inv_thresh_avg( const cv::Mat &gray, cv::Mat &dst)
 
 // Automatic edge detection without parameters (from PyImageSearch)
 //--------------------------------------------------------------------
-void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma)
+void auto_canny( const cv::Mat &src, cv::Mat &dst, double sigma)
 {
     double v = channel_median(src);
     int lower = int(fmax(0, (1.0 - sigma) * v));
@@ -677,9 +677,9 @@ void resize(const cv::Mat &src, cv::Mat &dst, int sz)
     //cv::Size s;
     int width  = src.cols;
     int height = src.rows;
-    float scale;
-    if (width < height) scale = sz / (float) width;
-    else scale = sz / (float) height;
+    double scale;
+    if (width < height) scale = sz / (double) width;
+    else scale = sz / (double) height;
     cv::resize( src, dst, cv::Size(int(width*scale),int(height*scale)), 0, 0, cv::INTER_AREA);
 }
 
@@ -696,12 +696,12 @@ void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type)
 
 // Get a center crop of an image
 //-------------------------------------------------------------------
-int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac)
+int get_center_crop( const cv::Mat &img, cv::Mat &dst, double frac)
 {
-    float cx = ROUND(img.cols / 2.0);
-    float cy = ROUND(img.rows / 2.0);
-    float dx = ROUND(img.cols / frac);
-    float dy = ROUND(img.rows / frac);
+    double cx = ROUND(img.cols / 2.0);
+    double cy = ROUND(img.rows / 2.0);
+    double dx = ROUND(img.cols / frac);
+    double dy = ROUND(img.rows / frac);
     dst = cv::Mat( img, cv::Rect( cx-dx, cy-dy, 2*dx+1, 2*dy+1));
     int area = dst.rows * dst.cols;
     return area;
@@ -720,7 +720,7 @@ void get_hue_from_rgb( const cv::Mat &img, cv::Mat &dst)
 
 // Average over a center crop of img
 //------------------------------------------------------
-float center_avg( const cv::Mat &img, float frac)
+double center_avg( const cv::Mat &img, double frac)
 {
     cv::Mat crop;
     int area = get_center_crop( img, crop, frac);
@@ -737,13 +737,13 @@ void normalize_image( const cv::Mat &src, cv::Mat &dst)
     cv::Scalar mmean, sstddev;
     
     cv::meanStdDev( planes[0], mmean, sstddev);
-    planes[0].convertTo( planes[0], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    planes[0].convertTo( planes[0], CV_64FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
     
     cv::meanStdDev( planes[1], mmean, sstddev);
-    planes[1].convertTo( planes[1], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    planes[1].convertTo( planes[1], CV_64FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
     
     cv::meanStdDev( planes[2], mmean, sstddev);
-    planes[2].convertTo( planes[2], CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    planes[2].convertTo( planes[2], CV_64FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
     
     // ignore channel 4, that's alpha
     cv::merge( planes, 3, dst);
@@ -757,7 +757,7 @@ void normalize_plane( const cv::Mat &src, cv::Mat &dst)
     cv::Mat normed;
     cv::Scalar mmean, sstddev;
     cv::meanStdDev( src, mmean, sstddev);
-    src.convertTo( normed, CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+    src.convertTo( normed, CV_64FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
     double mmin, mmax;
     cv::minMaxLoc( normed, &mmin, &mmax);
     double delta = mmax - mmin;
@@ -788,9 +788,9 @@ void normalize_plane_local( const cv::Mat &src, cv::Mat &dst, int radius)
 {
     cv::Mat normed;
     cv::Scalar mmean, sstddev;
-    cv::Mat fltmat( src.rows, src.cols, CV_32FC1);
+    cv::Mat fltmat( src.rows, src.cols, CV_64FC1);
     const int FAC = 4;
-
+    
     int r = 0;
     while (r < src.rows) {
         int c = 0;
@@ -800,7 +800,7 @@ void normalize_plane_local( const cv::Mat &src, cv::Mat &dst, int radius)
             cv::Rect outer_rect( c - FAC*radius, r - FAC*radius, 2*FAC*radius+1, 2*FAC*radius+1);
             clip_rect( outer_rect, src);
             cv::meanStdDev( src( outer_rect), mmean, sstddev);
-            src(inner_rect).convertTo( normed, CV_32FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
+            src(inner_rect).convertTo( normed, CV_64FC1, 1 / sstddev.val[0] , -mmean.val[0] / sstddev.val[0]);
             //PLOG(">>>>>>>>>> mean %f sigma %f\n", mmean.val[0], sstddev.val[0]);
             normed.copyTo( fltmat( inner_rect) );
             c += 2*radius+1;
@@ -920,7 +920,7 @@ void draw_polar_lines( std::vector<cv::Vec2f> plines, cv::Mat &dst,
 // Type Conversions
 //===================
 
-// Vector of int points to float
+// Vector of int points to double
 //--------------------------------------------------
 void points2float( const Points &pi, Points2f &pf)
 {
@@ -931,7 +931,7 @@ Points2f points2float( const Points &pi)
     return Points2f( pi.begin(), pi.end());
 }
 
-// Vector of float points to int
+// Vector of double points to int
 //--------------------------------------------------
 void points2int( const Points2f &pf, Points &pi)
 {
@@ -956,13 +956,13 @@ std::string opencvVersion()
 //------------------------
 void test_mcluster()
 {
-    std::vector<float> v1 = { 1, 2 };
-    std::vector<float> v2 = { 3, 4  };
-    std::vector<float> v3 = { 10, 20 };
-    std::vector<float> v4 = { 11, 21 };
-    std::vector<float> v5 = { 30, 40 };
-    std::vector<float> v6 = { 31, 41 };
-    std::vector<std::vector<float> > samples;
+    std::vector<double> v1 = { 1, 2 };
+    std::vector<double> v2 = { 3, 4  };
+    std::vector<double> v3 = { 10, 20 };
+    std::vector<double> v4 = { 11, 21 };
+    std::vector<double> v5 = { 30, 40 };
+    std::vector<double> v6 = { 31, 41 };
+    std::vector<std::vector<double> > samples;
     samples.push_back( v1);
     samples.push_back( v2);
     samples.push_back( v3);
@@ -972,10 +972,10 @@ void test_mcluster()
     
     double compactness;
     auto res = mcluster( samples, 3, 2, compactness,
-                        [](std::vector<float>s) {return s;} );
+                        [](std::vector<double>s) {return s;} );
     CSLOOP (res) {
         std::cout << "Cluster " << c << ":\n";
-        std::vector<std::vector<float> > clust = res[c];
+        std::vector<std::vector<double> > clust = res[c];
         ISLOOP (clust) {
             print_vecf( clust[i]);
         }
@@ -1039,14 +1039,14 @@ void printMatU( const cv::Mat &m)
     printf("\n========================\n");
 }
 
-// Print float matrix
+// Print double matrix
 //---------------------------------
 void printMatF( const cv::Mat &m)
 {
     RLOOP (m.rows) {
         printf("\n");
         CLOOP (m.cols) {
-            printf("%8.2f",m.at<float>(r,c) );
+            printf("%8.2f",m.at<double>(r,c) );
         }
     }
     printf("\n========================\n");

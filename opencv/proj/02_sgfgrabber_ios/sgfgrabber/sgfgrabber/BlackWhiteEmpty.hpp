@@ -17,23 +17,23 @@
 #include "Ocv.hpp"
 
 //extern cv::Mat mat_dbg;  // debug image to viz intermediate results
-static std::vector<float> BWE_brightmatch;
-static std::vector<float> BWE_darkmatch;
-static std::vector<float> BWE_graymean;
-static std::vector<float> BWE_sum_inner;
-static std::vector<float> BWE_white_holes;
+static std::vector<double> BWE_brightmatch;
+static std::vector<double> BWE_darkmatch;
+static std::vector<double> BWE_graymean;
+static std::vector<double> BWE_sum_inner;
+static std::vector<double> BWE_white_holes;
 
 class BlackWhiteEmpty
 //=====================
 {
 public:
     enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
-
+    
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &pyr,
                                             const cv::Mat &gray,
                                             const Points2f &intersections,
-                                            float &match_quality)
+                                            double &match_quality)
     {
         // Preprocess image
         //-------------------
@@ -45,7 +45,7 @@ public:
         cv::adaptiveThreshold( gray, bright_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 81, -50);
         cv::Mat dark_places;
         cv::adaptiveThreshold( pyrgray, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
-
+        
         // Replace dark places with average to make white dynamic threshold work
         uint8_t mean = cv::mean( pyrgray)[0];
         cv::Mat black_places;
@@ -61,20 +61,20 @@ public:
                                     });
         // The White stones become black holes, all else is white
         int nhood_sz =  25;
-        float thresh = -32;
+        double thresh = -32;
         cv::Mat white_holes;
         cv::adaptiveThreshold( pyr_masked, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                               nhood_sz, thresh);
-//        cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
-//        cv::dilate( white_holes, white_holes, element );
-
+        //        cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
+        //        cv::dilate( white_holes, white_holes, element );
+        
         // Compute features
         //--------------------
         cv::Mat emptyMask3( 3, 3, CV_8UC1, cv::Scalar(0));
         cv::Mat emptyMask7( 7, 7, CV_8UC1, cv::Scalar(0));
         cv::Mat fullMask7( 7, 7, CV_8UC1, cv::Scalar(255));
         cv::Mat fullMask11( 11, 11, CV_8UC1, cv::Scalar(255));
-
+        
         int wiggle = 1;
         match_mask_near_points( white_holes, emptyMask3, intersections, wiggle+1, BWE_white_holes);
         match_mask_near_points( gray_threshed, emptyMask7, intersections, wiggle, BWE_sum_inner);
@@ -88,17 +88,17 @@ public:
         get_feature( pyrgray, intersections, r,
                     [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
                     BWE_graymean, yshift, dontscale);
-
+        
         // Classify intersections
         //----------------------------------------------
         std::vector<int> res( SZ(intersections), EEMPTY);
         ISLOOP (intersections) {
-            float whiteness   = BWE_white_holes[i];
-            float brightmatch = BWE_brightmatch[i];
-            float darkmatch   = BWE_darkmatch[i];
-            float brightness  = BWE_graymean[i];
-            float white_glare = BWE_sum_inner[i];
-
+            double whiteness   = BWE_white_holes[i];
+            double brightmatch = BWE_brightmatch[i];
+            double darkmatch   = BWE_darkmatch[i];
+            double brightness  = BWE_graymean[i];
+            double white_glare = BWE_sum_inner[i];
+            
             if (darkmatch < 120) {
                 res[i] = BBLACK;
             }
@@ -109,7 +109,7 @@ public:
         }
         return res;
     } // classify()
-
+    
     // Check if a rectangle makes sense
     //---------------------------------------------------------------------
     inline static bool check_rect( const cv::Rect &r, int rows, int cols )
@@ -131,15 +131,15 @@ public:
     //--------------------------------------------------------------------------------------------
     inline static void avg_hoods( const cv::Mat &img, const Points2f &pts, int r, cv::Mat &dst)
     {
-        dst = cv::Mat( 2*r + 1, 2*r + 1, CV_32FC1);
+        dst = cv::Mat( 2*r + 1, 2*r + 1, CV_64FC1);
         int n = 0;
         ISLOOP (pts) {
             cv::Point p( ROUND(pts[i].x), ROUND(pts[i].y));
             cv::Rect rect( p.x - r, p.y - r, 2*r + 1, 2*r + 1 );
             if (!check_rect( rect, img.rows, img.cols)) continue;
             cv::Mat tmp;
-            img( rect).convertTo( tmp, CV_32FC1);
-            dst = dst * (n/(float)(n+1)) + tmp * (1/(float)(n+1));
+            img( rect).convertTo( tmp, CV_64FC1);
+            dst = dst * (n/(double)(n+1)) + tmp * (1/(double)(n+1));
             n++;
         }
     } // avg_hoods
@@ -149,11 +149,11 @@ public:
     template <typename F>
     inline static void get_feature( const cv::Mat &img, const Points2f &intersections, int r,
                                    F Feat,
-                                   std::vector<float> &res,
-                                   float yshift = 0, bool scale_flag=true)
+                                   std::vector<double> &res,
+                                   double yshift = 0, bool scale_flag=true)
     {
         res.clear();
-        float feat = 0;
+        double feat = 0;
         ISLOOP (intersections) {
             cv::Point p(ROUND(intersections[i].x), ROUND(intersections[i].y));
             cv::Rect rect( p.x - r, p.y - r + yshift, 2*r + 1, 2*r + 1 );
@@ -171,14 +171,14 @@ public:
     
     // Median of pixel values. Used to find B stones.
     //---------------------------------------------------------------------------------
-    inline static float brightness_feature( const cv::Mat &hood)
+    inline static double brightness_feature( const cv::Mat &hood)
     {
         return channel_median(hood);
     } // brightness_feature()
-
+    
     // Median of pixel values. Used to find B stones.
     //---------------------------------------------------------------------------------
-    inline static float sigma_feature( const cv::Mat &hood)
+    inline static double sigma_feature( const cv::Mat &hood)
     {
         cv::Scalar mmean, sstddev;
         cv::meanStdDev( hood, mmean, sstddev);
@@ -188,20 +188,20 @@ public:
     // Look whether cross pixels are set in neighborhood of p_.
     // hood should be binary, 0 or 1, from an adaptive threshold operation.
     //---------------------------------------------------------------------------------
-    inline static float cross_feature( const cv::Mat &hood)
+    inline static double cross_feature( const cv::Mat &hood)
     {
         int mid_y = ROUND(hood.rows / 2.0);
         int mid_x = ROUND(hood.cols / 2.0);
-        float ssum = 0;
+        double ssum = 0;
         // Look for horizontal line in the middle
         CLOOP (hood.cols) {
             ssum += hood.at<uint8_t>(mid_y, c);
         }
         // Look for vertical line in the middle
         RLOOP (hood.rows) {
-            ssum += hood.at<uint8_t>(r, mid_x); 
+            ssum += hood.at<uint8_t>(r, mid_x);
         }
-        float totsum = cv::sum(hood)[0];
+        double totsum = cv::sum(hood)[0];
         ssum = RAT( ssum, totsum);
         return ssum;
     } // cross_feature()
@@ -229,7 +229,7 @@ public:
         
         return mask;
     }
-
+    
     // Return a cross shaped mask.
     // thickness is weird: 1->1, 2->3, 3->5, 4->5, 5->7, 6->7, ...
     //-------------------------------------------------------------------------
@@ -253,12 +253,12 @@ public:
         cv::line( mask, cv::Point( 0, r), cv::Point( 2*r+1, r), 255, thickness);
         // vert
         cv::line( mask, cv::Point( r, 0), cv::Point( r, 2*r+1), 255, thickness);
-
+        
         return mask;
     }
     
     // Match a mask to all points around p within a square of radius r. Return best match.
-    // Image and mask are float mats with values 0 .. 255.0 .
+    // Image and mask are double mats with values 0 .. 255.0 .
     // The result is in the range 0..255. Smaller numbers indicate better match.
     // Mask dimensions must be odd.
     //---------------------------------------------------------------------------------------------------
@@ -285,87 +285,23 @@ public:
         //if (mindiff > 255) mindiff = 255;
         return mindiff;
     } // match_mask_near_point()
-
+    
     // Match a mask to all intersections. Find best match for each intersection within a radius.
     //--------------------------------------------------------------------------------------------
     inline static void match_mask_near_points( const cv::Mat &img_, const cv::Mat mask_,
                                               const Points2f &intersections, int r,
-                                              std::vector<float> &res)
+                                              std::vector<double> &res)
     {
         res.clear();
         cv::Mat img, mask;
-        img_.convertTo( img, CV_32FC1);
-        mask_.convertTo( mask, CV_32FC1);
+        img_.convertTo( img, CV_64FC1);
+        mask_.convertTo( mask, CV_64FC1);
         ISLOOP (intersections) {
-            float feat = match_mask_near_point( img, mask, intersections[i], r);
+            double feat = match_mask_near_point( img, mask, intersections[i], r);
             res.push_back( feat);
         }
     } // match_mask_near_points()
-
-    
-
 }; // class BlackWhiteEmpty
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif /* BlackWhiteEmpty_hpp */
+

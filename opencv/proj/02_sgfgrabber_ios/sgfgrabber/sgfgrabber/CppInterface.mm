@@ -59,8 +59,8 @@ extern cv::Mat mat_dbg;
 @property Points2f corners_zoomed;
 @property Points2f intersections;
 @property Points2f intersections_zoomed;
-@property float dy;
-@property float dx;
+@property double dy;
+@property double dx;
 @property std::vector<Points2f> boards; // history of board corners
 @property cv::Mat white_templ;
 @property cv::Mat black_templ;
@@ -81,15 +81,15 @@ extern cv::Mat mat_dbg;
         // Load template files
         cv::Mat tmat;
         NSString *fpath;
-
+        
         fpath = findInBundle( @"white_templ", @"yml");
         cv::FileStorage fsw( [fpath UTF8String], cv::FileStorage::READ);
         fsw["white_template"] >> _white_templ;
-
+        
         fpath = findInBundle( @"black_templ", @"yml");
         cv::FileStorage fsb( [fpath UTF8String], cv::FileStorage::READ);
         fsb["black_template"] >> _black_templ;
-
+        
         fpath = findInBundle( @"empty_templ", @"yml");
         cv::FileStorage fse( [fpath UTF8String], cv::FileStorage::READ);
         fse["empty_template"] >> _empty_templ;
@@ -113,17 +113,17 @@ void load_img( NSString *fname, cv::Mat &m)
 //-----------------------------------------------------
 bool board_valid( Points2f board, const cv::Mat &img)
 {
-    float screenArea = img.rows * img.cols;
+    double screenArea = img.rows * img.cols;
     if (board.size() != 4) return false;
-    float area = cv::contourArea(board);
+    double area = cv::contourArea(board);
     if (area / screenArea > 0.95) return false;
     if (area / screenArea < 0.20) return false;
-
-    float par_ang1   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[3], board[2]);
-    float par_ang2   = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[1], board[2]);
-    float right_ang1 = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[1], board[2]);
-    float right_ang2 = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[3], board[2]);
-    //float horiz_ang   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], cv::Point(0,0), cv::Point(1,0));
+    
+    double par_ang1   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[3], board[2]);
+    double par_ang2   = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[1], board[2]);
+    double right_ang1 = (180.0 / M_PI) * angle_between_lines( board[0], board[1], board[1], board[2]);
+    double right_ang2 = (180.0 / M_PI) * angle_between_lines( board[0], board[3], board[3], board[2]);
+    //double horiz_ang   = (180.0 / M_PI) * angle_between_lines( board[0], board[1], cv::Point(0,0), cv::Point(1,0));
     //NSLog(@"%f.2, %f.2, %f.2, %f.2", par_ang1,  par_ang2,  right_ang1,  right_ang2 );
     //if (abs(horiz_ang) > 20) return false;
     if (abs(par_ang1) > 20) return false;
@@ -162,7 +162,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
                         @"board14.jpg"
                         ];
     if (_sldDbg > 0 && _sldDbg <= fnames.count) {
-    //if (1) {
+        //if (1) {
         load_img( fnames[_sldDbg -1], _m);
         //load_img( fnames[4], _m);
         cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
@@ -198,9 +198,9 @@ bool board_valid( Points2f board, const cv::Mat &img)
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
     _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-
+    
     cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
-
+    
     // Show results
     cv::Mat drawing = _small.clone();
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
@@ -241,7 +241,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
         case 3:
         {
             g_app.mainVC.lbDbg.text = @"fix";
-            const float x_thresh = 4.0;
+            const double x_thresh = 4.0;
             fix_vertical_lines( _vertical_lines, all_vert_lines, _gray, x_thresh);
             break;
         }
@@ -267,9 +267,9 @@ void dedup_verticals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     if (SZ(lines) < 3) return;
     // Cluster by x in the middle
-    //const float wwidth = 32.0;
-    const float wwidth = 8.0;
-    const float middle_y = img.rows / 2.0;
+    //const double wwidth = 32.0;
+    const double wwidth = 8.0;
+    const double middle_y = img.rows / 2.0;
     const int min_clust_size = 0;
     auto Getter =  [middle_y](cv::Vec2f line) { return x_from_y( middle_y, line); };
     auto vert_line_cuts = Clust1D::cluster( lines, wwidth, Getter);
@@ -293,8 +293,8 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 {
     if (SZ(lines) < 3) return;
     // Cluster by y in the middle
-    const float wwidth = 32.0;
-    const float middle_x = img.cols / 2.0;
+    const double wwidth = 32.0;
+    const double middle_x = img.cols / 2.0;
     const int min_clust_size = 0;
     auto Getter =  [middle_x](cv::Vec2f line) { return y_from_x( middle_x, line); };
     auto horiz_line_cuts = Clust1D::cluster( lines, wwidth, Getter);
@@ -316,20 +316,20 @@ void dedup_horizontals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
 //-----------------------------------------------------------------------------
 void filter_vert_lines( std::vector<cv::Vec2f> &vlines)
 {
-    const float eps = 10.0;
+    const double eps = 10.0;
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
     if (med_idx < 0) return;
-    const float med_theta = vlines[med_idx][1];
+    const double med_theta = vlines[med_idx][1];
     // Going left and right, theta should not change abruptly
     std::vector<cv::Vec2f> good;
     good.push_back( vlines[med_idx]);
-    const float EPS = eps * PI/180;
-    float prev_theta;
+    const double EPS = eps * PI/180;
+    double prev_theta;
     // right
     prev_theta = med_theta;
     for (int i = med_idx+1; i < SZ(vlines); i++ ) {
-        float d = fabs( vlines[i][1] - prev_theta) + fabs( vlines[i][1] - med_theta);
+        double d = fabs( vlines[i][1] - prev_theta) + fabs( vlines[i][1] - med_theta);
         if (d < EPS) {
             good.push_back( vlines[i]);
             prev_theta = vlines[i][1];
@@ -338,7 +338,7 @@ void filter_vert_lines( std::vector<cv::Vec2f> &vlines)
     // left
     prev_theta = med_theta;
     for (int i = med_idx-1; i >= 0; i-- ) {
-        float d = fabs( vlines[i][1] - prev_theta) + fabs( vlines[i][1] - med_theta);
+        double d = fabs( vlines[i][1] - prev_theta) + fabs( vlines[i][1] - med_theta);
         if (d < EPS) {
             good.push_back( vlines[i]);
             prev_theta = vlines[i][1];
@@ -354,16 +354,16 @@ void filter_vert_lines( std::vector<cv::Vec2f> &vlines)
 //-----------------------------------------------------------------------------
 void filter_horiz_lines( std::vector<cv::Vec2f> &vlines)
 {
-    const float eps = 1.1;
+    const double eps = 1.1;
     std::sort( vlines.begin(), vlines.end(), [](cv::Vec2f &a, cv::Vec2f &b) { return a[0] < b[0]; });
     int med_idx = good_center_line( vlines);
     if (med_idx < 0) return;
-    float theta = vlines[med_idx][1];
+    double theta = vlines[med_idx][1];
     // Going left and right, theta should not change abruptly
     std::vector<cv::Vec2f> good;
     good.push_back( vlines[med_idx]);
-    const float EPS = eps * PI/180;
-    float prev_theta;
+    const double EPS = eps * PI/180;
+    double prev_theta;
     // right
     prev_theta = theta;
     for (int i = med_idx+1; i < SZ(vlines); i++ ) {
@@ -392,24 +392,24 @@ void filter_horiz_lines( std::vector<cv::Vec2f> &vlines)
 int good_center_line( const std::vector<cv::Vec2f> &lines)
 {
     const int r = 2;
-    //const float EPS = 4 * PI/180;
+    //const double EPS = 4 * PI/180;
     auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
     auto med_theta = vec_median( thetas);
     
     // Find a line close to the middle where theta is close to median theta
     int half = SZ(lines)/2;
-    float mind = 1E9;
+    double mind = 1E9;
     int minidx = -1;
     ILOOP (r+1) {
         if (half - i >= 0) {
-            float d = fabs( med_theta - thetas[half-i]);
+            double d = fabs( med_theta - thetas[half-i]);
             if (d < mind) {
                 mind = d;
                 minidx = half - i;
             }
         }
         if (half + i < SZ(lines)) {
-            float d = fabs( med_theta - thetas[half+i]);
+            double d = fabs( med_theta - thetas[half+i]);
             if (d < mind) {
                 mind = d;
                 minidx = half + i;
@@ -421,19 +421,19 @@ int good_center_line( const std::vector<cv::Vec2f> &lines)
 
 // Find line where top_x and bot_x match best.
 //---------------------------------------------------------------------------------------------------------------
-int closest_vert_line( const std::vector<cv::Vec2f> &lines, float top_x, float bot_x, float top_y, float bot_y,
-                      float &min_dtop, float &min_dbot, float &min_err, float &min_top_rho, float &min_bot_rho) // out
+int closest_vert_line( const std::vector<cv::Vec2f> &lines, double top_x, double bot_x, double top_y, double bot_y,
+                      double &min_dtop, double &min_dbot, double &min_err, double &min_top_rho, double &min_bot_rho) // out
 {
-    std::vector<float> top_rhos = vec_extract( lines,
-                                              [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
-    std::vector<float> bot_rhos = vec_extract( lines,
-                                              [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
+    std::vector<double> top_rhos = vec_extract( lines,
+                                               [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
+    std::vector<double> bot_rhos = vec_extract( lines,
+                                               [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
     int minidx = -1;
     min_err = 1E9;
     ISLOOP (top_rhos) {
-        float dtop = fabs( top_rhos[i] - top_x );
-        float dbot = fabs( bot_rhos[i] - bot_x );
-        float err = dtop + dbot;
+        double dtop = fabs( top_rhos[i] - top_x );
+        double dbot = fabs( bot_rhos[i] - bot_x );
+        double err = dtop + dbot;
         if (err < min_err) {
             minidx = i;
             min_err = err;
@@ -451,28 +451,28 @@ int closest_vert_line( const std::vector<cv::Vec2f> &lines, float top_x, float b
 // ones if close enough.
 //------------------------------------------------------------------------------------------------
 void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Vec2f> &all_vert_lines,
-                        const cv::Mat &img, float x_thresh = 4.0)
+                        const cv::Mat &img, double x_thresh = 4.0)
 {
-    const float width = img.cols;
+    const double width = img.cols;
     const int top_y = 0.2 * img.rows;
     const int bot_y = 0.8 * img.rows;
     //const int mid_y = 0.5 * img.rows;
-
+    
     std::sort( lines.begin(), lines.end(),
               [bot_y](cv::Vec2f a, cv::Vec2f b) {
                   return x_from_y( bot_y, a) < x_from_y( bot_y, b);
               });
-    std::vector<float> top_rhos = vec_extract( lines,
-                                              [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
-    std::vector<float> bot_rhos = vec_extract( lines,
-                                              [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
+    std::vector<double> top_rhos = vec_extract( lines,
+                                               [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
+    std::vector<double> bot_rhos = vec_extract( lines,
+                                               [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
     auto d_top_rhos = vec_delta( top_rhos);
     auto d_bot_rhos = vec_delta( bot_rhos);
-    vec_filter( d_top_rhos, [](float d){ return d > 5 && d < 20;});
-    vec_filter( d_bot_rhos, [](float d){ return d > 8 && d < 25;});
-    float d_top_rho = vec_median( d_top_rhos);
-    float d_bot_rho = vec_median( d_bot_rhos);
-
+    vec_filter( d_top_rhos, [](double d){ return d > 5 && d < 20;});
+    vec_filter( d_bot_rhos, [](double d){ return d > 8 && d < 25;});
+    double d_top_rho = vec_median( d_top_rhos);
+    double d_bot_rho = vec_median( d_bot_rhos);
+    
     // Find a good line close to the middle
     int good_idx = good_center_line( lines);
     if (good_idx < 0) {
@@ -484,9 +484,9 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Ve
     // Interpolate the rest
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
-    float top_rho, bot_rho;
+    double top_rho, bot_rho;
     // If there is a close line, use it. Else interpolate.
-    const float X_THRESH = x_thresh; //6;
+    const double X_THRESH = x_thresh; //6;
     // Lines to the right
     top_rho = x_from_y( top_y, med_line);
     bot_rho = x_from_y( bot_y, med_line);
@@ -495,11 +495,11 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Ve
         bot_rho += d_bot_rho;
         //int close_idx = vec_closest( bot_rhos, bot_rho);
         //int close_idx = closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y);
-        float dtop, dbot, err, top_x, bot_x;
+        double dtop, dbot, err, top_x, bot_x;
         closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y, // in
                           dtop, dbot, err, top_x, bot_x); // out
-        //float dbot = fabs( bot_rho - bot_rhos[close_idx]);
-        //float dtop = fabs( top_rho - top_rhos[close_idx]);
+        //double dbot = fabs( bot_rho - bot_rhos[close_idx]);
+        //double dtop = fabs( top_rho - top_rhos[close_idx]);
         if (dbot < X_THRESH && dtop < X_THRESH) {
             top_rho   = top_x;
             bot_rho   = bot_x;
@@ -518,7 +518,7 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Ve
         bot_rho -= d_bot_rho;
         //int close_idx = vec_closest( bot_rhos, bot_rho);
         //int close_idx = closest_vert_line( lines, top_rho, bot_rho, top_y, bot_y);
-        float dtop, dbot, err, top_x, bot_x;
+        double dtop, dbot, err, top_x, bot_x;
         closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y, // in
                           dtop, dbot, err, top_x, bot_x); // out
         if (dbot < X_THRESH && dtop < X_THRESH) {
@@ -545,41 +545,41 @@ void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Ve
 // The idea is that on a grid, horizontal and vertical spacing are the same,
 // and if we know one, we know the other.
 //--------------------------------------------------------------------------------------
-float hspace_at_line( const std::vector<cv::Vec2f> &vert_lines, cv::Vec2f hline)
+double hspace_at_line( const std::vector<cv::Vec2f> &vert_lines, cv::Vec2f hline)
 {
-    std::vector<float> dists;
+    std::vector<double> dists;
     Point2f prev;
     ISLOOP (vert_lines) {
         //cv::Vec4f seg = polar2segment( vert_lines[i]);
         Point2f p = intersection( vert_lines[i], hline);
         if (i) {
-            float d = cv::norm( p - prev);
+            double d = cv::norm( p - prev);
             dists.push_back( d);
         }
         prev = p;
     }
-    float res = vec_median( dists);
-    //float res = dists[SZ(dists)/2];
+    double res = vec_median( dists);
+    //double res = dists[SZ(dists)/2];
     return res;
 } // hspace_at_y()
 
 // Similarity between two horizontal lines.
 // y_distance**2 to the left plus y_distance**2 to the right.
 //--------------------------------------------------------------------
-float h_line_similarity( cv::Vec2f a, cv::Vec2f b, float middle_x)
+double h_line_similarity( cv::Vec2f a, cv::Vec2f b, double middle_x)
 {
     const int r = 50;
-    float aleft  = y_from_x( middle_x - r, a);
-    float bleft  = y_from_x( middle_x - r, b);
-    float aright = y_from_x( middle_x + r, a);
-    float bright = y_from_x( middle_x + r, b);
-    float res = sqrt( SQR( aleft - bleft) + SQR( aright - bright));
+    double aleft  = y_from_x( middle_x - r, a);
+    double bleft  = y_from_x( middle_x - r, b);
+    double aright = y_from_x( middle_x + r, a);
+    double bright = y_from_x( middle_x + r, b);
+    double res = sqrt( SQR( aleft - bleft) + SQR( aright - bright));
     return res;
 } // h_line_similarity()
 
 // Find closest line in a bunch of horiz lines
 //--------------------------------------------------------------------------------------------------
-int closest_hline( cv::Vec2f line, const std::vector<cv::Vec2f> &hlines, float middle_x, float &d)
+int closest_hline( cv::Vec2f line, const std::vector<cv::Vec2f> &hlines, double middle_x, double &d)
 {
     int minidx = -1;
     d = 1E9;
@@ -595,14 +595,14 @@ int closest_hline( cv::Vec2f line, const std::vector<cv::Vec2f> &hlines, float m
 // Similarity between two horizontal lines.
 // x_distance**2 above plus x_distance**2 below.
 //--------------------------------------------------------------------
-float v_line_similarity( cv::Vec2f a, cv::Vec2f b, float middle_y)
+double v_line_similarity( cv::Vec2f a, cv::Vec2f b, double middle_y)
 {
     const int r = 50;
-    float atop  = x_from_y( middle_y - r, a);
-    float btop  = x_from_y( middle_y - r, b);
-    float abot  = x_from_y( middle_y + r, a);
-    float bbot  = x_from_y( middle_y + r, b);
-    float res = sqrt( SQR( atop - btop) + SQR( abot - bbot));
+    double atop  = x_from_y( middle_y - r, a);
+    double btop  = x_from_y( middle_y - r, b);
+    double abot  = x_from_y( middle_y + r, a);
+    double bbot  = x_from_y( middle_y + r, b);
+    double res = sqrt( SQR( atop - btop) + SQR( abot - bbot));
     return res;
 } // v_line_similarity
 
@@ -612,8 +612,8 @@ float v_line_similarity( cv::Vec2f a, cv::Vec2f b, float middle_y)
 void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2f> &vert_lines,
                      const cv::Mat &img)
 {
-    const float middle_x = img.cols / 2.0;
-    const float height = img.rows;
+    const double middle_x = img.cols / 2.0;
+    const double height = img.rows;
     
     // Convert hlines to chlines (center y + angle)
     std::vector<cv::Vec2f> lines;
@@ -627,7 +627,7 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
     //auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
     auto d_rhos   = vec_delta( rhos);
-    //vec_filter( d_rhos, [](float d){ return d > 10;});
+    //vec_filter( d_rhos, [](double d){ return d > 10;});
     
     int good_idx = good_center_line( lines);
     if (good_idx < 0) {
@@ -640,14 +640,14 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     // Interpolate the rest
     std::vector<cv::Vec2f> synth_lines;
     synth_lines.push_back(med_line);
-
-    float med_rho = med_line[0];
-    float med_d_rho = vec_median( d_rhos);
-    float alpha = RAT( hspace_at_line( vert_lines, cv::Vec2f( 0, PI/2)),
-                hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2)));
-    float dd_rho_per_y = RAT( med_d_rho * (1.0 - alpha), med_rho);
-
-    float rho, theta, d_rho;
+    
+    double med_rho = med_line[0];
+    double med_d_rho = vec_median( d_rhos);
+    double alpha = RAT( hspace_at_line( vert_lines, cv::Vec2f( 0, PI/2)),
+                       hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2)));
+    double dd_rho_per_y = RAT( med_d_rho * (1.0 - alpha), med_rho);
+    
+    double rho, theta, d_rho;
     cv::Vec2f line;
     
     // Lines below
@@ -656,9 +656,9 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     rho = med_line[0];
     theta = med_line[1];
     ILOOP(100) {
-        float old_rho = rho;
+        double old_rho = rho;
         rho += d_rho;
-        float d;
+        double d;
         int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
         if (d < d_rho * 0.6) {
             rho   = lines[close_idx][0];
@@ -680,9 +680,9 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
     rho = med_line[0];
     theta = med_line[1];
     ILOOP(100) {
-        float old_rho = rho;
+        double old_rho = rho;
         rho -= d_rho;
-        float d;
+        double d;
         int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
         if (d < d_rho * 0.6) {
             rho   = lines[close_idx][0];
@@ -710,11 +710,11 @@ void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2
 // Convert horizontal (roughly) polar line to a pair
 // y_at_middle, angle
 //--------------------------------------------------------------
-cv::Vec2f polar2changle( const cv::Vec2f pline, float middle_x)
+cv::Vec2f polar2changle( const cv::Vec2f pline, double middle_x)
 {
     cv::Vec2f res;
-    float y_at_middle = y_from_x( middle_x, pline);
-    float angle;
+    double y_at_middle = y_from_x( middle_x, pline);
+    double angle;
     angle = -(pline[1] - PI/2);
     res = cv::Vec2f( y_at_middle, angle);
     return res;
@@ -722,7 +722,7 @@ cv::Vec2f polar2changle( const cv::Vec2f pline, float middle_x)
 
 // Convert a pair (y_at_middle, angle) to polar
 //---------------------------------------------------------------
-cv::Vec2f changle2polar( const cv::Vec2f cline, float middle_x)
+cv::Vec2f changle2polar( const cv::Vec2f cline, double middle_x)
 {
     cv::Vec2f res;
     cv::Vec4f seg( middle_x, cline[0], middle_x + 1, cline[0] - tan(cline[1]));
@@ -733,11 +733,11 @@ cv::Vec2f changle2polar( const cv::Vec2f cline, float middle_x)
 // Convert vertical (roughly) polar line to a pair
 // x_at_middle, angle
 //--------------------------------------------------------------
-cv::Vec2f polar2cvangle( const cv::Vec2f pline, float middle_y)
+cv::Vec2f polar2cvangle( const cv::Vec2f pline, double middle_y)
 {
     cv::Vec2f res;
-    float x_at_middle = x_from_y( middle_y, pline);
-    float angle;
+    double x_at_middle = x_from_y( middle_y, pline);
+    double angle;
     angle = -pline[1];
     res = cv::Vec2f( x_at_middle, angle);
     return res;
@@ -745,7 +745,7 @@ cv::Vec2f polar2cvangle( const cv::Vec2f pline, float middle_y)
 
 // Convert a pair (x_at_middle, angle) to polar
 //---------------------------------------------------------------
-cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
+cv::Vec2f cvangle2polar( const cv::Vec2f cline, double middle_y)
 {
     cv::Vec2f res;
     cv::Vec4f seg( cline[0], middle_y , cline[0] + tan(cline[1]), middle_y + 1);
@@ -789,7 +789,7 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, float middle_y)
             return NULL;
     } // switch
     state++;
-
+    
     // Show results
     cv::cvtColor( _gray, drawing, cv::COLOR_GRAY2RGB);
     get_color( true);
@@ -807,7 +807,7 @@ int count_points_on_line( cv::Vec2f line, Points pts)
 {
     int res = 0;
     for (auto p:pts) {
-        float d = fabs(dist_point_line( p, line));
+        double d = fabs(dist_point_line( p, line));
         if (d < 0.75) {
             res++;
         }
@@ -821,8 +821,8 @@ int count_points_on_line( cv::Vec2f line, Points pts)
 cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt, int &maxhits)
 {
     // Find next point below.
-    //const float RHO_EPS = 10;
-    const float THETA_EPS = /* 10 */ 20 * PI / 180;
+    //const double RHO_EPS = 10;
+    const double THETA_EPS = /* 10 */ 20 * PI / 180;
     maxhits = -1;
     cv::Vec2f res;
     for (auto p: allpoints) {
@@ -849,8 +849,8 @@ cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt, int 
 cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
 {
     // Find next point to the right.
-    //const float RHO_EPS = 10;
-    const float THETA_EPS = 5 * PI / 180;
+    //const double RHO_EPS = 10;
+    const double THETA_EPS = 5 * PI / 180;
     int maxhits = -1;
     cv::Vec2f res = {0,0};
     for (auto p: allpoints) {
@@ -933,19 +933,19 @@ cv::Point tiebreak( const cv::Mat &m1, const cv::Mat &m2)
 
 // Use horizontal and vertical lines to find corners such that the board best matches the points we found
 //-----------------------------------------------------------------------------------------------------------
-Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines, 
-                     const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19)
+Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
+                      const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19)
 {
     if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
     
     Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
     cv::Mat &edgeness  = bness.edgeness();
     cv::Mat &blobness  = bness.blobness();
-
+    
     cv::Point max_loc = tiebreak( blobness, edgeness);
     //cv::Point min_loc, max_loc; double mmin, mmax;
-    //cv::minMaxLoc(edgeness, &mmin, &mmax, &min_loc, &max_loc);
-
+    //cv::minMaxLoc(blobness, &mmin, &mmax, &min_loc, &max_loc);
+    
     cv::Point tl = max_loc;
     cv::Point tr( tl.x + board_sz-1, tl.y);
     cv::Point br( tl.x + board_sz-1, tl.y + board_sz-1);
@@ -962,7 +962,7 @@ Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, 
     mat_dbg.at<cv::Vec3b>( pf2p(bl)) = cv::Vec3b( 255,0,0);
     mat_dbg.at<cv::Vec3b>( pf2p(br)) = cv::Vec3b( 255,0,0);
     cv::resize( mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
-
+    
     auto isec2pf = [&blobness, &intersections](cv::Point p) { return p2pf( intersections[p.y*blobness.cols + p.x]); };
     Points2f corners = { isec2pf(tl), isec2pf(tr), isec2pf(br), isec2pf(bl) };
     return corners;
@@ -990,7 +990,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 - (UIImage *) f03_corners
 {
     g_app.mainVC.lbDbg.text = @"find corners";
-
+    
     _intersections = get_intersections( _horizontal_lines, _vertical_lines);
     //auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
@@ -1010,7 +1010,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
     //cv::Mat drawing; cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
     //mat_dbg.convertTo( mat_dbg, CV_8UC1);
     //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
-    //float alpha = 0.5;
+    //double alpha = 0.5;
     //cv::addWeighted( _small, alpha, drawing, 1-alpha, 0, drawing);
     //draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( mat_dbg);
@@ -1053,13 +1053,13 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     cv::Scalar smean = cv::mean( img);
     Pixel mean( smean[0], smean[1], smean[2]);
     img.forEach<Pixel>( [&mean, &corners](Pixel &v, const int *p)
-                         {
-                             int x = p[1]; int y = p[0];
-                             if (x < corners[0].x - 10) v = mean;
-                             else if (x > corners[1].x + 10) v = mean;
-                             if (y < corners[0].y - 10) v = mean;
-                             else if (y > corners[3].y + 10) v = mean;
-                         });
+                       {
+                           int x = p[1]; int y = p[0];
+                           if (x < corners[0].x - 10) v = mean;
+                           else if (x > corners[1].x + 10) v = mean;
+                           if (y < corners[0].y - 10) v = mean;
+                           else if (y > corners[3].y + 10) v = mean;
+                       });
 } // fill_outside_with_average_rgb()
 
 // Zoom in
@@ -1080,9 +1080,9 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _small_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
-
+        
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
-
+        
         // Try stuff
         cv::Mat tt;
         //cv::cvtColor( _gray_zoomed, tt, cv::COLOR_RGB2GRAY);
@@ -1097,15 +1097,15 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
         //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 51, -30);
         //int nhood_sz =  25;
-        //float thresh = -32;
+        //double thresh = -32;
         //cv::adaptiveThreshold( tt, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
         //                      nhood_sz, thresh);
-//        thresh_dilate( tt, _gz_threshed, 3);
+        //        thresh_dilate( tt, _gz_threshed, 3);
     }
-//    cv::Mat tt;
-//    cv::adaptiveThreshold( _gray_zoomed, tt, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-//                          5 /* 11 */ ,  // neighborhood_size
-//                          3);  // threshold
+    //    cv::Mat tt;
+    //    cv::adaptiveThreshold( _gray_zoomed, tt, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
+    //                          5 /* 11 */ ,  // neighborhood_size
+    //                          3);  // threshold
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
@@ -1129,7 +1129,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     //cv::GaussianBlur( _gray_zoomed, dark_places, cv::Size(9,9),0,0);
     //cv::adaptiveThreshold( dark_places, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
     cv::adaptiveThreshold( _pyr_gray, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
-//@@@
+    //@@@
     // Show results
     cv::Mat drawing;
     cv::cvtColor( dark_places, drawing, cv::COLOR_GRAY2RGB);
@@ -1179,7 +1179,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     
     // The White stones become black holes, all else is white
     int nhood_sz =  25;
-    float thresh = -32;
+    double thresh = -32;
     cv::Mat white_holes;
     cv::adaptiveThreshold( _pyr_masked, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           nhood_sz, thresh);
@@ -1199,13 +1199,13 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 
 // Visualize features, one per intersection.
 //------------------------------------------------------------------------------------------------------
-void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<float> features,
-                 cv::Mat &dst, const float multiplier = 255)
+void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<double> features,
+                 cv::Mat &dst, const double multiplier = 255)
 {
     dst = cv::Mat::zeros( img.size(), img.type());
     ISLOOP (intersections) {
         auto pf = intersections[i];
-        float feat = features[i];
+        double feat = features[i];
         auto hood = make_hood( pf, 5, 5);
         if (check_rect( hood, img.rows, img.cols)) {
             dst( hood) = fmin( 255, feat * multiplier);
@@ -1219,9 +1219,9 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 {
     g_app.mainVC.lbDbg.text = @"brightness";
     static int state = 0;
-    std::vector<float> feats;
+    std::vector<double> feats;
     cv::Mat drawing;
-
+    
     switch (state) {
         case 0:
         {
@@ -1261,7 +1261,7 @@ void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
 std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, const cv::Mat &gray,
                           int TIMEBUFSZ = 1)
 {
-    float match_quality;
+    double match_quality;
     std::vector<int> diagram = BlackWhiteEmpty::classify( img, gray,
                                                          intersections, match_quality);
     // Vote across time
@@ -1283,7 +1283,7 @@ std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, co
 //----------------------------------------------------------------------------------------------
 void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const cv::Mat &img)
 {
-    float marg = 10;
+    double marg = 10;
     ISLOOP (diagram) {
         Point2f p = intersections[i];
         if (p.x < marg || p.y < marg || p.x > img.cols - marg || p.y > img.rows - marg) {
@@ -1313,7 +1313,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
     //DrawBoard drb( _gray_zoomed, _corners_zoomed[0].y, _corners_zoomed[0].x, _board_sz);
     //drb.draw( _diagram);
     cv::cvtColor( _gray_zoomed, drawing, cv::COLOR_GRAY2RGB);
-
+    
     Points2f dummy;
     get_intersections_from_corners( _corners_zoomed, _board_sz, dummy, _dx, _dy);
     int dx = ROUND( _dx/4.0);
@@ -1366,7 +1366,7 @@ void save_intersections( const cv::Mat img,
 //--------------------------------------------------------------------------------
 template <typename Points_>
 void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
-                                    Points_ &result, float &delta_h, float &delta_v) // out
+                                    Points_ &result, double &delta_h, double &delta_v) // out
 {
     if (corners.size() != 4) return;
     
@@ -1375,25 +1375,25 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     cv::Point2f br = corners[2];
     cv::Point2f bl = corners[3];
     
-    std::vector<float> left_x;
-    std::vector<float> left_y;
-    std::vector<float> right_x;
-    std::vector<float> right_y;
+    std::vector<double> left_x;
+    std::vector<double> left_y;
+    std::vector<double> right_x;
+    std::vector<double> right_y;
     ILOOP (boardsz) {
-        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (float)(boardsz-1));
-        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (float)(boardsz-1));
-        right_x.push_back( tr.x + i * (br.x - tr.x) / (float)(boardsz-1));
-        right_y.push_back( tr.y + i * (br.y - tr.y) / (float)(boardsz-1));
+        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (double)(boardsz-1));
+        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (double)(boardsz-1));
+        right_x.push_back( tr.x + i * (br.x - tr.x) / (double)(boardsz-1));
+        right_y.push_back( tr.y + i * (br.y - tr.y) / (double)(boardsz-1));
     }
-    std::vector<float> top_x;
-    std::vector<float> top_y;
-    std::vector<float> bot_x;
-    std::vector<float> bot_y;
+    std::vector<double> top_x;
+    std::vector<double> top_y;
+    std::vector<double> bot_x;
+    std::vector<double> bot_y;
     ILOOP (boardsz) {
-        top_x.push_back( tl.x + i * (tr.x - tl.x) / (float)(boardsz-1));
-        top_y.push_back( tl.y + i * (tr.y - tl.y) / (float)(boardsz-1));
-        bot_x.push_back( bl.x + i * (br.x - bl.x) / (float)(boardsz-1));
-        bot_y.push_back( bl.y + i * (br.y - bl.y) / (float)(boardsz-1));
+        top_x.push_back( tl.x + i * (tr.x - tl.x) / (double)(boardsz-1));
+        top_y.push_back( tl.y + i * (tr.y - tl.y) / (double)(boardsz-1));
+        bot_x.push_back( bl.x + i * (br.x - bl.x) / (double)(boardsz-1));
+        bot_y.push_back( bl.y + i * (br.y - bl.y) / (double)(boardsz-1));
     }
     delta_v = (bot_y[0] - top_y[0]) / (boardsz -1);
     delta_h = (right_x[0] - left_x[0]) / (boardsz -1);
@@ -1433,9 +1433,9 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         BlobFinder::find_stones( _gray, _stone_or_empty);
         _stone_or_empty = BlobFinder::clean( _stone_or_empty);
         if (SZ(_stone_or_empty) < 0.8 * SQR(_board_sz)) break;
-
+        
         // Break if not straight
-        float theta = direction( _gray, _stone_or_empty) - PI/2;
+        double theta = direction( _gray, _stone_or_empty) - PI/2;
         if (fabs(theta) > 4 * PI/180) break;
         
         // Find vertical lines
@@ -1455,7 +1455,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
         if (SZ( _horizontal_lines) > 55) break;
         if (SZ( _horizontal_lines) < 5) break;
-
+        
         // Find corners
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
         cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
@@ -1469,7 +1469,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         if (!board_valid( _corners, _gray)) {
             break;
         }
-
+        
         // Zoom in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
@@ -1478,7 +1478,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         cv::perspectiveTransform( _intersections, _intersections_zoomed, M);
         fill_outside_with_average_gray( _gray_zoomed, _corners_zoomed);
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
-
+        
         // Classify
         const int TIME_BUF_SZ = 10;
         _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
@@ -1534,7 +1534,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
             draw_point( _intersections[i], *canvas, 2, cv::Scalar(0,0,255,255));
         }
     } // if (SZ(corners) == 4)
-
+    
     UIImage *res = MatToUIImage( *canvas);
     //UIImage *res = MatToUIImage( drawing);
     return res;

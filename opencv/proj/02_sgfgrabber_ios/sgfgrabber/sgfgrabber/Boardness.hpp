@@ -81,7 +81,7 @@ public:
         Pixel mean( smean[0], smean[1], smean[2]);
         m.forEach<Pixel>( [&mean](Pixel &v, const int *p)
                          {
-                             float gray = (v.x + v.y + v.z) / 3.0;
+                             double gray = (v.x + v.y + v.z) / 3.0;
                              if (gray < 50 ) {
                                  v = mean;
                              }
@@ -92,7 +92,7 @@ public:
         
         RSLOOP (m_horiz_lines) {
             CSLOOP (m_vert_lines) {
-                float lsum, rsum, tsum, bsum;
+                double lsum, rsum, tsum, bsum;
                 lsum = rsum = tsum = bsum = 0;
                 int lcount, rcount, tcount, bcount;
                 lcount = rcount = tcount = bcount = 0;
@@ -163,13 +163,13 @@ public:
     cv::Mat& blobness()
     {
         const cv::Mat &m = m_pyrpix;
-        cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_32FC1);
-        float mmax = -1E9;
+        cv::Mat tmp = cv::Mat::zeros( SZ(m_horiz_lines), SZ(m_vert_lines), CV_64FC1);
+        double mmax = -1E9;
         
         if (!SZ(m_blobflags)) { fill_m_blobflags(); }
         RSLOOP (m_horiz_lines) {
             CSLOOP (m_vert_lines) {
-                float ssum = 0;
+                double ssum = 0;
                 for (int rr = r; rr < r + m_boardsz; rr++) {
                     for (int cc = c; cc < c + m_boardsz; cc++) {
                         if (!p_on_img( cv::Point( cc, rr), m)) continue;
@@ -177,7 +177,7 @@ public:
                         if (m_blobflags[idx]) { ssum += 1; }
                     }
                 }
-                tmp.at<float>(r,c) = ssum;
+                tmp.at<double>(r,c) = ssum;
                 if (ssum > mmax) mmax = ssum;
             } // CSLOOP
         } // RSLOOP
@@ -192,13 +192,13 @@ private:
     void fill_m_blobflags()
     {
         const int EPS = 4.0;
-        typedef struct { int idx; float d; } Idxd;
+        typedef struct { int idx; double d; } Idxd;
         // All points on horiz lines
         std::vector<Idxd> blob_to_horiz( SZ(m_blobs), {-1,1E9});
         ISLOOP (m_horiz_lines) {
             KSLOOP (m_blobs) {
                 auto p = m_blobs[k];
-                float d = fabs(dist_point_line( p, m_horiz_lines[i]));
+                double d = fabs(dist_point_line( p, m_horiz_lines[i]));
                 if (d < blob_to_horiz[k].d) {
                     blob_to_horiz[k].idx = i;
                     blob_to_horiz[k].d = d;
@@ -210,7 +210,7 @@ private:
         ISLOOP (m_vert_lines) {
             KSLOOP (m_blobs) {
                 auto p = m_blobs[k];
-                float d = fabs(dist_point_line( p, m_vert_lines[i]));
+                double d = fabs(dist_point_line( p, m_vert_lines[i]));
                 if (d < blob_to_vert[k].d) {
                     blob_to_vert[k].idx = i;
                     blob_to_vert[k].d = d;
@@ -223,8 +223,8 @@ private:
         KSLOOP (m_blobs) {
             int blobrow = blob_to_horiz[k].idx;
             int blobcol = blob_to_vert[k].idx;
-            float blobd_h = blob_to_horiz[k].d;
-            float blobd_v = blob_to_horiz[k].d;
+            double blobd_h = blob_to_horiz[k].d;
+            double blobd_v = blob_to_horiz[k].d;
             if (blobrow >= 0 && blobcol >= 0 && blobd_h < EPS && blobd_v < EPS) {
                 m_blobflags[rc2idx(blobrow, blobcol)] = true;
                 //auto col = get_color();
@@ -243,3 +243,4 @@ private:
 
 
 #endif /* Boardness_hpp */
+

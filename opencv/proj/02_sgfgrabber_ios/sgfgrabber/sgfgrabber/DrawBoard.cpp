@@ -34,7 +34,7 @@ void DrawBoard::draw( std::vector<int> diagram)
     }
     // The stones
     const int rightmarg = m_leftmarg;
-    const float boardwidth  = m_dst.cols - m_leftmarg - rightmarg;
+    const double boardwidth  = m_dst.cols - m_leftmarg - rightmarg;
     int r = ROUND( 0.5 * boardwidth / (m_board_sz - 1)) +1;
     ISLOOP (diagram) {
         int row = i / m_board_sz;
@@ -58,8 +58,8 @@ void DrawBoard::b2xy( int boardrow, int boardcol,
                      int &x, int &y) // out
 {
     const int rightmarg = m_leftmarg;
-    const float boardwidth  = m_dst.cols - m_leftmarg - rightmarg;
-    const float boardheight = boardwidth;
+    const double boardwidth  = m_dst.cols - m_leftmarg - rightmarg;
+    const double boardheight = boardwidth;
     x = ROUND( m_leftmarg + boardcol * boardwidth / (m_board_sz-1));
     y = ROUND( m_topmarg + boardrow * boardheight / (m_board_sz-1));
 } // b2xy()

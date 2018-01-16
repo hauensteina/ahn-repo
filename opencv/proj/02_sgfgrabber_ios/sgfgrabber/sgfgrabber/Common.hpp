@@ -42,13 +42,13 @@
 #define PI M_PI
 
 #define RGB(rgbValue) [UIColor \
-colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 \
-green:((float)((rgbValue & 0xFF00) >> 8))/255.0 \
-blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
+colorWithRed:((double)((rgbValue & 0xFF0000) >> 16))/255.0 \
+green:((double)((rgbValue & 0xFF00) >> 8))/255.0 \
+blue:((double)(rgbValue & 0xFF))/255.0 alpha:1.0]
 
 #define GET_RGB(col,r,g,b) \
 do { \
-CGFloat rr,gg,bb,aa; \
+CGDouble rr,gg,bb,aa; \
 [col getRed: &rr green: &gg blue: &bb alpha: &aa];  \
 r = int(rr * 255); g = int(gg * 255); b = int(bb * 255); \
 } while(0)
@@ -118,10 +118,10 @@ inline int count_inversions ( std::vector<int> a)
 //# Find x where f(x) = target where f is an increasing func.
 //------------------------------------------------------------
 template<typename Func>
-float bisect( Func f, float lower, float upper, int target, int maxiter=10)
+double bisect( Func f, double lower, double upper, int target, int maxiter=10)
 {
     int n=0;
-    float res=0.0;
+    double res=0.0;
     while (n++ < maxiter) {
         res = (upper + lower) / 2.0;
         int val = int(f(res));
@@ -186,7 +186,7 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 {
     std::size_t total_size = 0;
     for (const auto& sub : v)
-        total_size += sub.size(); 
+        total_size += sub.size();
     std::vector<T> result;
     result.reserve(total_size);
     for (const auto& sub : v)
@@ -330,7 +330,7 @@ T vec_avg( std::vector<T> vec)
 // Avg value of a vector, with acces func
 //---------------------------------------------
 template <typename T, typename Func>
-float vec_avg( std::vector<T> vec, Func at)
+double vec_avg( std::vector<T> vec, Func at)
 {
     if (!vec.size()) return 0;
     double ssum = 0;
@@ -441,17 +441,17 @@ std::vector<T> vec_rat( const std::vector<T> &vec)
     std::vector<T> rats;
     ISLOOP (vec) {
         if (!i) continue;
-        rats.push_back( vec[i-1] != 0 ? vec[i] / (float) vec[i-1] : 0);
+        rats.push_back( vec[i-1] != 0 ? vec[i] / (double) vec[i-1] : 0);
     }
     return rats;
 }
 
-// Extract a vector of floats from a vector of some type
+// Extract a vector of doubles from a vector of some type
 //---------------------------------------------------------------------
 template <typename T, typename F>
-std::vector<float> vec_extract(  const std::vector<T> &vec, F getter)
+std::vector<double> vec_extract(  const std::vector<T> &vec, F getter)
 {
-    std::vector<float> res(SZ(vec));
+    std::vector<double> res(SZ(vec));
     ISLOOP (vec) {
         res[i] = getter( vec[i]);
     }
@@ -463,7 +463,7 @@ std::vector<float> vec_extract(  const std::vector<T> &vec, F getter)
 template <typename T>
 int vec_closest(  const std::vector<T> &vec, T num)
 {
-    float mindist = 1E9;
+    double mindist = 1E9;
     int minidx = -1;
     ISLOOP (vec) {
         if (fabs( vec[i] - num) < mindist) {
@@ -522,9 +522,10 @@ partition( std::vector<T> elts, int nof_classes, Func getClass)
 //======================
 
 // Print a vector
-void print_vecf( std::vector<float> v);
+void print_vecf( std::vector<double> v);
 void print_veci( std::vector<int> v);
 
 
 #endif /* __cplusplus */
 #endif /* Common_hpp */
+

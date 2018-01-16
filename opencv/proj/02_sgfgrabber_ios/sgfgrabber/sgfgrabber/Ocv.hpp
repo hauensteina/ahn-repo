@@ -27,7 +27,7 @@ typedef std::vector<cv::Point> Contour;
 typedef std::vector<cv::Point> Points;
 typedef cv::Point Line[2];
 typedef std::vector<cv::Point2f> Points2f;
-typedef struct { Point2f p; float feat; } PFeat;
+typedef struct { Point2f p; double feat; } PFeat;
 typedef cv::Point3_<uint8_t> Pixel;
 
 extern cv::RNG rng;
@@ -36,17 +36,17 @@ extern cv::RNG rng;
 // Point
 //=========
 // Get average x of a bunch of points
-float avg_x (const Points &p);
+double avg_x (const Points &p);
 // Get average y of a bunch of points
-float avg_y (const Points &p);
+double avg_y (const Points &p);
 // Get average x of a bunch of points
-float median_x (const Points &p);
+double median_x (const Points &p);
 // Get average y of a bunch of points
-float median_y (const Points &p);
+double median_y (const Points &p);
 // Return unit vector of p
 cv::Point2f unit_vector( cv::Point p);
 // Sort points by x and remove dups
-void rem_dups_x( Points &pts, float tol);
+void rem_dups_x( Points &pts, double tol);
 
 
 // Matrix
@@ -58,21 +58,21 @@ int channel_median( cv::Mat channel );
 // q1 value of a single channel
 int channel_q1( cv::Mat channel );
 // Elementwise L2 distance between two single channel mats.
-float mat_dist( const cv::Mat &m1, const cv::Mat &m2);
-// Store mat of uint8_t in vec of float
-inline std::vector<float> mat2vec( cv::Mat &m)
+double mat_dist( const cv::Mat &m1, const cv::Mat &m2);
+// Store mat of uint8_t in vec of double
+inline std::vector<double> mat2vec( cv::Mat &m)
 {
-    std::vector<float> res(m.rows*m.cols);
+    std::vector<double> res(m.rows*m.cols);
     int i=0;
     m.forEach<uint8_t>( [&i,&res](uint8_t &v, const int *p) { res[i++]=v; } );
     return res;
 }
 // Sum two uint8_t mats, scale back to 255
-inline cv::Mat mat_sumscale( const cv::Mat &m1, const cv::Mat &m2, float w1 = 1.0, float w2 = 1.0)
+inline cv::Mat mat_sumscale( const cv::Mat &m1, const cv::Mat &m2, double w1 = 1.0, double w2 = 1.0)
 {
     cv::Mat mf1, mf2;
-    m1.convertTo( mf1, CV_32FC1, w1);
-    m2.convertTo( mf2, CV_32FC1, w2);
+    m1.convertTo( mf1, CV_64FC1, w1);
+    m2.convertTo( mf2, CV_64FC1, w2);
     mf1 += mf2;
     double mmin, mmax;
     cv::minMaxLoc( mf1, &mmin, &mmax);
@@ -92,27 +92,27 @@ void draw_contours( const Contours cont, cv::Mat &dst);
 
 // Line
 //=======
-float angle_between_lines( cv::Point pa, cv::Point pe,
-                          cv::Point qa, cv::Point qe);
+double angle_between_lines( cv::Point pa, cv::Point pe,
+                           cv::Point qa, cv::Point qe);
 // Average line segs by fitting a line thu the endpoints
 cv::Vec4f avg_lines( const std::vector<cv::Vec4f> &lines );
 // Average polar lines after setting rho to zero and conv to seg
 cv::Vec4f avg_slope_line( const std::vector<cv::Vec2f> &plines );
 // Distance between point and line segment
-float dist_point_line( cv::Point p, const cv::Vec4f &line);
+double dist_point_line( cv::Point p, const cv::Vec4f &line);
 // Distance between point and polar line
-float dist_point_line( cv::Point p, const cv::Vec2f &pline);
+double dist_point_line( cv::Point p, const cv::Vec2f &pline);
 // Intersection of two lines defined by point pairs
 Point2f intersection( cv::Vec4f line1, cv::Vec4f line2);
 // Intersection of polar lines (rho, theta)
 Point2f intersection( cv::Vec2f line1, cv::Vec2f line2);
 // Length of a line segment
-float line_len( cv::Point p, cv::Point q);
+double line_len( cv::Point p, cv::Point q);
 // Median pixel val on line segment
 int median_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
 int median_on_segment( const cv::Mat &gray, cv::Vec4f seg);
 // Sum of values on line segment
-float sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
+double sum_on_segment( const cv::Mat &gray, cv::Point p1, cv::Point p2);
 // Median polar line bt theta
 cv::Vec4f median_slope_line( const std::vector<cv::Vec2f> &plines );
 // Get a line segment representation of a polar line (rho, theta)
@@ -120,13 +120,13 @@ cv::Vec4f polar2segment( const cv::Vec2f &pline);
 // Line segment to polar, with positive rho
 cv::Vec2f segment2polar( const cv::Vec4f &line);
 // Stretch a line by factor, on both ends
-Points stretch_line(Points line, float factor );
+Points stretch_line(Points line, double factor );
 // Stretch a line by factor, on both ends
-cv::Vec4f stretch_line(cv::Vec4f line, float factor );
+cv::Vec4f stretch_line(cv::Vec4f line, double factor );
 // x given y for polar line
-float x_from_y( float y, cv::Vec2f pline);
+double x_from_y( double y, cv::Vec2f pline);
 // y given x for polar line
-float y_from_x( float x, cv::Vec2f pline);
+double y_from_x( double x, cv::Vec2f pline);
 
 // Rectangle
 //=============
@@ -138,7 +138,7 @@ cv::Rect make_hood( Point2f center, int dx, int dy);
 // Quad
 //========
 // Stretch quadrangle by factor
-Points2f stretch_quad( Points quad, float factor);
+Points2f stretch_quad( Points quad, double factor);
 // Zoom into a region with four corners
 cv::Mat zoom_quad( const cv::Mat &img, cv::Mat &warped, Points2f pts);
 // Return whole image as a quad
@@ -150,24 +150,24 @@ Points avg_quad( std::vector<Points> quads);
 // Median the corners of quads
 Points2f med_quad( std::vector<Points2f> quads);
 // Sum of distances of corners, relative to shortest side.
-float diff_quads( const Points2f &q1, const Points2f &q2);
+double diff_quads( const Points2f &q1, const Points2f &q2);
 
 // Image
 //========
 // Rotate image by angle. Does not adjust image size.
-void rot_img( const cv::Mat &img, float angle, cv::Mat &dst);
+void rot_img( const cv::Mat &img, double angle, cv::Mat &dst);
 // Resize image such that min(width,height) = sz
 void resize(const cv::Mat &src, cv::Mat &dst, int sz);
 // Automatic edge detection without parameters (from PyImageSearch)
-void auto_canny( const cv::Mat &src, cv::Mat &dst, float sigma=0.33);
+void auto_canny( const cv::Mat &src, cv::Mat &dst, double sigma=0.33);
 // Dilate then erode for some iterations
 void morph_closing( cv::Mat &m, cv::Size sz, int iterations, int type = cv::MORPH_RECT );
 // Get a center crop of an image
-int get_center_crop( const cv::Mat &img, cv::Mat &dst, float frac=4);
+int get_center_crop( const cv::Mat &img, cv::Mat &dst, double frac=4);
 // Get hue
 void get_hue_from_rgb( const cv::Mat &img, cv::Mat &dst);
 // Average over a center crop of img
-float center_avg( const cv::Mat &img, float frac=4);
+double center_avg( const cv::Mat &img, double frac=4);
 // Normalize mean and variance, per channel
 void normalize_image( const cv::Mat &src, cv::Mat &dst);
 // Normalize mean and variance for one uint channel, scale back to 0..255
@@ -175,7 +175,7 @@ void normalize_plane( const cv::Mat &src, cv::Mat &dst);
 // Normalize nxn submatrices, with mean and var from larger submatrix.
 void normalize_plane_local( const cv::Mat &src, cv::Mat &dst, int radius);
 // Get main horizontal direction of a grid of points (in rad)
-float direction( const cv::Mat &img, const Points &ps);
+double direction( const cv::Mat &img, const Points &ps);
 // Inverse threshold at median
 void inv_thresh_median( const cv::Mat &gray, cv::Mat &dst);
 // Inverse threshold at q1
@@ -208,10 +208,10 @@ cv::Scalar get_color( bool reset=false);
 
 // Type Conversions
 //====================
-// Vector of int points to float
+// Vector of int points to double
 void points2float( const Points &pi, Points2f &pf);
 Points2f points2float( const Points &pi);
-// Vector of float points to int
+// Vector of double points to int
 void points2int( const Points2f &pf, Points &pi);
 inline cv::Point pf2p( const Point2f p) { return cv::Point( ROUND(p.x), ROUND(p.y)) ; }
 inline cv::Point p2pf( const cv::Point p) { return Point2f( p.x, p.y) ; }
@@ -222,7 +222,7 @@ inline cv::Point p2pf( const cv::Point p) { return Point2f( p.x, p.y) ; }
 void print_mat_type( const cv::Mat &m);
 // Print uint8 matrix
 void printMatU( const cv::Mat &m);
-// Print float matrix
+// Print double matrix
 void printMatF( const cv::Mat &m);
 // Print double matrix
 void printMatD( const cv::Mat &m);
@@ -309,7 +309,7 @@ void draw_points( T pts, cv::Mat &img, int r, cv::Scalar col)
 //------------------------------------
 template <typename Points_>
 void draw_contour( cv::Mat &img, const Points_ &cont,
-                 cv::Scalar color = cv::Scalar(255,0,0), int thickness = 1)
+                  cv::Scalar color = cv::Scalar(255,0,0), int thickness = 1)
 {
     cv::drawContours( img, std::vector<Points_>( 1, cont), -1, color, thickness, 8);
 }
@@ -361,15 +361,15 @@ POINTS order_points( const POINTS &points)
 
 // Cluster a vector of elements by func.
 // Return clusters as vec of vec.
-// Assumes feature is a single float.
+// Assumes feature is a single double.
 //---------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
-cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactness, int tries=3, int iter=10, float eps=1.0)
+cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactness, int tries=3, int iter=10, double eps=1.0)
 {
     if (elts.size() < 2) return std::vector<std::vector<T> >();
-    std::vector<float> features;
-    std::vector<float> centers;
+    std::vector<double> features;
+    std::vector<double> centers;
     ILOOP (elts.size()) { features.push_back( getFeature( elts[i])); }
     std::vector<int> labels;
     compactness = cv::kmeans( features, nof_clust, labels,
@@ -385,14 +385,14 @@ cluster (std::vector<T> elts, int nof_clust, Func getFeature, double &compactnes
 
 // Cluster a vector of elements by func.
 // Return clusters as vec of vec.
-// Assumes feature is a vec of float of ndims.
+// Assumes feature is a vec of double of ndims.
 //-----------------------------------------------------------------------
 template<typename Func, typename T>
 std::vector<std::vector<T> >
 mcluster (std::vector<T> elts, int nof_clust, int ndims, double &compactness, Func getFeatVec)
 {
     if (elts.size() < 2) return std::vector<std::vector<T> >();
-    std::vector<float> featVec;
+    std::vector<double> featVec;
     // Append all vecs into one large one
     ILOOP (elts.size()) {
         //size_t n1 = featVec.size();
@@ -420,3 +420,4 @@ mcluster (std::vector<T> elts, int nof_clust, int ndims, double &compactness, Fu
 
 #endif /* __clusplus */
 #endif /* Ocv_hpp */
+

@@ -13,8 +13,8 @@
 
 @interface CppInterface : NSObject
 
-//----------------------------
 // Individual steps for debugging
+//---------------------------------
 - (UIImage *) f00_blobs:(std::vector<cv::Mat>)imgQ;
 - (UIImage *) f01_vert_lines;
 - (UIImage *) f02_horiz_lines;
