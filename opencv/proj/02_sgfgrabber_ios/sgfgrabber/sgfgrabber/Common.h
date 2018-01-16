@@ -22,6 +22,8 @@ extern "C" {
     NSString* getFullPath( NSString *fname);
     // Find a file in the main bundle
     NSString* findInBundle( NSString *basename, NSString *ext);
+    // Popup notification
+    void popup (NSString *str, NSString *title);
 
 #ifdef __cplusplus
 }

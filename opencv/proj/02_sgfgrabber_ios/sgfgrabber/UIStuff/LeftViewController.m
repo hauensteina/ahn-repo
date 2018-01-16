@@ -3,6 +3,7 @@
 //  LGSideMenuControllerDemo
 //
 
+#import "Globals.h"
 #import "LeftViewController.h"
 #import "LeftViewCell.h"
 #import "TopViewController.h"
@@ -21,7 +22,8 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-        self.titlesArray = @[@"Run Test Cases"];
+        self.titlesArray = @[@"Run Test Cases",
+                             @"Add as Test Case"];
 
         self.view.backgroundColor = [UIColor clearColor];
 
@@ -80,13 +82,17 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     TopViewController *topViewController = (TopViewController *)self.sideMenuController;
-    
-    UIViewController *viewController = [UIViewController new];
-    viewController.view.backgroundColor = [UIColor whiteColor];
-    viewController.title = self.titlesArray[indexPath.row];
-    
-    UINavigationController *navigationController = (UINavigationController *)topViewController.rootViewController;
-    [navigationController pushViewController:viewController animated:YES];
+    NSString *menuItem = _titlesArray[indexPath.row];
+    if ([menuItem hasPrefix:@"Add as Test Case"]) {
+        [g_app.mainVC mnuAddAsTestCase];
+    }
+//
+//    UIViewController *viewController = [UIViewController new];
+//    viewController.view.backgroundColor = [UIColor whiteColor];
+//    viewController.title = self.titlesArray[indexPath.row];
+//
+//    UINavigationController *navigationController = (UINavigationController *)topViewController.rootViewController;
+//    [navigationController pushViewController:viewController animated:YES];
     
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 }

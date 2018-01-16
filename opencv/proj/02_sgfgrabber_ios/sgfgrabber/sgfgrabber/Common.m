@@ -31,6 +31,22 @@ NSString *nscat (id a, id b)
 }
 
 //=============
+// UI Helpers
+//=============
+
+//-----------------------------------------------
+void popup (NSString *str, NSString *title)
+{
+    UIAlertView *alert = [[UIAlertView alloc]
+                          initWithTitle: title
+                          message:str
+                          delegate:nil
+                          cancelButtonTitle:@"OK"
+                          otherButtonTitles: nil];
+    [alert show];
+}
+
+//=============
 // File Stuff
 //=============
 

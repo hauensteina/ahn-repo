@@ -22,8 +22,9 @@
 //==========================
 @interface MainVC ()
 @property FrameExtractor *frameExtractor;
-@property CppInterface *grabFuncs;
 @property UIImageView *cameraView;
+// Entry point to app core functionality.
+@property CppInterface *cppInterface;
 // Data
 @property UIImage *img; // The current image
 // History of frames. The one at the button press is often shaky.
@@ -71,15 +72,10 @@
 {
     [super viewDidLoad];
     self.frameExtractor = [FrameExtractor new];
-    self.grabFuncs = [CppInterface new];
+    self.cppInterface = [CppInterface new];
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
     self.sliderstate = 0;
-    
-    //self.sldCannyLow.value = self.grabFuncs.canny_low;
-    //self.sldCannyHi.value  = self.grabFuncs.canny_hi;
-    //NSString *tstr = [GrabFuncs opencvVersion];
-    //NSLog(tstr);
 }
 //----------------------------------
 - (void)didReceiveMemoryWarning
@@ -217,7 +213,7 @@
 - (void) sldDbg:(id) sender
 {
     int tt = [self.sldDbg value];
-    self.grabFuncs.sldDbg = tt;
+    self.cppInterface.sldDbg = tt;
     self.lbDbg.text = nsprintf( @"%d", tt);
     //_sliderstate = 0;
 }
@@ -242,53 +238,53 @@
                     //_sliderstate=100;
                     self.frame_grabber_on = NO;
                     [self.frameExtractor suspend];
-                    img = [self.grabFuncs f00_blobs:_imgQ];
+                    img = [self.cppInterface f00_blobs:_imgQ];
                     [self.cameraView setImage:img];
                     break;
                 case 1:
-                    img = [self.grabFuncs f01_vert_lines];
+                    img = [self.cppInterface f01_vert_lines];
                     if (!img) { _sliderstate=2; continue; }
                     [self.cameraView setImage:img];
                     break;
                 case 2:
-                    img = [self.grabFuncs f02_horiz_lines];
+                    img = [self.cppInterface f02_horiz_lines];
                     if (!img) { _sliderstate=3; continue; }
                     [self.cameraView setImage:img];
                     break;
                 case 3:
                     _sliderstate++;
-                    img = [self.grabFuncs f03_corners];
+                    img = [self.cppInterface f03_corners];
                     [self.cameraView setImage:img];
                     break;
                 case 4:
                     _sliderstate++;
-                    img = [self.grabFuncs f04_zoom_in];
+                    img = [self.cppInterface f04_zoom_in];
                     [self.cameraView setImage:img];
                     break;
                 case 5:
                     _sliderstate++;
-                    img = [self.grabFuncs f05_dark_places];
+                    img = [self.cppInterface f05_dark_places];
                     [self.cameraView setImage:img];
                     break;
                 case 6:
                     _sliderstate++;
-                    img = [self.grabFuncs f06_mask_dark];
+                    img = [self.cppInterface f06_mask_dark];
                     [self.cameraView setImage:img];
                     break;
                 case 7:
                     _sliderstate++;
-                    img = [self.grabFuncs f07_white_holes];
+                    img = [self.cppInterface f07_white_holes];
                     [self.cameraView setImage:img];
                     break;
                 case 8:
                     _sliderstate++; continue; // skip;
-                    img = [self.grabFuncs f08_features];
+                    img = [self.cppInterface f08_features];
                     if (!img) { _sliderstate=9; continue; }
                     [self.cameraView setImage:img];
                     break;
                 case 9:
                     _sliderstate++;
-                    img = [self.grabFuncs f09_classify];
+                    img = [self.cppInterface f09_classify];
                     [self.cameraView setImage:img];
                     break;
                 default:
@@ -324,7 +320,7 @@
         else {
             self.frame_grabber_on = NO;
             [self.frameExtractor suspend];
-            UIImage *processedImg = [self.grabFuncs real_time_flow:image];
+            UIImage *processedImg = [self.cppInterface real_time_flow:image];
             self.img = processedImg;
             [self.cameraView setImage:self.img];
             self.frame_grabber_on = YES;
@@ -345,6 +341,12 @@
 - (void)showRightView
 {
     [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
+}
+
+//---------------------------
+- (void) mnuAddAsTestCase
+{
+    popup( @"Position added as Test Case", @"");
 }
 
 

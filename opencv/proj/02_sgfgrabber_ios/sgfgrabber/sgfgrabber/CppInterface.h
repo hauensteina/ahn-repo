@@ -1,5 +1,5 @@
 //
-//  GrabFuncs.h
+//  CppInterface.h
 //  sgfgrabber
 //
 //  Created by Andreas Hauenstein on 2017-10-21.

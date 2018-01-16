@@ -1,5 +1,5 @@
 //
-//  GrabFuncs.mm
+//  CppInterface.mm
 //  sgfgrabber
 //
 //  Created by Andreas Hauenstein on 2017-10-21.
@@ -808,6 +808,7 @@ int count_points_on_line( cv::Vec2f line, Points pts)
     int res = 0;
     for (auto p:pts) {
         double d = fabs(dist_point_line( p, line));
+        PLOG("cpon d:%.4lf\n",d);
         if (d < 0.75) {
             res++;
         }
