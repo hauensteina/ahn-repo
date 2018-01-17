@@ -298,7 +298,6 @@
     } // if
 } // btnGo()
 
-
 #pragma mark - FrameExtractorDelegate protocol
 //-----------------------------------------------
 - (void)captured:(UIImage *)image
@@ -346,7 +345,26 @@
 //---------------------------
 - (void) mnuAddAsTestCase
 {
-    popup( @"Position added as Test Case", @"");
+    std::string docpath = [getFullPath( @"/") UTF8String];
+    std::vector<cv::String> fnames;
+    cv::glob( docpath + "/testcase_*.jpg", fnames);
+    int fnum = 0;
+    if (SZ(fnames)) {
+        vec_sort( fnames);
+        std::string last = fnames.back();
+        std::vector<std::string> parts;
+        str_split( last, parts, '_');
+        int num = std::stoi( parts.back());
+        fnum = num + 1;
+    }
+    char buf[101];
+    std::snprintf( buf, 100, "/testcase_%05d.jpg", fnum);
+    std::string fname = docpath + buf;
+    cv::Mat m;
+    cv::cvtColor( _cppInterface.small_img, m, CV_RGB2BGR);
+    cv::imwrite( fname, m);
+    
+    popup( @"Image added as Test Case", @"");
 }
 
 

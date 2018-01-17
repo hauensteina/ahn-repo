@@ -132,6 +132,21 @@ double bisect( Func f, double lower, double upper, int target, int maxiter=10)
     return res;
 }
 
+// String
+//=========
+
+// SPlit string by delimiter
+//--------------------------------------------------------------------------
+template <class Container>
+void str_split(const std::string &str, Container &cont, char delim = ' ')
+{
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        cont.push_back(token);
+    }
+}
+
 // Vector
 //==========
 
@@ -150,6 +165,14 @@ std::vector<T> vec_slice( std::vector<T> vec, int start, int len)
 {
     std::vector<T> res( vec.begin() + start, vec.begin() + start + len);
     return res;
+}
+
+// Sort a vector
+//----------------------------------
+template <typename T>
+void vec_sort( std::vector<T> &vec)
+{
+    std::sort( vec.begin(), vec.end(), [](const T &a, const T&b){return a < b;});
 }
 
 // Filter a vector in place

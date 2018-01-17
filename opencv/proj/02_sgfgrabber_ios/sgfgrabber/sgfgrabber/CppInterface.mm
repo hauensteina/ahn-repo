@@ -36,10 +36,10 @@ extern cv::Mat mat_dbg;
 
 @interface CppInterface()
 //=======================
-@property cv::Mat small; // resized image, in color, RGB
 @property cv::Mat small_pyr; // resized image, in color, pyramid filtered
 @property Points pyr_board; // Initial guess at board location
 
+@property cv::Mat orig_img;     // Mat with image we are working on
 @property cv::Mat small_zoomed;  // small, zoomed into the board
 @property cv::Mat gray;  // Grayscale version of small
 @property cv::Mat gray_threshed;  // gray with inv_thresh and dilation
@@ -49,7 +49,6 @@ extern cv::Mat mat_dbg;
 @property cv::Mat pyr_masked;    // pyr_gray with black stones masked out
 
 @property cv::Mat gz_threshed; // gray_zoomed with inv_thresh and dilation
-@property cv::Mat m;     // Mat with image we are working on
 @property Contours cont; // Current set of contours
 @property int board_sz; // board size, 9 or 19
 @property Points stone_or_empty; // places where we suspect stones or empty
@@ -66,7 +65,6 @@ extern cv::Mat mat_dbg;
 @property cv::Mat black_templ;
 @property cv::Mat empty_templ;
 @property std::vector<int> diagram; // The position we detected
-
 
 @end
 
@@ -163,11 +161,11 @@ bool board_valid( Points2f board, const cv::Mat &img)
                         ];
     if (_sldDbg > 0 && _sldDbg <= fnames.count) {
         //if (1) {
-        load_img( fnames[_sldDbg -1], _m);
+        load_img( fnames[_sldDbg -1], _orig_img);
         //load_img( fnames[4], _m);
-        cv::rotate(_m, _m, cv::ROTATE_90_CLOCKWISE);
-        resize( _m, _small, 350);
-        cv::cvtColor( _small, _small, CV_RGBA2RGB); // Yes, RGBA not BGR
+        cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
+        resize( _orig_img, _small_img, 350);
+        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
     }
     else { // Camera
         // Pick best frame from Q
@@ -175,8 +173,8 @@ bool board_valid( Points2f board, const cv::Mat &img)
         int maxBlobs = -1E9;
         int bestidx = -1;
         ILOOP (SZ(imgQ) - 1) { // ignore newest frame
-            _small = imgQ[i];
-            cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
+            _small_img = imgQ[i];
+            cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
             thresh_dilate( _gray, _gray_threshed);
             _stone_or_empty.clear();
             BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
@@ -184,25 +182,25 @@ bool board_valid( Points2f board, const cv::Mat &img)
             _stone_or_empty = BlobFinder::clean( _stone_or_empty);
             if (SZ(_stone_or_empty) > maxBlobs) {
                 maxBlobs = SZ(_stone_or_empty);
-                best = _small;
+                best = _small_img;
                 bestidx = i;
             }
         }
         PLOG("best idx %d\n", bestidx);
         // Reprocess the best one
-        _small = best;
+        _small_img = best;
     }
-    cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
+    cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
     _stone_or_empty.clear();
     BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
     BlobFinder::find_stones( _gray, _stone_or_empty);
     _stone_or_empty = BlobFinder::clean( _stone_or_empty);
     
-    cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
+    cv::pyrMeanShiftFiltering( _small_img, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
     
     // Show results
-    cv::Mat drawing = _small.clone();
+    cv::Mat drawing = _small_img.clone();
     draw_points( _stone_or_empty, drawing, 2, cv::Scalar( 255,0,0));
     UIImage *res = MatToUIImage( drawing);
     return res;
@@ -808,7 +806,6 @@ int count_points_on_line( cv::Vec2f line, Points pts)
     int res = 0;
     for (auto p:pts) {
         double d = fabs(dist_point_line( p, line));
-        PLOG("cpon d:%.4lf\n",d);
         if (d < 0.75) {
             res++;
         }
@@ -1073,7 +1070,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     if (SZ(_corners) == 4) {
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
-        zoom_in( _small, _corners, _small_zoomed, M);
+        zoom_in( _small_img, _corners, _small_zoomed, M);
         zoom_in( _small_pyr, _corners, _pyr_zoomed, M);
         cv::cvtColor( _pyr_zoomed, _pyr_gray, cv::COLOR_RGB2GRAY);
         cv::perspectiveTransform( _corners, _corners_zoomed, M);
@@ -1307,7 +1304,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
         const int TIME_BUF_SZ = 1;
         _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
     }
-    fix_diagram( _diagram, _intersections, _small);
+    fix_diagram( _diagram, _intersections, _small_img);
     
     // Show results
     cv::Mat drawing;
@@ -1422,10 +1419,10 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     bool success = false;
     do {
         static std::vector<Points> boards; // Some history for averaging
-        UIImageToMat( img, _m, false);
-        resize( _m, _small, 350);
-        cv::cvtColor( _small, _small, CV_RGBA2RGB);
-        cv::cvtColor( _small, _gray, cv::COLOR_RGB2GRAY);
+        UIImageToMat( img, _orig_img, false);
+        resize( _orig_img, _small_img, 350);
+        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB);
+        cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
         thresh_dilate( _gray, _gray_threshed);
         
         // Find stones and intersections
@@ -1459,7 +1456,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         
         // Find corners
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
-        cv::pyrMeanShiftFiltering( _small, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
+        cv::pyrMeanShiftFiltering( _small_img, _small_pyr, SPATIALRAD, COLORRAD, MAXPYRLEVEL );
         _corners.clear();
         if (SZ(_horizontal_lines) && SZ(_vertical_lines)) {
             _corners = find_corners( _stone_or_empty, _horizontal_lines, _vertical_lines,
@@ -1483,14 +1480,14 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Classify
         const int TIME_BUF_SZ = 10;
         _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
-        fix_diagram( _diagram, _intersections, _small);
+        fix_diagram( _diagram, _intersections, _small_img);
         success = true;
     } while(0);
     
     // Draw real time results on screen
     //------------------------------------
     cv::Mat *canvas;
-    canvas = &_small;
+    canvas = &_small_img;
     
     static std::vector<cv::Vec2f> old_hlines, old_vlines;
     static Points2f old_corners, old_intersections;

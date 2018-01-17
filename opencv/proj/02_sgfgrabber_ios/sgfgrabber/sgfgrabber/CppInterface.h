@@ -27,5 +27,6 @@
 - (UIImage *) f09_classify;
 - (UIImage *) real_time_flow:(UIImage *)img;
 @property int sldDbg;
+@property cv::Mat small_img; // resized image, in color, RGB
 
 @end
