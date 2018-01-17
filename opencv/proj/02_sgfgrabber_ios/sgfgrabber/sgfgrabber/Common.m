@@ -35,16 +35,23 @@ NSString *nscat (id a, id b)
 //=============
 
 //-----------------------------------------------
-void popup (NSString *str, NSString *title)
+void popup (NSString *msg, NSString *title)
 {
-    UIAlertView *alert = [[UIAlertView alloc]
-                          initWithTitle: title
-                          message:str
-                          delegate:nil
-                          cancelButtonTitle:@"OK"
-                          otherButtonTitles: nil];
-    [alert show];
-}
+    UIAlertController * alert = [UIAlertController
+                                 alertControllerWithTitle:title
+                                 message:msg
+                                 preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction* yesButton = [UIAlertAction
+                                actionWithTitle:@"OK"
+                                style:UIAlertActionStyleDefault
+                                handler:^(UIAlertAction * action) {
+                                }];
+    [alert addAction:yesButton];
+    
+    UIViewController *vc = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
+    [vc presentViewController:alert animated:YES completion:nil];
+} // popup()
 
 //=============
 // File Stuff
