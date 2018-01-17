@@ -15,6 +15,7 @@
 #import "UIViewController+LGSideMenuController.h"
 
 #import "Globals.h"
+#import "Helpers.hpp"
 #import "CppInterface.h"
 
 #define DDEBUG
@@ -342,10 +343,18 @@
     [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
 }
 
+// Save current image and board position as jpg and sgf.
+// Filenames are testcase_nnnnn.jpg|sgf.
+// The new nnnnn is one higher than the largest one found in the
+// file systm.
 //---------------------------
 - (void) mnuAddAsTestCase
 {
+    const int BUFSZ = 1000;
+    char buf[BUFSZ+1];
     std::string docpath = [getFullPath( @"/") UTF8String];
+    
+    // Find next file name
     std::vector<cv::String> fnames;
     cv::glob( docpath + "/testcase_*.jpg", fnames);
     int fnum = 0;
@@ -357,12 +366,21 @@
         int num = std::stoi( parts.back());
         fnum = num + 1;
     }
-    char buf[101];
-    std::snprintf( buf, 100, "/testcase_%05d.jpg", fnum);
-    std::string fname = docpath + buf;
+    std::snprintf( buf, BUFSZ, "testcase_%05d", fnum);
+
+    // Save image
+    std::string fname = docpath + "/" + buf + ".jpg";
     cv::Mat m;
     cv::cvtColor( _cppInterface.small_img, m, CV_RGB2BGR);
     cv::imwrite( fname, m);
+    
+    // Save SGF
+    auto sgf = generate_sgf( "Testcase " + std::to_string( fnum) , _cppInterface.diagram);
+    fname = docpath + "/" + buf + ".sgf";
+    std::ofstream ofs;
+    ofs.open( fname);
+    ofs << sgf;
+    ofs.close();
     
     popup( @"Image added as Test Case", @"");
 } // mnuAddAsTestCase()

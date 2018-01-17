@@ -28,5 +28,6 @@
 - (UIImage *) real_time_flow:(UIImage *)img;
 @property int sldDbg;
 @property cv::Mat small_img; // resized image, in color, RGB
+@property std::vector<int> diagram; // The position we detected
 
 @end

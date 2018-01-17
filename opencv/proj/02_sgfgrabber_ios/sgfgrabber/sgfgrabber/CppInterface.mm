@@ -64,7 +64,6 @@ extern cv::Mat mat_dbg;
 @property cv::Mat white_templ;
 @property cv::Mat black_templ;
 @property cv::Mat empty_templ;
-@property std::vector<int> diagram; // The position we detected
 
 @end
 
