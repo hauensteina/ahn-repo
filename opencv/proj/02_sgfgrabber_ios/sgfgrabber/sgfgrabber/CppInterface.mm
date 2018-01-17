@@ -76,6 +76,7 @@ extern cv::Mat mat_dbg;
 {
     self = [super init];
     if (self) {
+        g_docroot = [getFullPath(@"") UTF8String];
         // Load template files
         cv::Mat tmat;
         NSString *fpath;
@@ -1269,7 +1270,7 @@ std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, co
         ringpush( timevotes[i], diagram[i], TIMEBUFSZ);
     }
     ISLOOP (timevotes) {
-        std::vector<int> counts( BlackWhiteEmpty::DONTKNOW, 0); // index is bwe
+        std::vector<int> counts( DDONTKNOW, 0); // index is bwe
         for (int bwe: timevotes[i]) { ++counts[bwe]; }
         int winner = argmax( counts);
         diagram[i] = winner;
@@ -1285,7 +1286,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
     ISLOOP (diagram) {
         Point2f p = intersections[i];
         if (p.x < marg || p.y < marg || p.x > img.cols - marg || p.y > img.rows - marg) {
-            diagram[i] = BlackWhiteEmpty::EEMPTY;
+            diagram[i] = EEMPTY;
         }
     }
 } // fix_diagram()
@@ -1323,10 +1324,10 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
                       2*dx + 1,
                       2*dy + 1);
         cv::rectangle( drawing, rect, cv::Scalar(0,0,255,255));
-        if (_diagram[i] == BlackWhiteEmpty::BBLACK) {
+        if (_diagram[i] == BBLACK) {
             draw_point( p, drawing, 2, cv::Scalar(0,255,0,255));
         }
-        else if (_diagram[i] == BlackWhiteEmpty::WWHITE) {
+        else if (_diagram[i] == WWHITE) {
             draw_point( p, drawing, 5, cv::Scalar(255,0,0,255));
         }
     }
@@ -1521,10 +1522,10 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         // Show classification result
         ISLOOP (_diagram) {
             cv::Point p(ROUND(_intersections[i].x), ROUND(_intersections[i].y));
-            if (_diagram[i] == BlackWhiteEmpty::BBLACK) {
+            if (_diagram[i] == BBLACK) {
                 draw_point( p, *canvas, 5, cv::Scalar(255,0,0,255));
             }
-            else if (_diagram[i] == BlackWhiteEmpty::WWHITE) {
+            else if (_diagram[i] == WWHITE) {
                 draw_point( p, *canvas, 5, cv::Scalar(0,255,0,255));
             }
         }

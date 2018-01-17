@@ -6,10 +6,8 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-//=========================================================================
 // Generally useful convenience funcs to be included from pure cpp files.
 // Obj-C and Obj-C++ files include this file via Common.h.
-//=========================================================================
 
 
 #ifndef Common_hpp

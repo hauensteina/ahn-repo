@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include "Common.hpp"
+#include "Globals.h"
 #include "Helpers.hpp"
 #include "Ocv.hpp"
 
@@ -27,7 +28,7 @@ class BlackWhiteEmpty
 //=====================
 {
 public:
-    enum { BBLACK=0, EEMPTY=1, WWHITE=2, DONTKNOW=3 };
+    
     
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &pyr,

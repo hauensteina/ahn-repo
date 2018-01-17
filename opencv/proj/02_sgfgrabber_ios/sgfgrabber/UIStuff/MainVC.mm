@@ -194,7 +194,7 @@
     UIButton *b = [[UIButton alloc] init];
     [b.layer setBorderWidth:1.0];
     [b.layer setBorderColor:[RGB (0x202020) CGColor]];
-    b.titleLabel.font = g_fntBtn;
+    //b.titleLabel.font =[UIFont fontWithName:@"HelveticaNeue" size: 10];
     b.backgroundColor = RGB (0xf0f0f0);
     b.frame = CGRectMake(0, 0, 72, 44);
     [b setTitle: title forState: UIControlStateNormal];
@@ -365,7 +365,7 @@
     cv::imwrite( fname, m);
     
     popup( @"Image added as Test Case", @"");
-}
+} // mnuAddAsTestCase()
 
 
 @end

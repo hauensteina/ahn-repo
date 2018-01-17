@@ -40,11 +40,11 @@ void DrawBoard::draw( std::vector<int> diagram)
         int row = i / m_board_sz;
         int col = i % m_board_sz;
         b2xy( row, col, x, y);
-        if (diagram[i] == BlackWhiteEmpty::BBLACK) {
+        if (diagram[i] == BBLACK) {
             int color = 0;
             cv::circle( m_dst, cv::Point(x,y), r, color, -1);
         }
-        else if (diagram[i] == BlackWhiteEmpty::WWHITE) {
+        else if (diagram[i] == WWHITE) {
             int color = 255;
             cv::circle( m_dst, cv::Point(x,y), r, color, -1);
         }

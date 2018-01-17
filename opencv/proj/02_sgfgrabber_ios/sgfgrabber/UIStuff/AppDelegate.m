@@ -23,8 +23,7 @@
 {
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor =  [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:0.95];
-    
-    g_init(); // Global enums, constants, etc
+        
     g_app = self;
         
     self.mainVC = [MainVC new];
