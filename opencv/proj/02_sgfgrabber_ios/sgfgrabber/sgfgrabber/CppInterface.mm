@@ -36,6 +36,7 @@ extern cv::Mat mat_dbg;
 
 @interface CppInterface()
 //=======================
+@property cv::Mat small_img; // resized image, in color, RGB
 @property cv::Mat small_pyr; // resized image, in color, pyramid filtered
 @property Points pyr_board; // Initial guess at board location
 
@@ -54,6 +55,7 @@ extern cv::Mat mat_dbg;
 @property Points stone_or_empty; // places where we suspect stones or empty
 @property std::vector<cv::Vec2f> horizontal_lines;
 @property std::vector<cv::Vec2f> vertical_lines;
+@property std::vector<int> diagram; // The position we detected
 @property Points2f corners;
 @property Points2f corners_zoomed;
 @property Points2f intersections;
@@ -64,6 +66,8 @@ extern cv::Mat mat_dbg;
 @property cv::Mat white_templ;
 @property cv::Mat black_templ;
 @property cv::Mat empty_templ;
+// History of frames. The one at the button press is often shaky.
+@property std::vector<cv::Mat> imgQ;
 
 @end
 
@@ -106,6 +110,38 @@ void load_img( NSString *fname, cv::Mat &m)
     UIImageToMat(img, m);
 }
 
+// Save current resized image to file
+//---------------------------------------------
+- (bool) save_small_img:(NSString *)fname
+{
+    cv::Mat m;
+    cv::cvtColor( _small_img, m, CV_RGB2BGR);
+    return cv::imwrite( [fname UTF8String], m);
+}
+
+// Save current diagram to file as sgf
+//-----------------------------------------------------------------------
+- (bool) save_current_sgf:(NSString *)fname withTitle:(NSString *)title
+{
+    auto sgf = generate_sgf( [title UTF8String], _diagram);
+    std::ofstream ofs;
+    ofs.open( [fname UTF8String]);
+    ofs << sgf;
+    ofs.close();
+    return ofs.good();
+}
+
+// Queue image frames. The newest one is often shaky.
+//-----------------------------------------------------------------------
+- (void)qImg:(UIImage *)img
+{
+    cv::Mat m;
+    UIImageToMat( img, m);
+    resize( m, m, IMG_WIDTH);
+    cv::cvtColor( m, m, CV_RGBA2RGB); // Yes, RGBA not BGR
+    ringpush( _imgQ , m, 4); // keep 4 frames
+}
+
 // Reject board if opposing lines not parallel
 // or adjacent lines not at right angles
 //-----------------------------------------------------
@@ -136,7 +172,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //=================================================
 
 //--------------------------
-- (UIImage *) f00_blobs: (std::vector<cv::Mat>)imgQ
+- (UIImage *) f00_blobs
 {
     _board_sz=19;
     g_app.mainVC.lbDbg.text = @"blobs";
@@ -164,7 +200,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
         load_img( fnames[_sldDbg -1], _orig_img);
         //load_img( fnames[4], _m);
         cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
-        resize( _orig_img, _small_img, 350);
+        resize( _orig_img, _small_img, IMG_WIDTH);
         cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
     }
     else { // Camera
@@ -172,8 +208,8 @@ bool board_valid( Points2f board, const cv::Mat &img)
         cv::Mat best;
         int maxBlobs = -1E9;
         int bestidx = -1;
-        ILOOP (SZ(imgQ) - 1) { // ignore newest frame
-            _small_img = imgQ[i];
+        ILOOP (SZ(_imgQ) - 1) { // ignore newest frame
+            _small_img = _imgQ[i];
             cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
             thresh_dilate( _gray, _gray_threshed);
             _stone_or_empty.clear();
@@ -206,7 +242,18 @@ bool board_valid( Points2f board, const cv::Mat &img)
     return res;
 } // f00_blobs()
 
-
+// Convert sgf string to UIImage //@@@
+//----------------------------------------
++ (UIImage *) sgf2img:(NSString *)sgf
+{
+    if (!sgf) {
+        return [UIImage new];
+    }
+    cv::Mat m;
+    draw_sgf( [sgf UTF8String], m, IMG_WIDTH);
+    int tt = 42;
+    return [UIImage new];
+}
 
 // Find vertical grid lines
 //----------------------------------
@@ -1127,7 +1174,6 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
     //cv::GaussianBlur( _gray_zoomed, dark_places, cv::Size(9,9),0,0);
     //cv::adaptiveThreshold( dark_places, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
     cv::adaptiveThreshold( _pyr_gray, dark_places, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
-    //@@@
     // Show results
     cv::Mat drawing;
     cv::cvtColor( dark_places, drawing, cv::COLOR_GRAY2RGB);
@@ -1420,7 +1466,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     do {
         static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _orig_img, false);
-        resize( _orig_img, _small_img, 350);
+        resize( _orig_img, _small_img, IMG_WIDTH);
         cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB);
         cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
         thresh_dilate( _gray, _gray_threshed);

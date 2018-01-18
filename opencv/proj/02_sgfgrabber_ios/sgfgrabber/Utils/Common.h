@@ -25,6 +25,8 @@ extern "C" {
     //=========
     // Prepend path to documents folder
     NSString* getFullPath( NSString *fname);
+    // Change filename extension
+    NSString* changeExtension( NSString *fname, NSString *ext);
     // Find a file in the main bundle
     NSString* findInBundle( NSString *basename, NSString *ext);
     // List files in folder, filter by extension and prefix, sort

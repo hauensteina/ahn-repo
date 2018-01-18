@@ -8,6 +8,7 @@
 
 #import "Globals.h"
 #import "EditTestCaseVC.h"
+#import "CppInterface.h"
 
 #define ROWHEIGHT 100
 
@@ -110,15 +111,26 @@
 {
     return self.titlesArray.count;
 }
+
 //------------------------------------------------------------------------------------------------------
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     EditTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+
+    // Put the image into table view cell
     NSString *fname = self.titlesArray[indexPath.row];
     cell.textLabel.text = fname;
     fname = getFullPath( fname);
     UIImage *img = [UIImage imageWithContentsOfFile:fname];
     cell.imageView.image = img;
+    
+    // Put the sgf diagram into the table view cell //@@@
+    fname = changeExtension( fname, @".sgf");
+    NSString *sgf = [NSString stringWithContentsOfFile:fname encoding:NSUTF8StringEncoding error:NULL];
+    UIImage *sgfImg = [CppInterface sgf2img:sgf];
+    
+
+    
     return cell;
 }
 #pragma mark - UITableViewDelegate
@@ -171,13 +183,11 @@
     fname = getFullPath( fname);
     unlink( [fname UTF8String]);
     // Delete sgf file
-    fname = [[fname lastPathComponent] stringByDeletingPathExtension];
-    fname = nscat( fname, @".sgf");
+    fname = changeExtension( fname, @".sgf");
     unlink( [fname UTF8String]);
     [self loadTitlesArray];
     [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationNone];
 } // handleDeleteAction()
-
 
 
 

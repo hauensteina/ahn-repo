@@ -15,7 +15,7 @@
 
 // Individual steps for debugging
 //---------------------------------
-- (UIImage *) f00_blobs:(std::vector<cv::Mat>)imgQ;
+- (UIImage *) f00_blobs;
 - (UIImage *) f01_vert_lines;
 - (UIImage *) f02_horiz_lines;
 - (UIImage *) f03_corners;
@@ -25,9 +25,14 @@
 - (UIImage *) f07_white_holes;
 - (UIImage *) f08_features;
 - (UIImage *) f09_classify;
+
 - (UIImage *) real_time_flow:(UIImage *)img;
+
+- (bool) save_small_img:(NSString *)fname;
+- (bool) save_current_sgf:(NSString *)fname withTitle:(NSString *)title;
+- (void) qImg:(UIImage *)img;
++ (UIImage *) sgf2img:(NSString *)sgf;
+
 @property int sldDbg;
-@property cv::Mat small_img; // resized image, in color, RGB
-@property std::vector<int> diagram; // The position we detected
 
 @end

@@ -88,6 +88,15 @@ NSString* getFullPath( NSString *fname)
     return filePath;
 }
 
+// Change filename extension
+//----------------------------------------------------------
+NSString* changeExtension( NSString *fname, NSString *ext)
+{
+    NSString *res = [[fname lastPathComponent] stringByDeletingPathExtension];
+    res = nscat( res, ext);
+    return res;
+}
+
 // Find a file in the main bundle
 //----------------------------------
 NSString* findInBundle( NSString *basename, NSString *ext)

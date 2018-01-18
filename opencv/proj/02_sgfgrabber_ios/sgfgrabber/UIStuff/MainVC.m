@@ -8,14 +8,14 @@
 
 // Don't change the order of these two,
 // and don't move them down
-#import "Ocv.hpp"
-#import <opencv2/imgcodecs/ios.h>
+//#import "Ocv.hpp"
+//#import <opencv2/imgcodecs/ios.h>
 
 #import "MainVC.h"
 #import "UIViewController+LGSideMenuController.h"
 
 #import "Globals.h"
-#import "Helpers.hpp"
+//#import "Helpers.hpp"
 #import "CppInterface.h"
 
 #define DDEBUG
@@ -28,8 +28,6 @@
 @property CppInterface *cppInterface;
 // Data
 @property UIImage *img; // The current image
-// History of frames. The one at the button press is often shaky.
-@property std::vector<cv::Mat> imgQ;
 
 // Buttons etc
 @property UIButton *btnGo;
@@ -234,7 +232,7 @@
                     //_sliderstate=100;
                     self.frame_grabber_on = NO;
                     [self.frameExtractor suspend];
-                    img = [self.cppInterface f00_blobs:_imgQ];
+                    img = [self.cppInterface f00_blobs];
                     [self.cameraView setImage:img];
                     break;
                 case 1:
@@ -274,9 +272,9 @@
                     break;
                 case 8:
                     _sliderstate++; continue; // skip;
-                    img = [self.cppInterface f08_features];
-                    if (!img) { _sliderstate=9; continue; }
-                    [self.cameraView setImage:img];
+//                    img = [self.cppInterface f08_features];
+//                    if (!img) { _sliderstate=9; continue; }
+//                    [self.cameraView setImage:img];
                     break;
                 case 9:
                     _sliderstate++;
@@ -298,19 +296,11 @@
 //-----------------------------------------------
 - (void)captured:(UIImage *)image
 {
-    //self.cameraView.hidden = NO;
-    //static int i = 0;
     if (self.frame_grabber_on) {
-        //i++;
-        //PLOG("frame:%d\n",i);
         if (self.debug_mode) {
             [self.cameraView setImage:image];
             _img = image;
-            cv::Mat m;
-            UIImageToMat( _img, m);
-            resize( m, m, 350);
-            cv::cvtColor( m, m, CV_RGBA2RGB); // Yes, RGBA not BGR
-            ringpush( _imgQ , m, 4); // keep 4 frames
+            [_cppInterface qImg:_img];
         }
         else {
             self.frame_grabber_on = NO;
@@ -343,42 +333,25 @@
 // The new nnnnn is one higher than the largest one found in the
 // file systm.
 //---------------------------
-- (void) mnuSaveAsTestCase
+- (void)mnuAddTestCase
 {
-    const int BUFSZ = 1000;
-    char buf[BUFSZ+1];
-    std::string docpath = [getFullPath( @"/") UTF8String];
-    
-    // Find next file name
-    std::vector<cv::String> fnames;
-    cv::glob( docpath + "/" + TESTCASE_PREFIX + "*.jpg", fnames);
-    int fnum = 0;
-    if (SZ(fnames)) {
-        vec_sort( fnames);
-        std::string last = fnames.back();
-        std::vector<std::string> parts;
-        str_split( last, parts, '_');
-        int num = std::stoi( parts.back());
-        fnum = num + 1;
-    }
-    std::snprintf( buf, BUFSZ, TESTCASE_PREFIX "%05d", fnum);
+    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.jpg");
+    NSString *last = changeExtension( [testfiles lastObject], @"");
+    NSArray *parts = [last componentsSeparatedByString: @"_"];
+    int fnum = [[parts lastObject] intValue];
 
     // Save image
-    std::string fname = docpath + "/" + buf + ".jpg";
-    cv::Mat m;
-    cv::cvtColor( _cppInterface.small_img, m, CV_RGB2BGR);
-    cv::imwrite( fname, m);
+    NSString *fname = nsprintf( @"%s%05d.jpg", @TESTCASE_PREFIX, fnum);
+    fname = getFullPath( fname);
+    [_cppInterface save_small_img:fname];
     
     // Save SGF
-    auto sgf = generate_sgf( "Testcase " + std::to_string( fnum) , _cppInterface.diagram);
-    fname = docpath + "/" + buf + ".sgf";
-    std::ofstream ofs;
-    ofs.open( fname);
-    ofs << sgf;
-    ofs.close();
+    fname = nsprintf( @"%s%05d.sgf", @TESTCASE_PREFIX, fnum);
+    NSString *title = nsprintf( @"Testcase %d", fnum);
+    [_cppInterface save_current_sgf:fname withTitle:title];
     
-    popup( @"Image added as Test Case", @"");
-} // mnuSaveAsTestCase()
+    popup( nsprintf( @"Image added as Test Case %d", fnum), @"");
+} // mnuAddTestCase()
 
 // Show test cases from filesystem in a tableview, pick one.
 //-------------------------------------------------------------

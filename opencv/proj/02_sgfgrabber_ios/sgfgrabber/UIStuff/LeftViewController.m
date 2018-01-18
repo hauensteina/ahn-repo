@@ -22,14 +22,15 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-        self.titlesArray = @[@"Edit Test Cases"
+        self.titlesArray = @[@"Add Test Case"
+                             ,@"Edit Test Cases"
                              ,@"Run Test Cases"
                              ];
 
         self.view.backgroundColor = [UIColor clearColor];
 
         [self.tableView registerClass:[LeftViewCell class] forCellReuseIdentifier:@"cell"];
-        self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+        self.tableView.separatorStyle =  UITableViewCellSeparatorStyleNone;
         self.tableView.contentInset = UIEdgeInsetsMake(44.0, 0.0, 44.0, 0.0);
         self.tableView.showsVerticalScrollIndicator = NO;
         self.tableView.backgroundColor = [UIColor clearColor];
@@ -77,7 +78,7 @@
 //-----------------------------------------------------------------------------------------------
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return (indexPath.row == 1 || indexPath.row == 3) ? 22.0 : 44.0;
+    return 50;
 }
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
@@ -89,6 +90,9 @@
 //    }
     if ([menuItem hasPrefix:@"Edit Test Cases"]) {
         [g_app.mainVC mnuEditTestCases];
+    }
+    else if ([menuItem hasPrefix:@"Add Test Case"]) {
+        [g_app.mainVC mnuAddTestCase];
     }
 //
 //    UIViewController *viewController = [UIViewController new];

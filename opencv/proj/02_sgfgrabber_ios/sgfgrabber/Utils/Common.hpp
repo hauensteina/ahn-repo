@@ -133,7 +133,7 @@ double bisect( Func f, double lower, double upper, int target, int maxiter=10)
 // String
 //=========
 
-// SPlit string by delimiter
+// Split string by delimiter
 //--------------------------------------------------------------------------
 template <class Container>
 void str_split(const std::string &str, Container &cont, char delim = ' ')
