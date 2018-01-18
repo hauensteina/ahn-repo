@@ -59,15 +59,10 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-//        self.titlesArray = [@[@"Item 1"
-//                             ,@"Item 2"
-//                             ] mutableCopy];
-        
         self.view.backgroundColor = [UIColor clearColor];
         
         [self.tableView registerClass:[ChooseTestCaseCell class] forCellReuseIdentifier:@"cell"];
         self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-        //self.tableView.contentInset = UIEdgeInsetsMake(44.0, 0.0, 44.0, 0.0);
         self.tableView.showsVerticalScrollIndicator = NO;
         self.tableView.backgroundColor = [UIColor clearColor];
         self.tableView.rowHeight = 60;
@@ -111,12 +106,11 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     ChooseTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
-    
-    cell.textLabel.text = self.titlesArray[indexPath.row];
-    cell.imageView.image = [UIImage imageNamed:@"board01.jpg"];
-    //cell.separatorView.hidden = (indexPath.row <= 3 || indexPath.row == self.titlesArray.count-1);
-    //cell.userInteractionEnabled = (indexPath.row != 1 && indexPath.row != 3);
-    
+    NSString *fname = self.titlesArray[indexPath.row];
+    cell.textLabel.text = fname;
+    fname = getFullPath( fname);
+    UIImage *img = [UIImage imageWithContentsOfFile:fname];
+    cell.imageView.image = img;
     return cell;
 }
 #pragma mark - UITableViewDelegate
