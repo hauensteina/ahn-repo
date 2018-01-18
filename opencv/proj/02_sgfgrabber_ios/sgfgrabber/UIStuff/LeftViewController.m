@@ -22,9 +22,8 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-        self.titlesArray = @[@"Run Test Cases"
-                             ,@"Save as Test Case"
-                             ,@"Set Current Test Case"
+        self.titlesArray = @[@"Edit Test Cases"
+                             ,@"Run Test Cases"
                              ];
 
         self.view.backgroundColor = [UIColor clearColor];
@@ -85,11 +84,11 @@
 {
     TopViewController *topViewController = (TopViewController *)self.sideMenuController;
     NSString *menuItem = _titlesArray[indexPath.row];
-    if ([menuItem hasPrefix:@"Save as Test Case"]) {
-        [g_app.mainVC mnuSaveAsTestCase];
-    }
-    else if ([menuItem hasPrefix:@"Set Current Test Case"]) {
-        [g_app.mainVC mnuSetCurrentTestCase];
+//    if ([menuItem hasPrefix:@"Edit Test Cases"]) {
+//        [g_app.mainVC mnuSaveAsTestCase];
+//    }
+    if ([menuItem hasPrefix:@"Edit Test Cases"]) {
+        [g_app.mainVC mnuEditTestCases];
     }
 //
 //    UIViewController *viewController = [UIViewController new];

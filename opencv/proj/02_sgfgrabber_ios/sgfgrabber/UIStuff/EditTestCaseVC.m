@@ -1,5 +1,5 @@
 //
-//  ChooseTestCaseVC.m
+//  EditTestCaseVC.m
 //  sgfgrabber
 //
 //  Created by Andreas Hauenstein on 2018-01-17.
@@ -7,13 +7,13 @@
 //
 
 #import "Globals.h"
-#import "ChooseTestCaseVC.h"
+#import "EditTestCaseVC.h"
 
 #define ROWHEIGHT 100
 
 // Table View Cell
 //=============================================
-@implementation ChooseTestCaseCell
+@implementation EditTestCaseCell
 //-------------------------------------------------------------------------------------------------------
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
 {
@@ -43,16 +43,16 @@
 {
     self.textLabel.alpha = highlighted ? 0.5 : 1.0;
 }
-@end // ChooseTestCaseCell
+@end // EditTestCaseCell
 
 
 // Table View Controller
 //=====================================================
-@interface ChooseTestCaseVC ()
+@interface EditTestCaseVC ()
 @property (strong, nonatomic) NSArray *titlesArray;
 @end
 
-@implementation ChooseTestCaseVC
+@implementation EditTestCaseVC
 
 //----------
 - (id)init
@@ -61,7 +61,7 @@
     if (self) {
         self.view.backgroundColor = [UIColor clearColor];
         
-        [self.tableView registerClass:[ChooseTestCaseCell class] forCellReuseIdentifier:@"cell"];
+        [self.tableView registerClass:[EditTestCaseCell class] forCellReuseIdentifier:@"cell"];
         self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
         self.tableView.showsVerticalScrollIndicator = NO;
         self.tableView.backgroundColor = [UIColor clearColor];
@@ -105,7 +105,7 @@
 //------------------------------------------------------------------------------------------------------
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    ChooseTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+    EditTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
     NSString *fname = self.titlesArray[indexPath.row];
     cell.textLabel.text = fname;
     fname = getFullPath( fname);
@@ -122,7 +122,7 @@
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    popup( @"ChooseTestCase click", @"");
+    popup( @"EditTestCase click", @"");
 //    NSString *menuItem = _titlesArray[indexPath.row];
 //    if ([menuItem hasPrefix:@"Save as Test Case"]) {
 //        [g_app.mainVC mnuSaveAsTestCase];
@@ -132,5 +132,5 @@
 //    }
 }
 
-@end
+@end // EditTestCaseVC
 

@@ -58,12 +58,7 @@
         self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Menu"
                                                                                  style:UIBarButtonItemStylePlain
                                                                                 target:self
-                                                                                action:@selector(showLeftView)];
-        
-//        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Right"
-//                                                                                  style:UIBarButtonItemStylePlain
-//                                                                                 target:self
-//                                                                                 action:@selector(showRightView)];
+                                                                                action:@selector(showLeftView)];        
     }
     return self;
 } // init()
@@ -387,9 +382,9 @@
 
 // Show test cases from filesystem in a tableview, pick one.
 //-------------------------------------------------------------
-- (void) mnuSetCurrentTestCase
+- (void) mnuEditTestCases
 {
-    [g_app.navVC pushViewController:g_app.chooseTestCaseVC animated:YES];
+    [g_app.navVC pushViewController:g_app.editTestCaseVC animated:YES];
 } // mnuSetCurrentTestCase()
 
 @end

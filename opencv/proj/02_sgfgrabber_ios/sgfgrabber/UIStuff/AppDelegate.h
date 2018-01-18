@@ -12,7 +12,7 @@
 #import "LeftViewController.h"
 #import "RightViewController.h"
 #import "NavigationController.h"
-#import "ChooseTestCaseVC.h"
+#import "EditTestCaseVC.h"
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
@@ -28,7 +28,7 @@
 @property (nonatomic, strong) RightViewController *rightVC;
 
 // Other screens
-@property (nonatomic, strong) ChooseTestCaseVC *chooseTestCaseVC;
+@property (nonatomic, strong) EditTestCaseVC *editTestCaseVC;
 
 @end
 

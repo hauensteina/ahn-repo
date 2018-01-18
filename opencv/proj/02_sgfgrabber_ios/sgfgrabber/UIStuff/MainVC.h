@@ -15,5 +15,5 @@
 @property UILabel *lbDbg;
 // Callbacks
 - (void) mnuSaveAsTestCase;
-- (void) mnuSetCurrentTestCase;
+- (void) mnuEditTestCases;
 @end

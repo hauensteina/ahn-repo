@@ -35,7 +35,7 @@
     [self.topVC setup];
     
     // Other view controllers
-    self.chooseTestCaseVC = [ChooseTestCaseVC new];
+    self.editTestCaseVC = [EditTestCaseVC new];
     
     self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];

@@ -1,5 +1,5 @@
 //
-//  ChooseTestCaseVC.h
+//  EditTestCaseVC.h
 //  sgfgrabber
 //
 //  Created by Andreas Hauenstein on 2018-01-17.
@@ -8,10 +8,10 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ChooseTestCaseVC : UITableViewController
+@interface EditTestCaseVC : UITableViewController
 @end
 
-@interface ChooseTestCaseCell : UITableViewCell
+@interface EditTestCaseCell : UITableViewCell
 @property (strong, nonatomic) UIView *separatorView;
 @end
 
