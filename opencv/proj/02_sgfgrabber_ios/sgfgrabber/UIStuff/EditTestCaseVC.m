@@ -119,18 +119,59 @@
 {
     return ROWHEIGHT;
 }
+
+// Click on Test Case
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    popup( @"EditTestCase click", @"");
-//    NSString *menuItem = _titlesArray[indexPath.row];
-//    if ([menuItem hasPrefix:@"Save as Test Case"]) {
-//        [g_app.mainVC mnuSaveAsTestCase];
-//    }
-//    else if ([menuItem hasPrefix:@"Set Current Test Case"]) {
-//        [g_app.mainVC mnuSetCurrentTestCase];
-//    }
+    NSArray *choices = @[@"Make current", @"Use current Sgf", @"Delete", @"Cancel"];
+    choicePopup( choices, @"Action",
+                ^(UIAlertAction *action) {
+                    [self handleEditAction:action.title];
+                });
 }
+
+// Handle test case edit action
+//---------------------------------------------
+- (void)handleEditAction:(NSString *)action
+{
+    if ([action hasPrefix:@"Make current"]) {
+        popup(@"Curr", @"");
+    }
+    else if ([action hasPrefix:@"Use current Sgf"]) {
+        
+    }
+    else if ([action hasPrefix:@"Delete"]) {
+        
+    }
+    else {}
+} // handleEditAction()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @end // EditTestCaseVC
 

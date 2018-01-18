@@ -34,6 +34,7 @@ NSString *nscat (id a, id b)
 // UI Helpers
 //=============
 
+// Popup with message and OK button
 //-----------------------------------------------
 void popup (NSString *msg, NSString *title)
 {
@@ -52,6 +53,26 @@ void popup (NSString *msg, NSString *title)
     UIViewController *vc = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
     [vc presentViewController:alert animated:YES completion:nil];
 } // popup()
+
+// Alert with several choices
+//---------------------------------------------------------------------------------------
+void choicePopup (NSArray *choices, NSString *title, void(^callback)(UIAlertAction *))
+{
+    UIAlertController *alert = [UIAlertController
+                                 alertControllerWithTitle:title
+                                 message:@""
+                                 preferredStyle:UIAlertControllerStyleAlert];
+    for (NSString *str in choices) {
+        UIAlertAction *button =  [UIAlertAction
+                                  actionWithTitle:str
+                                  style:UIAlertActionStyleDefault
+                                  handler:callback];
+        [alert addAction:button];
+    }
+    
+    UIViewController *vc = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
+    [vc presentViewController:alert animated:YES completion:nil];
+} // choicePopup()
 
 //=============
 // File Stuff

@@ -33,7 +33,9 @@ extern "C" {
     // User Interface
     //==================
     // Popup notification
-    void popup (NSString *str, NSString *title);
+    void popup (NSString *msg, NSString *title);
+    // Alert with several choices
+    void choicePopup (NSArray *choices, NSString *title, void(^callback)(UIAlertAction *));
 
 #ifdef __cplusplus
 }
