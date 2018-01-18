@@ -356,7 +356,7 @@
     
     // Find next file name
     std::vector<cv::String> fnames;
-    cv::glob( docpath + "/testcase_*.jpg", fnames);
+    cv::glob( docpath + "/" + TESTCASE_PREFIX + "*.jpg", fnames);
     int fnum = 0;
     if (SZ(fnames)) {
         vec_sort( fnames);
@@ -366,7 +366,7 @@
         int num = std::stoi( parts.back());
         fnum = num + 1;
     }
-    std::snprintf( buf, BUFSZ, "testcase_%05d", fnum);
+    std::snprintf( buf, BUFSZ, TESTCASE_PREFIX "%05d", fnum);
 
     // Save image
     std::string fname = docpath + "/" + buf + ".jpg";

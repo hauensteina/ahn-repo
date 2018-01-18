@@ -75,9 +75,9 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-        self.titlesArray = @[@"Item 1"
-                             ,@"Item 2"
-                             ];
+//        self.titlesArray = [@[@"Item 1"
+//                             ,@"Item 2"
+//                             ] mutableCopy];
         
         self.view.backgroundColor = [UIColor clearColor];
         
@@ -88,6 +88,13 @@
         self.tableView.backgroundColor = [UIColor clearColor];
     }
     return self;
+}
+//-------------------------------------------
+- (void) viewWillAppear:(BOOL) animated
+{
+    [super viewWillAppear: animated];
+    NSArray *files = glob_files( @"", @TESTCASE_PREFIX, @".jpg");
+    self.titlesArray = files;
 }
 //-------------------------------
 - (BOOL)prefersStatusBarHidden

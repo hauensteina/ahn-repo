@@ -20,6 +20,7 @@ extern AppDelegate *g_app;
 
 #ifdef __cplusplus
 //---------------------
+#include "Ocv.hpp"
 extern std::string g_docroot;
 extern cv::Mat mat_dbg;
 #endif
@@ -27,5 +28,6 @@ extern cv::Mat mat_dbg;
 // Always
 //---------------
 enum { BBLACK=0, EEMPTY=1, WWHITE=2, DDONTKNOW=3 };
+#define TESTCASE_PREFIX "testcase_"
 
 #endif /* Globals_h */

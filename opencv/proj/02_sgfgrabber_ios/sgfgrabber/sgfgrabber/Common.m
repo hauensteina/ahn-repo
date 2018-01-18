@@ -76,3 +76,18 @@ NSString* findInBundle( NSString *basename, NSString *ext)
     return path;
 }
 
+// List files in folder, filter by extension, sort
+//------------------------------------------------------------------------
+NSArray* glob_files( NSString *path_, NSString *prefix, NSString *ext)
+{
+    id fm = [NSFileManager defaultManager];
+    NSString *path = getFullPath( path_);
+    NSArray *files =
+    [fm contentsOfDirectoryAtPath:path error:nil];
+    NSPredicate *predicate = [NSPredicate
+                              predicateWithFormat:@"SELF like[c] %@", nsprintf( @"%@*%@", prefix, ext)];
+    files = [files filteredArrayUsingPredicate:predicate];
+    files = [files sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+    return files;
+} // glob_files()
+
