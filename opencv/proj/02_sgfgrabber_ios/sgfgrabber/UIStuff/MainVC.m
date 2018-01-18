@@ -338,10 +338,10 @@
     NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.jpg");
     NSString *last = changeExtension( [testfiles lastObject], @"");
     NSArray *parts = [last componentsSeparatedByString: @"_"];
-    int fnum = [[parts lastObject] intValue];
+    int fnum = [[parts lastObject] intValue] + 1;
 
     // Save image
-    NSString *fname = nsprintf( @"%s%05d.jpg", @TESTCASE_PREFIX, fnum);
+    NSString *fname = nsprintf( @"%@%05d.jpg", @TESTCASE_PREFIX, fnum);
     fname = getFullPath( fname);
     [_cppInterface save_small_img:fname];
     

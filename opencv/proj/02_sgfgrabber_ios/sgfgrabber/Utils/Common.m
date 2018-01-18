@@ -92,7 +92,7 @@ NSString* getFullPath( NSString *fname)
 //----------------------------------------------------------
 NSString* changeExtension( NSString *fname, NSString *ext)
 {
-    NSString *res = [[fname lastPathComponent] stringByDeletingPathExtension];
+    NSString *res = [fname stringByDeletingPathExtension];
     res = nscat( res, ext);
     return res;
 }
