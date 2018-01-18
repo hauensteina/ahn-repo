@@ -6,6 +6,8 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
+// Instances of global vars
+
 #import "Ocv.hpp"
 #import "Globals.h"
 #import "Common.h"

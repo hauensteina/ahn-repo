@@ -50,6 +50,7 @@
 //=====================================================
 @interface EditTestCaseVC ()
 @property (strong, nonatomic) NSArray *titlesArray;
+@property long current_row;
 @end
 
 @implementation EditTestCaseVC
@@ -69,12 +70,19 @@
     }
     return self;
 }
+
+// Find testcase files and remember their names for display. One per row.
+//-------------------------
+- (void) loadTitlesArray
+{
+    self.titlesArray = glob_files( @"", @TESTCASE_PREFIX, @".jpg");
+}
+
 //-------------------------------------------
 - (void) viewWillAppear:(BOOL) animated
 {
     [super viewWillAppear: animated];
-    NSArray *files = glob_files( @"", @TESTCASE_PREFIX, @".jpg");
-    self.titlesArray = files;
+    [self loadTitlesArray];
 }
 //-------------------------------
 - (BOOL)prefersStatusBarHidden
@@ -124,6 +132,7 @@
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    _current_row = indexPath.row;
     NSArray *choices = @[@"Make current", @"Use current Sgf", @"Delete", @"Cancel"];
     choicePopup( choices, @"Action",
                 ^(UIAlertAction *action) {
@@ -142,10 +151,32 @@
         
     }
     else if ([action hasPrefix:@"Delete"]) {
-        
+        NSString *fname = _titlesArray[_current_row];
+        fname = getFullPath( fname);
+        choicePopup(@[@"Delete",@"Cancel"], @"Really?",
+                    ^(UIAlertAction *action) {
+                        [self handleDeleteAction:action.title];
+                    });
     }
     else {}
 } // handleEditAction()
+
+// Delete current test case
+//---------------------------------------------
+- (void)handleDeleteAction:(NSString *)action
+{
+    if (![action hasPrefix:@"Delete"]) return;
+    // Delete jpg file
+    NSString *fname = _titlesArray[_current_row];
+    fname = getFullPath( fname);
+    unlink( [fname UTF8String]);
+    // Delete sgf file
+    fname = [[fname lastPathComponent] stringByDeletingPathExtension];
+    fname = nscat( fname, @".sgf");
+    unlink( [fname UTF8String]);
+    [self loadTitlesArray];
+    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationNone];
+} // handleDeleteAction()
 
 
 

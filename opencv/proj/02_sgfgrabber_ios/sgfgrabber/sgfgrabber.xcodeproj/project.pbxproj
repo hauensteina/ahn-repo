@@ -195,9 +195,23 @@
 			path = UIStuff;
 			sourceTree = "<group>";
 		};
+		AC5F33A12010FD48002FEF06 /* Utils */ = {
+			isa = PBXGroup;
+			children = (
+				AC043D331F9BB9AB006CF7F0 /* Common.h */,
+				ACA69E4B1F9D077B00F5E068 /* Common.m */,
+				AC61AD551FBCCB0B00DEBCDA /* Common.cpp */,
+				AC61AD561FBCCB0B00DEBCDA /* Common.hpp */,
+				AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */,
+				AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */,
+			);
+			path = Utils;
+			sourceTree = "<group>";
+		};
 		AC628C0A1F9A7D3F0043FCEE = {
 			isa = PBXGroup;
 			children = (
+				AC5F33A12010FD48002FEF06 /* Utils */,
 				AC13BB19200BD32900369CAE /* LGSideMenuController */,
 				ACD9EB161FAD0B160049BBDE /* Assets */,
 				AC13BB41200BD6D400369CAE /* UIStuff */,
@@ -218,26 +232,20 @@
 		AC628C151F9A7D3F0043FCEE /* sgfgrabber */ = {
 			isa = PBXGroup;
 			children = (
+				AC5540761F9BE71800922557 /* CppInterface.mm */,
+				AC9702191FBC88050057C4C2 /* Globals.h */,
+				AC9702171FBC87DF0057C4C2 /* Globals.mm */,
 				ACEF73621FBE3BA200DA4AD8 /* BlackWhiteEmpty.hpp */,
 				AC8ACF8A1FBF5553005D5722 /* BlobFinder.cpp */,
 				AC8ACF8B1FBF5553005D5722 /* BlobFinder.hpp */,
 				ACF862D31FE95AF200EEC707 /* Boardness.hpp */,
 				ACEF735F1FBDF53200DA4AD8 /* Clust1D.hpp */,
-				AC043D331F9BB9AB006CF7F0 /* Common.h */,
-				ACA69E4B1F9D077B00F5E068 /* Common.m */,
-				AC61AD551FBCCB0B00DEBCDA /* Common.cpp */,
-				AC61AD561FBCCB0B00DEBCDA /* Common.hpp */,
 				AC5540751F9BE71800922557 /* CppInterface.h */,
-				AC5540761F9BE71800922557 /* CppInterface.mm */,
 				AC0BC39B1FE2E26F0066C542 /* DrawBoard.cpp */,
 				AC0BC39C1FE2E26F0066C542 /* DrawBoard.hpp */,
 				AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */,
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
-				AC9702191FBC88050057C4C2 /* Globals.h */,
-				AC9702171FBC87DF0057C4C2 /* Globals.mm */,
 				AC1756CB200527770069EE99 /* Helpers.hpp */,
-				AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */,
-				AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
 				AC628C271F9A7D3F0043FCEE /* Info.plist */,
 				AC628C161F9A7D3F0043FCEE /* Supporting Files */,
