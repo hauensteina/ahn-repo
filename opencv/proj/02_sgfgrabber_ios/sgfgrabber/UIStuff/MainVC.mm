@@ -348,7 +348,7 @@
 // The new nnnnn is one higher than the largest one found in the
 // file systm.
 //---------------------------
-- (void) mnuAddAsTestCase
+- (void) mnuSaveAsTestCase
 {
     const int BUFSZ = 1000;
     char buf[BUFSZ+1];
@@ -383,7 +383,13 @@
     ofs.close();
     
     popup( @"Image added as Test Case", @"");
-} // mnuAddAsTestCase()
+} // mnuSaveAsTestCase()
 
+// Show test cases from filesystem in a tableview, pick one.
+//-------------------------------------------------------------
+- (void) mnuSetCurrentTestCase
+{
+    [g_app.navVC pushViewController:g_app.chooseTestCaseVC animated:YES];
+} // mnuSetCurrentTestCase()
 
 @end

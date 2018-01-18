@@ -14,5 +14,6 @@
 // Label for debug output
 @property UILabel *lbDbg;
 // Callbacks
-- (void) mnuAddAsTestCase;
+- (void) mnuSaveAsTestCase;
+- (void) mnuSetCurrentTestCase;
 @end

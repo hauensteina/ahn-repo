@@ -27,10 +27,15 @@
     g_app = self;
         
     self.mainVC = [MainVC new];
+    
+    // Left and right side menu with Navigation underneath
     self.navVC = [[NavigationController alloc] initWithRootViewController:self.mainVC];
     self.topVC = [TopViewController new];
     self.topVC.rootViewController = self.navVC;
     [self.topVC setup];
+    
+    // Other view controllers
+    self.chooseTestCaseVC = [ChooseTestCaseVC new];
     
     self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];
