@@ -8,9 +8,8 @@
 
 #import "Globals.h"
 #import "ChooseTestCaseVC.h"
-//#import "LeftViewCell.h"
-//#import "TopViewController.h"
-//#import "UIViewController+LGSideMenuController.h"
+
+#define ROWHEIGHT 100
 
 // Table View Cell
 //=============================================
@@ -26,12 +25,6 @@
         
         self.textLabel.font = [UIFont boldSystemFontOfSize:16.0];
         self.textLabel.textColor = [UIColor whiteColor];
-        
-        // -----
-        
-        self.separatorView = [UIView new];
-        self.separatorView.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.4];
-        [self addSubview:self.separatorView];
     }
     return self;
 }
@@ -40,18 +33,9 @@
 - (void)layoutSubviews
 {
     [super layoutSubviews];
-    
-    CGRect textLabelFrame = self.textLabel.frame;
-    textLabelFrame.origin.x = 8.0;
-    textLabelFrame.size.width = CGRectGetWidth(self.frame) - 16.0;
-    self.textLabel.frame = textLabelFrame;
-    
-    CGFloat height = UIScreen.mainScreen.scale == 1.0 ? 1.0 : 0.5;
-    
-    self.separatorView.frame = CGRectMake(0.0,
-                                          CGRectGetHeight(self.frame)-height,
-                                          CGRectGetWidth(self.frame)*0.9,
-                                          height);
+    CGRect frame = self.frame;
+    frame.size.height = ROWHEIGHT - 10;
+    self.frame = frame;
 }
 
 //----------------------------------------------------------------
@@ -83,9 +67,10 @@
         
         [self.tableView registerClass:[ChooseTestCaseCell class] forCellReuseIdentifier:@"cell"];
         self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-        self.tableView.contentInset = UIEdgeInsetsMake(44.0, 0.0, 44.0, 0.0);
+        //self.tableView.contentInset = UIEdgeInsetsMake(44.0, 0.0, 44.0, 0.0);
         self.tableView.showsVerticalScrollIndicator = NO;
         self.tableView.backgroundColor = [UIColor clearColor];
+        self.tableView.rowHeight = 60;
     }
     return self;
 }
@@ -128,6 +113,7 @@
     ChooseTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
     
     cell.textLabel.text = self.titlesArray[indexPath.row];
+    cell.imageView.image = [UIImage imageNamed:@"board01.jpg"];
     //cell.separatorView.hidden = (indexPath.row <= 3 || indexPath.row == self.titlesArray.count-1);
     //cell.userInteractionEnabled = (indexPath.row != 1 && indexPath.row != 3);
     
@@ -137,7 +123,7 @@
 //-----------------------------------------------------------------------------------------------
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    return (indexPath.row == 1 || indexPath.row == 3) ? 22.0 : 44.0;
+    return ROWHEIGHT;
 }
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
