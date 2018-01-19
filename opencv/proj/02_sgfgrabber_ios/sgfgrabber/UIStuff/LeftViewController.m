@@ -114,7 +114,6 @@
         [errCounts addObject:@(nerrs)];
     } // for
     // Show error counts in a separate View Controller
-    [g_app.navVC pushViewController:g_app.testResultsVC animated:YES];
     UITextView *tv = g_app.testResultsVC.tv;
     NSMutableString *msg = [NSMutableString new];
     [msg appendString:@"Error Count by File\n"];
@@ -127,8 +126,8 @@
         [msg appendString:line];
     }
     tv.text = msg;
-    //[tv setNeedsDisplay];
-    
+    [g_app.navVC pushViewController:g_app.testResultsVC animated:YES];
+
 } // mnuRunTestCases()
 
 @end

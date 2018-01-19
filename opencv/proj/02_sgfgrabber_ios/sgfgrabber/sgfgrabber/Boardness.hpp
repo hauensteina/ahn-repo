@@ -149,7 +149,7 @@ public:
                 tmp.at<double>(r,c) =  RAT(lsum,lcount) * RAT(rsum,rcount) * RAT(tsum,tcount) * RAT(bsum,bcount);
                 if (tmp.at<double>(r,c) > mmax) {
                     mmax = tmp.at<double>(r,c) ;
-                    PLOG ("r: %d c: %d mmax: %.2f counts: %d %d %d %d\n", r, c, mmax, lcount, rcount, tcount, bcount);
+                    //PLOG ("r: %d c: %d mmax: %.2f counts: %d %d %d %d\n", r, c, mmax, lcount, rcount, tcount, bcount);
                 }
             } // CSLOOP
         } // RSLOOP

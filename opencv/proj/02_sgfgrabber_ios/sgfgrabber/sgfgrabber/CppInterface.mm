@@ -1454,8 +1454,8 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 
 // Recognize position in image. Result goes into _diagram.
 // Returns true on success.
-//-----------------------------------------------------------
-- (bool)recognize_position:(UIImage *)img
+//----------------------------------------------------------------------------------------------
+- (bool)recognize_position:(UIImage *)img timeVotes:(int)timeVotes breakIfBad:(bool)breakIfBad
 {
     _board_sz = 19;
     bool success = false;
@@ -1471,11 +1471,11 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
         BlobFinder::find_stones( _gray, _stone_or_empty);
         _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-        if (SZ(_stone_or_empty) < 0.8 * SQR(_board_sz)) break;
+        if (breakIfBad && SZ(_stone_or_empty) < 0.8 * SQR(_board_sz)) break;
         
         // Break if not straight
         double theta = direction( _gray, _stone_or_empty) - PI/2;
-        if (fabs(theta) > 4 * PI/180) break;
+        if (breakIfBad && fabs(theta) > 4 * PI/180) break;
         
         // Find vertical lines
         _vertical_lines = homegrown_vert_lines( _stone_or_empty);
@@ -1484,16 +1484,16 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         filter_vert_lines( _vertical_lines);
         const int x_thresh = 4.0;
         fix_vertical_lines( _vertical_lines, all_vert_lines, _gray, x_thresh);
-        if (SZ( _vertical_lines) > 55) break;
-        if (SZ( _vertical_lines) < 5) break;
+        if (breakIfBad && SZ( _vertical_lines) > 55) break;
+        if (breakIfBad && SZ( _vertical_lines) < 5) break;
         
         // Find horiz lines
         _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
         dedup_horizontals( _horizontal_lines, _gray);
         filter_horiz_lines( _horizontal_lines);
         fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
-        if (SZ( _horizontal_lines) > 55) break;
-        if (SZ( _horizontal_lines) < 5) break;
+        if (breakIfBad && SZ( _horizontal_lines) > 55) break;
+        if (breakIfBad && SZ( _horizontal_lines) < 5) break;
         
         // Find corners
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
@@ -1505,7 +1505,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         }
         // Intersections for only the board lines
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
-        if (!board_valid( _corners, _gray)) {
+        if (breakIfBad && !board_valid( _corners, _gray)) {
             break;
         }
         // Zoom in
@@ -1518,9 +1518,14 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
         
         // Classify
-        const int TIME_BUF_SZ = 10;
-        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
+        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, timeVotes);
         fix_diagram( _diagram, _intersections, _small_img);
+        
+        // Copy diagram to NSMutableArray
+        NSMutableArray *res = [NSMutableArray new];
+        ISLOOP (_diagram) {
+            [res addObject:@(_diagram[i])];
+        }
         success = true;
     } while(0);
     return success;
@@ -1532,7 +1537,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 {
     static std::vector<Points> boards; // Some history for averaging
     cv::Mat drawing;
-    bool success = [self recognize_position:img];
+    bool success = [self recognize_position:img timeVotes:10 breakIfBad:YES];
 
     // Draw real time results on screen
     //------------------------------------
@@ -1592,7 +1597,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 //------------------------------------------------------------
 - (int) runTestImg:(UIImage *)img withSgf:(NSString *)sgf
 {
-    if (![self recognize_position:img]) {
+    if (![self recognize_position:img timeVotes:1 breakIfBad:NO]) {
         return -1;
     }
     auto correct_diagram = sgf2vec([sgf UTF8String]);
