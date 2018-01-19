@@ -246,11 +246,9 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //----------------------------------------
 + (UIImage *) sgf2img:(NSString *)sgf
 {
-    if (!sgf) return nil;
-
+    if (!sgf) sgf = @"";
     cv::Mat m;
     draw_sgf( [sgf UTF8String], m, IMG_WIDTH);
-    int tt = 42;
     UIImage *res = MatToUIImage( m);
     return res;
 }

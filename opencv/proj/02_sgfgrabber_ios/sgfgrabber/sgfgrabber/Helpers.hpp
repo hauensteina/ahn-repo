@@ -197,23 +197,23 @@ inline void draw_sgf( const std::string &sgf_, cv::Mat &dst, int width)
     int r = ROUND( 0.25 * innerwidth / (boardsz-1.0));
     cv::Point p;
     p = rc2p( 3, 3);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 15, 15);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 3, 15);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 15, 3);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 9, 9);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 9, 3);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 3, 9);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 9, 15);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
     p = rc2p( 15, 9);
-    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    cv::circle( dst, p, r, 0, -1);
 
     // Draw the stones
     int rad = ROUND( 0.5 * innerwidth / (boardsz-1.0));

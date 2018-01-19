@@ -10,7 +10,7 @@
 #import "EditTestCaseVC.h"
 #import "CppInterface.h"
 
-#define ROWHEIGHT 100
+#define ROWHEIGHT 120
 
 // Table View Cell
 //=============================================
@@ -116,19 +116,24 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     EditTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
-
-    // Put the image into table view cell
     NSString *fname = self.titlesArray[indexPath.row];
-    cell.textLabel.text = fname;
-    fname = getFullPath( fname);
-    UIImage *img = [UIImage imageWithContentsOfFile:fname];
-    cell.imageView.image = img;
-    
-    // Put the sgf diagram into the table view cell //@@@
-    fname = changeExtension( fname, @".sgf");
-    NSString *sgf = [NSString stringWithContentsOfFile:fname encoding:NSUTF8StringEncoding error:NULL];
+    // Photo
+    UIImageView *imgView1 = [[UIImageView alloc] initWithFrame:CGRectMake(40,40,70,70)];
+    NSString *fullfname = getFullPath( fname);
+    UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
+    imgView1.image = img;
+    [cell addSubview: imgView1];
+    // Diagram
+    UIImageView *imgView2 = [[UIImageView alloc] initWithFrame:CGRectMake(140,40,70,70)];
+    fullfname = changeExtension( fullfname, @".sgf");
+    NSString *sgf = [NSString stringWithContentsOfFile:fullfname encoding:NSUTF8StringEncoding error:NULL];
     UIImage *sgfImg = [CppInterface sgf2img:sgf];
-    cell.imageView.image = sgfImg;
+    imgView2.image = sgfImg;
+    [cell addSubview: imgView2];
+    // Name
+    UILabel *lb = [[UILabel alloc] initWithFrame:CGRectMake(40,90,250,70)];
+    lb.text = fname;
+    [cell addSubview:lb];
 
     return cell;
 }
