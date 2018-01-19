@@ -21,7 +21,7 @@
         CGRect frame = self.view.bounds;
         _tv = [[UITextView alloc] initWithFrame:frame];
         [_tv setFont:[UIFont fontWithName:@"CourierNewPS-BoldMT" size:16 ]];
-        _tv.editable = NO;
+        _tv.editable = NO ;
         [self.view addSubview:_tv];
     }
     return self;
