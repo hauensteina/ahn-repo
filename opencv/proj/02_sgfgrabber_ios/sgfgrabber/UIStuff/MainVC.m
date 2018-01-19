@@ -346,10 +346,12 @@
     [_cppInterface save_small_img:fname];
     
     // Save SGF
-    fname = nsprintf( @"%s%05d.sgf", @TESTCASE_PREFIX, fnum);
+    fname = nsprintf( @"%@%05d.sgf", @TESTCASE_PREFIX, fnum);
+    fname = getFullPath( fname);
     NSString *title = nsprintf( @"Testcase %d", fnum);
     [_cppInterface save_current_sgf:fname withTitle:title];
     
+    [g_app.editTestCaseVC refresh];
     popup( nsprintf( @"Image added as Test Case %d", fnum), @"");
 } // mnuAddTestCase()
 

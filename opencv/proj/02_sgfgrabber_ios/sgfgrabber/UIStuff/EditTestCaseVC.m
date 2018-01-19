@@ -72,6 +72,14 @@
     return self;
 }
 
+//---------------------------------------
+- (void)refresh
+{
+    [self loadTitlesArray];
+    [self.tableView reloadData];
+    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationNone];
+}
+
 // Find testcase files and remember their names for display. One per row.
 //-------------------------
 - (void) loadTitlesArray
@@ -116,6 +124,7 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     EditTestCaseCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+    [[cell subviews] makeObjectsPerformSelector:@selector(removeFromSuperview)];
     NSString *fname = self.titlesArray[indexPath.row];
     // Photo
     UIImageView *imgView1 = [[UIImageView alloc] initWithFrame:CGRectMake(40,40,70,70)];
@@ -189,8 +198,7 @@
     // Delete sgf file
     fname = changeExtension( fname, @".sgf");
     unlink( [fname UTF8String]);
-    [self loadTitlesArray];
-    [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:0] withRowAnimation:UITableViewRowAnimationNone];
+    [self refresh];
 } // handleDeleteAction()
 
 

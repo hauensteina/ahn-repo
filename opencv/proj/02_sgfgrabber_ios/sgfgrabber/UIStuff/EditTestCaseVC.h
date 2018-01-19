@@ -9,9 +9,10 @@
 #import <UIKit/UIKit.h>
 
 @interface EditTestCaseVC : UITableViewController
+- (void)refresh;
 @end
 
 @interface EditTestCaseCell : UITableViewCell
-@property (strong, nonatomic) UIView *separatorView;
+//@property (strong, nonatomic) UIView *separatorView;
 @end
 
