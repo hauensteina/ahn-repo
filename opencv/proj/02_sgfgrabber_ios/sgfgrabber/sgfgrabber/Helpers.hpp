@@ -82,33 +82,100 @@ inline std::string generate_sgf( const std::string &title, const std::vector<int
     return buf + moves + ")\n";
 } // generate_sgf()
 
-//-----------------------------------------------------------------------------
-inline std::string get_sgf_token( const std::string &sgf, const std::string &tag)
+// e.g for board size, call get_sgf_tag( sgf, "SZ")
+//----------------------------------------------------------------------------------------
+inline std::string get_sgf_tag( const std::string &sgf, const std::string &tag)
 {
     std::string res;
-    //std::regex tag("(\\+|-)?[[:alnum:]]+");
-    //std::regex tag("(" + tag + "\\[.*\\])");
-    //std::regex re_tag( tag + "\\[.*\\]"); // ECMA
-    std::regex re_tag( tag);
+    std::regex re_tag( tag + "\\[[^\\]]*\\]");
     std::smatch m;
     std::regex_search( sgf, m, re_tag);
     if (!SZ(m)) {
         return "";
     }
     std::string mstr = m[0];
-    int tt = 42;
+    std::vector<std::string> parts, parts1;
+    str_split( mstr, parts, '[');
+    str_split( parts[1], parts1, ']');
+    res = parts1[0];
     return res;
-}
+} // get_sgf_tag()
+
+// Look for AB[ab][cd] or AW[ab]... and transform into a linear vector
+// of ints
+//-----------------------------------------------------------
+inline std::vector<int> sgf2vec( const std::string &sgf_)
+{
+    PLOG("==========\n");
+    const int NONE = 0;
+    const int AB = 1;
+    const int AW = 2;
+    std::string sgf = std::regex_replace( sgf_, std::regex("\\s+"), "" ); // no whitespace
+    int boardsz = std::stoi( get_sgf_tag( sgf, "SZ"));
+    std::vector<int> res( boardsz * boardsz, EEMPTY);
+    if (SZ(sgf) < 3) return res;
+    char window[4];
+    window[0] = sgf[0];
+    window[1] = sgf[1];
+    window[2] = sgf[2];
+    window[3] = '\0';
+    int i;
+    auto shiftwin = [&i,&window,&sgf](){window[0] = window[1]; window[1] = window[2]; window[2] = sgf[i++];};
+    int mode = NONE;
+    for (i=3; i < SZ(sgf); ) {
+        std::string tstr(window);
+        if (window[2] != '[') {
+            mode = NONE;
+            //window[0] = window[1]; window[1] = window[2]; window[2] = sgf[i++];
+            shiftwin();
+            continue;
+        }
+        else if (tstr == "AB[" || mode == AB) {
+            mode = AB;
+            if (i+2 > SZ(sgf)) break;
+            int col = sgf[i] - 'a';
+            shiftwin();
+            int row = sgf[i] - 'a';
+            shiftwin();
+            int idx = col + row * boardsz;
+            res[idx] = BBLACK;
+            PLOG("B at %c%c\n",col+'a',row+'a');
+            shiftwin(); shiftwin();
+        }
+        else if (tstr == "AW[" || mode == AW) {
+            mode = AW;
+            if (i+2 > SZ(sgf)) break;
+            int col = sgf[i] - 'a';
+            shiftwin();
+            int row = sgf[i] - 'a';
+            shiftwin();
+            int idx = col + row * boardsz;
+            res[idx] = WWHITE;
+            PLOG("W at %c%c\n",col+'a',row+'a');
+            shiftwin(); shiftwin();
+        }
+        else {
+            mode = NONE;
+            shiftwin();
+        }
+    } // for
+    return res;
+} // sgf2vec
 
 // Draw sgf on a square one channel Mat
 //----------------------------------------------------------------------
-inline void draw_sgf( const std::string &sgf, cv::Mat &dst, int width)
+inline void draw_sgf( const std::string &sgf_, cv::Mat &dst, int width)
 {
+    std::string sgf = std::regex_replace( sgf_, std::regex("\\s+"), "" ); // no whitespace
     int height = width;
     dst = cv::Mat( height, width, CV_8UC1);
+    std::vector<int> diagram(19*19,EEMPTY);
     int marg = width * 0.05;
     int innerwidth = width - 2*marg;
-    int boardsz = std::stoi( get_sgf_token( sgf, "SZ"));
+    if (SZ(sgf) > 3) {
+        int boardsz = std::stoi( get_sgf_tag( sgf, "SZ"));
+        diagram = sgf2vec( sgf);
+    }
     
 //    Points2f dummy;
 //    get_intersections_from_corners( _corners_zoomed, _board_sz, dummy, _dx, _dy);
