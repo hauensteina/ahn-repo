@@ -246,13 +246,13 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //----------------------------------------
 + (UIImage *) sgf2img:(NSString *)sgf
 {
-    if (!sgf) {
-        return [UIImage new];
-    }
+    if (!sgf) return nil;
+
     cv::Mat m;
     draw_sgf( [sgf UTF8String], m, IMG_WIDTH);
     int tt = 42;
-    return [UIImage new];
+    UIImage *res = MatToUIImage( m);
+    return res;
 }
 
 // Find vertical grid lines

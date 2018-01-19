@@ -106,7 +106,7 @@ inline std::string get_sgf_tag( const std::string &sgf, const std::string &tag)
 //-----------------------------------------------------------
 inline std::vector<int> sgf2vec( const std::string &sgf_)
 {
-    PLOG("==========\n");
+    //PLOG("==========\n");
     const int NONE = 0;
     const int AB = 1;
     const int AW = 2;
@@ -126,7 +126,6 @@ inline std::vector<int> sgf2vec( const std::string &sgf_)
         std::string tstr(window);
         if (window[2] != '[') {
             mode = NONE;
-            //window[0] = window[1]; window[1] = window[2]; window[2] = sgf[i++];
             shiftwin();
             continue;
         }
@@ -139,7 +138,7 @@ inline std::vector<int> sgf2vec( const std::string &sgf_)
             shiftwin();
             int idx = col + row * boardsz;
             res[idx] = BBLACK;
-            PLOG("B at %c%c\n",col+'a',row+'a');
+            //PLOG("B at %c%c\n",col+'a',row+'a');
             shiftwin(); shiftwin();
         }
         else if (tstr == "AW[" || mode == AW) {
@@ -151,7 +150,7 @@ inline std::vector<int> sgf2vec( const std::string &sgf_)
             shiftwin();
             int idx = col + row * boardsz;
             res[idx] = WWHITE;
-            PLOG("W at %c%c\n",col+'a',row+'a');
+            //PLOG("W at %c%c\n",col+'a',row+'a');
             shiftwin(); shiftwin();
         }
         else {
@@ -162,39 +161,74 @@ inline std::vector<int> sgf2vec( const std::string &sgf_)
     return res;
 } // sgf2vec
 
-// Draw sgf on a square one channel Mat
+// Draw sgf on a square single channel Mat
 //----------------------------------------------------------------------
 inline void draw_sgf( const std::string &sgf_, cv::Mat &dst, int width)
 {
     std::string sgf = std::regex_replace( sgf_, std::regex("\\s+"), "" ); // no whitespace
     int height = width;
     dst = cv::Mat( height, width, CV_8UC1);
-    std::vector<int> diagram(19*19,EEMPTY);
+    dst = 180;
+    int boardsz = 19;
+    std::vector<int> diagram( boardsz*boardsz,EEMPTY);
     int marg = width * 0.05;
     int innerwidth = width - 2*marg;
     if (SZ(sgf) > 3) {
-        int boardsz = std::stoi( get_sgf_tag( sgf, "SZ"));
+        boardsz = std::stoi( get_sgf_tag( sgf, "SZ"));
         diagram = sgf2vec( sgf);
     }
-    
-//    Points2f dummy;
-//    get_intersections_from_corners( _corners_zoomed, _board_sz, dummy, _dx, _dy);
-//    int dx = ROUND( _dx/4.0);
-//    int dy = ROUND( _dy/4.0);
-//    ISLOOP (_diagram) {
-//        cv::Point p(ROUND(_intersections_zoomed[i].x), ROUND(_intersections_zoomed[i].y));
-//        cv::Rect rect( p.x - dx,
-//                      p.y - dy,
-//                      2*dx + 1,
-//                      2*dy + 1);
-//        cv::rectangle( drawing, rect, cv::Scalar(0,0,255,255));
-//        if (_diagram[i] == BBLACK) {
-//            draw_point( p, drawing, 2, cv::Scalar(0,255,0,255));
-//        }
-//        else if (_diagram[i] == WWHITE) {
-//            draw_point( p, drawing, 5, cv::Scalar(255,0,0,255));
-//        }
-//    }
+    auto rc2p = [boardsz, innerwidth, marg](int row, int col) {
+        cv::Point res;
+        float d = innerwidth / (boardsz-1.0) ;
+        res.x = ROUND( marg + d*col);
+        res.y = ROUND( marg + d*row);
+        return res;
+    };
+    // Draw the lines
+    ILOOP (boardsz) {
+        cv::Point p1 = rc2p( i, 0);
+        cv::Point p2 = rc2p( i, boardsz-1);
+        cv::Point q1 = rc2p( 0, i);
+        cv::Point q2 = rc2p( boardsz-1, i);
+        cv::line( dst, p1, p2, cv::Scalar(0,0,0), 1, CV_AA);
+        cv::line( dst, q1, q2, cv::Scalar(0,0,0), 1, CV_AA);
+    }
+    // Draw the hoshis
+    int r = ROUND( 0.25 * innerwidth / (boardsz-1.0));
+    cv::Point p;
+    p = rc2p( 3, 3);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 15, 15);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 3, 15);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 15, 3);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 9, 9);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 9, 3);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 3, 9);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 9, 15);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+    p = rc2p( 15, 9);
+    cv::circle( dst, p, r, cv::Scalar( 0,0,0), -1);
+
+    // Draw the stones
+    int rad = ROUND( 0.5 * innerwidth / (boardsz-1.0));
+    ISLOOP (diagram) {
+        int r = i / boardsz;
+        int c = i % boardsz;
+        cv::Point p = rc2p( r,c);
+        if (diagram[i] == WWHITE) {
+            cv::circle( dst, p, rad, 255, -1);
+            cv::circle( dst, p, rad, 0, 2);
+        }
+        else if (diagram[i] == BBLACK) {
+            cv::circle( dst, p, rad, 0, -1);
+        }
+    } // ISLOOP
 } // draw_sgf()
 
 #endif /* __clusplus */

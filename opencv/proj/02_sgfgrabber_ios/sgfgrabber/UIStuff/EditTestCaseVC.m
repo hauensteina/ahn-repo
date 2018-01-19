@@ -128,9 +128,8 @@
     fname = changeExtension( fname, @".sgf");
     NSString *sgf = [NSString stringWithContentsOfFile:fname encoding:NSUTF8StringEncoding error:NULL];
     UIImage *sgfImg = [CppInterface sgf2img:sgf];
-    
+    cell.imageView.image = sgfImg;
 
-    
     return cell;
 }
 #pragma mark - UITableViewDelegate
