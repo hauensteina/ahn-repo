@@ -4,20 +4,19 @@
 //
 
 #import "Globals.h"
+#import "CppInterface.h"
 #import "LeftViewController.h"
 #import "LeftViewCell.h"
 #import "TopViewController.h"
 #import "UIViewController+LGSideMenuController.h"
 
 @interface LeftViewController ()
-
 @property (strong, nonatomic) NSArray *titlesArray;
-
 @end
 
 @implementation LeftViewController
-
-//----------
+// Initialize left menu
+//-----------------------
 - (id)init
 {
     self = [super initWithStyle:UITableViewStylePlain];
@@ -36,7 +35,8 @@
         self.tableView.backgroundColor = [UIColor clearColor];
     }
     return self;
-}
+} // init()
+
 //-------------------------------
 - (BOOL)prefersStatusBarHidden
 {
@@ -52,6 +52,7 @@
 {
     return UIStatusBarAnimationFade;
 }
+
 #pragma mark - UITableViewDataSource
 //-----------------------------------------------------------------
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -67,42 +68,132 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     LeftViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
-
     cell.textLabel.text = self.titlesArray[indexPath.row];
-    //cell.separatorView.hidden = (indexPath.row <= 3 || indexPath.row == self.titlesArray.count-1);
-    //cell.userInteractionEnabled = (indexPath.row != 1 && indexPath.row != 3);
-
     return cell;
-}
+} // cellForRowAtIndexPath()
+
 #pragma mark - UITableViewDelegate
 //-----------------------------------------------------------------------------------------------
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     return 50;
 }
+// Handle left menu choice
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     TopViewController *topViewController = (TopViewController *)self.sideMenuController;
     NSString *menuItem = _titlesArray[indexPath.row];
-//    if ([menuItem hasPrefix:@"Edit Test Cases"]) {
-//        [g_app.mainVC mnuSaveAsTestCase];
-//    }
     if ([menuItem hasPrefix:@"Edit Test Cases"]) {
         [g_app.mainVC mnuEditTestCases];
     }
     else if ([menuItem hasPrefix:@"Add Test Case"]) {
         [g_app.mainVC mnuAddTestCase];
     }
-//
-//    UIViewController *viewController = [UIViewController new];
-//    viewController.view.backgroundColor = [UIColor whiteColor];
-//    viewController.title = self.titlesArray[indexPath.row];
-//
-//    UINavigationController *navigationController = (UINavigationController *)topViewController.rootViewController;
-//    [navigationController pushViewController:viewController animated:YES];
-    
+    else if ([menuItem hasPrefix:@"Run Test Cases"]) {
+        [self mnuRunTestCases];
+    }
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
-}
+} // didSelectRowAtIndexPath()
+
+// Run all test cases
+//-----------------------------------
+- (void)mnuRunTestCases
+{
+    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.jpg");
+    NSMutableArray *errCounts = [NSMutableArray new];
+    for (id fname in testfiles ) {
+        NSString *fullfname = getFullPath( fname);
+        // Load the image
+        UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
+        // Load the sgf
+        fullfname = changeExtension( fullfname, @".sgf");
+        NSString *sgf = [NSString stringWithContentsOfFile:fullfname encoding:NSUTF8StringEncoding error:NULL];
+        // Classify
+        int nerrs = [g_app.mainVC.cppInterface runTestImg:img withSgf: sgf];
+        [errCounts addObject:@(nerrs)];
+    } // for
+    // Show error counts in a separate View Controller
+    [g_app.navVC pushViewController:g_app.testResultsVC animated:YES];
+    UITextView *tv = g_app.testResultsVC.tv;
+    NSMutableString *msg = [NSMutableString new];
+    [msg appendString:@"Error Count by File\n"];
+    [msg appendString:@"===================\n\n"];
+    int i = -1;
+    for (id fname in testfiles) {
+        i++;
+        long count = [errCounts[i] integerValue];
+        NSString *line = nsprintf( @"%@:\t%5ld\n", fname, count);
+        [msg appendString:line];
+    }
+    tv.text = msg;
+    //[tv setNeedsDisplay];
+    
+} // mnuRunTestCases()
 
 @end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

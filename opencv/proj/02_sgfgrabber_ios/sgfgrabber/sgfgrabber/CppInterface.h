@@ -28,11 +28,18 @@
 
 - (UIImage *) real_time_flow:(UIImage *)img;
 
-- (bool) save_small_img:(NSString *)fname;
-- (bool) save_current_sgf:(NSString *)fname withTitle:(NSString *)title;
-- (void) qImg:(UIImage *)img;
-+ (UIImage *) sgf2img:(NSString *)sgf;
 
-@property int sldDbg;
+// Methods for the Obj-C View Controllers
+//=============================================
+// Detect position on img and count the errors
+- (int) runTestImg:(UIImage *)img withSgf:(NSString *)sgf;
+// Save resized image to jpg
+- (bool) save_small_img:(NSString *)fname;
+// Save the cuurently detected position to sgf
+- (bool) save_current_sgf:(NSString *)fname withTitle:(NSString *)title;
+// Put an image into a buffer q. We pick the best one later.
+- (void) qImg:(UIImage *)img;
+// Make a diagram from sgf
++ (UIImage *) sgf2img:(NSString *)sgf;
 
 @end

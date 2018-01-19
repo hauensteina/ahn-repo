@@ -8,12 +8,20 @@
 
 
 #import "Common.h"
+#import "CppInterface.h"
 #import "FrameExtractor.h"
 
+
 @interface MainVC : UIViewController <FrameExtractorDelegate>
+// Entry point to core app functionality.
+@property CppInterface *cppInterface;
 // Label for debug output
 @property UILabel *lbDbg;
+// Slider for various test purposes
+@property UISlider *sldDbg;
+
 // Callbacks
 - (void) mnuAddTestCase;
 - (void) mnuEditTestCases;
+
 @end

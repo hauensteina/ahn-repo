@@ -13,6 +13,7 @@
 #import "RightViewController.h"
 #import "NavigationController.h"
 #import "EditTestCaseVC.h"
+#import "TestResultsVC.h"
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
@@ -29,6 +30,7 @@
 
 // Other screens
 @property (nonatomic, strong) EditTestCaseVC *editTestCaseVC;
+@property (nonatomic, strong) TestResultsVC *testResultsVC;
 
 @end
 

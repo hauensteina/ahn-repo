@@ -195,10 +195,9 @@ bool board_valid( Points2f board, const cv::Mat &img)
                         @"board13.jpg",
                         @"board14.jpg"
                         ];
-    if (_sldDbg > 0 && _sldDbg <= fnames.count) {
-        //if (1) {
-        load_img( fnames[_sldDbg -1], _orig_img);
-        //load_img( fnames[4], _m);
+    int sldVal = g_app.mainVC.sldDbg.value;
+    if (sldVal > 0 && sldVal <= fnames.count) {
+        load_img( fnames[sldVal -1], _orig_img);
         cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
         resize( _orig_img, _small_img, IMG_WIDTH);
         cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
@@ -1588,6 +1587,25 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     //UIImage *res = MatToUIImage( drawing);
     return res;
 } // real_time_flow()
+
+// Detect position on image and count erros
+//------------------------------------------------------------
+- (int) runTestImg:(UIImage *)img withSgf:(NSString *)sgf
+{
+    if (![self recognize_position:img]) {
+        return -1;
+    }
+    auto correct_diagram = sgf2vec([sgf UTF8String]);
+    auto &detected_diagram = _diagram;
+    assert( SZ(detected_diagram) == SZ(correct_diagram));
+    int errcount = 0;
+    ISLOOP (correct_diagram) {
+        if (correct_diagram[i] != detected_diagram[i]) {
+            errcount++;
+        }
+    }
+    return errcount;
+} // runTestImg()
 
 
 @end

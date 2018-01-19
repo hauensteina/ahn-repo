@@ -24,14 +24,11 @@
 @interface MainVC ()
 @property FrameExtractor *frameExtractor;
 @property UIImageView *cameraView;
-// Entry point to app core functionality.
-@property CppInterface *cppInterface;
 // Data
 @property UIImage *img; // The current image
 
 // Buttons etc
 @property UIButton *btnGo;
-@property UISlider *sldDbg;
 @property UISwitch *swiDbg;
 
 // State
@@ -207,7 +204,7 @@
 - (void) sldDbg:(id) sender
 {
     int tt = [self.sldDbg value];
-    self.cppInterface.sldDbg = tt;
+    //self.cppInterface.sldDbg = tt;
     self.lbDbg.text = nsprintf( @"%d", tt);
     //_sliderstate = 0;
 }
