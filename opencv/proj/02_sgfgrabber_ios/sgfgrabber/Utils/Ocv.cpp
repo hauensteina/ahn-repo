@@ -674,6 +674,10 @@ void auto_canny( const cv::Mat &src, cv::Mat &dst, double sigma)
 //------------------------------------------------------
 void resize(const cv::Mat &src, cv::Mat &dst, int sz)
 {
+    if (sz == MIN( src.cols, src.rows)) {
+        dst = src.clone();
+        return;
+    }
     //cv::Size s;
     int width  = src.cols;
     int height = src.rows;

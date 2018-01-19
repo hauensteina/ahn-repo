@@ -1453,16 +1453,14 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
 #pragma mark - Real time implementation
 //========================================
 
-// f00_*, f01_*, ... all in one go
-//--------------------------------------------
-- (UIImage *) real_time_flow:(UIImage *) img
+// Recognize position in image. Result goes into _diagram.
+// Returns true on success.
+//-----------------------------------------------------------
+- (bool)recognize_position:(UIImage *)img
 {
     _board_sz = 19;
-    cv::Mat drawing;
-    
     bool success = false;
     do {
-        static std::vector<Points> boards; // Some history for averaging
         UIImageToMat( img, _orig_img, false);
         resize( _orig_img, _small_img, IMG_WIDTH);
         cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB);
@@ -1511,7 +1509,6 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         if (!board_valid( _corners, _gray)) {
             break;
         }
-        
         // Zoom in
         cv::Mat M;
         zoom_in( _gray,  _corners, _gray_zoomed, M);
@@ -1527,7 +1524,17 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         fix_diagram( _diagram, _intersections, _small_img);
         success = true;
     } while(0);
-    
+    return success;
+} // recognize_position()
+
+// f00_*, f01_*, ... all in one go
+//--------------------------------------------
+- (UIImage *) real_time_flow:(UIImage *) img
+{
+    static std::vector<Points> boards; // Some history for averaging
+    cv::Mat drawing;
+    bool success = [self recognize_position:img];
+
     // Draw real time results on screen
     //------------------------------------
     cv::Mat *canvas;
