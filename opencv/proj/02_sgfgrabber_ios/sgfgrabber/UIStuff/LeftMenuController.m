@@ -37,6 +37,9 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
                        @{ @"txt": @"Add Test Case", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Edit Test Cases", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Run Test Cases", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Upload Test Cases", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Download Test Casess", @"state": @(ITEM_NOT_SELECTED) }
                        ];
         _titlesArray = [NSMutableArray new];
         for (NSDictionary *x in d) { [_titlesArray addObject:[x mutableCopy]]; }

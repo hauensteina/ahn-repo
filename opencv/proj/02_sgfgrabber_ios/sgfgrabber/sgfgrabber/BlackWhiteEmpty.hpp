@@ -28,8 +28,6 @@ class BlackWhiteEmpty
 //=====================
 {
 public:
-    
-    
     //----------------------------------------------------------------------------------
     inline static std::vector<int> classify( const cv::Mat &pyr,
                                             const cv::Mat &gray,
