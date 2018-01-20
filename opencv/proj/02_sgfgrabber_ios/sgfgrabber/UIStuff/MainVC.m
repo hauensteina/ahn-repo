@@ -136,6 +136,14 @@
     return YES;
 }
 
+//----------------------------------------------------------------
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"Touches Began");
+    [super touchesBegan:touches withEvent:event];
+}
+
+
 #pragma mark Layout
 
 // Put UI elements into the right place
