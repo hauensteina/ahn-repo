@@ -10,6 +10,7 @@
 
 @interface EditTestCaseVC : UITableViewController
 - (void)refresh;
+@property NSString *selectedTestCase;
 @end
 
 @interface EditTestCaseCell : UITableViewCell
