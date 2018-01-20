@@ -5,6 +5,6 @@
 
 #import <UIKit/UIKit.h>
 
-@interface LeftViewController : UITableViewController
+@interface LeftMenuController : UITableViewController
 
 @end

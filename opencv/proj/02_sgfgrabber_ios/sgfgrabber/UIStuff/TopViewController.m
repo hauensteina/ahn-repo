@@ -8,7 +8,7 @@
 
 #import "TopViewController.h"
 #import "MainVC.h"
-#import "LeftViewController.h"
+#import "LeftMenuController.h"
 #import "RightViewController.h"
 
 @interface TopViewController ()
@@ -19,7 +19,7 @@
 //--------------
 - (void)setup
 {
-    self.leftViewController = [LeftViewController new];
+    self.leftViewController = [LeftMenuController new];
     
     self.leftViewWidth = 250.0;
     self.leftViewBackgroundImage = [UIImage imageNamed:@"imageLeft"];

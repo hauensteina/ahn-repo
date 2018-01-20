@@ -164,7 +164,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     _selected_row = indexPath.row;
-    NSArray *choices = @[@"Select", @"Pair with current Sgf", @"Delete", @"Cancel"];
+    NSArray *choices = @[@"Select", @"Pair with current position", @"Delete", @"Cancel"];
     choicePopup( choices, @"Action",
                 ^(UIAlertAction *action) {
                     [self handleEditAction:action.title];
@@ -178,7 +178,7 @@
     if ([action hasPrefix:@"Select"]) {
         [self handleMakeCurrentAction];
     }
-    else if ([action hasPrefix:@"Pair with current Sgf"]) {
+    else if ([action hasPrefix:@"Pair with current position"]) {
         
     }
     else if ([action hasPrefix:@"Delete"]) {

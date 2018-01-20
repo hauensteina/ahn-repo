@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "TopViewController.h"
 #import "MainVC.h"
-#import "LeftViewController.h"
+#import "LeftMenuController.h"
 #import "RightViewController.h"
 #import "NavigationController.h"
 #import "EditTestCaseVC.h"
@@ -25,7 +25,7 @@
 
 // Center, Left Menu, Right Menu
 @property (nonatomic, strong) MainVC *mainVC;
-@property (nonatomic, strong) LeftViewController *leftVC;
+@property (nonatomic, strong) LeftMenuController *leftVC;
 @property (nonatomic, strong) RightViewController *rightVC;
 
 // Other screens

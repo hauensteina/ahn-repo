@@ -1,11 +1,10 @@
 //
-//  LeftViewCell.m
-//  LGSideMenuControllerDemo
+//  LeftMenuCell.m
 //
 
-#import "LeftViewCell.h"
+#import "LeftMenuCell.h"
 
-@implementation LeftViewCell
+@implementation LeftMenuCell
 
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];

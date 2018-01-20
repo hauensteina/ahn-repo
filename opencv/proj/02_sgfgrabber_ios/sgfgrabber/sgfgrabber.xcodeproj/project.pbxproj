@@ -22,12 +22,12 @@
 		AC13BB2C200BD38700369CAE /* LGSideMenuController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB25200BD38600369CAE /* LGSideMenuController.m */; };
 		AC13BB2D200BD38700369CAE /* LGSideMenuView.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB26200BD38600369CAE /* LGSideMenuView.m */; };
 		AC13BB2E200BD38700369CAE /* LGSideMenuSegue.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB27200BD38600369CAE /* LGSideMenuSegue.m */; };
-		AC13BB3B200BD6C600369CAE /* LeftViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB2F200BD6C200369CAE /* LeftViewController.m */; };
+		AC13BB3B200BD6C600369CAE /* LeftMenuController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB2F200BD6C200369CAE /* LeftMenuController.m */; };
 		AC13BB3C200BD6C600369CAE /* NavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB31200BD6C300369CAE /* NavigationController.m */; };
 		AC13BB3D200BD6C600369CAE /* TopViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB34200BD6C400369CAE /* TopViewController.m */; };
 		AC13BB3E200BD6C600369CAE /* RightViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB38200BD6C500369CAE /* RightViewController.m */; };
 		AC13BB3F200BD6C600369CAE /* RightViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB39200BD6C500369CAE /* RightViewCell.m */; };
-		AC13BB40200BD6C600369CAE /* LeftViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB3A200BD6C600369CAE /* LeftViewCell.m */; };
+		AC13BB40200BD6C600369CAE /* LeftMenuCell.m in Sources */ = {isa = PBXBuildFile; fileRef = AC13BB3A200BD6C600369CAE /* LeftMenuCell.m */; };
 		AC3C5EBC1FBC942000BB8B4F /* Ocv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */; };
 		AC3CC3561FFECD2300ED79D6 /* board14.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC3CC3541FFECD2200ED79D6 /* board14.jpg */; };
 		AC3CC3571FFECD2300ED79D6 /* board13.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC3CC3551FFECD2300ED79D6 /* board13.jpg */; };
@@ -83,18 +83,18 @@
 		AC13BB25200BD38600369CAE /* LGSideMenuController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LGSideMenuController.m; path = LGSideMenuController/LGSideMenuController.m; sourceTree = "<group>"; };
 		AC13BB26200BD38600369CAE /* LGSideMenuView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LGSideMenuView.m; path = LGSideMenuController/LGSideMenuView.m; sourceTree = "<group>"; };
 		AC13BB27200BD38600369CAE /* LGSideMenuSegue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = LGSideMenuSegue.m; path = LGSideMenuController/LGSideMenuSegue.m; sourceTree = "<group>"; };
-		AC13BB2F200BD6C200369CAE /* LeftViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LeftViewController.m; sourceTree = "<group>"; };
+		AC13BB2F200BD6C200369CAE /* LeftMenuController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LeftMenuController.m; sourceTree = "<group>"; };
 		AC13BB30200BD6C200369CAE /* NavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NavigationController.h; sourceTree = "<group>"; };
 		AC13BB31200BD6C300369CAE /* NavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NavigationController.m; sourceTree = "<group>"; };
 		AC13BB32200BD6C300369CAE /* RightViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RightViewCell.h; sourceTree = "<group>"; };
 		AC13BB33200BD6C300369CAE /* RightViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RightViewController.h; sourceTree = "<group>"; };
 		AC13BB34200BD6C400369CAE /* TopViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TopViewController.m; sourceTree = "<group>"; };
-		AC13BB35200BD6C400369CAE /* LeftViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LeftViewCell.h; sourceTree = "<group>"; };
+		AC13BB35200BD6C400369CAE /* LeftMenuCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LeftMenuCell.h; sourceTree = "<group>"; };
 		AC13BB36200BD6C400369CAE /* TopViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TopViewController.h; sourceTree = "<group>"; };
-		AC13BB37200BD6C500369CAE /* LeftViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LeftViewController.h; sourceTree = "<group>"; };
+		AC13BB37200BD6C500369CAE /* LeftMenuController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LeftMenuController.h; sourceTree = "<group>"; };
 		AC13BB38200BD6C500369CAE /* RightViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RightViewController.m; sourceTree = "<group>"; };
 		AC13BB39200BD6C500369CAE /* RightViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RightViewCell.m; sourceTree = "<group>"; };
-		AC13BB3A200BD6C600369CAE /* LeftViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LeftViewCell.m; sourceTree = "<group>"; };
+		AC13BB3A200BD6C600369CAE /* LeftMenuCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LeftMenuCell.m; sourceTree = "<group>"; };
 		AC1756CB200527770069EE99 /* Helpers.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Helpers.hpp; sourceTree = "<group>"; };
 		AC3C5EBA1FBC942000BB8B4F /* Ocv.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Ocv.cpp; sourceTree = "<group>"; };
 		AC3C5EBB1FBC942000BB8B4F /* Ocv.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Ocv.hpp; sourceTree = "<group>"; };
@@ -182,10 +182,10 @@
 				AC5F339F200FD370002FEF06 /* EditTestCaseVC.m */,
 				AC628C321F9A80150043FCEE /* MainVC.h */,
 				AC628C331F9A80150043FCEE /* MainVC.m */,
-				AC13BB35200BD6C400369CAE /* LeftViewCell.h */,
-				AC13BB3A200BD6C600369CAE /* LeftViewCell.m */,
-				AC13BB37200BD6C500369CAE /* LeftViewController.h */,
-				AC13BB2F200BD6C200369CAE /* LeftViewController.m */,
+				AC13BB35200BD6C400369CAE /* LeftMenuCell.h */,
+				AC13BB3A200BD6C600369CAE /* LeftMenuCell.m */,
+				AC13BB37200BD6C500369CAE /* LeftMenuController.h */,
+				AC13BB2F200BD6C200369CAE /* LeftMenuController.m */,
 				AC13BB30200BD6C200369CAE /* NavigationController.h */,
 				AC13BB31200BD6C300369CAE /* NavigationController.m */,
 				AC13BB32200BD6C300369CAE /* RightViewCell.h */,
@@ -397,9 +397,9 @@
 				ACA69E4C1F9D077B00F5E068 /* Common.m in Sources */,
 				AC61AD571FBCCB0B00DEBCDA /* Common.cpp in Sources */,
 				AC13BB2D200BD38700369CAE /* LGSideMenuView.m in Sources */,
-				AC13BB40200BD6C600369CAE /* LeftViewCell.m in Sources */,
+				AC13BB40200BD6C600369CAE /* LeftMenuCell.m in Sources */,
 				AC5540771F9BE71900922557 /* CppInterface.mm in Sources */,
-				AC13BB3B200BD6C600369CAE /* LeftViewController.m in Sources */,
+				AC13BB3B200BD6C600369CAE /* LeftMenuController.m in Sources */,
 				AC0BC39D1FE2E26F0066C542 /* DrawBoard.cpp in Sources */,
 				AC9702181FBC87DF0057C4C2 /* Globals.mm in Sources */,
 				AC13BB2E200BD38700369CAE /* LGSideMenuSegue.m in Sources */,

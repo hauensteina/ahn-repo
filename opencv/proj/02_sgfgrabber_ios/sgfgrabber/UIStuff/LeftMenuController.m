@@ -5,16 +5,16 @@
 
 #import "Globals.h"
 #import "CppInterface.h"
-#import "LeftViewController.h"
-#import "LeftViewCell.h"
+#import "LeftMenuController.h"
+#import "LeftMenuCell.h"
 #import "TopViewController.h"
 #import "UIViewController+LGSideMenuController.h"
 
-@interface LeftViewController ()
+@interface LeftMenuController ()
 @property (strong, nonatomic) NSArray *titlesArray;
 @end
 
-@implementation LeftViewController
+@implementation LeftMenuController
 // Initialize left menu
 //-----------------------
 - (id)init
@@ -28,7 +28,7 @@
 
         self.view.backgroundColor = [UIColor clearColor];
 
-        [self.tableView registerClass:[LeftViewCell class] forCellReuseIdentifier:@"cell"];
+        [self.tableView registerClass:[LeftMenuCell class] forCellReuseIdentifier:@"cell"];
         self.tableView.separatorStyle =  UITableViewCellSeparatorStyleNone;
         self.tableView.contentInset = UIEdgeInsetsMake(44.0, 0.0, 44.0, 0.0);
         self.tableView.showsVerticalScrollIndicator = NO;
@@ -67,7 +67,7 @@
 //------------------------------------------------------------------------------------------------------
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    LeftViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
+    LeftMenuCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
     cell.textLabel.text = self.titlesArray[indexPath.row];
     return cell;
 } // cellForRowAtIndexPath()
