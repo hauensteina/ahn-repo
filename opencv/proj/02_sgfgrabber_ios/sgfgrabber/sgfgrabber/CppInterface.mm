@@ -196,7 +196,15 @@ bool board_valid( Points2f board, const cv::Mat &img)
                         @"board14.jpg"
                         ];
     int sldVal = g_app.mainVC.sldDbg.value;
-    if (sldVal > 0 && sldVal <= fnames.count) {
+    if ([g_app.menuVC debugMode]) {
+        NSString *fname = g_app.editTestCaseVC.selectedTestCase;
+        NSString *fullfname = getFullPath( fname);
+        UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
+        UIImageToMat( img, _orig_img);
+        resize( _orig_img, _small_img, IMG_WIDTH);
+        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
+    }
+    else if (sldVal > 0 && sldVal <= fnames.count) {
         load_img( fnames[sldVal -1], _orig_img);
         cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
         resize( _orig_img, _small_img, IMG_WIDTH);

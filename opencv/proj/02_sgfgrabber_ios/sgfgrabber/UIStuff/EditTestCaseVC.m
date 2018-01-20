@@ -70,6 +70,10 @@
         self.tableView.showsVerticalScrollIndicator = NO;
         self.tableView.backgroundColor = [UIColor clearColor];
         //self.tableView.rowHeight = 150;
+        [self loadTitlesArray];
+        if ([_titlesArray count]) {
+            self.selectedTestCase = _titlesArray[0];
+        }
     }
     return self;
 }

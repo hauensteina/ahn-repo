@@ -10,8 +10,14 @@
 #import "TopViewController.h"
 #import "UIViewController+LGSideMenuController.h"
 
+enum {ITEM_NOT_SELECTED=0, ITEM_SELECTED=1};
+enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
+
 @interface LeftMenuController ()
-@property (strong, nonatomic) NSArray *titlesArray;
+@property (strong, nonatomic) NSMutableArray *titlesArray;
+@property UIFont *normalFont;
+@property UIFont *selectedFont;
+@property int mode;
 @end
 
 @implementation LeftMenuController
@@ -21,11 +27,20 @@
 {
     self = [super initWithStyle:UITableViewStylePlain];
     if (self) {
-        self.titlesArray = @[@"Add Test Case"
-                             ,@"Edit Test Cases"
-                             ,@"Run Test Cases"
-                             ];
-
+        _selectedFont = [UIFont fontWithName:@"Verdana-Bold" size:16 ];
+        _normalFont = [UIFont fontWithName:@"Verdana" size:16 ];
+        NSArray *d = @[
+                       @{ @"txt": @"Video Mode", @"state": @(ITEM_SELECTED) },
+                       @{ @"txt": @"Photo Mode", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Debug Mode", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Add Test Case", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Edit Test Cases", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Run Test Cases", @"state": @(ITEM_NOT_SELECTED) },
+                       ];
+        _titlesArray = [NSMutableArray new];
+        for (NSDictionary *x in d) { [_titlesArray addObject:[x mutableCopy]]; }
+        
         self.view.backgroundColor = [UIColor clearColor];
 
         [self.tableView registerClass:[LeftMenuCell class] forCellReuseIdentifier:@"cell"];
@@ -68,7 +83,13 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     LeftMenuCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
-    cell.textLabel.text = self.titlesArray[indexPath.row];
+    cell.textLabel.text = self.titlesArray[indexPath.row][@"txt"];
+    if ([_titlesArray[indexPath.row][@"state"] intValue] == ITEM_SELECTED) {
+        [cell.textLabel setFont:_selectedFont];
+    }
+    else {
+        [cell.textLabel setFont:_normalFont];
+    }
     return cell;
 } // cellForRowAtIndexPath()
 
@@ -78,12 +99,30 @@
 {
     return 50;
 }
+
+//-------------------
+- (void)unselectAll
+{
+    for (id x in _titlesArray) { x[@"state"] = @(ITEM_NOT_SELECTED); }
+}
+
+//-------------------------------------------------
+- (void)setState:(int)state forRow:(NSInteger)row
+{
+    _titlesArray[row][@"state"] = @(state);
+}
+
+- (bool) videoMode { return _mode == VIDEO_MODE; }
+- (bool) photoMode { return _mode == PHOTO_MODE; }
+- (bool) debugMode { return _mode == DEBUG_MODE; }
+
 // Handle left menu choice
 //--------------------------------------------------------------------------------------------
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     TopViewController *topViewController = (TopViewController *)self.sideMenuController;
-    NSString *menuItem = _titlesArray[indexPath.row];
+    NSString *menuItem = _titlesArray[indexPath.row][@"txt"];
+
     if ([menuItem hasPrefix:@"Edit Test Cases"]) {
         [g_app.mainVC mnuEditTestCases];
     }
@@ -93,6 +132,23 @@
     else if ([menuItem hasPrefix:@"Run Test Cases"]) {
         [self mnuRunTestCases];
     }
+    else if ([menuItem hasPrefix:@"Video Mode"]) {
+        [self unselectAll];
+        [self setState:ITEM_SELECTED forRow:indexPath.row];
+        _mode = VIDEO_MODE;
+    }
+    else if ([menuItem hasPrefix:@"Photo Mode"]) {
+        [self unselectAll];
+        [self setState:ITEM_SELECTED forRow:indexPath.row];
+        _mode = PHOTO_MODE;
+    }
+    else if ([menuItem hasPrefix:@"Debug Mode"]) {
+        [self unselectAll];
+        [self setState:ITEM_SELECTED forRow:indexPath.row];
+        _mode = DEBUG_MODE;
+        [g_app.mainVC debugFlow:true];
+    }
+    [self.tableView reloadData];
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 } // didSelectRowAtIndexPath()
 

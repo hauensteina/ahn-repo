@@ -34,7 +34,7 @@
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 @property BOOL debug_mode;
-@property int sliderstate;
+@property int debugstate;
 
 @end
 
@@ -66,8 +66,9 @@
     self.cppInterface = [CppInterface new];
     self.frameExtractor.delegate = self;
     self.frame_grabber_on = YES;
-    self.sliderstate = 0;
+    self.debugstate = 0;
 }
+
 //----------------------------------
 - (void)didReceiveMemoryWarning
 {
@@ -136,13 +137,6 @@
     return YES;
 }
 
-//----------------------------------------------------------------
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    NSLog(@"Touches Began");
-    [super touchesBegan:touches withEvent:event];
-}
-
 
 #pragma mark Layout
 
@@ -207,14 +201,22 @@
 
 #pragma mark - Button etc callbacks
 
+// Tapping on the screen
+//----------------------------------------------------------------
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    [super touchesBegan:touches withEvent:event];
+    if ([g_app.menuVC debugMode]) {
+        [self debugFlow:false];
+    }
+}
+
 // Slider for Debugging
 //-----------------------------------
 - (void) sldDbg:(id) sender
 {
     int tt = [self.sldDbg value];
-    //self.cppInterface.sldDbg = tt;
     self.lbDbg.text = nsprintf( @"%d", tt);
-    //_sliderstate = 0;
 }
 
 // Debug on/off
@@ -224,83 +226,89 @@
     self.debug_mode = [self.swiDbg isOn];
 }
 
+- (void) btnGo: (id) sender { if (self.debug_mode) [self debugFlow:false]; }
+
 // Debugging helper, shows individual processing stages
 //------------------------------------------------------
-- (void) btnGo: (id) sender
+- (void) debugFlow:(bool)reset
 {
-    if (self.debug_mode) {
-        UIImage *img;
-        while(1) {
-            switch (_sliderstate) {
-                case 0:
-                    _sliderstate++;
-                    //_sliderstate=100;
-                    self.frame_grabber_on = NO;
-                    [self.frameExtractor suspend];
-                    img = [self.cppInterface f00_blobs];
-                    [self.cameraView setImage:img];
-                    break;
-                case 1:
-                    img = [self.cppInterface f01_vert_lines];
-                    if (!img) { _sliderstate=2; continue; }
-                    [self.cameraView setImage:img];
-                    break;
-                case 2:
-                    img = [self.cppInterface f02_horiz_lines];
-                    if (!img) { _sliderstate=3; continue; }
-                    [self.cameraView setImage:img];
-                    break;
-                case 3:
-                    _sliderstate++;
-                    img = [self.cppInterface f03_corners];
-                    [self.cameraView setImage:img];
-                    break;
-                case 4:
-                    _sliderstate++;
-                    img = [self.cppInterface f04_zoom_in];
-                    [self.cameraView setImage:img];
-                    break;
-                case 5:
-                    _sliderstate++;
-                    img = [self.cppInterface f05_dark_places];
-                    [self.cameraView setImage:img];
-                    break;
-                case 6:
-                    _sliderstate++;
-                    img = [self.cppInterface f06_mask_dark];
-                    [self.cameraView setImage:img];
-                    break;
-                case 7:
-                    _sliderstate++;
-                    img = [self.cppInterface f07_white_holes];
-                    [self.cameraView setImage:img];
-                    break;
-                case 8:
-                    _sliderstate++; continue; // skip;
-//                    img = [self.cppInterface f08_features];
-//                    if (!img) { _sliderstate=9; continue; }
-//                    [self.cameraView setImage:img];
-                    break;
-                case 9:
-                    _sliderstate++;
-                    img = [self.cppInterface f09_classify];
-                    [self.cameraView setImage:img];
-                    break;
-                default:
-                    _sliderstate=0;
-                    self.frame_grabber_on = YES;
-                    [self.frameExtractor resume];
-                    g_app.mainVC.lbDbg.text = @"";
-            } // switch
-            break;
-        } // while(1)
-    } // if
-} // btnGo()
+    if (reset) _debugstate = 0;
+    UIImage *img;
+    while(1) {
+        switch (_debugstate) {
+            case 0:
+                _debugstate++;
+                self.frame_grabber_on = NO;
+                [self.frameExtractor suspend];
+                img = [self.cppInterface f00_blobs];
+                [self.cameraView setImage:img];
+                break;
+            case 1:
+                img = [self.cppInterface f01_vert_lines];
+                if (!img) { _debugstate=2; continue; }
+                [self.cameraView setImage:img];
+                break;
+            case 2:
+                img = [self.cppInterface f02_horiz_lines];
+                if (!img) { _debugstate=3; continue; }
+                [self.cameraView setImage:img];
+                break;
+            case 3:
+                _debugstate++;
+                img = [self.cppInterface f03_corners];
+                [self.cameraView setImage:img];
+                break;
+            case 4:
+                _debugstate++;
+                img = [self.cppInterface f04_zoom_in];
+                [self.cameraView setImage:img];
+                break;
+            case 5:
+                _debugstate++;
+                img = [self.cppInterface f05_dark_places];
+                [self.cameraView setImage:img];
+                break;
+            case 6:
+                _debugstate++;
+                img = [self.cppInterface f06_mask_dark];
+                [self.cameraView setImage:img];
+                break;
+            case 7:
+                _debugstate++;
+                img = [self.cppInterface f07_white_holes];
+                [self.cameraView setImage:img];
+                break;
+            case 8:
+                _debugstate++; continue; // skip;
+                //                    img = [self.cppInterface f08_features];
+                //                    if (!img) { _sliderstate=9; continue; }
+                //                    [self.cameraView setImage:img];
+                break;
+            case 9:
+                _debugstate++;
+                img = [self.cppInterface f09_classify];
+                [self.cameraView setImage:img];
+                break;
+            default:
+                _debugstate=0;
+                continue;
+                //self.frame_grabber_on = YES;
+                //[self.frameExtractor resume];
+                //g_app.mainVC.lbDbg.text = @"";
+        } // switch
+        break;
+    } // while(1)
+} // debugFlow()
 
 #pragma mark - FrameExtractorDelegate protocol
 //-----------------------------------------------
 - (void)captured:(UIImage *)image
 {
+    if ([g_app.menuVC debugMode]) {
+        self.frame_grabber_on = NO;
+        [self.frameExtractor suspend];
+        return;
+    }
     if (self.frame_grabber_on) {
         if (self.debug_mode) {
             [self.cameraView setImage:image];

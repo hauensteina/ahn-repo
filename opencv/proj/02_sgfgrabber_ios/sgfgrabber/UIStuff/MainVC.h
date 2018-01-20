@@ -6,11 +6,9 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-
 #import "Common.h"
 #import "CppInterface.h"
 #import "FrameExtractor.h"
-
 
 @interface MainVC : UIViewController <FrameExtractorDelegate>
 // Entry point to core app functionality.
@@ -21,7 +19,13 @@
 @property UISlider *sldDbg;
 
 // Callbacks
+//============
 - (void) mnuAddTestCase;
 - (void) mnuEditTestCases;
+
+// Other
+//=======
+// Debugging helper, shows individual processing stages
+- (void) debugFlow:(bool)reset;
 
 @end

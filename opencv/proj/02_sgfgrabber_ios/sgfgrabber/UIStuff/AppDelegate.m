@@ -33,6 +33,7 @@
     self.topVC = [TopViewController new];
     self.topVC.rootViewController = self.navVC;
     [self.topVC setup];
+    self.menuVC = (LeftMenuController *) self.topVC.leftViewController;
     
     // Other view controllers
     self.editTestCaseVC = [EditTestCaseVC new];
