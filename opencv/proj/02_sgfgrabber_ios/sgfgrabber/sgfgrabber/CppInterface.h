@@ -33,7 +33,7 @@
 //=============================================
 // Detect position on img and count the errors
 - (int) runTestImg:(UIImage *)img withSgf:(NSString *)sgf;
-// Save resized image to jpg
+// Save resized image to png. Fname must have .png extension.
 - (bool) save_small_img:(NSString *)fname;
 // Save the cuurently detected position to sgf
 - (bool) save_current_sgf:(NSString *)fname withTitle:(NSString *)title;

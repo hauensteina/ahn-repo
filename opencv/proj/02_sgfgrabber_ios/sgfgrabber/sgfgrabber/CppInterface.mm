@@ -110,12 +110,16 @@ void load_img( NSString *fname, cv::Mat &m)
     UIImageToMat(img, m);
 }
 
-// Save current resized image to file
+// Save current resized image to file.
+// fname must have .png extension.
 //---------------------------------------------
 - (bool) save_small_img:(NSString *)fname
 {
     cv::Mat m;
     cv::cvtColor( _small_img, m, CV_RGB2BGR);
+    std::vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(0);
     return cv::imwrite( [fname UTF8String], m);
 }
 

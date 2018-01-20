@@ -341,20 +341,20 @@
     [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
 }
 
-// Save current image and board position as jpg and sgf.
-// Filenames are testcase_nnnnn.jpg|sgf.
+// Save current image and board position as png and sgf.
+// Filenames are testcase_nnnnn.png|sgf.
 // The new nnnnn is one higher than the largest one found in the
 // file systm.
 //---------------------------
 - (void)mnuAddTestCase
 {
-    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.jpg");
+    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
     NSString *last = changeExtension( [testfiles lastObject], @"");
     NSArray *parts = [last componentsSeparatedByString: @"_"];
     int fnum = [[parts lastObject] intValue] + 1;
 
     // Save image
-    NSString *fname = nsprintf( @"%@%05d.jpg", @TESTCASE_PREFIX, fnum);
+    NSString *fname = nsprintf( @"%@%05d.png", @TESTCASE_PREFIX, fnum);
     fname = getFullPath( fname);
     [_cppInterface save_small_img:fname];
     

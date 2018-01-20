@@ -156,7 +156,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 //-----------------------------------
 - (void)mnuRunTestCases
 {
-    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.jpg");
+    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
     NSMutableArray *errCounts = [NSMutableArray new];
     for (id fname in testfiles ) {
         NSString *fullfname = getFullPath( fname);

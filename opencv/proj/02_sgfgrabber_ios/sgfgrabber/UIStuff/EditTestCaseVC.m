@@ -71,9 +71,6 @@
         self.tableView.backgroundColor = [UIColor clearColor];
         //self.tableView.rowHeight = 150;
         [self loadTitlesArray];
-        if ([_titlesArray count]) {
-            self.selectedTestCase = _titlesArray[0];
-        }
     }
     return self;
 }
@@ -90,7 +87,13 @@
 //-------------------------
 - (void) loadTitlesArray
 {
-    self.titlesArray = glob_files( @"", @TESTCASE_PREFIX, @".jpg");
+    self.titlesArray = glob_files( @"", @TESTCASE_PREFIX, @".png");
+    if (_selected_row >= [_titlesArray count]) {
+        _selected_row = 0;
+    }
+    if ([_titlesArray count]) {
+        self.selectedTestCase = _titlesArray[_selected_row];
+    }
 }
 
 //-------------------------------------------
@@ -201,7 +204,7 @@
 - (void)handleDeleteAction:(NSString *)action
 {
     if (![action hasPrefix:@"Delete"]) return;
-    // Delete jpg file
+    // Delete png file
     NSString *fname = _titlesArray[_selected_row];
     fname = getFullPath( fname);
     unlink( [fname UTF8String]);
