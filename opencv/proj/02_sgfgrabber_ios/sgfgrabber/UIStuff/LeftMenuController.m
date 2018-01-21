@@ -7,6 +7,7 @@
 #import "CppInterface.h"
 #import "LeftMenuController.h"
 #import "LeftMenuCell.h"
+#import "S3.h"
 #import "TopViewController.h"
 #import "UIViewController+LGSideMenuController.h"
 
@@ -151,6 +152,9 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
         _mode = DEBUG_MODE;
         [g_app.mainVC debugFlow:true];
     }
+    else if ([menuItem hasPrefix:@"Upload Test Cases"]) {
+        [self mnuUploadTestCases];
+    }
     [self.tableView reloadData];
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 } // didSelectRowAtIndexPath()
@@ -186,8 +190,18 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     }
     tv.text = msg;
     [g_app.navVC pushViewController:g_app.testResultsVC animated:YES];
-
 } // mnuRunTestCases()
+
+// Upload test cases to S3
+//-----------------------------------
+- (void)mnuUploadTestCases
+{
+    S3_login();
+    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
+    for (id fname in testfiles ) {
+        S3_upload_file( fname);
+    }
+} // mnuUploadCases()
 
 @end
 
