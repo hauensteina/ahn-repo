@@ -12,7 +12,7 @@
 #define S3_h
 
 // Authenticate with AWS for access to kifu-cam bucket
-void S3_login(void);
 void S3_upload_file( NSString *fname);
+void S3_glob( NSString *prefix, NSString *ext, NSMutableArray *res, void(^completion)(NSError *err));
 #endif /* S3_h */
 

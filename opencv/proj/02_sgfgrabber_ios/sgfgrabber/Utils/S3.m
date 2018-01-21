@@ -14,6 +14,7 @@
 
 #define BUCKET_NAME @"kifu-cam"
 static AWSCognitoCredentialsProvider *s_credentialsProvider = nil;
+static AWSServiceConfiguration *s_configuration = nil;
 
 // Authenticate with AWS for access to kifu-cam bucket
 //-------------------------------------------------------
@@ -24,15 +25,15 @@ void S3_login()
                              initWithRegionType:AWSRegionUSWest2
                              identityPoolId:@"us-west-2:86844471-fec8-4356-a48d-2cb7c620b97a"];
     
-    AWSServiceConfiguration *configuration = [[AWSServiceConfiguration alloc] initWithRegion:AWSRegionUSWest2 credentialsProvider:s_credentialsProvider];
-    
-    [AWSServiceManager defaultServiceManager].defaultServiceConfiguration = configuration;
+    s_configuration = [[AWSServiceConfiguration alloc] initWithRegion:AWSRegionUSWest2 credentialsProvider:s_credentialsProvider];
+    [AWSServiceManager defaultServiceManager].defaultServiceConfiguration = s_configuration;
 } // S3_login()
 
 // Upload a file to kifu-cam bucket
 //-------------------------------------
 void S3_upload_file( NSString *fname)
 {
+    S3_login();
     NSString *fullfname = getFullPath( fname);
     NSURL *uploadingFileURL = [NSURL fileURLWithPath: fullfname];
     
@@ -71,5 +72,34 @@ void S3_upload_file( NSString *fname)
          }
          return nil;
      }];
-} // upload_file()
+} // S3_upload_file()
+
+// List files in kifu-cam bucket. Filter by prefix and extension.
+// Returns at most 1000 keys.
+//--------------------------------------------------------------------------------------------------
+void S3_glob( NSString *prefix, NSString *ext, NSMutableArray *res, void(^completion)(NSError *err))
+{
+    S3_login();
+    [AWSS3 registerS3WithConfiguration:s_configuration forKey:@"defaultKey"];
+    AWSS3 *s3 = [AWSS3 S3ForKey:@"defaultKey"];
+    AWSS3ListObjectsV2Request *req = [AWSS3ListObjectsV2Request new];
+    req.bucket = BUCKET_NAME;
+    req.prefix = prefix;
+    [[s3 listObjectsV2:req] continueWithBlock:^id(AWSTask *task) {
+        if (task.error) {
+            popup( nsprintf( @"S3_glob failed: %@", task.error), @"Error");
+        }
+        else {
+            AWSS3ListObjectsOutput *listObjectsOutput = task.result;
+            for (AWSS3Object *s3Object in listObjectsOutput.contents) {
+                NSString *fname = s3Object.key;
+                NSString *fext = nscat( @".", [fname pathExtension]);
+                if (![ext isEqualToString:fext]) continue;
+                [res addObject: fname];
+            } // for
+        } // else
+        completion( task.error);
+        return nil;
+    }]; // [[s3 listObjectsV2
+} // S3_glob()
 

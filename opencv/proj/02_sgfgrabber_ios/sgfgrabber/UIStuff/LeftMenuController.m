@@ -19,6 +19,8 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 @property UIFont *normalFont;
 @property UIFont *selectedFont;
 @property int mode;
+@property NSMutableArray *s3_testcase_imgfiles;
+@property NSMutableArray *s3_testcase_sgffiles;
 @end
 
 @implementation LeftMenuController
@@ -155,6 +157,9 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     else if ([menuItem hasPrefix:@"Upload Test Cases"]) {
         [self mnuUploadTestCases];
     }
+    else if ([menuItem hasPrefix:@"Download Test Cases"]) {
+        [self mnuDownloadTestCases];
+    }
     [self.tableView reloadData];
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 } // didSelectRowAtIndexPath()
@@ -196,12 +201,22 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 //-----------------------------------
 - (void)mnuUploadTestCases
 {
-    S3_login();
     NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
     for (id fname in testfiles ) {
         S3_upload_file( fname);
     }
-} // mnuUploadCases()
+} // mnuUploadTestCases()
+
+// Download test cases from S3
+//-------------------------------
+- (void)mnuDownloadTestCases
+{
+    _s3_testcase_imgfiles = [NSMutableArray new];
+    S3_glob( @"testcase_", @".png", _s3_testcase_imgfiles,
+            ^(NSError *err) {
+                popup( @"Testcases downloaded", @"");
+            });
+} // mnuDownloadTestCases()
 
 @end
 
