@@ -18,7 +18,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 @property (strong, nonatomic) NSMutableArray *titlesArray;
 @property UIFont *normalFont;
 @property UIFont *selectedFont;
-@property int mode;
+@property int mode; // debug, video, photo mode
 @property NSMutableArray *s3_testcase_imgfiles;
 @property NSMutableArray *s3_testcase_sgffiles;
 @end
@@ -143,17 +143,20 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
         [self unselectAll];
         [self setState:ITEM_SELECTED forRow:indexPath.row];
         _mode = VIDEO_MODE;
+        [g_app.mainVC doLayout];
     }
     else if ([menuItem hasPrefix:@"Photo Mode"]) {
         [self unselectAll];
         [self setState:ITEM_SELECTED forRow:indexPath.row];
         _mode = PHOTO_MODE;
+        [g_app.mainVC doLayout];
     }
     else if ([menuItem hasPrefix:@"Debug Mode"]) {
         [self unselectAll];
         [self setState:ITEM_SELECTED forRow:indexPath.row];
         _mode = DEBUG_MODE;
         [g_app.mainVC debugFlow:true];
+        [g_app.mainVC doLayout];
     }
     else if ([menuItem hasPrefix:@"Upload Test Cases"]) {
         [self mnuUploadTestCases];

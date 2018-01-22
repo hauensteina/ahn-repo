@@ -18,6 +18,7 @@
 // Slider for various test purposes
 @property UISlider *sldDbg;
 
+
 //// Callbacks
 ////============
 //- (void) mnuAddTestCase;
@@ -25,6 +26,8 @@
 
 // Other
 //=======
+// Redraw main screen
+- (void) doLayout;
 // Debugging helper, shows individual processing stages
 - (void) debugFlow:(bool)reset;
 

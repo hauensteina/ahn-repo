@@ -6,16 +6,10 @@
 //  Copyright © 2017 AHN. All rights reserved.
 //
 
-// Don't change the order of these two,
-// and don't move them down
-//#import "Ocv.hpp"
-//#import <opencv2/imgcodecs/ios.h>
-
 #import "MainVC.h"
 #import "UIViewController+LGSideMenuController.h"
 
 #import "Globals.h"
-//#import "Helpers.hpp"
 #import "CppInterface.h"
 
 #define DDEBUG
@@ -176,6 +170,10 @@
     [self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
 
     // Camera button
+    [self.btnCam setBackgroundImage:self.imgPhotoBtn forState:UIControlStateNormal];
+    if ([g_app.menuVC videoMode]) {
+        [self.btnCam setBackgroundImage:self.imgVideoBtn forState:UIControlStateNormal];
+    }
     int r = 70;
     self.btnCam.frame = CGRectMake( W/2 - r/2, y-150, r , r);
     CALayer *layer = self.btnCam.layer;
