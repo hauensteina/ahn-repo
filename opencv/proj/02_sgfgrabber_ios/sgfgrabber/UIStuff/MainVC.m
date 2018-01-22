@@ -341,38 +341,5 @@
     [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
 }
 
-// Save current image and board position as png and sgf.
-// Filenames are testcase_nnnnn.png|sgf.
-// The new nnnnn is one higher than the largest one found in the
-// file systm.
-//---------------------------
-- (void)mnuAddTestCase
-{
-    NSArray *testfiles = globFiles(@"", @TESTCASE_PREFIX, @"*.png");
-    NSString *last = changeExtension( [testfiles lastObject], @"");
-    NSArray *parts = [last componentsSeparatedByString: @"_"];
-    int fnum = [[parts lastObject] intValue] + 1;
-
-    // Save image
-    NSString *fname = nsprintf( @"%@%05d.png", @TESTCASE_PREFIX, fnum);
-    fname = getFullPath( fname);
-    [_cppInterface save_small_img:fname];
-    
-    // Save SGF
-    fname = nsprintf( @"%@%05d.sgf", @TESTCASE_PREFIX, fnum);
-    fname = getFullPath( fname);
-    NSString *title = nsprintf( @"Testcase %d", fnum);
-    [_cppInterface save_current_sgf:fname withTitle:title];
-    
-    [g_app.editTestCaseVC refresh];
-    popup( nsprintf( @"Image added as Test Case %d", fnum), @"");
-} // mnuAddTestCase()
-
-// Show test cases from filesystem in a tableview, pick one.
-//-------------------------------------------------------------
-- (void) mnuEditTestCases
-{
-    [g_app.navVC pushViewController:g_app.editTestCaseVC animated:YES];
-} // mnuSetCurrentTestCase()
 
 @end

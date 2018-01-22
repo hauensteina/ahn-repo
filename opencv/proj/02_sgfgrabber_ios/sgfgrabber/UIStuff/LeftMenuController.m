@@ -131,10 +131,10 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     NSString *menuItem = _titlesArray[indexPath.row][@"txt"];
 
     if ([menuItem hasPrefix:@"Edit Test Cases"]) {
-        [g_app.mainVC mnuEditTestCases];
+        [self mnuEditTestCases];
     }
     else if ([menuItem hasPrefix:@"Add Test Case"]) {
-        [g_app.mainVC mnuAddTestCase];
+        [self mnuAddTestCase];
     }
     else if ([menuItem hasPrefix:@"Run Test Cases"]) {
         [self mnuRunTestCases];
@@ -164,6 +164,44 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     [self.tableView reloadData];
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 } // didSelectRowAtIndexPath()
+
+//============================
+// Handlers for menu choices
+//============================
+
+// Save current image and board position as png and sgf.
+// Filenames are testcase_nnnnn.png|sgf.
+// The new nnnnn is one higher than the largest one found in the
+// file systm.
+//---------------------------
+- (void)mnuAddTestCase
+{
+    NSArray *testfiles = globFiles(@"", @TESTCASE_PREFIX, @"*.png");
+    NSString *last = changeExtension( [testfiles lastObject], @"");
+    NSArray *parts = [last componentsSeparatedByString: @"_"];
+    int fnum = [[parts lastObject] intValue] + 1;
+    
+    // Save image
+    NSString *fname = nsprintf( @"%@%05d.png", @TESTCASE_PREFIX, fnum);
+    fname = getFullPath( fname);
+    [g_app.mainVC.cppInterface save_small_img:fname];
+    
+    // Save SGF
+    fname = nsprintf( @"%@%05d.sgf", @TESTCASE_PREFIX, fnum);
+    fname = getFullPath( fname);
+    NSString *title = nsprintf( @"Testcase %d", fnum);
+    [g_app.mainVC.cppInterface save_current_sgf:fname withTitle:title];
+    
+    [g_app.editTestCaseVC refresh];
+    popup( nsprintf( @"Image added as Test Case %d", fnum), @"");
+} // mnuAddTestCase()
+
+// Show test cases from filesystem in a tableview, pick one.
+//-------------------------------------------------------------
+- (void) mnuEditTestCases
+{
+    [g_app.navVC pushViewController:g_app.editTestCaseVC animated:YES];
+} // mnuSetCurrentTestCase()
 
 // Run all test cases
 //-------------------------

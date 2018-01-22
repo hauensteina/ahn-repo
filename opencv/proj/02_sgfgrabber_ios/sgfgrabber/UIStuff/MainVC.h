@@ -18,10 +18,10 @@
 // Slider for various test purposes
 @property UISlider *sldDbg;
 
-// Callbacks
-//============
-- (void) mnuAddTestCase;
-- (void) mnuEditTestCases;
+//// Callbacks
+////============
+//- (void) mnuAddTestCase;
+//- (void) mnuEditTestCases;
 
 // Other
 //=======
