@@ -24,6 +24,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 @end
 
 @implementation LeftMenuController
+
 // Initialize left menu
 //-----------------------
 - (id)init
@@ -158,14 +159,14 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
         [self mnuUploadTestCases];
     }
     else if ([menuItem hasPrefix:@"Download Test Cases"]) {
-        [self mnuDownloadTestCases];
+        [self mnuDownloadTestCases_0];
     }
     [self.tableView reloadData];
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 } // didSelectRowAtIndexPath()
 
 // Run all test cases
-//-----------------------------------
+//-------------------------
 - (void)mnuRunTestCases
 {
     NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
@@ -198,25 +199,109 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 } // mnuRunTestCases()
 
 // Upload test cases to S3
-//-----------------------------------
+//----------------------------
 - (void)mnuUploadTestCases
 {
-    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
+    int idx;
+    NSArray *testfiles;
+    
+    testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
+    idx = -1;
     for (id fname in testfiles ) {
-        S3_upload_file( fname);
-    }
+        idx++;
+        S3_upload_file( fname , ^(NSError *err) {});
+    } // for
+    testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.sgf");
+    NSInteger fcount = [testfiles count];
+    idx = -1;
+    for (id fname in testfiles ) {
+        idx++;
+        S3_upload_file( fname ,
+                       ^(NSError *err) {
+                           if (idx == fcount - 1) {
+                               popup( @"Testcases uploaded", @"");
+                           }
+                       });
+    } // for
 } // mnuUploadTestCases()
 
 // Download test cases from S3
-//-------------------------------
-- (void)mnuDownloadTestCases
+//===============================
+
+// Get list of png files
+//--------------------------------
+- (void)mnuDownloadTestCases_0
 {
     _s3_testcase_imgfiles = [NSMutableArray new];
     S3_glob( @"testcase_", @".png", _s3_testcase_imgfiles,
             ^(NSError *err) {
-                popup( @"Testcases downloaded", @"");
+                if (err) {
+                    popup( @"Failed to get S3 keys for img files", @"");
+                }
+                else {
+                    [self mnuDownloadTestCases_1];
+                }
             });
-} // mnuDownloadTestCases()
+} // mnuDownloadTestCases_0()
+
+// Get list of sgf files
+//-------------------------------
+- (void)mnuDownloadTestCases_1
+{
+    _s3_testcase_sgffiles = [NSMutableArray new];
+    S3_glob( @"testcase_", @".sgf", _s3_testcase_sgffiles,
+            ^(NSError *err) {
+                if (err) {
+                    popup( @"Failed to get S3 keys for sgf files", @"");
+                }
+                else {
+                    [self mnuDownloadTestCases_2];
+                }
+            });
+} // mnuDownloadTestCases_1()
+
+// Download image files
+//-------------------------------
+- (void)mnuDownloadTestCases_2
+{
+    int idx = -1;
+    NSInteger fcount = [_s3_testcase_imgfiles count];
+    if (!fcount) {
+        popup( @"No testcases found.", @"");
+        return;
+    }
+    for (id fname in _s3_testcase_imgfiles ) {
+        idx++;
+        S3_download_file( fname, fname,
+                         ^(NSError *err) {
+                             if (idx == fcount - 1) {
+                                 [self mnuDownloadTestCases_3];
+                             }
+                         });
+    } // for
+} // mnuDownloadTestCases_2()
+
+// Download sgf files
+//-------------------------------
+- (void)mnuDownloadTestCases_3
+{
+    int idx = -1;
+    NSInteger fcount = [_s3_testcase_sgffiles count];
+    if (!fcount) {
+        popup( @"No sgf files found.", @"");
+        return;
+    }
+    for (id fname in _s3_testcase_sgffiles ) {
+        idx++;
+        S3_download_file( fname, fname,
+                         ^(NSError *err) {
+                             if (idx == fcount - 1) {
+                                 popup( @"Testcases downloaded", @"");
+                             }
+                         });
+        
+    } // for
+} // mnuDownloadTestCases_3()
 
 @end
 
