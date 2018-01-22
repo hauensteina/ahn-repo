@@ -31,6 +31,10 @@
 @property UIButton *btnGo;
 @property UISwitch *swiDbg;
 
+@property UIButton *btnCam;
+@property UIImage *imgVideoBtn;
+@property UIImage *imgPhotoBtn;
+
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
 @property BOOL debug_mode;
@@ -121,6 +125,12 @@
     s.backgroundColor = RGB (0xf0f0f0);
     [v addSubview:s];
     self.sldDbg.hidden = false;
+    
+    // Button for video or image
+    self.btnCam = [self addButtonWithTitle:@"" callback:@selector(btnGo:)];
+    self.imgPhotoBtn = [UIImage imageNamed:@"photo_icon.png"];
+    self.imgVideoBtn = [UIImage imageNamed:@"video_icon.png"];
+    [self.btnCam setBackgroundImage:self.imgVideoBtn forState:UIControlStateNormal];
 }
 
 //----------------------------------------------------------------------
@@ -161,18 +171,29 @@
     //[self.view bringSubviewToFront:self.cameraView];
 
     // Button
-    self.btnGo.frame = CGRectMake (lmarg, y, W /5 , mh);
+    self.btnGo.frame = CGRectMake( lmarg, y, W /5 , mh);
     self.btnGo.titleLabel.font = [UIFont fontWithName:@"HelveticaNeue" size: 40];
     [self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
+
+    // Camera button
+    int r = 70;
+    self.btnCam.frame = CGRectMake( W/2 - r/2, y-150, r , r);
+    CALayer *layer = self.btnCam.layer;
+    layer.backgroundColor = [[UIColor clearColor] CGColor];
+    layer.borderColor = [[UIColor clearColor] CGColor];
+    //layer.cornerRadius = 8.0f;
+    //layer.borderWidth = 1.0f;
+
+    
     // Debug switch
-    self.swiDbg.frame = CGRectMake (lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
+    self.swiDbg.frame = CGRectMake( lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
     // Debug label
     int left = lmarg + W/5 + W/10 + W/5;
     int width = W-rmarg-left;
-    self.lbDbg.frame = CGRectMake (left, y, width , mh);
+    self.lbDbg.frame = CGRectMake( left, y, width , mh);
     // Debug slider
     y -= delta_y;
-    self.sldDbg.frame = CGRectMake(lmarg, y, W - lmarg - rmarg, mh);
+    self.sldDbg.frame = CGRectMake( lmarg, y, W - lmarg - rmarg, mh);
 
 } // doLayout
     
