@@ -87,7 +87,7 @@
 //-------------------------
 - (void) loadTitlesArray
 {
-    self.titlesArray = glob_files( @"", @TESTCASE_PREFIX, @".png");
+    self.titlesArray = globFiles( @TESTCASE_FOLDER, @TESTCASE_PREFIX, @".png");
     if (_selected_row >= [_titlesArray count]) {
         _selected_row = 0;
     }
@@ -100,7 +100,7 @@
 - (void) viewWillAppear:(BOOL) animated
 {
     [super viewWillAppear: animated];
-    [self loadTitlesArray];
+    [self refresh];
 }
 //-------------------------------
 - (BOOL)prefersStatusBarHidden
@@ -137,7 +137,7 @@
     NSString *fname = self.titlesArray[indexPath.row];
     // Photo
     UIImageView *imgView1 = [[UIImageView alloc] initWithFrame:CGRectMake(40,20,70,70)];
-    NSString *fullfname = getFullPath( fname);
+    NSString *fullfname = getFullPath( nsprintf( @"%@/%@", @TESTCASE_FOLDER, fname));
     UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
     imgView1.image = img;
     [cell addSubview: imgView1];
@@ -206,11 +206,10 @@
     if (![action hasPrefix:@"Delete"]) return;
     // Delete png file
     NSString *fname = _titlesArray[_selected_row];
-    fname = getFullPath( fname);
-    unlink( [fname UTF8String]);
+    rmFile( nsprintf( @"%@/%@", @TESTCASE_FOLDER, fname));
     // Delete sgf file
     fname = changeExtension( fname, @".sgf");
-    unlink( [fname UTF8String]);
+    rmFile( nsprintf( @"%@/%@", @TESTCASE_FOLDER, fname));
     [self refresh];
 } // handleDeleteAction()
 

@@ -30,7 +30,15 @@ extern "C" {
     // Find a file in the main bundle
     NSString* findInBundle( NSString *basename, NSString *ext);
     // List files in folder, filter by extension and prefix, sort
-    NSArray* glob_files( NSString *path, NSString *prefix, NSString *ext);
+    NSArray* globFiles( NSString *path, NSString *prefix, NSString *ext);
+    // Make a folder below the document dir
+    void makeDir( NSString *dir);
+    // Remove file below document dir
+    void rmFile( NSString *fname);
+    // Check whether folder exists
+    bool dirExists( NSString *path);
+    // Check whether file exists
+    bool fileExists( NSString *path);
 
     // User Interface
     //==================

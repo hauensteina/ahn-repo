@@ -42,6 +42,18 @@
     self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];
     
+    // Folder for test cases
+    if (!dirExists( @TESTCASE_FOLDER)) {
+        makeDir( @TESTCASE_FOLDER);
+    }
+
+    // CLean up garbage in the file system
+//    NSArray *files = glob_files(@"", @"", @"jpg");
+//    for (NSString *f in files) {
+//        rm_file( f);
+//    }
+//    files = glob_files(@"", @"", @"jpg");
+    
     return YES;
 }
 

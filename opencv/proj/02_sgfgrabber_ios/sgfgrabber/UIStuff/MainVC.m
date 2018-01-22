@@ -348,7 +348,7 @@
 //---------------------------
 - (void)mnuAddTestCase
 {
-    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
+    NSArray *testfiles = globFiles(@"", @TESTCASE_PREFIX, @"*.png");
     NSString *last = changeExtension( [testfiles lastObject], @"");
     NSArray *parts = [last componentsSeparatedByString: @"_"];
     int fnum = [[parts lastObject] intValue] + 1;

@@ -169,7 +169,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 //-------------------------
 - (void)mnuRunTestCases
 {
-    NSArray *testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
+    NSArray *testfiles = globFiles(@"", @TESTCASE_PREFIX, @"*.png");
     NSMutableArray *errCounts = [NSMutableArray new];
     for (id fname in testfiles ) {
         NSString *fullfname = getFullPath( fname);
@@ -205,18 +205,18 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     int idx;
     NSArray *testfiles;
     
-    testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.png");
+    testfiles = globFiles(@TESTCASE_FOLDER, @TESTCASE_PREFIX, @"*.png");
     idx = -1;
     for (id fname in testfiles ) {
         idx++;
-        S3_upload_file( fname , ^(NSError *err) {});
+        S3_upload_file( nsprintf( @"%@/%@", @TESTCASE_FOLDER, fname) , ^(NSError *err) {});
     } // for
-    testfiles = glob_files(@"", @TESTCASE_PREFIX, @"*.sgf");
+    testfiles = globFiles(@TESTCASE_FOLDER, @TESTCASE_PREFIX, @"*.sgf");
     NSInteger fcount = [testfiles count];
     idx = -1;
     for (id fname in testfiles ) {
         idx++;
-        S3_upload_file( fname ,
+        S3_upload_file( nsprintf( @"%@/%@", @TESTCASE_FOLDER, fname), 
                        ^(NSError *err) {
                            if (idx == fcount - 1) {
                                popup( @"Testcases uploaded", @"");
@@ -233,7 +233,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 - (void)mnuDownloadTestCases_0
 {
     _s3_testcase_imgfiles = [NSMutableArray new];
-    S3_glob( @"testcase_", @".png", _s3_testcase_imgfiles,
+    S3_glob( nsprintf( @"%@/%@", @TESTCASE_FOLDER, @TESTCASE_PREFIX), @".png", _s3_testcase_imgfiles,
             ^(NSError *err) {
                 if (err) {
                     popup( @"Failed to get S3 keys for img files", @"");
@@ -249,7 +249,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 - (void)mnuDownloadTestCases_1
 {
     _s3_testcase_sgffiles = [NSMutableArray new];
-    S3_glob( @"testcase_", @".sgf", _s3_testcase_sgffiles,
+    S3_glob( nsprintf( @"%@/%@", @TESTCASE_FOLDER, @TESTCASE_PREFIX), @".sgf", _s3_testcase_sgffiles,
             ^(NSError *err) {
                 if (err) {
                     popup( @"Failed to get S3 keys for sgf files", @"");

@@ -108,7 +108,7 @@ NSString* findInBundle( NSString *basename, NSString *ext)
 
 // List files in folder, filter by extension, sort
 //------------------------------------------------------------------------
-NSArray* glob_files( NSString *path_, NSString *prefix, NSString *ext)
+NSArray* globFiles( NSString *path_, NSString *prefix, NSString *ext)
 {
     id fm = [NSFileManager defaultManager];
     NSString *path = getFullPath( path_);
@@ -119,5 +119,45 @@ NSArray* glob_files( NSString *path_, NSString *prefix, NSString *ext)
     files = [files filteredArrayUsingPredicate:predicate];
     files = [files sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
     return files;
-} // glob_files()
+} // globFiles()
+
+// Make a folder below the document dir
+//----------------------------------------
+void makeDir( NSString *dir)
+{
+    NSString *path = getFullPath( dir);
+    [[NSFileManager defaultManager] createDirectoryAtPath: path
+                              withIntermediateDirectories: YES
+                                               attributes: nil
+                                                    error: nil];
+}
+
+// Remove file below document dir
+//--------------------------------
+void rmFile( NSString *fname)
+{
+    NSString *fullfname = getFullPath( fname);
+    NSError *error;
+    [[NSFileManager defaultManager]  removeItemAtPath:fullfname error:&error];
+}
+
+// Check whether folder exists
+//-----------------------------------
+bool dirExists( NSString *path_)
+{
+    NSString *path = getFullPath( path_);
+    BOOL isDir;
+    BOOL fileExists = [[NSFileManager defaultManager]  fileExistsAtPath:path isDirectory:&isDir];
+    return (fileExists && isDir);
+}
+
+// Check whether file exists
+//-----------------------------------
+bool fileExists( NSString *path_)
+{
+    NSString *path = getFullPath( path_);
+    BOOL isDir;
+    BOOL fileExists = [[NSFileManager defaultManager]  fileExistsAtPath:path isDirectory:&isDir];
+    return (fileExists && !isDir);
+}
 
