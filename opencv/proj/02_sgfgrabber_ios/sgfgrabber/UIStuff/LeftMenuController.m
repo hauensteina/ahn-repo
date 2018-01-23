@@ -171,6 +171,9 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
             [self unselectAll];
             [self setState:ITEM_SELECTED forRow:indexPath.row];
             _mode = PHOTO_MODE;
+            g_app.mainVC.btnCam.hidden = NO;
+            [g_app.mainVC.frameExtractor resume];
+            g_app.mainVC.lbBottom.text = @"Take a photo of a Go board";
             [g_app.mainVC doLayout];
         }
         else if ([menuItem hasPrefix:@"Debug Mode"]) {

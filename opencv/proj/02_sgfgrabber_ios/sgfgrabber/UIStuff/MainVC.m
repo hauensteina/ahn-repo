@@ -12,26 +12,17 @@
 #import "Globals.h"
 #import "CppInterface.h"
 
-#define DDEBUG
-
 //==========================
 @interface MainVC ()
 @property UIImageView *cameraView;
 // Data
 @property UIImage *img; // The current image
 
-// Buttons etc
-//@property UIButton *btnGo;
-//@property UISwitch *swiDbg;
-
 @property UIImage *imgVideoBtn;
 @property UIImage *imgPhotoBtn;
 
 // State
-//@property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
-//@property BOOL debug_mode;
 @property int debugstate;
-
 @end
 
 //=========================
@@ -44,12 +35,11 @@
     if (self) {
         self.title = @"SgfGrabber";
         self.view.backgroundColor = BGCOLOR;
-        
-        
-        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Menu"
-                                                                                 style:UIBarButtonItemStylePlain
-                                                                                target:self
-                                                                                action:@selector(showLeftView)];        
+        self.navigationItem.leftBarButtonItem =
+        [[UIBarButtonItem alloc] initWithTitle:@"Menu"
+                                         style:UIBarButtonItemStylePlain
+                                        target:self
+                                        action:@selector(showLeftView)];
     }
     return self;
 } // init()
@@ -71,8 +61,7 @@
     [super didReceiveMemoryWarning];
 }
 
-#pragma mark - View Lifecycle
-// Allocate all UI elements.
+// Allocate UI elements.
 //----------------------------------------------------------------------
 - (void) loadView
 {
@@ -80,25 +69,12 @@
     UIView *v = self.view;
     v.autoresizesSubviews = NO;
     v.opaque = YES;
-    //v.backgroundColor = RGB(0xF3DCA5);
-    v.backgroundColor = BLACK;
+    v.backgroundColor = BGCOLOR;
 
     // Camera View
     self.cameraView = [UIImageView new];
     self.cameraView.contentMode = UIViewContentModeScaleAspectFit;
     [v addSubview:self.cameraView];
-    
-    // Buttons etc
-    //================
-    //self.btnGo = [self addButtonWithTitle:@"Go" callback:@selector(btnGo:)];
-    
-    // Toggle debug mode
-    //UISwitch *swi = [UISwitch new];
-    //[swi setOn:NO]; _debug_mode = false;
-    //[swi setOn:NO];
-    //[swi addTarget:self action:@selector(swiDbg:) forControlEvents:UIControlEventValueChanged];
-    //[v addSubview:swi];
-    //self.swiDbg = swi;
     
     // Label for various info
     UILabel *l = [UILabel new];
@@ -124,16 +100,14 @@
     self.imgVideoBtn = [UIImage imageNamed:@"video_icon.png"];
     [self.btnCam setBackgroundImage:self.imgVideoBtn forState:UIControlStateNormal];
     self.lbBottom.text = @"Point the camera at a Go board";
-}
+} // loadView()
 
 //----------------------------------------------------------------------
 - (void) viewWillAppear:(BOOL) animated
 {
     [super viewWillAppear: animated];
     [self doLayout];
-    
 }
-
 
 //-------------------------------
 - (BOOL)prefersStatusBarHidden
@@ -141,7 +115,8 @@
     return YES;
 }
 
-#pragma mark Layout
+// Layout
+//=========
 
 // Put UI elements into the right place
 //----------------------------------------------------------------------
@@ -171,7 +146,6 @@
     int lbY = bottomOfCam + (H - bottomOfCam) / 2 - lbHeight * 0.7;
     self.lbBottom.frame = CGRectMake( 0, lbY, W , lbHeight);
     self.lbBottom.textAlignment = NSTextAlignmentCenter;
-    //self.lbBottom.text = @"Point the camera at a Go board";
 } // doLayout
 
 // Position camera button when first image comes in.
@@ -191,13 +165,7 @@
     CALayer *layer = self.btnCam.layer;
     layer.backgroundColor = [[UIColor clearColor] CGColor];
     layer.borderColor = [[UIColor clearColor] CGColor];
-    
-//    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(0, bottomOfImg, 100, 10)];
-//    myBox.backgroundColor = RED;
-//    [self.view addSubview:myBox];
-    
 } // showCameraButton
-    
 
 //---------------------------------------------------
 - (UIButton*) addButtonWithTitle: (NSString *) title
@@ -209,19 +177,17 @@
     UIButton *b = [[UIButton alloc] init];
     [b.layer setBorderWidth:1.0];
     [b.layer setBorderColor:[RGB (0x202020) CGColor]];
-    //b.titleLabel.font =[UIFont fontWithName:@"HelveticaNeue" size: 10];
     b.backgroundColor = RGB (0xf0f0f0);
     b.frame = CGRectMake(0, 0, 72, 44);
     [b setTitle: title forState: UIControlStateNormal];
     [b setTitleColor: WHITE forState: UIControlStateNormal];
-    //b.titleLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
     [b addTarget:target action:callback forControlEvents: UIControlEventTouchUpInside];
     [parent addSubview: b];
-    //b.contentVerticalAlignment = UIControlContentVerticalAlignmentFill;
     return b;
 } // addButtonWithTitle
 
-#pragma mark - Button etc callbacks
+// Button etc callbacks
+//=========================
 
 // Tapping on the screen
 //----------------------------------------------------------------
@@ -241,26 +207,69 @@
 //    self.lbDbg.text = nsprintf( @"%d", tt);
 //}
 
-//// Debug on/off
-////----------------------------
-//- (void) swiDbg:(id) sender
-//{
-//    self.debug_mode = [self.swiDbg isOn];
-//}
-
-//- (void) btnGo: (id) sender { if (self.debug_mode) [self debugFlow:false]; }
-
 // Camera button press
-//------------------------------
+//-----------------------------
 - (void) btnCam:(id)sender
 {
-    g_app.saveDiscardVC.photo = [self.cameraView.image copy];
-    g_app.saveDiscardVC.sgf = [g_app.mainVC.cppInterface get_sgf];
-    [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
+    if ([g_app.menuVC videoMode]) {
+        g_app.saveDiscardVC.photo = [self.cameraView.image copy];
+        g_app.saveDiscardVC.sgf = [g_app.mainVC.cppInterface get_sgf];
+        [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
+    } // videoMode
+    else if ([g_app.menuVC photoMode]) {
+        g_app.saveDiscardVC.photo = [_cppInterface process_best_frame];
+        g_app.saveDiscardVC.sgf = [g_app.mainVC.cppInterface get_sgf];
+        [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
+    } // photoMode
 }
 
-// Debugging helper, shows individual processing stages
-//------------------------------------------------------
+// FrameExtractorDelegate protocol
+//=====================================
+
+//-----------------------------------------------
+- (void)captured:(UIImage *)image
+{
+    if ([g_app.menuVC debugMode]) {
+        //self.frame_grabber_on = NO;
+        [self.frameExtractor suspend];
+        return;
+    } // debugMode
+    else if ([g_app.menuVC photoMode]) {
+        [self.cameraView setImage:image];
+        _img = image;
+        [_cppInterface qImg:_img];
+    } // photoMode
+    else if ([g_app.menuVC videoMode]) {
+        [self.frameExtractor suspend];
+        UIImage *processedImg = [self.cppInterface real_time_flow:image];
+        self.img = processedImg;
+        [self.cameraView setImage:self.img];
+        [self positionCameraButton];
+        [self.frameExtractor resume];
+    } // videoMode
+} // captured()
+
+// LGSideMenuController Callbacks
+//==================================
+
+//---------------------
+- (void)showLeftView
+{
+    [self.sideMenuController showLeftViewAnimated:YES completionHandler:nil];
+}
+
+//------------------------
+- (void)showRightView
+{
+    [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
+}
+
+// Other
+//============
+
+// Debugging helper, shows individual processing stages.
+// Called when entering debug mode, and on screen tap in debug mode.
+//---------------------------------------------------------------------
 - (void) debugFlow:(bool)reset
 {
     if (reset) _debugstate = 0;
@@ -311,9 +320,9 @@
                 break;
             case 8:
                 _debugstate++; continue; // skip;
-                //                    img = [self.cppInterface f08_features];
-                //                    if (!img) { _sliderstate=9; continue; }
-                //                    [self.cameraView setImage:img];
+                //                img = [self.cppInterface f08_features];
+                //                if (!img) { _sliderstate=9; continue; }
+                //                [self.cameraView setImage:img];
                 break;
             case 9:
                 _debugstate++;
@@ -323,55 +332,9 @@
             default:
                 _debugstate=0;
                 continue;
-                //self.frame_grabber_on = YES;
-                //[self.frameExtractor resume];
-                //g_app.mainVC.lbDbg.text = @"";
         } // switch
         break;
     } // while(1)
 } // debugFlow()
-
-#pragma mark - FrameExtractorDelegate protocol
-//-----------------------------------------------
-- (void)captured:(UIImage *)image
-{
-    if ([g_app.menuVC debugMode]) {
-        //self.frame_grabber_on = NO;
-        [self.frameExtractor suspend];
-        return;
-    }
-    if (!self.frameExtractor.suspended) {
-//        if (self.debug_mode) {
-//            [self.cameraView setImage:image];
-//            _img = image;
-//            [_cppInterface qImg:_img];
-//        }
-//        else {
-            //self.frame_grabber_on = NO;
-            [self.frameExtractor suspend];
-            UIImage *processedImg = [self.cppInterface real_time_flow:image];
-            self.img = processedImg;
-            [self.cameraView setImage:self.img];
-        [self positionCameraButton];
-            //self.frame_grabber_on = YES;
-            [self.frameExtractor resume];
-//        }
-    } // if (frame_grabber_on)
-} // captured()
-
-#pragma mark LGSideMenuController Callbacks
-
-//---------------------
-- (void)showLeftView
-{
-    [self.sideMenuController showLeftViewAnimated:YES completionHandler:nil];
-}
-
-//------------------------
-- (void)showRightView
-{
-    [self.sideMenuController showRightViewAnimated:YES completionHandler:nil];
-}
-
 
 @end

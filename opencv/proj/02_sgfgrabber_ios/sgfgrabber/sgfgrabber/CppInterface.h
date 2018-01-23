@@ -27,7 +27,7 @@
 - (UIImage *) f09_classify;
 
 - (UIImage *) real_time_flow:(UIImage *)img;
-
+- (UIImage *) process_best_frame;
 
 // Methods for the Obj-C View Controllers
 //=============================================

@@ -1617,6 +1617,33 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     return res;
 } // real_time_flow()
 
+// Find best frame in img queue and process it
+//----------------------------------------------
+- (UIImage *)process_best_frame
+{
+    // Pick best frame from Q
+    cv::Mat best;
+    int maxBlobs = -1E9;
+    int bestidx = -1;
+    ILOOP (SZ(_imgQ) - 1) { // ignore newest frame
+        _small_img = _imgQ[i];
+        cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
+        thresh_dilate( _gray, _gray_threshed);
+        _stone_or_empty.clear();
+        BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
+        BlobFinder::find_stones( _gray, _stone_or_empty);
+        _stone_or_empty = BlobFinder::clean( _stone_or_empty);
+        if (SZ(_stone_or_empty) > maxBlobs) {
+            maxBlobs = SZ(_stone_or_empty);
+            best = _small_img;
+            bestidx = i;
+        }
+    }
+    UIImage *img = MatToUIImage( best);
+    [self recognize_position:img timeVotes:1 breakIfBad:NO];
+    return img;
+} // process_best_frame()
+
 // Detect position on image and count erros
 //------------------------------------------------------------
 - (int) runTestImg:(UIImage *)img withSgf:(NSString *)sgf
