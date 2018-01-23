@@ -39,6 +39,7 @@
     self.editTestCaseVC = [EditTestCaseVC new];
     self.testResultsVC = [TestResultsVC new];
     self.saveDiscardVC = [SaveDiscardVC new];
+    self.imagesVC = [ImagesVC new];
     
     self.window.rootViewController = self.topVC;
     [self.window makeKeyAndVisible];

@@ -13,6 +13,7 @@
 #import "RightViewController.h"
 #import "NavigationController.h"
 #import "EditTestCaseVC.h"
+#import "ImagesVC.h"
 #import "TestResultsVC.h"
 #import "SaveDiscardVC.h"
 
@@ -33,6 +34,7 @@
 @property (nonatomic, strong) EditTestCaseVC *editTestCaseVC;
 @property (nonatomic, strong) TestResultsVC *testResultsVC;
 @property (nonatomic, strong) SaveDiscardVC *saveDiscardVC;
+@property (nonatomic, strong) ImagesVC *imagesVC;
 
 @end
 

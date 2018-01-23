@@ -186,7 +186,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 - (UIImage *) f00_blobs
 {
     _board_sz=19;
-    g_app.mainVC.lbBottom.text = @"Tap screen";
+    g_app.mainVC.lbBottom.text = @"Tap the screen";
     _vertical_lines.clear();
     _horizontal_lines.clear();
     
