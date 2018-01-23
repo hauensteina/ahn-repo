@@ -41,5 +41,7 @@
 - (void) qImg:(UIImage *)img;
 // Make a diagram from sgf
 + (UIImage *) sgf2img:(NSString *)sgf;
+// get current diagram as sgf
+- (NSString *) get_sgf;
 
 @end

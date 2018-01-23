@@ -14,6 +14,7 @@
 #import "NavigationController.h"
 #import "EditTestCaseVC.h"
 #import "TestResultsVC.h"
+#import "SaveDiscardVC.h"
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
@@ -31,6 +32,7 @@
 // Other screens
 @property (nonatomic, strong) EditTestCaseVC *editTestCaseVC;
 @property (nonatomic, strong) TestResultsVC *testResultsVC;
+@property (nonatomic, strong) SaveDiscardVC *saveDiscardVC;
 
 @end
 

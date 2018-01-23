@@ -45,7 +45,7 @@
     self = [super init];
     if (self) {
         self.title = @"SgfGrabber";
-        self.view.backgroundColor =  [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:0.95];
+        self.view.backgroundColor = BGCOLOR;
         
         
         self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Menu"
@@ -121,7 +121,7 @@
     self.sldDbg.hidden = false;
     
     // Button for video or image
-    self.btnCam = [self addButtonWithTitle:@"" callback:@selector(btnGo:)];
+    self.btnCam = [self addButtonWithTitle:@"" callback:@selector(btnCam:)];
     self.imgPhotoBtn = [UIImage imageNamed:@"photo_icon.png"];
     self.imgVideoBtn = [UIImage imageNamed:@"video_icon.png"];
     [self.btnCam setBackgroundImage:self.imgVideoBtn forState:UIControlStateNormal];
@@ -246,6 +246,15 @@
 }
 
 - (void) btnGo: (id) sender { if (self.debug_mode) [self debugFlow:false]; }
+
+// Camera button press
+//------------------------------
+- (void) btnCam:(id)sender
+{
+    g_app.saveDiscardVC.photo = [self.cameraView.image copy];
+    g_app.saveDiscardVC.sgf = [g_app.mainVC.cppInterface get_sgf];
+    [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
+}
 
 // Debugging helper, shows individual processing stages
 //------------------------------------------------------

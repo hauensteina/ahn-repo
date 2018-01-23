@@ -55,6 +55,7 @@ r = int(rr * 255); g = int(gg * 255); b = int(bb * 255); \
 #define SCREEN_WIDTH  ([UIScreen mainScreen].bounds.size.width)
 #define SCREEN_HEIGHT ([UIScreen mainScreen].bounds.size.height)
 
+#define BGCOLOR [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:0.95]
 #define CLEAR  [UIColor clearColor]
 #define WHITE  [UIColor whiteColor]
 #define BLACK  [UIColor blackColor]

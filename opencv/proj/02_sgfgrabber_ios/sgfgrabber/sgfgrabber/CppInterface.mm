@@ -135,6 +135,13 @@ void load_img( NSString *fname, cv::Mat &m)
     return ofs.good();
 }
 
+// Get current diagram as sgf
+//----------------------------------
+- (NSString *) get_sgf
+{
+    return @(generate_sgf( "", self.diagram).c_str());
+}
+
 // Queue image frames. The newest one is often shaky.
 //-----------------------------------------------------------------------
 - (void)qImg:(UIImage *)img
@@ -253,7 +260,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
     return res;
 } // f00_blobs()
 
-// Convert sgf string to UIImage //@@@
+// Convert sgf string to UIImage 
 //----------------------------------------
 + (UIImage *) sgf2img:(NSString *)sgf
 {
