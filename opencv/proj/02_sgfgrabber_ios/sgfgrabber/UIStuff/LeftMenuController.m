@@ -38,6 +38,8 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
                        @{ @"txt": @"Photo Mode", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Debug Mode", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Saved Images", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Edit Test Cases", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Add Test Case", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Run Test Cases", @"state": @(ITEM_NOT_SELECTED) },
@@ -179,6 +181,9 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
         else if ([menuItem hasPrefix:@"Debug Mode"]) {
             if (_mode == DEBUG_MODE) break;
             [self gotoDebugMode];
+        }
+        else if ([menuItem hasPrefix:@"Saved Images"]) {
+            [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
         }
         else if ([menuItem hasPrefix:@"Upload Test Cases"]) {
             [self mnuUploadTestCases];

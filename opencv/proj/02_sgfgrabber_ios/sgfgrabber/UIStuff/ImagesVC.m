@@ -172,7 +172,9 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     _selected_row = indexPath.row;
-    NSArray *choices = @[@"Select", @"Pair with current position", @"Delete", @"Cancel"];
+    _highlighted_row = _selected_row;
+    [self.tableView reloadData];
+    NSArray *choices = @[@"Export", @"Delete", @"Cancel"];
     choicePopup( choices, @"Action",
                 ^(UIAlertAction *action) {
                     [self handleEditAction:action.title];
@@ -183,11 +185,8 @@
 //---------------------------------------------
 - (void)handleEditAction:(NSString *)action
 {
-    if ([action hasPrefix:@"Select"]) {
-        [self handleMakeCurrentAction];
-    }
-    else if ([action hasPrefix:@"Pair with current position"]) {
-        
+    if ([action hasPrefix:@"Export"]) {
+        [self handleExportAction];
     }
     else if ([action hasPrefix:@"Delete"]) {
         NSString *fname = _titlesArray[_selected_row];
@@ -214,18 +213,11 @@
     [self refresh];
 } // handleDeleteAction()
 
-// Set current image
+// Export sgf
 //---------------------------------
-- (void)handleMakeCurrentAction
+- (void)handleExportAction
 {
-    NSString *fname = _titlesArray[_selected_row];
-    _selectedImageName = fname;
-    _highlighted_row = _selected_row;
-    //popup( nsprintf( @"%@ selected", fname), @"");
-    //[self refresh];
-    [g_app.navVC popViewControllerAnimated:YES];
-    [g_app.menuVC gotoDebugMode];
-} // handleDeleteAction()
+} // handleExportAction()
 
 @end // ImagesVC
 

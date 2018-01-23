@@ -194,7 +194,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //                        @"board_full.jpg",
 //                        @"board_full_1.jpg",
 //                        @"board01.jpg",
-//                        @"board02.jpg",
+//                        @"board02.jpg",1
 //                        @"board03.jpg",
 //                        @"board04.jpg",
 //                        @"board05.jpg",
