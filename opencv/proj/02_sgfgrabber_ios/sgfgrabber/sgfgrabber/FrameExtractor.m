@@ -106,6 +106,7 @@
     CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
     CIImage *ciImage = [CIImage imageWithCVImageBuffer:imageBuffer];
     CGImageRef cgImage = [self.context createCGImage:ciImage fromRect:ciImage.extent];
+    _imgExtent = ciImage.extent;
     UIImage *res = [UIImage imageWithCGImage:cgImage];
     CFRelease(cgImage);
     return res;

@@ -16,7 +16,6 @@
 
 //==========================
 @interface MainVC ()
-@property FrameExtractor *frameExtractor;
 @property UIImageView *cameraView;
 // Data
 @property UIImage *img; // The current image
@@ -102,13 +101,13 @@
     //[v addSubview:swi];
     //self.swiDbg = swi;
     
-    // Label for various debug info
+    // Label for various info
     UILabel *l = [UILabel new];
     l.hidden = false;
     l.text = @"";
-    l.backgroundColor = WHITE;
+    l.backgroundColor = BGCOLOR;
     [v addSubview:l];
-    self.lbDbg = l;
+    self.lbBottom = l;
     
 //    // Debug slider
 //    UISlider *s = [UISlider new];
@@ -135,12 +134,12 @@
     
 }
 
+
 //-------------------------------
 - (BOOL)prefersStatusBarHidden
 {
     return YES;
 }
-
 
 #pragma mark Layout
 
@@ -148,52 +147,56 @@
 //----------------------------------------------------------------------
 - (void) doLayout
 {
-    UIView *v = self.view;
-    //UIFont *fnt; //UILabel *lab;
     float W = SCREEN_WIDTH;
     float H = SCREEN_HEIGHT;
-    //float sth = STATUSBAR_HEIGHT + 10;
-    float mh = 55;
-    float delta_y = mh * 1.1;
-    float y = H - delta_y;
-    float lmarg = W / 20;
-    float rmarg = W / 20;
-    //float labwidth = W - lmarg - rmarg;
+    UIView *v = self.view;
+    CGRect bounds = v.bounds;
+    bounds.origin.y = g_app.navVC.navigationBar.frame.size.height;
+    bounds.size.height = H - bounds.origin.y;
+    v.bounds = bounds;
 
-    self.cameraView.frame = v.bounds;
+    CGRect camFrame = v.bounds;
+    camFrame.origin.y = g_app.navVC.navigationBar.frame.size.height;
+    self.cameraView.frame = camFrame;
     self.cameraView.hidden = NO;
-    //[self.view bringSubviewToFront:self.cameraView];
-
-    // Button
-    //self.btnGo.frame = CGRectMake( lmarg, y, W /5 , mh);
-    //self.btnGo.titleLabel.font = [UIFont fontWithName:@"HelveticaNeue" size: 40];
-    //[self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
+    int bottomOfCam = camFrame.origin.y + camFrame.size.height;
 
     // Camera button
     [self.btnCam setBackgroundImage:self.imgPhotoBtn forState:UIControlStateNormal];
     if ([g_app.menuVC videoMode]) {
         [self.btnCam setBackgroundImage:self.imgVideoBtn forState:UIControlStateNormal];
     }
+    int lbHeight = 55;
+    
+    int lbY = bottomOfCam + (H - bottomOfCam) / 2 - lbHeight * 0.7;
+    self.lbBottom.frame = CGRectMake( 0, lbY, W , lbHeight);
+    self.lbBottom.textAlignment = NSTextAlignmentCenter;
+    self.lbBottom.text = @"Point the camera at a Go board";
+} // doLayout
+
+// Position camera button when first image comes in.
+// We don't know the image size until we get one.
+//---------------------------------------------------
+- (void) positionCameraButton
+{
+    static bool called = false;
+    if (called) return;
+    called = true;
+    
+    float W = SCREEN_WIDTH;
+    CGRect imgRect = AVMakeRectWithAspectRatioInsideRect(_cameraView.image.size, _cameraView.bounds);
+    int bottomOfImg = _cameraView.frame.origin.y + imgRect.origin.y + imgRect.size.height;
     int r = 70;
-    self.btnCam.frame = CGRectMake( W/2 - r/2, y-150, r , r);
+    self.btnCam.frame = CGRectMake( W/2 - r/2, bottomOfImg - 1.1 * r, r , r);
     CALayer *layer = self.btnCam.layer;
     layer.backgroundColor = [[UIColor clearColor] CGColor];
     layer.borderColor = [[UIColor clearColor] CGColor];
-    //layer.cornerRadius = 8.0f;
-    //layer.borderWidth = 1.0f;
-
     
-    // Debug switch
-    //self.swiDbg.frame = CGRectMake( lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
-    // Debug label
-    int left = lmarg + W/5 + W/10 + W/5;
-    int width = W-rmarg-left;
-    self.lbDbg.frame = CGRectMake( left, y, width , mh);
-    // Debug slider
-    //y -= delta_y;
-    //self.sldDbg.frame = CGRectMake( lmarg, y, W - lmarg - rmarg, mh);
-
-} // doLayout
+//    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(0, bottomOfImg, 100, 10)];
+//    myBox.backgroundColor = RED;
+//    [self.view addSubview:myBox];
+    
+} // showCameraButton
     
 
 //---------------------------------------------------
@@ -349,6 +352,7 @@
             UIImage *processedImg = [self.cppInterface real_time_flow:image];
             self.img = processedImg;
             [self.cameraView setImage:self.img];
+        [self positionCameraButton];
             self.frame_grabber_on = YES;
             [self.frameExtractor resume];
 //        }

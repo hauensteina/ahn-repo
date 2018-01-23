@@ -186,7 +186,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 - (UIImage *) f00_blobs
 {
     _board_sz=19;
-    g_app.mainVC.lbDbg.text = @"blobs";
+    g_app.mainVC.lbBottom.text = @"blobs";
     
 //    NSArray *fnames = @[
 //                        @"board_full.jpg",
@@ -207,43 +207,43 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //                        @"board14.jpg"
 //                        ];
     //int sldVal = g_app.mainVC.sldDbg.value;
-    if ([g_app.menuVC debugMode]) {
+//    if ([g_app.menuVC debugMode]) {
         NSString *fname = g_app.editTestCaseVC.selectedTestCase;
         NSString *fullfname = getFullPath( fname);
         UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
         UIImageToMat( img, _orig_img);
         resize( _orig_img, _small_img, IMG_WIDTH);
         cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
-    }
+  //  }
 //    else if (sldVal > 0 && sldVal <= fnames.count) {
 //        load_img( fnames[sldVal -1], _orig_img);
 //        cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
 //        resize( _orig_img, _small_img, IMG_WIDTH);
 //        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
 //    }
-    else { // Camera
-        // Pick best frame from Q
-        cv::Mat best;
-        int maxBlobs = -1E9;
-        int bestidx = -1;
-        ILOOP (SZ(_imgQ) - 1) { // ignore newest frame
-            _small_img = _imgQ[i];
-            cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
-            thresh_dilate( _gray, _gray_threshed);
-            _stone_or_empty.clear();
-            BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
-            BlobFinder::find_stones( _gray, _stone_or_empty);
-            _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-            if (SZ(_stone_or_empty) > maxBlobs) {
-                maxBlobs = SZ(_stone_or_empty);
-                best = _small_img;
-                bestidx = i;
-            }
-        }
-        PLOG("best idx %d\n", bestidx);
-        // Reprocess the best one
-        _small_img = best;
-    }
+//    else { // Camera
+//        // Pick best frame from Q
+//        cv::Mat best;
+//        int maxBlobs = -1E9;
+//        int bestidx = -1;
+//        ILOOP (SZ(_imgQ) - 1) { // ignore newest frame
+//            _small_img = _imgQ[i];
+//            cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
+//            thresh_dilate( _gray, _gray_threshed);
+//            _stone_or_empty.clear();
+//            BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
+//            BlobFinder::find_stones( _gray, _stone_or_empty);
+//            _stone_or_empty = BlobFinder::clean( _stone_or_empty);
+//            if (SZ(_stone_or_empty) > maxBlobs) {
+//                maxBlobs = SZ(_stone_or_empty);
+//                best = _small_img;
+//                bestidx = i;
+//            }
+//        }
+//        PLOG("best idx %d\n", bestidx);
+//        // Reprocess the best one
+//        _small_img = best;
+//    }
     cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
     _stone_or_empty.clear();
@@ -282,26 +282,26 @@ bool board_valid( Points2f board, const cv::Mat &img)
     switch (state) {
         case 0:
         {
-            g_app.mainVC.lbDbg.text = @"verts";
+            g_app.mainVC.lbBottom.text = @"verts";
             _vertical_lines = homegrown_vert_lines( _stone_or_empty);
             all_vert_lines = _vertical_lines;
             break;
         }
         case 1:
         {
-            g_app.mainVC.lbDbg.text = @"dedup";
+            g_app.mainVC.lbBottom.text = @"dedup";
             dedup_verticals( _vertical_lines, _gray);
             break;
         }
         case 2:
         {
-            g_app.mainVC.lbDbg.text = @"filter";
+            g_app.mainVC.lbBottom.text = @"filter";
             filter_vert_lines( _vertical_lines);
             break;
         }
         case 3:
         {
-            g_app.mainVC.lbDbg.text = @"fix";
+            g_app.mainVC.lbBottom.text = @"fix";
             const double x_thresh = 4.0;
             fix_vertical_lines( _vertical_lines, all_vert_lines, _gray, x_thresh);
             break;
@@ -823,25 +823,25 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, double middle_y)
     switch (state) {
         case 0:
         {
-            g_app.mainVC.lbDbg.text = @"horizontals";
+            g_app.mainVC.lbBottom.text = @"horizontals";
             _horizontal_lines = homegrown_horiz_lines( _stone_or_empty);
             break;
         }
         case 1:
         {
-            g_app.mainVC.lbDbg.text = @"dedup";
+            g_app.mainVC.lbBottom.text = @"dedup";
             dedup_horizontals( _horizontal_lines, _gray);
             break;
         }
         case 2:
         {
-            g_app.mainVC.lbDbg.text = @"filter";
+            g_app.mainVC.lbBottom.text = @"filter";
             filter_horiz_lines( _horizontal_lines);
             break;
         }
         case 3:
         {
-            g_app.mainVC.lbDbg.text = @"fix";
+            g_app.mainVC.lbBottom.text = @"fix";
             fix_horiz_lines( _horizontal_lines, _vertical_lines, _gray);
             break;
         }
@@ -1050,7 +1050,7 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
 //----------------------------
 - (UIImage *) f03_corners
 {
-    g_app.mainVC.lbDbg.text = @"find corners";
+    g_app.mainVC.lbBottom.text = @"find corners";
     
     _intersections = get_intersections( _horizontal_lines, _vertical_lines);
     //auto crosses = find_crosses( _gray_threshed, intersections);
@@ -1127,7 +1127,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //----------------------------
 - (UIImage *) f04_zoom_in
 {
-    g_app.mainVC.lbDbg.text = @"zoom";
+    g_app.mainVC.lbBottom.text = @"zoom";
     cv::Mat threshed;
     cv::Mat dst;
     if (SZ(_corners) == 4) {
@@ -1183,7 +1183,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //-----------------------------------------------------------
 - (UIImage *) f05_dark_places
 {
-    g_app.mainVC.lbDbg.text = @"adaptive dark";
+    g_app.mainVC.lbBottom.text = @"adaptive dark";
     //_corners = _corners_zoomed;
     
     cv::Mat dark_places;
@@ -1205,7 +1205,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //-----------------------------------------------------------------------
 - (UIImage *) f06_mask_dark
 {
-    g_app.mainVC.lbDbg.text = @"hide dark";
+    g_app.mainVC.lbBottom.text = @"hide dark";
     
     uint8_t mean = cv::mean( _pyr_gray)[0];
     cv::Mat black_places;
@@ -1235,7 +1235,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 //----------------------------------------
 - (UIImage *) f07_white_holes
 {
-    g_app.mainVC.lbDbg.text = @"adaptive bright";
+    g_app.mainVC.lbBottom.text = @"adaptive bright";
     
     // The White stones become black holes, all else is white
     int nhood_sz =  25;
@@ -1277,7 +1277,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 //---------------------------
 - (UIImage *) f08_features
 {
-    g_app.mainVC.lbDbg.text = @"brightness";
+    g_app.mainVC.lbBottom.text = @"brightness";
     static int state = 0;
     std::vector<double> feats;
     cv::Mat drawing;
@@ -1356,7 +1356,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
 //-----------------------------------------------------------
 - (UIImage *) f09_classify
 {
-    g_app.mainVC.lbDbg.text = @"classify";
+    g_app.mainVC.lbBottom.text = @"classify";
     if (SZ(_corners_zoomed) != 4) { return MatToUIImage( _gray); }
     
     //std::vector<int> diagram;

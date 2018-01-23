@@ -13,9 +13,12 @@
 @interface MainVC : UIViewController <FrameExtractorDelegate>
 // Entry point to core app functionality.
 @property CppInterface *cppInterface;
-// Label for debug output
-@property UILabel *lbDbg;
-// Slider for various test purposes
+// The frame extractor dealing with all things video
+@property FrameExtractor *frameExtractor;
+
+// Label for various information
+@property UILabel *lbBottom;
+// Slider for test purposes
 //@property UISlider *sldDbg;
 
 

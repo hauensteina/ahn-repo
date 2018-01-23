@@ -19,6 +19,7 @@
 @interface FrameExtractor : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
 
 @property id<FrameExtractorDelegate> delegate;
+@property CGRect imgExtent;
 
 - (void) suspend; // Suspend capturing frames
 - (void) resume;  // Resume capturing frames
