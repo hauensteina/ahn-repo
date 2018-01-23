@@ -22,8 +22,8 @@
 @property UIImage *img; // The current image
 
 // Buttons etc
-@property UIButton *btnGo;
-@property UISwitch *swiDbg;
+//@property UIButton *btnGo;
+//@property UISwitch *swiDbg;
 
 @property UIButton *btnCam;
 @property UIImage *imgVideoBtn;
@@ -31,7 +31,7 @@
 
 // State
 @property BOOL frame_grabber_on; // Set to NO to stop the frame grabber
-@property BOOL debug_mode;
+//@property BOOL debug_mode;
 @property int debugstate;
 
 @end
@@ -92,15 +92,15 @@
     
     // Buttons etc
     //================
-    self.btnGo = [self addButtonWithTitle:@"Go" callback:@selector(btnGo:)];
+    //self.btnGo = [self addButtonWithTitle:@"Go" callback:@selector(btnGo:)];
     
     // Toggle debug mode
-    UISwitch *swi = [UISwitch new];
-    [swi setOn:NO]; _debug_mode = false;
+    //UISwitch *swi = [UISwitch new];
+    //[swi setOn:NO]; _debug_mode = false;
     //[swi setOn:NO];
-    [swi addTarget:self action:@selector(swiDbg:) forControlEvents:UIControlEventValueChanged];
-    [v addSubview:swi];
-    self.swiDbg = swi;
+    //[swi addTarget:self action:@selector(swiDbg:) forControlEvents:UIControlEventValueChanged];
+    //[v addSubview:swi];
+    //self.swiDbg = swi;
     
     // Label for various debug info
     UILabel *l = [UILabel new];
@@ -110,15 +110,15 @@
     [v addSubview:l];
     self.lbDbg = l;
     
-    // Debug slider
-    UISlider *s = [UISlider new];
-    self.sldDbg = s;
-    s.minimumValue = 0;
-    s.maximumValue = 16;
-    [s addTarget:self action:@selector(sldDbg:) forControlEvents:UIControlEventValueChanged];
-    s.backgroundColor = RGB (0xf0f0f0);
-    [v addSubview:s];
-    self.sldDbg.hidden = false;
+//    // Debug slider
+//    UISlider *s = [UISlider new];
+//    self.sldDbg = s;
+//    s.minimumValue = 0;
+//    s.maximumValue = 16;
+//    [s addTarget:self action:@selector(sldDbg:) forControlEvents:UIControlEventValueChanged];
+//    s.backgroundColor = RGB (0xf0f0f0);
+//    [v addSubview:s];
+//    self.sldDbg.hidden = false;
     
     // Button for video or image
     self.btnCam = [self addButtonWithTitle:@"" callback:@selector(btnCam:)];
@@ -165,9 +165,9 @@
     //[self.view bringSubviewToFront:self.cameraView];
 
     // Button
-    self.btnGo.frame = CGRectMake( lmarg, y, W /5 , mh);
-    self.btnGo.titleLabel.font = [UIFont fontWithName:@"HelveticaNeue" size: 40];
-    [self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
+    //self.btnGo.frame = CGRectMake( lmarg, y, W /5 , mh);
+    //self.btnGo.titleLabel.font = [UIFont fontWithName:@"HelveticaNeue" size: 40];
+    //[self.btnGo setTitleColor:DARKRED forState:UIControlStateNormal];
 
     // Camera button
     [self.btnCam setBackgroundImage:self.imgPhotoBtn forState:UIControlStateNormal];
@@ -184,14 +184,14 @@
 
     
     // Debug switch
-    self.swiDbg.frame = CGRectMake( lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
+    //self.swiDbg.frame = CGRectMake( lmarg + W/5 + W/10, y + mh/4, W /5 , mh);
     // Debug label
     int left = lmarg + W/5 + W/10 + W/5;
     int width = W-rmarg-left;
     self.lbDbg.frame = CGRectMake( left, y, width , mh);
     // Debug slider
-    y -= delta_y;
-    self.sldDbg.frame = CGRectMake( lmarg, y, W - lmarg - rmarg, mh);
+    //y -= delta_y;
+    //self.sldDbg.frame = CGRectMake( lmarg, y, W - lmarg - rmarg, mh);
 
 } // doLayout
     
@@ -230,22 +230,22 @@
     }
 }
 
-// Slider for Debugging
-//-----------------------------------
-- (void) sldDbg:(id) sender
-{
-    int tt = [self.sldDbg value];
-    self.lbDbg.text = nsprintf( @"%d", tt);
-}
+//// Slider for Debugging
+////-----------------------------------
+//- (void) sldDbg:(id) sender
+//{
+//    int tt = [self.sldDbg value];
+//    self.lbDbg.text = nsprintf( @"%d", tt);
+//}
 
-// Debug on/off
-//----------------------------
-- (void) swiDbg:(id) sender
-{
-    self.debug_mode = [self.swiDbg isOn];
-}
+//// Debug on/off
+////----------------------------
+//- (void) swiDbg:(id) sender
+//{
+//    self.debug_mode = [self.swiDbg isOn];
+//}
 
-- (void) btnGo: (id) sender { if (self.debug_mode) [self debugFlow:false]; }
+//- (void) btnGo: (id) sender { if (self.debug_mode) [self debugFlow:false]; }
 
 // Camera button press
 //------------------------------
@@ -338,12 +338,12 @@
         return;
     }
     if (self.frame_grabber_on) {
-        if (self.debug_mode) {
-            [self.cameraView setImage:image];
-            _img = image;
-            [_cppInterface qImg:_img];
-        }
-        else {
+//        if (self.debug_mode) {
+//            [self.cameraView setImage:image];
+//            _img = image;
+//            [_cppInterface qImg:_img];
+//        }
+//        else {
             self.frame_grabber_on = NO;
             [self.frameExtractor suspend];
             UIImage *processedImg = [self.cppInterface real_time_flow:image];
@@ -351,8 +351,8 @@
             [self.cameraView setImage:self.img];
             self.frame_grabber_on = YES;
             [self.frameExtractor resume];
-        }
-    }
+//        }
+    } // if (frame_grabber_on)
 } // captured()
 
 #pragma mark LGSideMenuController Callbacks

@@ -16,7 +16,8 @@
     
     self.navigationBar.titleTextAttributes = @{
                                                NSForegroundColorAttributeName: [UIColor blackColor],
-                                               NSFontAttributeName: [UIFont fontWithName:@"Avenir" size: 18]
+                                               NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:18 ]
+                                               //NSFontAttributeName: [UIFont fontWithName:@"Avenir" size: 18]
                                                };
     
 }

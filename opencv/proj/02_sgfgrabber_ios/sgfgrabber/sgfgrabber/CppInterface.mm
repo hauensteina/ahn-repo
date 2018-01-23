@@ -188,25 +188,25 @@ bool board_valid( Points2f board, const cv::Mat &img)
     _board_sz=19;
     g_app.mainVC.lbDbg.text = @"blobs";
     
-    NSArray *fnames = @[
-                        @"board_full.jpg",
-                        @"board_full_1.jpg",
-                        @"board01.jpg",
-                        @"board02.jpg",
-                        @"board03.jpg",
-                        @"board04.jpg",
-                        @"board05.jpg",
-                        @"board06.jpg",
-                        @"board07.jpg",
-                        @"board08.jpg",
-                        @"board09.jpg",
-                        @"board10.jpg",
-                        @"board11.jpg",
-                        @"board12.jpg",
-                        @"board13.jpg",
-                        @"board14.jpg"
-                        ];
-    int sldVal = g_app.mainVC.sldDbg.value;
+//    NSArray *fnames = @[
+//                        @"board_full.jpg",
+//                        @"board_full_1.jpg",
+//                        @"board01.jpg",
+//                        @"board02.jpg",
+//                        @"board03.jpg",
+//                        @"board04.jpg",
+//                        @"board05.jpg",
+//                        @"board06.jpg",
+//                        @"board07.jpg",
+//                        @"board08.jpg",
+//                        @"board09.jpg",
+//                        @"board10.jpg",
+//                        @"board11.jpg",
+//                        @"board12.jpg",
+//                        @"board13.jpg",
+//                        @"board14.jpg"
+//                        ];
+    //int sldVal = g_app.mainVC.sldDbg.value;
     if ([g_app.menuVC debugMode]) {
         NSString *fname = g_app.editTestCaseVC.selectedTestCase;
         NSString *fullfname = getFullPath( fname);
@@ -215,12 +215,12 @@ bool board_valid( Points2f board, const cv::Mat &img)
         resize( _orig_img, _small_img, IMG_WIDTH);
         cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
     }
-    else if (sldVal > 0 && sldVal <= fnames.count) {
-        load_img( fnames[sldVal -1], _orig_img);
-        cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
-        resize( _orig_img, _small_img, IMG_WIDTH);
-        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
-    }
+//    else if (sldVal > 0 && sldVal <= fnames.count) {
+//        load_img( fnames[sldVal -1], _orig_img);
+//        cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
+//        resize( _orig_img, _small_img, IMG_WIDTH);
+//        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
+//    }
     else { // Camera
         // Pick best frame from Q
         cv::Mat best;

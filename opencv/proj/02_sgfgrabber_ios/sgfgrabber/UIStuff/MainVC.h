@@ -16,7 +16,7 @@
 // Label for debug output
 @property UILabel *lbDbg;
 // Slider for various test purposes
-@property UISlider *sldDbg;
+//@property UISlider *sldDbg;
 
 
 //// Callbacks
