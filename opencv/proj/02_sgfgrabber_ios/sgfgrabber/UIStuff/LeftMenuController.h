@@ -10,4 +10,7 @@
 - (bool) videoMode;
 - (bool) photoMode;
 - (bool) debugMode;
+
+- (void) gotoDebugMode;
+
 @end

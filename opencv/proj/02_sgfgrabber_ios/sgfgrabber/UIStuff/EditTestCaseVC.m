@@ -221,7 +221,9 @@
     _selectedTestCase = fname;
     _highlighted_row = _selected_row;
     //popup( nsprintf( @"%@ selected", fname), @"");
-    [self refresh];
+    //[self refresh];
+    [g_app.navVC popViewControllerAnimated:YES];
+    [g_app.menuVC gotoDebugMode];
 } // handleDeleteAction()
 
 

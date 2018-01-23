@@ -38,8 +38,8 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
                        @{ @"txt": @"Photo Mode", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Debug Mode", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
-                       @{ @"txt": @"Add Test Case", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Edit Test Cases", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Add Test Case", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Run Test Cases", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Upload Test Cases", @"state": @(ITEM_NOT_SELECTED) },
@@ -107,17 +107,33 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     return 50;
 }
 
-//-------------------
+// Unselect all menu Items
+//---------------------------
 - (void)unselectAll
 {
     for (id x in _titlesArray) { x[@"state"] = @(ITEM_NOT_SELECTED); }
 }
 
+// Select or unselect one menu item by row
 //-------------------------------------------------
 - (void)setState:(int)state forRow:(NSInteger)row
 {
     _titlesArray[row][@"state"] = @(state);
-}
+} // setState: forRow:
+
+// Select or unselect one menu item by title
+//-------------------------------------------------
+- (void)setState:(int)state forMenuItem:(NSString *)txt
+{
+    int idx = -1;
+    for (NSDictionary *d in _titlesArray) {
+        idx++;
+        if ([d[@"txt"] hasPrefix:txt]) {
+            _titlesArray[idx][@"state"] = @(state);
+            break;
+        }
+    }
+} // setState: forMenuItem:
 
 - (bool) videoMode { return _mode == VIDEO_MODE; }
 - (bool) photoMode { return _mode == PHOTO_MODE; }
@@ -130,43 +146,59 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     TopViewController *topViewController = (TopViewController *)self.sideMenuController;
     NSString *menuItem = _titlesArray[indexPath.row][@"txt"];
 
-    if ([menuItem hasPrefix:@"Edit Test Cases"]) {
-        [self mnuEditTestCases];
-    }
-    else if ([menuItem hasPrefix:@"Add Test Case"]) {
-        [self mnuAddTestCase];
-    }
-    else if ([menuItem hasPrefix:@"Run Test Cases"]) {
-        [self mnuRunTestCases];
-    }
-    else if ([menuItem hasPrefix:@"Video Mode"]) {
-        [self unselectAll];
-        [self setState:ITEM_SELECTED forRow:indexPath.row];
-        _mode = VIDEO_MODE;
-        [g_app.mainVC doLayout];
-    }
-    else if ([menuItem hasPrefix:@"Photo Mode"]) {
-        [self unselectAll];
-        [self setState:ITEM_SELECTED forRow:indexPath.row];
-        _mode = PHOTO_MODE;
-        [g_app.mainVC doLayout];
-    }
-    else if ([menuItem hasPrefix:@"Debug Mode"]) {
-        [self unselectAll];
-        [self setState:ITEM_SELECTED forRow:indexPath.row];
-        _mode = DEBUG_MODE;
-        [g_app.mainVC debugFlow:true];
-        [g_app.mainVC doLayout];
-    }
-    else if ([menuItem hasPrefix:@"Upload Test Cases"]) {
-        [self mnuUploadTestCases];
-    }
-    else if ([menuItem hasPrefix:@"Download Test Cases"]) {
-        [self mnuDownloadTestCases_0];
-    }
-    [self.tableView reloadData];
+    do {
+        if ([menuItem hasPrefix:@"Edit Test Cases"]) {
+            [self mnuEditTestCases];
+        }
+        else if ([menuItem hasPrefix:@"Add Test Case"]) {
+            [self mnuAddTestCase];
+        }
+        else if ([menuItem hasPrefix:@"Run Test Cases"]) {
+            [self mnuRunTestCases];
+        }
+        else if ([menuItem hasPrefix:@"Video Mode"]) {
+            if (_mode == VIDEO_MODE) break;
+            [self unselectAll];
+            [self setState:ITEM_SELECTED forRow:indexPath.row];
+            _mode = VIDEO_MODE;
+            g_app.mainVC.btnCam.hidden = NO;
+            [g_app.mainVC.frameExtractor resume];
+            g_app.mainVC.lbBottom.text = @"Point the camera at a Go board";
+            [g_app.mainVC doLayout];
+        }
+        else if ([menuItem hasPrefix:@"Photo Mode"]) {
+            if (_mode == PHOTO_MODE) break;
+            [self unselectAll];
+            [self setState:ITEM_SELECTED forRow:indexPath.row];
+            _mode = PHOTO_MODE;
+            [g_app.mainVC doLayout];
+        }
+        else if ([menuItem hasPrefix:@"Debug Mode"]) {
+            if (_mode == DEBUG_MODE) break;
+            [self gotoDebugMode];
+        }
+        else if ([menuItem hasPrefix:@"Upload Test Cases"]) {
+            [self mnuUploadTestCases];
+        }
+        else if ([menuItem hasPrefix:@"Download Test Cases"]) {
+            [self mnuDownloadTestCases_0];
+        }
+        [self.tableView reloadData];
+    } while(0);
     [topViewController hideLeftViewAnimated:YES completionHandler:nil];
 } // didSelectRowAtIndexPath()
+
+//---------------------
+- (void)gotoDebugMode
+{
+    [self unselectAll];
+    [self setState:ITEM_SELECTED forMenuItem:@"Debug Mode"];
+    _mode = DEBUG_MODE;
+    g_app.mainVC.btnCam.hidden = YES;
+    [g_app.mainVC doLayout];
+    [g_app.mainVC debugFlow:true];
+    [self.tableView reloadData];
+} // gotoDebugMode()
 
 //============================
 // Handlers for menu choices

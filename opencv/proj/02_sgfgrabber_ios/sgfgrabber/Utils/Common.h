@@ -15,7 +15,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+    // Drawing
+    //==========
+    // Draw a massive rectangle on a view
+    void drawRect( UIView *view, UIColor *color, int x, int y, int width, int height);
+
     // Strings
     //==========
     NSString *nsprintf (NSString *format, ...);

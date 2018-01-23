@@ -11,6 +11,21 @@
 #import <UIKit/UIKit.h>
 #import "Common.h"
 
+//==========
+// Drawing
+//==========
+// Draw a massive rectangle on a view
+//--------------------------------------------------------------------------------
+void drawRect( UIView *view, UIColor *color, int x, int y, int width, int height)
+{
+    UIView *myBox  = [[UIView alloc] initWithFrame:CGRectMake(x, y, width, height)];
+    myBox.backgroundColor = color;
+    [view addSubview:myBox];
+}
+
+//==========
+// Strings
+//==========
 
 // Replacement for annoying [NSString stringWithFormat ...
 //---------------------------------------------------------

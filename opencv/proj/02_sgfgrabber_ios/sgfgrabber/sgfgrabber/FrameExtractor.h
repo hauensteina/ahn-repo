@@ -20,6 +20,7 @@
 
 @property id<FrameExtractorDelegate> delegate;
 @property CGRect imgExtent;
+@property (readonly) bool suspended;
 
 - (void) suspend; // Suspend capturing frames
 - (void) resume;  // Resume capturing frames

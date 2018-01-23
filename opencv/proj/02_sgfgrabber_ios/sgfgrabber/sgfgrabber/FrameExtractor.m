@@ -28,6 +28,7 @@
 {
     self = [super init];
     if (self) {
+        _suspended = false;
         self.permissionGranted = false;
         self.position = AVCaptureDevicePositionFront;
         self.quality = AVCaptureSessionPresetMedium;
@@ -116,15 +117,21 @@
 //-------------------------------------------
 - (void) suspend
 {
+    if (_suspended) return;
     dispatch_suspend( self.bufferQ);
+    _suspended = true;
 }
 
 // Resume capturing frames
 //--------------------------
 - (void) resume
 {
+    if (!_suspended) return;
     dispatch_resume( self.bufferQ);
+    _suspended = false;
 }
+
+//- (bool) suspended { return _suspended; }
 
 #pragma mark - AVCaptureVideoDataOutputSampleBufferDelegate
 //------------------------------------------------------------

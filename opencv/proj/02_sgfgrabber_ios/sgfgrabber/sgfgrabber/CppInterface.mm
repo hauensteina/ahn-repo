@@ -186,7 +186,9 @@ bool board_valid( Points2f board, const cv::Mat &img)
 - (UIImage *) f00_blobs
 {
     _board_sz=19;
-    g_app.mainVC.lbBottom.text = @"blobs";
+    g_app.mainVC.lbBottom.text = @"Tap screen";
+    _vertical_lines.clear();
+    _horizontal_lines.clear();
     
 //    NSArray *fnames = @[
 //                        @"board_full.jpg",
@@ -208,7 +210,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 //                        ];
     //int sldVal = g_app.mainVC.sldDbg.value;
 //    if ([g_app.menuVC debugMode]) {
-        NSString *fname = g_app.editTestCaseVC.selectedTestCase;
+        NSString *fname = nsprintf( @"%@/%@", @TESTCASE_FOLDER, g_app.editTestCaseVC.selectedTestCase);
         NSString *fullfname = getFullPath( fname);
         UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
         UIImageToMat( img, _orig_img);
@@ -276,6 +278,7 @@ bool board_valid( Points2f board, const cv::Mat &img)
 - (UIImage *) f01_vert_lines
 {
     static int state = 0;
+    if (!SZ(_vertical_lines)) state = 0;
     cv::Mat drawing;
     static std::vector<cv::Vec2f> all_vert_lines;
     
@@ -818,6 +821,8 @@ cv::Vec2f cvangle2polar( const cv::Vec2f cline, double middle_y)
 - (UIImage *) f02_horiz_lines
 {
     static int state = 0;
+    if (!SZ(_horizontal_lines)) state = 0;
+
     cv::Mat drawing;
     
     switch (state) {

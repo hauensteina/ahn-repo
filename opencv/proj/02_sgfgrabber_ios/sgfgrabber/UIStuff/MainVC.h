@@ -18,6 +18,10 @@
 
 // Label for various information
 @property UILabel *lbBottom;
+// Camera button
+@property UIButton *btnCam;
+
+
 // Slider for test purposes
 //@property UISlider *sldDbg;
 
