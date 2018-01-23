@@ -47,7 +47,11 @@
     if (!dirExists( @TESTCASE_FOLDER)) {
         makeDir( @TESTCASE_FOLDER);
     }
-
+    // Folder for saved images
+    if (!dirExists( @SAVED_FOLDER)) {
+        makeDir( @SAVED_FOLDER);
+    }
+    
     // CLean up garbage in the file system
 //    NSArray *files = glob_files(@"", @"", @"jpg");
 //    for (NSString *f in files) {

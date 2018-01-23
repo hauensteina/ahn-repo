@@ -45,6 +45,27 @@ NSString *nscat (id a, id b)
     return [NSString stringWithFormat:@"%@%@",a,b];
 }
 
+//=========
+// Date
+//=========
+
+// Get current local timestamp in a dictionary
+//----------------------------------------------
+NSDictionary* dateAsDict()
+{
+    time_t rawtime;
+    struct tm *info;
+    rawtime = time(NULL);
+    info = localtime( &rawtime );
+    return @{@"year":@(info->tm_year + 1900)
+             ,@"month":@(info->tm_mon + 1)
+             ,@"day":@(info->tm_mday)
+             ,@"hour":@(info->tm_hour)
+             ,@"minute":@(info->tm_min)
+             ,@"second":@(info->tm_sec)
+             };
+} // dateAsDict()
+
 //=============
 // UI Helpers
 //=============

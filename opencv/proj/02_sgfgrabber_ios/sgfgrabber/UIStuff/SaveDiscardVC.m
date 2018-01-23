@@ -83,9 +83,29 @@
 // Button Callbacks
 //======================
 
-//-----------------------------
+//---------------------------
 - (void) btnUse:(id)sender
 {
+    // Make filename from date
+    NSDictionary *tstamp = dateAsDict();
+    NSString *fname = nsprintf( @"%4d%02d%02d-%02d%02d%02d.png",
+                               [tstamp[@"year"] intValue],
+                               [tstamp[@"month"] intValue],
+                               [tstamp[@"day"] intValue],
+                               [tstamp[@"hour"] intValue],
+                               [tstamp[@"minute"] intValue],
+                               [tstamp[@"second"] intValue]);
+    fname = nsprintf( @"%@/%@", @SAVED_FOLDER, fname);
+    fname = getFullPath( fname);
+    // Save png
+    [UIImagePNGRepresentation(_photo) writeToFile:fname atomically:YES];
+    // Save sgf
+    fname = changeExtension( fname, @".sgf");
+    NSError *error;
+    [_sgf writeToFile:fname
+           atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    // TODO: This should really got to ImagesVC
+    [g_app.navVC popViewControllerAnimated:YES];
 } // btnUse()
 
 //------------------------------

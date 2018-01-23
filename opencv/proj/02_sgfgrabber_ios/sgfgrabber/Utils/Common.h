@@ -25,6 +25,12 @@ extern "C" {
     NSString *nsprintf (NSString *format, ...);
     NSString *nscat (id a, id b);
 
+    //=========
+    // Date
+    //=========
+    // Get current local timestamp in a dictionary
+    NSDictionary* dateAsDict(void);
+
     // Files
     //=========
     // Prepend path to documents folder
