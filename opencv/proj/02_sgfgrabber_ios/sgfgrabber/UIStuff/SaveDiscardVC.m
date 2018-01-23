@@ -15,7 +15,7 @@
 @property UIImageView *sgfView;
 @property UIImageView *photoView;
 @property UIButton *btnDiscard;
-@property UIButton *btnSave;
+@property UIButton *btnUse;
 @end
 
 @implementation SaveDiscardVC
@@ -42,22 +42,25 @@
         
         // Buttons
         //=========
-        // Save
-        _btnSave = [UIButton new];
-        [_btnSave setTitle:@"Save" forState:UIControlStateNormal];
-        [_btnSave.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:30.0]];
-        [_btnSave sizeToFit];
-        [v addSubview:_btnSave];
+        // Use
+        _btnUse = [UIButton new];
+        [_btnUse setTitle:@"Use" forState:UIControlStateNormal];
+        [_btnUse.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:30.0]];
+        [_btnUse sizeToFit];
+        [_btnUse addTarget:self action:@selector(btnUse:) forControlEvents: UIControlEventTouchUpInside];
+        [v addSubview:_btnUse];
         // Discard
         _btnDiscard = [UIButton new];
         [_btnDiscard setTitle:@"Discard" forState:UIControlStateNormal];
         [_btnDiscard setTitleColor:RED forState:UIControlStateNormal];
         [_btnDiscard.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:30.0]];
         [_btnDiscard sizeToFit];
+        [_btnDiscard addTarget:self action:@selector(btnDiscard:) forControlEvents: UIControlEventTouchUpInside];
         [v addSubview:_btnDiscard];
     }
     return self;
 } // init()
+
 //----------------------
 - (void)viewDidLoad
 {
@@ -77,7 +80,22 @@
     [super didReceiveMemoryWarning];
 }
 
-#pragma mark Layout
+// Button Callbacks
+//======================
+
+//-----------------------------
+- (void) btnUse:(id)sender
+{
+} // btnUse()
+
+//------------------------------
+- (void) btnDiscard:(id)sender
+{
+    [g_app.navVC popViewControllerAnimated:YES];
+} // btnDiscard()
+
+// Layout
+//==========
 
 // Put UI elements into the right place
 //---------------------------------------
@@ -105,11 +123,19 @@
     }
     // Buttons
     float btnWidth, btnHeight;
+    int y = topmarg + 40 + imgWidth + 100;;
+    
+    _btnUse.hidden = NO;
+    [_btnUse setTitleColor:self.view.tintColor forState:UIControlStateNormal];
+    btnWidth = _btnUse.frame.size.width;
+    btnHeight = _btnUse.frame.size.height;
+    _btnUse.frame = CGRectMake( W/2 - btnWidth/2, y, btnWidth, btnHeight);
+
+    y += btnHeight * 1.5;
     _btnDiscard.hidden = NO;
     [_btnDiscard setTitleColor:RED forState:UIControlStateNormal];
     btnWidth = _btnDiscard.frame.size.width;
     btnHeight = _btnDiscard.frame.size.height;
-    int y = topmarg + 40 + imgWidth + 100;
     _btnDiscard.frame = CGRectMake( W/2 - btnWidth/2, y, btnWidth, btnHeight);
 } // doLayout()
 
