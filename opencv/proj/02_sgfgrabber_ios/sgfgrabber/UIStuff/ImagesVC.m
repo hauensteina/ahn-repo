@@ -14,6 +14,7 @@
 
 // Table View Cell
 //=============================================
+
 @implementation ImagesCell
 //-------------------------------------------------------------------------------------------------------
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier
@@ -50,6 +51,7 @@
 
 // Table View Controller
 //=====================================================
+
 @interface ImagesVC ()
 @property (strong, nonatomic) NSArray *titlesArray;
 @property long selected_row;
@@ -118,7 +120,10 @@
 {
     return UIStatusBarAnimationFade;
 }
-#pragma mark - UITableViewDataSource
+
+// UITableViewDataSource
+//========================
+
 //-----------------------------------------------------------------
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
@@ -160,12 +165,15 @@
     }
     return cell;
 }
-#pragma mark - UITableViewDelegate
+
+// UITableViewDelegate
+//========================
+
 //-----------------------------------------------------------------------------------------------
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     return ROWHEIGHT;
-}
+} // heightForRowAtIndexPath()
 
 // Click on saved image
 //--------------------------------------------------------------------------------------------
@@ -179,7 +187,10 @@
                 ^(UIAlertAction *action) {
                     [self handleEditAction:action.title];
                 });
-}
+} // didSelectRowAtIndexPath()
+
+// Other
+//========
 
 // Handle image edit action
 //---------------------------------------------
