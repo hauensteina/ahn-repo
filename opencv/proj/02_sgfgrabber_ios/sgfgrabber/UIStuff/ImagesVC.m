@@ -6,6 +6,8 @@
 //  Copyright © 2018 AHN. All rights reserved.
 //
 
+// View Controller to export or delete saved images/diagrams
+
 #import "Globals.h"
 #import "ImagesVC.h"
 #import "CppInterface.h"
@@ -30,7 +32,7 @@
         self.textLabel.backgroundColor = [UIColor clearColor];
     }
     return self;
-}
+} // initWithStyle()
 
 //------------------------
 - (void)layoutSubviews
@@ -56,6 +58,7 @@
 @property (strong, nonatomic) NSArray *titlesArray;
 @property long selected_row;
 @property long highlighted_row;
+@property UIDocumentInteractionController *documentController;
 @end
 
 @implementation ImagesVC
@@ -202,7 +205,7 @@
     else if ([action hasPrefix:@"Delete"]) {
         NSString *fname = _titlesArray[_selected_row];
         fname = getFullPath( fname);
-        choicePopup(@[@"Delete",@"Cancel"], @"Really?",
+        choicePopup( @[@"Delete",@"Cancel"], @"Really?",
                     ^(UIAlertAction *action) {
                         [self handleDeleteAction:action.title];
                     });
@@ -225,9 +228,16 @@
 } // handleDeleteAction()
 
 // Export sgf
-//---------------------------------
+//---------------------------
 - (void)handleExportAction
 {
+    NSString *fname = _titlesArray[_selected_row];
+    fname = changeExtension( fname, @".sgf");
+    NSString *fullfname = getFullPath( nsprintf( @"%@/%@", @SAVED_FOLDER, fname));
+    
+    _documentController = [UIDocumentInteractionController
+                           interactionControllerWithURL:[NSURL fileURLWithPath:fullfname]];
+    [_documentController presentOptionsMenuFromRect:self.view.frame inView:self.view animated:YES];
 } // handleExportAction()
 
 @end // ImagesVC
