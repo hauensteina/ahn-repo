@@ -106,7 +106,7 @@
     [_sgf writeToFile:fname
            atomically:YES encoding:NSUTF8StringEncoding error:&error];
     // TODO: This should really got to ImagesVC
-    [g_app.navVC popViewControllerAnimated:YES];
+    [g_app.navVC popViewControllerAnimated:NO];
     [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
 } // btnUse()
 
