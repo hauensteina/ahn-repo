@@ -156,7 +156,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
             [self mnuAddTestCase];
         }
         else if ([menuItem hasPrefix:@"Run Test Cases"]) {
-            [self mnuRunTestCases];
+            dispatch_async( dispatch_get_main_queue(), ^{ [self mnuRunTestCases]; });
         }
         else if ([menuItem hasPrefix:@"Video Mode"]) {
             if (_mode == VIDEO_MODE) break;
@@ -219,18 +219,18 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 //---------------------------
 - (void)mnuAddTestCase
 {
-    NSArray *testfiles = globFiles(@"", @TESTCASE_PREFIX, @"*.png");
+    NSArray *testfiles = globFiles(@TESTCASE_FOLDER, @TESTCASE_PREFIX, @"*.png");
     NSString *last = changeExtension( [testfiles lastObject], @"");
     NSArray *parts = [last componentsSeparatedByString: @"_"];
     int fnum = [[parts lastObject] intValue] + 1;
     
     // Save image
-    NSString *fname = nsprintf( @"%@%05d.png", @TESTCASE_PREFIX, fnum);
+    NSString *fname = nsprintf( @"%@/%@%05d.png", @TESTCASE_FOLDER, @TESTCASE_PREFIX, fnum);
     fname = getFullPath( fname);
     [g_app.mainVC.cppInterface save_small_img:fname];
     
     // Save SGF
-    fname = nsprintf( @"%@%05d.sgf", @TESTCASE_PREFIX, fnum);
+    fname = nsprintf( @"%@/%@%05d.sgf", @TESTCASE_FOLDER, @TESTCASE_PREFIX, fnum);
     fname = getFullPath( fname);
     NSString *title = nsprintf( @"Testcase %d", fnum);
     [g_app.mainVC.cppInterface save_current_sgf:fname withTitle:title];
@@ -250,10 +250,12 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 //-------------------------
 - (void)mnuRunTestCases
 {
-    NSArray *testfiles = globFiles(@"", @TESTCASE_PREFIX, @"*.png");
+    NSArray *testfiles = globFiles(@TESTCASE_FOLDER , @TESTCASE_PREFIX, @"*.png");
     NSMutableArray *errCounts = [NSMutableArray new];
+    int idx = -1;
     for (id fname in testfiles ) {
-        NSString *fullfname = getFullPath( fname);
+        idx++;
+        NSString *fullfname = getFullPath( nsprintf( @"%@/%@", @TESTCASE_FOLDER, fname));
         // Load the image
         UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
         // Load the sgf
