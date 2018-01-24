@@ -353,6 +353,8 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
     }
     for (id fname in _s3_testcase_imgfiles ) {
         idx++;
+        NSString *tstr = nsprintf( @"%d / %d", idx+1, _s3_testcase_imgfiles.count);
+        dispatch_async( dispatch_get_main_queue(), ^{ g_app.mainVC.lbSmall.text = tstr; });
         S3_download_file( fname, fname,
                          ^(NSError *err) {
                              if (idx == fcount - 1) {
@@ -378,6 +380,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
                          ^(NSError *err) {
                              if (idx == fcount - 1) {
                                  popup( @"Testcases downloaded", @"");
+                                 dispatch_async( dispatch_get_main_queue(), ^{ g_app.mainVC.lbSmall.text = @""; });
                              }
                          });
         

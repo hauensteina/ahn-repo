@@ -84,6 +84,14 @@
     [v addSubview:l];
     self.lbBottom = l;
     
+    // Small label for numbers and such
+    UILabel *sl = [UILabel new];
+    sl.hidden = false;
+    sl.text = @"";
+    sl.backgroundColor = BGCOLOR;
+    [v addSubview:sl];
+    self.lbSmall = sl;
+    
 //    // Debug slider
 //    UISlider *s = [UISlider new];
 //    self.sldDbg = s;
@@ -122,7 +130,7 @@
 //----------------------------------------------------------------------
 - (void) doLayout
 {
-    float W = SCREEN_WIDTH;
+    //float W = SCREEN_WIDTH;
     float H = SCREEN_HEIGHT;
     UIView *v = self.view;
     CGRect bounds = v.bounds;
@@ -134,37 +142,52 @@
     camFrame.origin.y = g_app.navVC.navigationBar.frame.size.height;
     self.cameraView.frame = camFrame;
     self.cameraView.hidden = NO;
-    int bottomOfCam = camFrame.origin.y + camFrame.size.height;
+    //int bottomOfCam = camFrame.origin.y + camFrame.size.height;
 
     // Camera button
     [self.btnCam setBackgroundImage:self.imgPhotoBtn forState:UIControlStateNormal];
     if ([g_app.menuVC videoMode]) {
         [self.btnCam setBackgroundImage:self.imgVideoBtn forState:UIControlStateNormal];
     }
-    int lbHeight = 55;
     
-    int lbY = bottomOfCam + (H - bottomOfCam) / 2 - lbHeight * 0.7;
-    self.lbBottom.frame = CGRectMake( 0, lbY, W , lbHeight);
+    // Info Label
     self.lbBottom.textAlignment = NSTextAlignmentCenter;
+
+    // Small Label
+    self.lbSmall.textAlignment = NSTextAlignmentLeft;
 } // doLayout
 
-// Position camera button when first image comes in.
+// Position camera button and labels when first image comes in.
 // We don't know the image size until we get one.
 //---------------------------------------------------
-- (void) positionCameraButton
+- (void) positionButtonAndLabels
 {
     static bool called = false;
     if (called) return;
     called = true;
     
-    float W = SCREEN_WIDTH;
+    // Get lower edge of image
+    float W = self.view.frame.size.width;
+    float H = self.view.frame.size.height;
     CGRect imgRect = AVMakeRectWithAspectRatioInsideRect(_cameraView.image.size, _cameraView.bounds);
     int bottomOfImg = _cameraView.frame.origin.y + imgRect.origin.y + imgRect.size.height;
+    
+    // Position camera button
     int r = 70;
     self.btnCam.frame = CGRectMake( W/2 - r/2, bottomOfImg - 1.1 * r, r , r);
     CALayer *layer = self.btnCam.layer;
     layer.backgroundColor = [[UIColor clearColor] CGColor];
     layer.borderColor = [[UIColor clearColor] CGColor];
+    
+    // Info label
+    int lbHeight = 55;
+    int lbY = bottomOfImg + (H - bottomOfImg)/2.0;
+    self.lbBottom.frame = CGRectMake( 0, lbY, W , lbHeight);
+    
+    // Small label
+    int slbHeight = 35;
+    self.lbSmall.frame = CGRectMake( W/100, bottomOfImg, W/3 , slbHeight);
+    
 } // showCameraButton
 
 //---------------------------------------------------
@@ -245,7 +268,7 @@
         UIImage *processedImg = [self.cppInterface real_time_flow:image];
         self.img = processedImg;
         [self.cameraView setImage:self.img];
-        [self positionCameraButton];
+        [self positionButtonAndLabels];
         [self.frameExtractor resume];
     } // videoMode
 } // captured()

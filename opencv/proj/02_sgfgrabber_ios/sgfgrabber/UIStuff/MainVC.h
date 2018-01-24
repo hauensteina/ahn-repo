@@ -16,8 +16,10 @@
 // The frame extractor dealing with all things video
 @property FrameExtractor *frameExtractor;
 
-// Label for various information
+// Text label for various information
 @property UILabel *lbBottom;
+// Small label for numbers and such
+@property UILabel *lbSmall;
 // Camera button
 @property UIButton *btnCam;
 
