@@ -43,5 +43,8 @@
 + (UIImage *) sgf2img:(NSString *)sgf;
 // get current diagram as sgf
 - (NSString *) get_sgf;
+// Get most recent video frame with a Go board
+- (UIImage *) get_last_frame_with_board;
+
 
 @end

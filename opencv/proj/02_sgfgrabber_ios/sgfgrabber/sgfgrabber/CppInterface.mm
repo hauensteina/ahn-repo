@@ -68,6 +68,8 @@ extern cv::Mat mat_dbg;
 @property cv::Mat empty_templ;
 // History of frames. The one at the button press is often shaky.
 @property std::vector<cv::Mat> imgQ;
+// Remember most recent video frame with a Go board
+@property cv::Mat last_frame_with_board;
 
 @end
 
@@ -1237,7 +1239,7 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
 
 
 // Find White places
-//----------------------------------------
+//-------------------------------
 - (UIImage *) f07_white_holes
 {
     g_app.mainVC.lbBottom.text = @"adaptive bright";
@@ -1313,7 +1315,7 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
 } // f08_features()
 
 // Translate a bunch of points
-//----------------------------------------------------------------
+//--------------------------------------------------------------------------
 void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
 {
     dst = Points2f(SZ(pts));
@@ -1322,7 +1324,7 @@ void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
     }
 }
 
-//------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------
 std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, const cv::Mat &gray,
                           int TIMEBUFSZ = 1)
 {
@@ -1581,6 +1583,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         old_vlines = _vertical_lines;
         old_corners = _corners;
         old_intersections = _intersections;
+        _last_frame_with_board = _small_img.clone();
     }
     
     if (SZ(_corners) == 4) {
@@ -1616,6 +1619,20 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     //UIImage *res = MatToUIImage( drawing);
     return res;
 } // real_time_flow()
+
+// Get most recent frame with a Go board
+//----------------------------------------
+- (UIImage *) get_last_frame_with_board
+{
+    UIImage *res;
+    if (_last_frame_with_board.cols) {
+        res = MatToUIImage( _last_frame_with_board);
+    }
+    else {
+        res = MatToUIImage( _small_img);
+    }
+    return res;
+}
 
 // Find best frame in img queue and process it
 //----------------------------------------------
