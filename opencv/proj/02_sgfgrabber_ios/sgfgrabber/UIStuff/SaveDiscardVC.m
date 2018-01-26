@@ -16,7 +16,8 @@
 @property UIImageView *sgfView;
 @property UIImageView *photoView;
 @property UIButton *btnDiscard;
-@property UIButton *btnUse;
+@property UIButton *btnB2Play;
+@property UIButton *btnW2Play;
 @end
 
 @implementation SaveDiscardVC
@@ -43,13 +44,20 @@
         
         // Buttons
         //=========
-        // Use
-        _btnUse = [UIButton new];
-        [_btnUse setTitle:@"Use" forState:UIControlStateNormal];
-        [_btnUse.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:30.0]];
-        [_btnUse sizeToFit];
-        [_btnUse addTarget:self action:@selector(btnUse:) forControlEvents: UIControlEventTouchUpInside];
-        [v addSubview:_btnUse];
+        // Black to play
+        _btnB2Play = [UIButton new];
+        [_btnB2Play setTitle:@"Black to play" forState:UIControlStateNormal];
+        [_btnB2Play.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:30.0]];
+        [_btnB2Play sizeToFit];
+        [_btnB2Play addTarget:self action:@selector(btnB2Play:) forControlEvents: UIControlEventTouchUpInside];
+        [v addSubview:_btnB2Play];
+        // White to play
+        _btnW2Play = [UIButton new];
+        [_btnW2Play setTitle:@"White to play" forState:UIControlStateNormal];
+        [_btnW2Play.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue" size:30.0]];
+        [_btnW2Play sizeToFit];
+        [_btnW2Play addTarget:self action:@selector(btnW2Play:) forControlEvents: UIControlEventTouchUpInside];
+        [v addSubview:_btnW2Play];
         // Discard
         _btnDiscard = [UIButton new];
         [_btnDiscard setTitle:@"Discard" forState:UIControlStateNormal];
@@ -85,17 +93,15 @@
 //======================
 
 //---------------------------
-- (void) btnUse:(id)sender
+- (void) btnB2Play:(id)sender
 {
+    // Regex to insert PL[B] right after the SZ tag
+    NSString *re = @"(.*SZ\\[[0-9]+\\])(.*)";
+    NSString *templ = @"$1 PL[B] $2";
+    _sgf = replaceRegex( re, _sgf, templ);
+    
     // Make filename from date
-    NSDictionary *tstamp = dateAsDict();
-    NSString *fname = nsprintf( @"%4d%02d%02d-%02d%02d%02d.png",
-                               [tstamp[@"year"] intValue],
-                               [tstamp[@"month"] intValue],
-                               [tstamp[@"day"] intValue],
-                               [tstamp[@"hour"] intValue],
-                               [tstamp[@"minute"] intValue],
-                               [tstamp[@"second"] intValue]);
+    NSString *fname = nscat( tstampFname(), @".png");
     fname = nsprintf( @"%@/%@", @SAVED_FOLDER, fname);
     fname = getFullPath( fname);
     // Save png
@@ -105,10 +111,34 @@
     NSError *error;
     [_sgf writeToFile:fname
            atomically:YES encoding:NSUTF8StringEncoding error:&error];
-    // TODO: This should really got to ImagesVC
+    // Show saved images
     [g_app.navVC popViewControllerAnimated:NO];
     [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
-} // btnUse()
+} // btnB2Play()
+
+//---------------------------
+- (void) btnW2Play:(id)sender
+{
+    // Regex to insert PL[W] rigth after the SZ tag
+    NSString *re = @"(.*SZ\\[[0-9]+\\])(.*)";
+    NSString *templ = @"$1 PL[W] $2";
+    _sgf = replaceRegex( re, _sgf, templ);
+    
+    // Make filename from date
+    NSString *fname = nscat( tstampFname(), @".png");
+    fname = nsprintf( @"%@/%@", @SAVED_FOLDER, fname);
+    fname = getFullPath( fname);
+    // Save png
+    [UIImagePNGRepresentation(_photo) writeToFile:fname atomically:YES];
+    // Save sgf
+    fname = changeExtension( fname, @".sgf");
+    NSError *error;
+    [_sgf writeToFile:fname
+           atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    // Show saved images
+    [g_app.navVC popViewControllerAnimated:NO];
+    [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
+} // btnW2Play()
 
 //------------------------------
 - (void) btnDiscard:(id)sender
@@ -147,13 +177,20 @@
     float btnWidth, btnHeight;
     int y = topmarg + 40 + imgWidth + 100;;
     
-    _btnUse.hidden = NO;
-    [_btnUse setTitleColor:self.view.tintColor forState:UIControlStateNormal];
-    btnWidth = _btnUse.frame.size.width;
-    btnHeight = _btnUse.frame.size.height;
-    _btnUse.frame = CGRectMake( W/2 - btnWidth/2, y, btnWidth, btnHeight);
-
-    y += btnHeight * 1.5;
+    _btnB2Play.hidden = NO;
+    [_btnB2Play setTitleColor:self.view.tintColor forState:UIControlStateNormal];
+    btnWidth = _btnB2Play.frame.size.width;
+    btnHeight = _btnB2Play.frame.size.height;
+    _btnB2Play.frame = CGRectMake( W/2 - btnWidth/2, y, btnWidth, btnHeight);
+    
+    y += btnHeight * 1.3;
+    _btnW2Play.hidden = NO;
+    [_btnW2Play setTitleColor:self.view.tintColor forState:UIControlStateNormal];
+    btnWidth = _btnW2Play.frame.size.width;
+    btnHeight = _btnW2Play.frame.size.height;
+    _btnW2Play.frame = CGRectMake( W/2 - btnWidth/2, y, btnWidth, btnHeight);
+    
+    y += btnHeight * 1.3;
     _btnDiscard.hidden = NO;
     [_btnDiscard setTitleColor:RED forState:UIControlStateNormal];
     btnWidth = _btnDiscard.frame.size.width;

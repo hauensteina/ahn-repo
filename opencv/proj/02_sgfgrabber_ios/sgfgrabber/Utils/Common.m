@@ -45,6 +45,22 @@ NSString *nscat (id a, id b)
     return [NSString stringWithFormat:@"%@%@",a,b];
 }
 
+// Replace regular expression
+//----------------------------------------------------------------------
+NSString* replaceRegex( NSString *re, NSString *str, NSString *newStr)
+{
+    NSRegularExpression *regex = [NSRegularExpression
+                                  regularExpressionWithPattern:re
+                                  options:0
+                                  error:nil];
+    NSString *res = [regex stringByReplacingMatchesInString:str
+                                                    options:0
+                                                      range:NSMakeRange(0, [str length])
+                                               withTemplate:newStr];
+    return res;
+} // replaceRegex()
+
+
 //=========
 // Date
 //=========
@@ -65,6 +81,21 @@ NSDictionary* dateAsDict()
              ,@"second":@(info->tm_sec)
              };
 } // dateAsDict()
+
+// Make a filename from current date and time
+//---------------------------------------------------------------
+NSString *tstampFname()
+{
+    NSDictionary *tstamp = dateAsDict();
+    NSString *fname = nsprintf( @"%4d%02d%02d-%02d%02d%02d",
+                               [tstamp[@"year"] intValue],
+                               [tstamp[@"month"] intValue],
+                               [tstamp[@"day"] intValue],
+                               [tstamp[@"hour"] intValue],
+                               [tstamp[@"minute"] intValue],
+                               [tstamp[@"second"] intValue]);
+    return fname;
+}
 
 //=============
 // UI Helpers

@@ -22,14 +22,19 @@ extern "C" {
 
     // Strings
     //==========
+    // Shorten NSString NStringWithFormat
     NSString *nsprintf (NSString *format, ...);
+    // Concatenate any two objects into one string
     NSString *nscat (id a, id b);
+    // Replace regular expression
+    NSString* replaceRegex( NSString *re, NSString *str, NSString *newStr);
 
-    //=========
     // Date
     //=========
     // Get current local timestamp in a dictionary
     NSDictionary* dateAsDict(void);
+    // Make a filename from current date and time
+    NSString *tstampFname(void);
 
     // Files
     //=========
