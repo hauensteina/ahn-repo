@@ -33,8 +33,9 @@
     self.topVC = [TopViewController new];
     self.topVC.rootViewController = self.navVC;
     [self.topVC setup];
-    self.menuVC = (LeftMenuController *) self.topVC.leftViewController;
-    
+    self.menuVC  = (LeftMenuController *) self.topVC.leftViewController;
+    self.rightVC = (RightViewController *) self.topVC.rightViewController;
+
     // Other view controllers
     self.editTestCaseVC = [EditTestCaseVC new];
     self.testResultsVC = [TestResultsVC new];

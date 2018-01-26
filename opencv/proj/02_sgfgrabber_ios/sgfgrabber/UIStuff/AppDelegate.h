@@ -28,7 +28,7 @@
 // Center, Left Menu, Right Menu
 @property (nonatomic, strong) MainVC *mainVC;
 @property (nonatomic, strong) LeftMenuController *menuVC;
-//@property (nonatomic, strong) RightViewController *rightVC;
+@property (nonatomic, strong) RightViewController *rightVC;
 
 // Other screens
 @property (nonatomic, strong) EditTestCaseVC *editTestCaseVC;
