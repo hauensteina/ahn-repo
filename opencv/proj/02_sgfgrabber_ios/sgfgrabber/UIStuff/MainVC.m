@@ -220,7 +220,10 @@
     if ([g_app.menuVC debugMode]) {
         [self debugFlow:false];
     }
-}
+    else if ([g_app.menuVC videoMode]) {
+        [self btnCam:nil];
+    }
+} // touchesBegan()
 
 //// Slider for Debugging
 ////-----------------------------------
@@ -245,7 +248,7 @@
         g_app.saveDiscardVC.sgf = [g_app.mainVC.cppInterface get_sgf];
         [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
     } // photoMode
-}
+} // btnCam
 
 // FrameExtractorDelegate protocol
 //=====================================
