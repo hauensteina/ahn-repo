@@ -186,7 +186,7 @@
         [self handleMakeCurrentAction];
     }
     else if ([action hasPrefix:@"Pair with current position"]) {
-        
+        [self handlePairWithCurrent];
     }
     else if ([action hasPrefix:@"Delete"]) {
         NSString *fname = _titlesArray[_selected_row];
@@ -224,7 +224,28 @@
     //[self refresh];
     [g_app.navVC popViewControllerAnimated:YES];
     [g_app.menuVC gotoDebugMode];
-} // handleDeleteAction()
+} // handleMakeCurrentAction()
+
+// Pair current test png with sgf from selected image/sgf
+// This is a way of editing test case sgfs by taking a picture
+// of a board with that position.
+//--------------------------------------------------------------
+- (void)handlePairWithCurrent
+{
+    // Get test case sgf file name
+    NSString *testFname = _titlesArray[_selected_row];
+    testFname = changeExtension( testFname, @".sgf");
+    testFname = nsprintf( @"%@/%@", @TESTCASE_FOLDER, testFname);
+    
+    // Get selected sgf filename
+    NSString *selectedFname = [g_app.imagesVC selectedFname];
+    selectedFname = changeExtension( selectedFname, @".sgf");
+    selectedFname = nsprintf( @"%@/%@", @SAVED_FOLDER, selectedFname);
+    
+    // Copy over
+    copyFile( selectedFname, testFname);
+    [self refresh];
+} // handlePairWithCurrent()
 
 
 

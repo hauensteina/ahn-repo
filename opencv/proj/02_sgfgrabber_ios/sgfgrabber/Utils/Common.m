@@ -215,6 +215,7 @@ void copyFile( NSString *source_, NSString *target_)
     NSString *source = getFullPath( source_);
     NSString *target = getFullPath( target_);
     NSError *error;
+    rmFile( target_);
     [[NSFileManager defaultManager] copyItemAtPath:source toPath:target error:&error];
 } // copyFile()
 
