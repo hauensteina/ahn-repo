@@ -183,7 +183,7 @@
 - (void)handleEditAction:(NSString *)action
 {
     if ([action hasPrefix:@"Select"]) {
-        [self handleMakeCurrentAction];
+        [self handleSelect];
     }
     else if ([action hasPrefix:@"Pair with current position"]) {
         [self handlePairWithCurrent];
@@ -214,8 +214,8 @@
 } // handleDeleteAction()
 
 // Set current test case
-//---------------------------------
-- (void)handleMakeCurrentAction
+//--------------------------
+- (void)handleSelect
 {
     NSString *fname = _titlesArray[_selected_row];
     _selectedTestCase = fname;
@@ -224,7 +224,7 @@
     //[self refresh];
     [g_app.navVC popViewControllerAnimated:YES];
     [g_app.menuVC gotoDebugMode];
-} // handleMakeCurrentAction()
+} // handleSelect()
 
 // Pair current test png with sgf from selected image/sgf
 // This is a way of editing test case sgfs by taking a picture

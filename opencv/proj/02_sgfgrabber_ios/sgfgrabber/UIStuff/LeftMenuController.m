@@ -12,7 +12,7 @@
 #import "UIViewController+LGSideMenuController.h"
 
 enum {ITEM_NOT_SELECTED=0, ITEM_SELECTED=1};
-enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
+enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2, DEMO_MODE=3};
 
 @interface LeftMenuController ()
 @property (strong, nonatomic) NSMutableArray *titlesArray;
@@ -34,7 +34,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
         NSArray *d = @[
                        @{ @"txt": @"Video Mode", @"state": @(ITEM_SELECTED) },
                        @{ @"txt": @"Photo Mode", @"state": @(ITEM_NOT_SELECTED) },
-                       @{ @"txt": @"Debug Mode", @"state": @(ITEM_NOT_SELECTED) },
+                       @{ @"txt": @"Demo Mode", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"", @"state": @(ITEM_NOT_SELECTED) },
                        @{ @"txt": @"Saved Images", @"state": @(ITEM_NOT_SELECTED) },
                        ];
@@ -131,6 +131,7 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 - (bool) videoMode { return _mode == VIDEO_MODE; }
 - (bool) photoMode { return _mode == PHOTO_MODE; }
 - (bool) debugMode { return _mode == DEBUG_MODE; }
+- (bool) demoMode  { return _mode == DEMO_MODE; }
 
 // Handle left menu choice
 //--------------------------------------------------------------------------------------------
@@ -160,9 +161,9 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
             g_app.mainVC.lbBottom.text = @"Take a photo of a Go board";
             [g_app.mainVC doLayout];
         }
-        else if ([menuItem hasPrefix:@"Debug Mode"]) {
+        else if ([menuItem hasPrefix:@"Demo Mode"]) {
             if (_mode == DEBUG_MODE) break;
-            [self gotoDebugMode];
+            [self gotoDemoMode];
         }
         else if ([menuItem hasPrefix:@"Saved Images"]) {
             [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
@@ -175,14 +176,26 @@ enum {VIDEO_MODE=0, PHOTO_MODE=1, DEBUG_MODE=2};
 //---------------------
 - (void)gotoDebugMode
 {
-    [self unselectAll];
-    [self setState:ITEM_SELECTED forMenuItem:@"Debug Mode"];
+    //[self unselectAll];
+    //[self setState:ITEM_SELECTED forMenuItem:@"Debug Mode"];
     _mode = DEBUG_MODE;
     g_app.mainVC.btnCam.hidden = YES;
     [g_app.mainVC doLayout];
     [g_app.mainVC debugFlow:true];
     [self.tableView reloadData];
 } // gotoDebugMode()
+
+//---------------------
+- (void)gotoDemoMode
+{
+    [self unselectAll];
+    [self setState:ITEM_SELECTED forMenuItem:@"Demo Mode"];
+    _mode = DEMO_MODE;
+    g_app.mainVC.btnCam.hidden = YES;
+    [g_app.mainVC doLayout];
+    [g_app.mainVC debugFlow:true];
+    [self.tableView reloadData];
+} // gotoDemoMode()
 
 
 @end

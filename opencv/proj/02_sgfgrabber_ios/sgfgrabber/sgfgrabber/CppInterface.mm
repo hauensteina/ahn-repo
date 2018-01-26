@@ -191,63 +191,21 @@ bool board_valid( Points2f board, const cv::Mat &img)
     g_app.mainVC.lbBottom.text = @"Tap the screen";
     _vertical_lines.clear();
     _horizontal_lines.clear();
-    
-//    NSArray *fnames = @[
-//                        @"board_full.jpg",
-//                        @"board_full_1.jpg",
-//                        @"board01.jpg",
-//                        @"board02.jpg",1
-//                        @"board03.jpg",
-//                        @"board04.jpg",
-//                        @"board05.jpg",
-//                        @"board06.jpg",
-//                        @"board07.jpg",
-//                        @"board08.jpg",
-//                        @"board09.jpg",
-//                        @"board10.jpg",
-//                        @"board11.jpg",
-//                        @"board12.jpg",
-//                        @"board13.jpg",
-//                        @"board14.jpg"
-//                        ];
     //int sldVal = g_app.mainVC.sldDbg.value;
-//    if ([g_app.menuVC debugMode]) {
+    //@@@
+    NSString *fullfname;
+    if ([g_app.menuVC demoMode]) {
+        fullfname = findInBundle(@"demo", @".png");
+    }
+    else {
         NSString *fname = nsprintf( @"%@/%@", @TESTCASE_FOLDER, g_app.editTestCaseVC.selectedTestCase);
-        NSString *fullfname = getFullPath( fname);
-        UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
-        UIImageToMat( img, _orig_img);
-        resize( _orig_img, _small_img, IMG_WIDTH);
-        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
-  //  }
-//    else if (sldVal > 0 && sldVal <= fnames.count) {
-//        load_img( fnames[sldVal -1], _orig_img);
-//        cv::rotate(_orig_img, _orig_img, cv::ROTATE_90_CLOCKWISE);
-//        resize( _orig_img, _small_img, IMG_WIDTH);
-//        cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
-//    }
-//    else { // Camera
-//        // Pick best frame from Q
-//        cv::Mat best;
-//        int maxBlobs = -1E9;
-//        int bestidx = -1;
-//        ILOOP (SZ(_imgQ) - 1) { // ignore newest frame
-//            _small_img = _imgQ[i];
-//            cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
-//            thresh_dilate( _gray, _gray_threshed);
-//            _stone_or_empty.clear();
-//            BlobFinder::find_empty_places( _gray_threshed, _stone_or_empty); // has to be first
-//            BlobFinder::find_stones( _gray, _stone_or_empty);
-//            _stone_or_empty = BlobFinder::clean( _stone_or_empty);
-//            if (SZ(_stone_or_empty) > maxBlobs) {
-//                maxBlobs = SZ(_stone_or_empty);
-//                best = _small_img;
-//                bestidx = i;
-//            }
-//        }
-//        PLOG("best idx %d\n", bestidx);
-//        // Reprocess the best one
-//        _small_img = best;
-//    }
+        fullfname = getFullPath( fname);
+    }
+    UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
+    UIImageToMat( img, _orig_img);
+    
+    resize( _orig_img, _small_img, IMG_WIDTH);
+    cv::cvtColor( _small_img, _small_img, CV_RGBA2RGB); // Yes, RGBA not BGR
     cv::cvtColor( _small_img, _gray, cv::COLOR_RGB2GRAY);
     thresh_dilate( _gray, _gray_threshed);
     _stone_or_empty.clear();

@@ -220,6 +220,9 @@
     if ([g_app.menuVC debugMode]) {
         [self debugFlow:false];
     }
+    if ([g_app.menuVC demoMode]) {
+        [self debugFlow:false];
+    }
     else if ([g_app.menuVC videoMode]) {
         //[self btnCam:nil];
     }
