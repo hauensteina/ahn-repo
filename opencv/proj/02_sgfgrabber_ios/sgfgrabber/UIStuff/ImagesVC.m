@@ -57,7 +57,7 @@
 @interface ImagesVC ()
 @property (strong, nonatomic) NSArray *titlesArray;
 @property long selected_row;
-@property long highlighted_row;
+//@property long highlighted_row;
 @property UIDocumentInteractionController *documentController;
 @end
 
@@ -163,7 +163,7 @@
     [cell addSubview:lb];
     //cell.backgroundColor = self.view.tintColor;
     cell.backgroundColor = [UIColor clearColor];
-    if (indexPath.row == _highlighted_row) {
+    if (indexPath.row == _selected_row) {
         cell.backgroundColor = self.view.tintColor;
     }
     return cell;
@@ -183,7 +183,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     _selected_row = indexPath.row;
-    _highlighted_row = _selected_row;
+    //_highlighted_row = _selected_row;
     [self.tableView reloadData];
     NSArray *choices = @[@"Export", @"Delete", @"Cancel"];
     choicePopup( choices, @"Action",
@@ -192,8 +192,8 @@
                 });
 } // didSelectRowAtIndexPath()
 
-// Other
-//========
+// Action Handlers
+//==================
 
 // Handle image edit action
 //---------------------------------------------
@@ -239,6 +239,17 @@
                            interactionControllerWithURL:[NSURL fileURLWithPath:fullfname]];
     [_documentController presentOptionsMenuFromRect:self.view.frame inView:self.view animated:YES];
 } // handleExportAction()
+
+// Other
+//===========
+
+// Name of selected png file
+//----------------------------
+- (NSString *)selectedFname
+{
+    NSString *res = _titlesArray[_selected_row];
+    return res;
+}
 
 @end // ImagesVC
 

@@ -10,6 +10,8 @@
 
 @interface ImagesVC : UITableViewController
 - (void)refresh;
+// Name of selected png file
+- (NSString *)selectedFname;
 @property NSString *selectedImageName;
 @end
 

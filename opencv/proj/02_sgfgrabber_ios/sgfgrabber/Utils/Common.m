@@ -208,6 +208,16 @@ void rmFile( NSString *fname)
     [[NSFileManager defaultManager]  removeItemAtPath:fullfname error:&error];
 }
 
+// Copy file
+//---------------------------------------------------
+void copyFile( NSString *source_, NSString *target_)
+{
+    NSString *source = getFullPath( source_);
+    NSString *target = getFullPath( target_);
+    NSError *error;
+    [[NSFileManager defaultManager] copyItemAtPath:source toPath:target error:&error];
+} // copyFile()
+
 // Check whether folder exists
 //-----------------------------------
 bool dirExists( NSString *path_)

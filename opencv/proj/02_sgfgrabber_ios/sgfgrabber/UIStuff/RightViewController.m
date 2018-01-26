@@ -134,26 +134,26 @@ enum {ITEM_NOT_SELECTED=0, ITEM_SELECTED=1};
 // The new nnnnn is one higher than the largest one found in the
 // file systm.
 //---------------------------
-- (void)mnuAddTestCase
+- (void)mnuAddTestCase //@@@
 {
     NSArray *testfiles = globFiles(@TESTCASE_FOLDER, @TESTCASE_PREFIX, @"*.png");
     NSString *last = changeExtension( [testfiles lastObject], @"");
     NSArray *parts = [last componentsSeparatedByString: @"_"];
     int fnum = [[parts lastObject] intValue] + 1;
     
-    // Save image
-    NSString *fname = nsprintf( @"%@/%@%05d.png", @TESTCASE_FOLDER, @TESTCASE_PREFIX, fnum);
-    fname = getFullPath( fname);
-    [g_app.mainVC.cppInterface save_small_img:fname];
-    
-    // Save SGF
-    fname = nsprintf( @"%@/%@%05d.sgf", @TESTCASE_FOLDER, @TESTCASE_PREFIX, fnum);
-    fname = getFullPath( fname);
-    NSString *title = nsprintf( @"Testcase %d", fnum);
-    [g_app.mainVC.cppInterface save_current_sgf:fname withTitle:title];
+    // Get selected file from ImagesVC
+    NSString *selFile = [g_app.imagesVC selectedFname];
+    // Copy image
+    NSString *source = nsprintf( @"%@/%@", @SAVED_FOLDER, selFile);
+    NSString *target = nsprintf( @"%@/%@%05d.png", @TESTCASE_FOLDER, @TESTCASE_PREFIX, fnum);
+    copyFile( source, target);
+    // Copy sgf
+    source = changeExtension( source, @".sgf");
+    target = changeExtension( target, @".sgf");
+    copyFile( source, target);
     
     [g_app.editTestCaseVC refresh];
-    popup( nsprintf( @"Image added as Test Case %d", fnum), @"");
+    popup( nsprintf( @"Image %@ added as Test Case %d", selFile, fnum), @"");
 } // mnuAddTestCase()
 
 // Show test cases from filesystem in a tableview, pick one.

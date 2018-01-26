@@ -54,6 +54,8 @@ extern "C" {
     bool dirExists( NSString *path);
     // Check whether file exists
     bool fileExists( NSString *path);
+    // Copy file
+    void copyFile( NSString *source, NSString *target);
 
     // User Interface
     //==================

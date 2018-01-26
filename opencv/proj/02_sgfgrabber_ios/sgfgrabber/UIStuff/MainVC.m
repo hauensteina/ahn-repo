@@ -221,7 +221,7 @@
         [self debugFlow:false];
     }
     else if ([g_app.menuVC videoMode]) {
-        [self btnCam:nil];
+        //[self btnCam:nil];
     }
 } // touchesBegan()
 
