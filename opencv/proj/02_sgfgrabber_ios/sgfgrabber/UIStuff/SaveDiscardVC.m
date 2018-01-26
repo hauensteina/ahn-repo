@@ -89,17 +89,12 @@
     [super didReceiveMemoryWarning];
 }
 
-// Button Callbacks
-//======================
+// Helpers
+//============
 
-//---------------------------
-- (void) btnB2Play:(id)sender
+//--------------------------
+- (void) savePhotoAndSgf
 {
-    // Regex to insert PL[B] right after the SZ tag
-    NSString *re = @"(.*SZ\\[[0-9]+\\])(.*)";
-    NSString *templ = @"$1 PL[B] $2";
-    _sgf = replaceRegex( re, _sgf, templ);
-    
     // Make filename from date
     NSString *fname = nscat( tstampFname(), @".png");
     fname = nsprintf( @"%@/%@", @SAVED_FOLDER, fname);
@@ -111,6 +106,21 @@
     NSError *error;
     [_sgf writeToFile:fname
            atomically:YES encoding:NSUTF8StringEncoding error:&error];
+}
+
+// Button Callbacks
+//======================
+
+//---------------------------
+- (void) btnB2Play:(id)sender
+{
+    // Regex to insert PL[B] right after the SZ tag
+    NSString *re = @"(.*SZ\\[[0-9]+\\])(.*)";
+    NSString *templ = @"$1 PL[B] $2";
+    _sgf = replaceRegex( re, _sgf, templ);
+    
+    [self savePhotoAndSgf];
+    
     // Show saved images
     [g_app.navVC popViewControllerAnimated:NO];
     [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
@@ -123,18 +133,9 @@
     NSString *re = @"(.*SZ\\[[0-9]+\\])(.*)";
     NSString *templ = @"$1 PL[W] $2";
     _sgf = replaceRegex( re, _sgf, templ);
-    
-    // Make filename from date
-    NSString *fname = nscat( tstampFname(), @".png");
-    fname = nsprintf( @"%@/%@", @SAVED_FOLDER, fname);
-    fname = getFullPath( fname);
-    // Save png
-    [UIImagePNGRepresentation(_photo) writeToFile:fname atomically:YES];
-    // Save sgf
-    fname = changeExtension( fname, @".sgf");
-    NSError *error;
-    [_sgf writeToFile:fname
-           atomically:YES encoding:NSUTF8StringEncoding error:&error];
+
+    [self savePhotoAndSgf];
+
     // Show saved images
     [g_app.navVC popViewControllerAnimated:NO];
     [g_app.navVC pushViewController:g_app.imagesVC animated:YES];
