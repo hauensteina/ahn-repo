@@ -12,7 +12,6 @@
 - (void)refresh;
 // Name of selected png file
 - (NSString *)selectedFname;
-@property NSString *selectedImageName;
 @end
 
 @interface ImagesCell : UITableViewCell

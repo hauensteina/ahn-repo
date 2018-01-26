@@ -162,14 +162,14 @@
     float imgWidth = (W  - lmarg - rmarg) / 2 - sep;
     
     // Photo view
-    _photoView.frame = CGRectMake( lmarg, topmarg + 40, imgWidth , imgWidth);
+    _photoView.frame = CGRectMake( lmarg, topmarg + 80, imgWidth , imgWidth);
     _photoView.hidden = NO;
     if (_photo) {
         [_photoView setImage:_photo];
     }
     // Sgf View
     _sgfView.hidden = NO;
-    _sgfView.frame = CGRectMake( lmarg + imgWidth + sep, topmarg + 40, imgWidth , imgWidth);
+    _sgfView.frame = CGRectMake( lmarg + imgWidth + sep, topmarg + 80, imgWidth , imgWidth);
     if (_sgf) {
         _sgfImg = [CppInterface sgf2img:_sgf];
         [_sgfView setImage:_sgfImg];

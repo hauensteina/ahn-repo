@@ -12,7 +12,9 @@
 #import "ImagesVC.h"
 #import "CppInterface.h"
 
-#define ROWHEIGHT 140
+#define IMGWIDTH SCREEN_WIDTH/3
+#define ROWHEIGHT IMGWIDTH*1.6
+
 
 // Table View Cell
 //==================
@@ -74,7 +76,6 @@
         self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
         self.tableView.showsVerticalScrollIndicator = NO;
         self.tableView.backgroundColor = [UIColor clearColor];
-        //self.tableView.rowHeight = 150;
         [self loadTitlesArray];
     }
     return self;
@@ -96,9 +97,6 @@
     self.titlesArray = [[self.titlesArray reverseObjectEnumerator] allObjects];
     if (_selected_row >= [_titlesArray count]) {
         _selected_row = 0;
-    }
-    if ([_titlesArray count]) {
-        self.selectedImageName = _titlesArray[_selected_row];
     }
 }
 
@@ -141,24 +139,31 @@
 //------------------------------------------------------------------------------------------------------
 - (ImagesCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    //int imgWidth = SCREEN_WIDTH / 4.0;
+    int leftMarg = 40;
+    int topMarg = 20;
+    int space = 20;
+    
     ImagesCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cell"];
     [[cell subviews] makeObjectsPerformSelector:@selector(removeFromSuperview)];
     NSString *fname = self.titlesArray[indexPath.row];
     // Photo
-    UIImageView *imgView1 = [[UIImageView alloc] initWithFrame:CGRectMake(40,20,70,70)];
+    UIImageView *imgView1 = [[UIImageView alloc]
+                             initWithFrame:CGRectMake(leftMarg,topMarg,IMGWIDTH,IMGWIDTH)];
     NSString *fullfname = getFullPath( nsprintf( @"%@/%@", @SAVED_FOLDER, fname));
     UIImage *img = [UIImage imageWithContentsOfFile:fullfname];
     imgView1.image = img;
     [cell addSubview: imgView1];
     // Diagram
-    UIImageView *imgView2 = [[UIImageView alloc] initWithFrame:CGRectMake(140,20,70,70)];
+    UIImageView *imgView2 = [[UIImageView alloc]
+                             initWithFrame:CGRectMake(leftMarg + IMGWIDTH + space, topMarg, IMGWIDTH, IMGWIDTH)];
     fullfname = changeExtension( fullfname, @".sgf");
     NSString *sgf = [NSString stringWithContentsOfFile:fullfname encoding:NSUTF8StringEncoding error:NULL];
     UIImage *sgfImg = [CppInterface sgf2img:sgf];
     imgView2.image = sgfImg;
     [cell addSubview: imgView2];
     // Name
-    UILabel *lb = [[UILabel alloc] initWithFrame:CGRectMake(40,70,250,70)];
+    UILabel *lb = [[UILabel alloc] initWithFrame:CGRectMake( leftMarg, IMGWIDTH, 250, 70)];
     lb.text = fname;
     [cell addSubview:lb];
     //cell.backgroundColor = self.view.tintColor;
@@ -167,7 +172,7 @@
         cell.backgroundColor = self.view.tintColor;
     }
     return cell;
-}
+} // cellForRowAtIndexPath()
 
 // UITableViewDelegate
 //========================
