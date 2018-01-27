@@ -18,18 +18,19 @@
 #include "Ocv.hpp"
 
 //extern cv::Mat mat_dbg;  // debug image to viz intermediate results
-static std::vector<double> BWE_brightmatch;
-static std::vector<double> BWE_darkmatch;
-static std::vector<double> BWE_graymean;
-static std::vector<double> BWE_sum_inner;
-static std::vector<double> BWE_white_holes;
 
 class BlackWhiteEmpty
 //=====================
 {
+private:
+    std::vector<double> BWE_brightmatch;
+    std::vector<double> BWE_darkmatch;
+    std::vector<double> BWE_graymean;
+    std::vector<double> BWE_sum_inner;
+    std::vector<double> BWE_white_holes;
 public:
     //----------------------------------------------------------------------------------
-    inline static std::vector<int> classify( const cv::Mat &pyr,
+    inline std::vector<int> classify( const cv::Mat &pyr,
                                             const cv::Mat &gray,
                                             const Points2f &intersections,
                                             double &match_quality)
@@ -111,7 +112,7 @@ public:
     
     // Check if a rectangle makes sense
     //---------------------------------------------------------------------
-    inline static bool check_rect( const cv::Rect &r, int rows, int cols )
+    inline bool check_rect( const cv::Rect &r, int rows, int cols )
     {
         if (0 <= r.x && r.x < 1e6 &&
             0 <= r.width && r.width < 1e6 &&
@@ -128,7 +129,7 @@ public:
     // Take neighborhoods around points and average them, resulting in a
     // template for matching.
     //--------------------------------------------------------------------------------------------
-    inline static void avg_hoods( const cv::Mat &img, const Points2f &pts, int r, cv::Mat &dst)
+    inline void avg_hoods( const cv::Mat &img, const Points2f &pts, int r, cv::Mat &dst)
     {
         dst = cv::Mat( 2*r + 1, 2*r + 1, CV_64FC1);
         int n = 0;
@@ -146,7 +147,7 @@ public:
     // Generic way to get any feature for all intersections
     //-----------------------------------------------------------------------------------------
     template <typename F>
-    inline static void get_feature( const cv::Mat &img, const Points2f &intersections, int r,
+    inline void get_feature( const cv::Mat &img, const Points2f &intersections, int r,
                                    F Feat,
                                    std::vector<double> &res,
                                    double yshift = 0, bool scale_flag=true)
@@ -170,14 +171,14 @@ public:
     
     // Median of pixel values. Used to find B stones.
     //---------------------------------------------------------------------------------
-    inline static double brightness_feature( const cv::Mat &hood)
+    inline double brightness_feature( const cv::Mat &hood)
     {
         return channel_median(hood);
     } // brightness_feature()
     
     // Median of pixel values. Used to find B stones.
     //---------------------------------------------------------------------------------
-    inline static double sigma_feature( const cv::Mat &hood)
+    inline double sigma_feature( const cv::Mat &hood)
     {
         cv::Scalar mmean, sstddev;
         cv::meanStdDev( hood, mmean, sstddev);
@@ -187,7 +188,7 @@ public:
     // Look whether cross pixels are set in neighborhood of p_.
     // hood should be binary, 0 or 1, from an adaptive threshold operation.
     //---------------------------------------------------------------------------------
-    inline static double cross_feature( const cv::Mat &hood)
+    inline double cross_feature( const cv::Mat &hood)
     {
         int mid_y = ROUND(hood.rows / 2.0);
         int mid_x = ROUND(hood.cols / 2.0);
@@ -208,7 +209,7 @@ public:
     // Return a ring shaped mask used to detect W stones in threshed gray img.
     // For some reason, this is much worse than outer_minus_inner.
     //-------------------------------------------------------------------------
-    inline static cv::Mat& ringmask()
+    inline cv::Mat& ringmask()
     {
         static cv::Mat mask;
         if (mask.rows) { return mask; }
@@ -232,7 +233,7 @@ public:
     // Return a cross shaped mask.
     // thickness is weird: 1->1, 2->3, 3->5, 4->5, 5->7, 6->7, ...
     //-------------------------------------------------------------------------
-    inline static cv::Mat& crossmask( const int thickness_=5, const int r_=12)
+    inline cv::Mat& crossmask( const int thickness_=5, const int r_=12)
     {
         static cv::Mat mask;
         static int thickness=0;
@@ -261,7 +262,7 @@ public:
     // The result is in the range 0..255. Smaller numbers indicate better match.
     // Mask dimensions must be odd.
     //---------------------------------------------------------------------------------------------------
-    inline static int match_mask_near_point( const cv::Mat &img, const cv::Mat &mask, Point2f pf, int r)
+    inline int match_mask_near_point( const cv::Mat &img, const cv::Mat &mask, Point2f pf, int r)
     {
         assert( mask.rows % 2);
         assert( mask.cols % 2);
@@ -287,7 +288,7 @@ public:
     
     // Match a mask to all intersections. Find best match for each intersection within a radius.
     //--------------------------------------------------------------------------------------------
-    inline static void match_mask_near_points( const cv::Mat &img_, const cv::Mat mask_,
+    inline void match_mask_near_points( const cv::Mat &img_, const cv::Mat mask_,
                                               const Points2f &intersections, int r,
                                               std::vector<double> &res)
     {

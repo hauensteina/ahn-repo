@@ -26,13 +26,13 @@
 #import "CppInterface.h"
 #import "DrawBoard.hpp"
 
-
 // Pyramid filter params
 #define SPATIALRAD  5
 #define COLORRAD    30
 #define MAXPYRLEVEL 2
 
 extern cv::Mat mat_dbg;
+static BlackWhiteEmpty classifier;
 
 @interface CppInterface()
 //=======================
@@ -1254,9 +1254,9 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
             const int r = 4;
             const int yshift = 0;
             const bool dontscale = false;
-            BlackWhiteEmpty::get_feature( _pyr_gray, _intersections_zoomed, r,
-                                         [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
-                                         feats, yshift, dontscale);
+            classifier.get_feature( _pyr_gray, _intersections_zoomed, r,
+                                   [](const cv::Mat &hood) { return cv::mean(hood)[0]; },
+                                   feats, yshift, dontscale);
             viz_feature( _pyr_gray, _intersections_zoomed, feats, drawing, 1);
             break;
         }
@@ -1287,8 +1287,8 @@ std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, co
                           int TIMEBUFSZ = 1)
 {
     double match_quality;
-    std::vector<int> diagram = BlackWhiteEmpty::classify( img, gray,
-                                                         intersections, match_quality);
+    std::vector<int> diagram = classifier.classify( img, gray,
+                                                    intersections, match_quality);
     // Vote across time
     static std::vector<std::vector<int> > timevotes(19*19);
     assert( SZ(diagram) <= 19*19);
