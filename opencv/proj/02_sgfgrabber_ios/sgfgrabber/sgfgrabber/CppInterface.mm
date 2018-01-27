@@ -104,13 +104,7 @@ static BlackWhiteEmpty classifier;
 #pragma mark - Pipeline Helpers
 //==================================
 
-// Load image from file
-//---------------------------------------------
-void load_img( NSString *fname, cv::Mat &m)
-{
-    UIImage *img = [UIImage imageNamed:fname];
-    UIImageToMat(img, m);
-}
+
 
 // Save current resized image to file.
 // fname must have .png extension.
