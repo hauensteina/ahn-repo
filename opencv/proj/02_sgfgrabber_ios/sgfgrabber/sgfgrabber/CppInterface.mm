@@ -162,7 +162,6 @@ static BlackWhiteEmpty classifier;
     _vertical_lines.clear();
     _horizontal_lines.clear();
     //int sldVal = g_app.mainVC.sldDbg.value;
-    //@@@
     NSString *fullfname;
     if ([g_app.menuVC demoMode]) {
         fullfname = findInBundle(@"demo", @".png");
@@ -255,6 +254,7 @@ static BlackWhiteEmpty classifier;
     return res;
 } // f01_vert_lines()
 
+// Find horizontal grid lines
 //-----------------------------
 - (UIImage *) f02_horiz_lines
 {
@@ -306,121 +306,6 @@ static BlackWhiteEmpty classifier;
     return res;
 } // f02_horiz_lines()
 
-// Homegrown method to find vertical line candidates, as a replacement
-// for thinning Hough lines.
-//-----------------------------------------------------------------------------
-std::vector<cv::Vec2f> homegrown_vert_lines( Points pts)
-{
-    std::vector<cv::Vec2f> res;
-    // Find points in quartile with lowest y
-    std::sort( pts.begin(), pts.end(), [](Point2f p1, Point2f p2) { return p1.y < p2.y; } );
-    Points top_points( SZ(pts)/4);
-    std::copy_n ( pts.begin(), SZ(pts)/4, top_points.begin() );
-    // For each point, find a line that hits many other points
-    for (auto tp: top_points) {
-        int nhits;
-        cv::Vec2f newline = find_vert_line_thru_point( pts, tp, nhits);
-        //PLOG (">>>>>>>%d\n",nhits);
-        if (/*nhits > 5 &&*/ newline[0] != 0) {
-            res.push_back( newline);
-        }
-    }
-    return res;
-} // homegrown_vert_lines()
-
-// Homegrown method to find horizontal line candidates
-//-----------------------------------------------------------------------------
-std::vector<cv::Vec2f> homegrown_horiz_lines( Points pts)
-{
-    std::vector<cv::Vec2f> res;
-    // Find points in quartile with lowest x
-    std::sort( pts.begin(), pts.end(), [](Point2f p1, Point2f p2) { return p1.x < p2.x; } );
-    Points left_points( SZ(pts)/4);
-    std::copy_n ( pts.begin(), SZ(pts)/4, left_points.begin() );
-    // For each point, find a line that hits many other points
-    for (auto tp: left_points) {
-        cv::Vec2f newline = find_horiz_line_thru_point( pts, tp);
-        if (newline[0] != 0) {
-            res.push_back( newline);
-        }
-    }
-    return res;
-} // homegrown_horiz_lines()
-
-
-// Among the largest two in m1, choose the one where m2 is larger
-//------------------------------------------------------------------
-cv::Point tiebreak( const cv::Mat &m1, const cv::Mat &m2)
-{
-    cv::Mat tmp = m1.clone();
-    double m1min, m1max;
-    cv::Point m1minloc, m1maxloc;
-    cv::minMaxLoc( tmp, &m1min, &m1max, &m1minloc, &m1maxloc);
-    cv::Point largest = m1maxloc;
-    tmp.at<uint8_t>(largest) = 0;
-    cv::minMaxLoc( tmp, &m1min, &m1max, &m1minloc, &m1maxloc);
-    cv::Point second = m1maxloc;
-    
-    cv::Point res = largest;
-    if (m2.at<uint8_t>(second) > m2.at<uint8_t>(largest)) {
-        res = second;
-    }
-    return res;
-} // tiebreak
-
-// Use horizontal and vertical lines to find corners such that the board best matches the points we found
-//-----------------------------------------------------------------------------------------------------------
-Points2f find_corners( const Points blobs, std::vector<cv::Vec2f> &horiz_lines, std::vector<cv::Vec2f> &vert_lines,
-                      const Points2f &intersections, const cv::Mat &img, const cv::Mat &threshed, int board_sz = 19)
-{
-    if (SZ(horiz_lines) < 3 || SZ(vert_lines) < 3) return Points2f();
-    
-    Boardness bness( intersections, blobs, img, board_sz, horiz_lines, vert_lines);
-    cv::Mat &edgeness  = bness.edgeness();
-    cv::Mat &blobness  = bness.blobness();
-    
-    cv::Point max_loc = tiebreak( blobness, edgeness);
-    //cv::Point min_loc, max_loc; double mmin, mmax;
-    //cv::minMaxLoc(blobness, &mmin, &mmax, &min_loc, &max_loc);
-    
-    cv::Point tl = max_loc;
-    cv::Point tr( tl.x + board_sz-1, tl.y);
-    cv::Point br( tl.x + board_sz-1, tl.y + board_sz-1);
-    cv::Point bl( tl.x, tl.y + board_sz-1);
-    
-    // Return the board lines only
-    horiz_lines = vec_slice( horiz_lines, max_loc.y, board_sz);
-    vert_lines  = vec_slice( vert_lines, max_loc.x, board_sz);
-    
-    // Mark corners for visualization
-    mat_dbg = bness.m_pyrpix_edgeness.clone();
-    mat_dbg.at<cv::Vec3b>( pf2p(tl)) = cv::Vec3b( 255,0,0);
-    mat_dbg.at<cv::Vec3b>( pf2p(tr)) = cv::Vec3b( 255,0,0);
-    mat_dbg.at<cv::Vec3b>( pf2p(bl)) = cv::Vec3b( 255,0,0);
-    mat_dbg.at<cv::Vec3b>( pf2p(br)) = cv::Vec3b( 255,0,0);
-    cv::resize( mat_dbg, mat_dbg, img.size(), 0,0, CV_INTER_NN);
-    
-    auto isec2pf = [&blobness, &intersections](cv::Point p) { return p2pf( intersections[p.y*blobness.cols + p.x]); };
-    Points2f corners = { isec2pf(tl), isec2pf(tr), isec2pf(br), isec2pf(bl) };
-    return corners;
-} // find_corners()
-
-// Get intersections of two sets of lines
-//-------------------------------------------------------------------
-Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
-                           const std::vector<cv::Vec2f> &vlines)
-{
-    Points2f res;
-    RSLOOP( hlines) {
-        cv::Vec2f hl = hlines[r];
-        CSLOOP( vlines) {
-            cv::Vec2f vl = vlines[c];
-            Point2f pf = intersection( hl, vl);
-            res.push_back( pf);
-        }
-    }
-    return res;
-}
 
 // Find the corners
 //----------------------------
@@ -429,7 +314,6 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
     g_app.mainVC.lbBottom.text = @"find corners";
     
     _intersections = get_intersections( _horizontal_lines, _vertical_lines);
-    //auto crosses = find_crosses( _gray_threshed, intersections);
     _corners.clear();
     do {
         if (SZ( _horizontal_lines) > 55) break;
@@ -442,62 +326,9 @@ Points2f get_intersections( const std::vector<cv::Vec2f> &hlines,
         _intersections = get_intersections( _horizontal_lines, _vertical_lines);
     } while(0);
     
-    // Show results
-    //cv::Mat drawing = _small_pyr.clone();
-    //cv::Mat drawing; cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
-    //mat_dbg.convertTo( mat_dbg, CV_8UC1);
-    //cv::cvtColor( mat_dbg, drawing, cv::COLOR_GRAY2RGB);
-    //double alpha = 0.5;
-    //cv::addWeighted( _small, alpha, drawing, 1-alpha, 0, drawing);
-    //draw_points( _corners, drawing, 3, cv::Scalar(255,0,0));
     UIImage *res = MatToUIImage( mat_dbg);
     return res;
 } // f03_corners()
-
-// Unwarp the square defined by corners
-//------------------------------------------------------------------------
-void zoom_in( const cv::Mat &img, const Points2f &corners, cv::Mat &dst, cv::Mat &M)
-{
-    int marg = img.cols / 20;
-    // Target square for transform
-    Points2f square = {
-        cv::Point( marg, marg),
-        cv::Point( img.cols - marg, marg),
-        cv::Point( img.cols - marg, img.cols - marg),
-        cv::Point( marg, img.cols - marg) };
-    M = cv::getPerspectiveTransform(corners, square);
-    cv::warpPerspective(img, dst, M, cv::Size( img.cols, img.rows));
-}
-
-// Fill image outside of board with average. Helps with adaptive thresholds.
-//----------------------------------------------------------------------------
-void fill_outside_with_average_gray( cv::Mat &img, const Points2f &corners)
-{
-    uint8_t mean = cv::mean( img)[0];
-    img.forEach<uint8_t>( [&mean, &corners](uint8_t &v, const int *p)
-                         {
-                             int x = p[1]; int y = p[0];
-                             if (x < corners[0].x - 10) v = mean;
-                             else if (x > corners[1].x + 10) v = mean;
-                             if (y < corners[0].y - 10) v = mean;
-                             else if (y > corners[3].y + 10) v = mean;
-                         });
-} // fill_outside_with_average_gray()
-
-//----------------------------------------------------------------------------
-void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
-{
-    cv::Scalar smean = cv::mean( img);
-    Pixel mean( smean[0], smean[1], smean[2]);
-    img.forEach<Pixel>( [&mean, &corners](Pixel &v, const int *p)
-                       {
-                           int x = p[1]; int y = p[0];
-                           if (x < corners[0].x - 10) v = mean;
-                           else if (x > corners[1].x + 10) v = mean;
-                           if (y < corners[0].y - 10) v = mean;
-                           else if (y > corners[3].y + 10) v = mean;
-                       });
-} // fill_outside_with_average_rgb()
 
 // Zoom in
 //----------------------------
@@ -519,34 +350,10 @@ void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners)
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
         
         thresh_dilate( _gray_zoomed, _gz_threshed, 4);
-        
-        // Try stuff
-        cv::Mat tt;
-        //cv::cvtColor( _gray_zoomed, tt, cv::COLOR_RGB2GRAY);
-        cv::GaussianBlur( _gray_zoomed, tt, cv::Size(5,5),0,0);
-        //thresh_dilate( dst, dst, 3);
-        //cv::threshold( tt, dst, 50, 255, cv::THRESH_BINARY); // Black is black
-        //cv::threshold( tt, dst, 200, 255, cv::THRESH_BINARY);
-        //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
-        //cv::cvtColor( _pyr_zoomed, dst, cv::COLOR_RGB2GRAY);
-        //cv::adaptiveThreshold( _gray_zoomed, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 101, -50); // good
-        //cv::GaussianBlur( dst, tt, cv::Size(9,9),0,0);
-        cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV, 51, 50);
-        //cv::adaptiveThreshold( tt, dst, 255, CV_ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, 51, -30);
-        //int nhood_sz =  25;
-        //double thresh = -32;
-        //cv::adaptiveThreshold( tt, dst, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-        //                      nhood_sz, thresh);
-        //        thresh_dilate( tt, _gz_threshed, 3);
     }
-    //    cv::Mat tt;
-    //    cv::adaptiveThreshold( _gray_zoomed, tt, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
-    //                          5 /* 11 */ ,  // neighborhood_size
-    //                          3);  // threshold
     // Show results
     cv::Mat drawing;
     cv::cvtColor( _gz_threshed, drawing, cv::COLOR_GRAY2RGB);
-    //cv::cvtColor( dst, drawing, cv::COLOR_GRAY2RGB);
     ISLOOP (_intersections_zoomed) {
         Point2f p = _intersections_zoomed[i];
         draw_square( p, 3, drawing, cv::Scalar(255,0,0));
