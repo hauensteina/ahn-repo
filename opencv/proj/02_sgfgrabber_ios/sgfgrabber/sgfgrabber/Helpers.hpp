@@ -20,6 +20,7 @@
 #include "Common.hpp"
 #include "Clust1D.hpp"
 
+
 // Apply inverse thresh and dilate grayscale image.
 //-------------------------------------------------------------------------------------------
 inline void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
@@ -257,6 +258,54 @@ inline bool board_valid( Points2f board, const cv::Mat &img)
     return true;
 } // board_valid()
 
+// Convert horizontal (roughly) polar line to a pair
+// y_at_middle, angle
+//--------------------------------------------------------------
+inline cv::Vec2f polar2changle( const cv::Vec2f pline, double middle_x)
+{
+    cv::Vec2f res;
+    double y_at_middle = y_from_x( middle_x, pline);
+    double angle;
+    angle = -(pline[1] - PI/2);
+    res = cv::Vec2f( y_at_middle, angle);
+    return res;
+}
+
+// Convert a pair (y_at_middle, angle) to polar
+//---------------------------------------------------------------
+inline cv::Vec2f changle2polar( const cv::Vec2f cline, double middle_x)
+{
+    cv::Vec2f res;
+    cv::Vec4f seg( middle_x, cline[0], middle_x + 1, cline[0] - tan(cline[1]));
+    res = segment2polar( seg);
+    return res;
+}
+
+// Convert vertical (roughly) polar line to a pair
+// x_at_middle, angle
+//--------------------------------------------------------------
+inline cv::Vec2f polar2cvangle( const cv::Vec2f pline, double middle_y)
+{
+    cv::Vec2f res;
+    double x_at_middle = x_from_y( middle_y, pline);
+    double angle;
+    angle = -pline[1];
+    res = cv::Vec2f( x_at_middle, angle);
+    return res;
+}
+
+// Convert a pair (x_at_middle, angle) to polar
+//---------------------------------------------------------------
+inline cv::Vec2f cvangle2polar( const cv::Vec2f cline, double middle_y)
+{
+    cv::Vec2f res;
+    cv::Vec4f seg( cline[0], middle_y , cline[0] + tan(cline[1]), middle_y + 1);
+    res = segment2polar( seg);
+    return res;
+}
+
+
+
 // Replace close clusters of vert lines by their average.
 //-----------------------------------------------------------------------------------
 inline void dedup_verticals( std::vector<cv::Vec2f> &lines, const cv::Mat &img)
@@ -408,6 +457,355 @@ inline void filter_horiz_lines( std::vector<cv::Vec2f> &hlines)
     }
     hlines = good;
 } // filter_horiz_lines()
+
+// Find line where top_x and bot_x match best.
+//---------------------------------------------------------------------------------------------------------------
+inline int closest_vert_line( const std::vector<cv::Vec2f> &lines, double top_x, double bot_x, double top_y, double bot_y,
+                      double &min_dtop, double &min_dbot, double &min_err, double &min_top_rho, double &min_bot_rho) // out
+{
+    std::vector<double> top_rhos = vec_extract( lines,
+                                               [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
+    std::vector<double> bot_rhos = vec_extract( lines,
+                                               [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
+    int minidx = -1;
+    min_err = 1E9;
+    ISLOOP (top_rhos) {
+        double dtop = fabs( top_rhos[i] - top_x );
+        double dbot = fabs( bot_rhos[i] - bot_x );
+        double err = dtop + dbot;
+        if (err < min_err) {
+            minidx = i;
+            min_err = err;
+            min_dtop = dtop;
+            min_dbot = dbot;
+            min_top_rho = top_rhos[i];
+            min_bot_rho = bot_rhos[i];
+        }
+    }
+    return minidx;
+} // closest_vert_line()
+
+// Find the x-change per line in in upper and lower screen area and synthesize
+// the whole bunch starting at the middle. Replace synthesized lines with real
+// ones if close enough.
+//------------------------------------------------------------------------------------------------
+inline void fix_vertical_lines( std::vector<cv::Vec2f> &lines, const std::vector<cv::Vec2f> &all_vert_lines,
+                        const cv::Mat &img, double x_thresh = 4.0)
+{
+    const double width = img.cols;
+    const int top_y = 0.2 * img.rows;
+    const int bot_y = 0.8 * img.rows;
+    //const int mid_y = 0.5 * img.rows;
+    
+    std::sort( lines.begin(), lines.end(),
+              [bot_y](cv::Vec2f a, cv::Vec2f b) {
+                  return x_from_y( bot_y, a) < x_from_y( bot_y, b);
+              });
+    std::vector<double> top_rhos = vec_extract( lines,
+                                               [top_y](cv::Vec2f a) { return x_from_y( top_y, a); });
+    std::vector<double> bot_rhos = vec_extract( lines,
+                                               [bot_y](cv::Vec2f a) { return x_from_y( bot_y, a); });
+    auto d_top_rhos = vec_delta( top_rhos);
+    auto d_bot_rhos = vec_delta( bot_rhos);
+    vec_filter( d_top_rhos, [](double d){ return d > 5 && d < 20;});
+    vec_filter( d_bot_rhos, [](double d){ return d > 8 && d < 25;});
+    double d_top_rho = vec_median( d_top_rhos);
+    double d_bot_rho = vec_median( d_bot_rhos);
+    
+    // Find a good line close to the middle
+    int good_idx = good_center_line( lines);
+    if (good_idx < 0) {
+        lines.clear();
+        return;
+    }
+    cv::Vec2f med_line = lines[good_idx];
+    
+    // Interpolate the rest
+    std::vector<cv::Vec2f> synth_lines;
+    synth_lines.push_back(med_line);
+    double top_rho, bot_rho;
+    // If there is a close line, use it. Else interpolate.
+    const double X_THRESH = x_thresh; //6;
+    // Lines to the right
+    top_rho = x_from_y( top_y, med_line);
+    bot_rho = x_from_y( bot_y, med_line);
+    ILOOP(100) {
+        top_rho += d_top_rho;
+        bot_rho += d_bot_rho;
+        //int close_idx = vec_closest( bot_rhos, bot_rho);
+        //int close_idx = closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y);
+        double dtop, dbot, err, top_x, bot_x;
+        closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y, // in
+                          dtop, dbot, err, top_x, bot_x); // out
+        //double dbot = fabs( bot_rho - bot_rhos[close_idx]);
+        //double dtop = fabs( top_rho - top_rhos[close_idx]);
+        if (dbot < X_THRESH && dtop < X_THRESH) {
+            top_rho   = top_x;
+            bot_rho   = bot_x;
+        }
+        cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
+        if (top_rho > width) break;
+        if (i > 19) break;
+        //if (x_from_y( mid_y, line) > width) break;
+        synth_lines.push_back( line);
+    } // ILOOP
+    // Lines to the left
+    top_rho = x_from_y( top_y, med_line);
+    bot_rho = x_from_y( bot_y, med_line);
+    ILOOP(100) {
+        top_rho -= d_top_rho;
+        bot_rho -= d_bot_rho;
+        //int close_idx = vec_closest( bot_rhos, bot_rho);
+        //int close_idx = closest_vert_line( lines, top_rho, bot_rho, top_y, bot_y);
+        double dtop, dbot, err, top_x, bot_x;
+        closest_vert_line( all_vert_lines, top_rho, bot_rho, top_y, bot_y, // in
+                          dtop, dbot, err, top_x, bot_x); // out
+        if (dbot < X_THRESH && dtop < X_THRESH) {
+            //PLOG("repl %d\n",i);
+            top_rho   = top_x;
+            bot_rho   = bot_x;
+        }
+        cv::Vec2f line = segment2polar( cv::Vec4f( top_rho, top_y, bot_rho, bot_y));
+        if (top_rho < 0) break;
+        if (i > 19) break;
+        //if (x_from_y( mid_y, line) < 0) break;
+        synth_lines.push_back( line);
+    } // ILOOP
+    std::sort( synth_lines.begin(), synth_lines.end(),
+              [bot_y](cv::Vec2f a, cv::Vec2f b) {
+                  return x_from_y( bot_y, a) < x_from_y( bot_y, b);
+              });
+    lines = synth_lines;
+} // fix_vertical_lines()
+
+// Find the median distance between vert lines for given horizontal.
+// We use the result to find the next horizontal line.
+//--------------------------------------------------------------------------------------
+inline double hspace_at_line( const std::vector<cv::Vec2f> &vert_lines, cv::Vec2f hline)
+{
+    std::vector<double> dists;
+    Point2f prev;
+    ISLOOP (vert_lines) {
+        //cv::Vec4f seg = polar2segment( vert_lines[i]);
+        Point2f p = intersection( vert_lines[i], hline);
+        if (i) {
+            double d = cv::norm( p - prev);
+            dists.push_back( d);
+        }
+        prev = p;
+    }
+    double res = vec_median( dists);
+    //double res = dists[SZ(dists)/2];
+    return res;
+} // hspace_at_y()
+
+// Similarity between two horizontal lines.
+// y_distance**2 to the left plus y_distance**2 to the right.
+//--------------------------------------------------------------------
+inline double h_line_similarity( cv::Vec2f a, cv::Vec2f b, double middle_x)
+{
+    const int r = 50;
+    double aleft  = y_from_x( middle_x - r, a);
+    double bleft  = y_from_x( middle_x - r, b);
+    double aright = y_from_x( middle_x + r, a);
+    double bright = y_from_x( middle_x + r, b);
+    double res = sqrt( SQR( aleft - bleft) + SQR( aright - bright));
+    return res;
+} // h_line_similarity()
+
+// Find closest line in a bunch of horiz lines
+//-----------------------------------------------------------------------------------------------------------
+inline int closest_hline( cv::Vec2f line, const std::vector<cv::Vec2f> &hlines, double middle_x, double &d)
+{
+    int minidx = -1;
+    d = 1E9;
+    ISLOOP (hlines) {
+        if (h_line_similarity( line, hlines[i], middle_x) < d) {
+            d = h_line_similarity( line, hlines[i], middle_x);
+            minidx = i;
+        }
+    }
+    return minidx;
+} // closest_hline()
+
+// Similarity between two horizontal lines.
+// x_distance**2 above plus x_distance**2 below.
+//----------------------------------------------------------------------------
+inline double v_line_similarity( cv::Vec2f a, cv::Vec2f b, double middle_y)
+{
+    const int r = 50;
+    double atop  = x_from_y( middle_y - r, a);
+    double btop  = x_from_y( middle_y - r, b);
+    double abot  = x_from_y( middle_y + r, a);
+    double bbot  = x_from_y( middle_y + r, b);
+    double res = sqrt( SQR( atop - btop) + SQR( abot - bbot));
+    return res;
+} // v_line_similarity
+
+// Find the change per line in rho and theta and synthesize the whole bunch
+// starting at the middle. Replace synthesized lines with real ones if close enough.
+//-----------------------------------------------------------------------------------------------------
+inline void fix_horiz_lines( std::vector<cv::Vec2f> &lines_, const std::vector<cv::Vec2f> &vert_lines,
+                     const cv::Mat &img)
+{
+    const double middle_x = img.cols / 2.0;
+    const double height = img.rows;
+    
+    // Convert hlines to chlines (center y + angle)
+    std::vector<cv::Vec2f> lines;
+    ISLOOP (lines_) {
+        lines.push_back( polar2changle( lines_[i], middle_x));
+    }
+    std::sort( lines.begin(), lines.end(), [](cv::Vec2f a, cv::Vec2f b) { return a[0] < b[0]; } );
+    lines_.clear();
+    ISLOOP (lines) { lines_.push_back( changle2polar( lines[i], middle_x)); }
+    
+    auto rhos   = vec_extract( lines, [](cv::Vec2f line) { return line[0]; } );
+    //auto thetas = vec_extract( lines, [](cv::Vec2f line) { return line[1]; } );
+    auto d_rhos   = vec_delta( rhos);
+    //vec_filter( d_rhos, [](double d){ return d > 10;});
+    
+    int good_idx = good_center_line( lines);
+    if (good_idx < 0) {
+        lines.clear();
+        return;
+    }
+    cv::Vec2f med_line = lines[good_idx];
+    
+    
+    // Interpolate the rest
+    std::vector<cv::Vec2f> synth_lines;
+    synth_lines.push_back(med_line);
+    
+    double med_rho = med_line[0];
+    double med_d_rho = vec_median( d_rhos);
+    double alpha = RAT( hspace_at_line( vert_lines, cv::Vec2f( 0, PI/2)),
+                       hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2)));
+    double dd_rho_per_y = RAT( med_d_rho * (1.0 - alpha), med_rho);
+    
+    double rho, theta, d_rho;
+    cv::Vec2f line;
+    
+    // Lines below
+    //d_rho = med_d_rho;
+    d_rho = hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        double old_rho = rho;
+        rho += d_rho;
+        double d;
+        int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
+        if (d < d_rho * 0.6) {
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+            d_rho = rho - old_rho;
+        }
+        else {
+            d_rho += (rho - old_rho) * dd_rho_per_y;
+            //PLOG("synth %d\n",i);
+        }
+        if (rho > height) break;
+        cv::Vec2f line( rho,theta);
+        synth_lines.push_back( line);
+    } // ILOOP
+    
+    // Lines above
+    //d_rho = med_d_rho;
+    d_rho = 0.9 * hspace_at_line( vert_lines, cv::Vec2f( med_rho, PI/2));
+    rho = med_line[0];
+    theta = med_line[1];
+    ILOOP(100) {
+        double old_rho = rho;
+        rho -= d_rho;
+        double d;
+        int close_idx = closest_hline( changle2polar( cv::Vec2f( rho, theta), middle_x), lines_, middle_x, d);
+        if (d < d_rho * 0.6) {
+            rho   = lines[close_idx][0];
+            theta = lines[close_idx][1];
+            d_rho = old_rho - rho;
+        }
+        else {
+            d_rho += (rho - old_rho) * dd_rho_per_y;
+            //PLOG("i %d d_rho %.2f\n", i, d_rho);
+        }
+        if (rho < 0) break;
+        if (d_rho < 3) break;
+        cv::Vec2f line( rho,theta);
+        synth_lines.push_back( line);
+    } // ILOOP
+    // Sort top to bottom
+    std::sort( synth_lines.begin(), synth_lines.end(),
+              [](cv::Vec2f line1, cv::Vec2f line2) {
+                  return line1[0] < line2[0];
+              });
+    lines_.clear();
+    ISLOOP (synth_lines) { lines_.push_back( changle2polar( synth_lines[i], middle_x)); }
+} // fix_horiz_lines()
+
+// How many of these points are on the line, roughly.
+//------------------------------------------------------------
+inline int count_points_on_line( cv::Vec2f line, Points pts)
+{
+    int res = 0;
+    for (auto p:pts) {
+        double d = fabs(dist_point_line( p, line));
+        if (d < 0.75) {
+            res++;
+        }
+    }
+    return res;
+}
+
+// Find a vertical line thru pt which hits a lot of other points
+// PRECONDITION: allpoints must be sorted by y
+//-------------------------------------------------------------------------------------------------
+inline cv::Vec2f find_vert_line_thru_point( const Points &allpoints, cv::Point pt, int &maxhits)
+{
+    // Find next point below.
+    const double THETA_EPS = /* 10 */ 20 * PI / 180;
+    maxhits = -1;
+    cv::Vec2f res;
+    for (auto p: allpoints) {
+        if (p.y <= pt.y) continue;
+        Points pts = { pt, p };
+        cv::Vec2f newline = segment2polar( cv::Vec4f( pt.x, pt.y, p.x, p.y));
+        if (fabs(newline[1]) < THETA_EPS ) {
+            int nhits = count_points_on_line( newline, allpoints);
+            if (nhits > maxhits) {
+                maxhits = nhits;
+                res = newline;
+            }
+        }
+    }
+    return res;
+} // find_vert_line_thru_point()
+
+// Find a horiz line thru pt which hits a lot of other points
+// PRECONDITION: allpoints must be sorted by x
+//------------------------------------------------------------------------------------
+inline cv::Vec2f find_horiz_line_thru_point( const Points &allpoints, cv::Point pt)
+{
+    // Find next point to the right.
+    const double THETA_EPS = 5 * PI / 180;
+    int maxhits = -1;
+    cv::Vec2f res = {0,0};
+    for (auto p: allpoints) {
+        if (p.x <= pt.x) continue;
+        Points pts = { pt, p };
+        cv::Vec2f newline = segment2polar( cv::Vec4f( pt.x, pt.y, p.x, p.y));
+        if (fabs( fabs( newline[1]) - PI/2) < THETA_EPS ) {
+            int nhits = count_points_on_line( newline, allpoints);
+            if (nhits > maxhits) {
+                maxhits = nhits;
+                res = newline;
+            }
+        }
+    }
+    return res;
+} // find_horiz_line_thru_point()
+
+
 
 #endif /* __clusplus */
 #endif /* Helpers_hpp */
