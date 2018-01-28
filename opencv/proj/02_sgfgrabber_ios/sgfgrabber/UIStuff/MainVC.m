@@ -247,7 +247,7 @@
         [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
     } // videoMode
     else if ([g_app.menuVC photoMode]) {
-        g_app.saveDiscardVC.photo = [_cppInterface process_best_frame];
+        g_app.saveDiscardVC.photo = [_cppInterface photo_mode];
         g_app.saveDiscardVC.sgf = [g_app.mainVC.cppInterface get_sgf];
         [g_app.navVC pushViewController:g_app.saveDiscardVC animated:YES];
     } // photoMode
@@ -256,7 +256,8 @@
 // FrameExtractorDelegate protocol
 //=====================================
 
-//-----------------------------------------------
+// Called on each video frame. Behave differently depending on active mode.
+//---------------------------------------------------------------------------
 - (void)captured:(UIImage *)image
 {
     if ([g_app.menuVC debugMode]) {
@@ -271,7 +272,7 @@
     } // photoMode
     else if ([g_app.menuVC videoMode]) {
         [self.frameExtractor suspend];
-        UIImage *processedImg = [self.cppInterface real_time_flow:image];
+        UIImage *processedImg = [self.cppInterface video_mode:image];
         self.img = processedImg;
         [self.cameraView setImage:self.img];
         [self positionButtonAndLabels];
@@ -297,8 +298,8 @@
 // Other
 //============
 
-// Debugging helper, shows individual processing stages.
-// Called when entering debug mode, and on screen tap in debug mode.
+// Demo mode and debugging helper to show individual processing stages.
+// Called when entering demo mode, and in secret debug mode.
 //---------------------------------------------------------------------
 - (void) debugFlow:(bool)reset
 {

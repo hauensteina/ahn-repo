@@ -104,7 +104,13 @@ static BlackWhiteEmpty classifier;
 #pragma mark - Pipeline Helpers
 //==================================
 
-
+// Load image from file
+//-------------------------------------------------------
+- (void) load_img:(NSString *)fname dst:(cv::Mat &) dst
+{
+    UIImage *img = [UIImage imageNamed:fname];
+    UIImageToMat(img, dst);
+}
 
 // Save current resized image to file.
 // fname must have .png extension.
@@ -139,7 +145,7 @@ static BlackWhiteEmpty classifier;
 }
 
 // Queue image frames. The newest one is often shaky.
-//-----------------------------------------------------------------------
+//-----------------------------------------------------
 - (void)qImg:(UIImage *)img
 {
     cv::Mat m;
@@ -148,8 +154,6 @@ static BlackWhiteEmpty classifier;
     cv::cvtColor( m, m, CV_RGBA2RGB); // Yes, RGBA not BGR
     ringpush( _imgQ , m, 4); // keep 4 frames
 }
-
-
 
 #pragma mark - Processing Pipeline for debugging
 //=================================================
@@ -517,77 +521,6 @@ static BlackWhiteEmpty classifier;
     return res;
 } // f09_classify()
 
-// Save small crops around intersections for inspection
-//-------------------------------------------------------------------------------
-void save_intersections( const cv::Mat img,
-                        const Points &intersections, int delta_v, int delta_h)
-{
-    ILOOP( intersections.size())
-    {
-        int x = intersections[i].x;
-        int y = intersections[i].y;
-        int dx = round(delta_h/2.0); int dy = round(delta_v/2.0);
-        cv::Rect rect( x - dx, y - dy, 2*dx+1, 2*dy+1 );
-        if (0 <= rect.x &&
-            0 <= rect.width &&
-            rect.x + rect.width <= img.cols &&
-            0 <= rect.y &&
-            0 <= rect.height &&
-            rect.y + rect.height <= img.rows)
-        {
-            const cv::Mat &hood( img(rect));
-            NSString *fname = nsprintf(@"hood_%03d.jpg",i);
-            fname = getFullPath( fname);
-            cv::imwrite( [fname UTF8String], hood);
-        }
-    } // ILOOP
-} // save_intersections()
-
-// Find all intersections from corners and boardsize
-//--------------------------------------------------------------------------------
-template <typename Points_>
-void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
-                                    Points_ &result, double &delta_h, double &delta_v) // out
-{
-    if (corners.size() != 4) return;
-    
-    cv::Point2f tl = corners[0];
-    cv::Point2f tr = corners[1];
-    cv::Point2f br = corners[2];
-    cv::Point2f bl = corners[3];
-    
-    std::vector<double> left_x;
-    std::vector<double> left_y;
-    std::vector<double> right_x;
-    std::vector<double> right_y;
-    ILOOP (boardsz) {
-        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (double)(boardsz-1));
-        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (double)(boardsz-1));
-        right_x.push_back( tr.x + i * (br.x - tr.x) / (double)(boardsz-1));
-        right_y.push_back( tr.y + i * (br.y - tr.y) / (double)(boardsz-1));
-    }
-    std::vector<double> top_x;
-    std::vector<double> top_y;
-    std::vector<double> bot_x;
-    std::vector<double> bot_y;
-    ILOOP (boardsz) {
-        top_x.push_back( tl.x + i * (tr.x - tl.x) / (double)(boardsz-1));
-        top_y.push_back( tl.y + i * (tr.y - tl.y) / (double)(boardsz-1));
-        bot_x.push_back( bl.x + i * (br.x - bl.x) / (double)(boardsz-1));
-        bot_y.push_back( bl.y + i * (br.y - bl.y) / (double)(boardsz-1));
-    }
-    delta_v = (bot_y[0] - top_y[0]) / (boardsz -1);
-    delta_h = (right_x[0] - left_x[0]) / (boardsz -1);
-    
-    result = Points_();
-    RLOOP (boardsz) {
-        CLOOP (boardsz) {
-            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
-                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
-            result.push_back(p);
-        }
-    }
-} // get_intersections_from_corners()
 
 #pragma mark - Real time implementation
 //========================================
@@ -671,9 +604,9 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     return success;
 } // recognize_position()
 
-// f00_*, f01_*, ... all in one go
+// Entry point for video mode, on each frame
 //--------------------------------------------
-- (UIImage *) real_time_flow:(UIImage *) img
+- (UIImage *) video_mode:(UIImage *) img
 {
     static std::vector<Points> boards; // Some history for averaging
     cv::Mat drawing;
@@ -732,7 +665,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     UIImage *res = MatToUIImage( *canvas);
     //UIImage *res = MatToUIImage( drawing);
     return res;
-} // real_time_flow()
+} // video_mode()
 
 // Get most recent frame with a Go board
 //----------------------------------------
@@ -748,9 +681,9 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     return res;
 }
 
-// Find best frame in img queue and process it
-//----------------------------------------------
-- (UIImage *)process_best_frame
+// Photo Mode. Find the best frame in the queue and process it.
+//--------------------------------------------------------------
+- (UIImage *) photo_mode
 {
     // Pick best frame from Q
     cv::Mat best;
@@ -773,7 +706,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
     UIImage *img = MatToUIImage( best);
     [self recognize_position:img timeVotes:1 breakIfBad:NO];
     return img;
-} // process_best_frame()
+} // photo_mode()
 
 // Detect position on image and count erros
 //------------------------------------------------------------

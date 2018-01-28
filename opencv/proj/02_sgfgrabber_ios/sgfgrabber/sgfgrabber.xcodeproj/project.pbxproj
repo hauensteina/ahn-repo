@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AC00D0C7201D01E900545604 /* Helpers.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC00D0C6201D01E900545604 /* Helpers.mm */; };
 		AC043D2F1F9AC580006CF7F0 /* FrameExtractor.m in Sources */ = {isa = PBXBuildFile; fileRef = AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */; };
 		AC0BC39D1FE2E26F0066C542 /* DrawBoard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AC0BC39B1FE2E26F0066C542 /* DrawBoard.cpp */; };
 		AC0FFB011FEB4AD7009A02FD /* board07.jpg in Resources */ = {isa = PBXBuildFile; fileRef = AC0FFAFB1FEB4AD6009A02FD /* board07.jpg */; };
@@ -177,8 +176,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		AC00D0C6201D01E900545604 /* Helpers.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Helpers.mm; sourceTree = "<group>"; };
-		AC00D0C8201D026000545604 /* Helpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Helpers.h; sourceTree = "<group>"; };
 		AC043D2D1F9AC580006CF7F0 /* FrameExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FrameExtractor.h; sourceTree = "<group>"; };
 		AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FrameExtractor.m; sourceTree = "<group>"; };
 		AC043D331F9BB9AB006CF7F0 /* Common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Common.h; sourceTree = "<group>"; };
@@ -485,8 +482,6 @@
 				AC043D2E1F9AC580006CF7F0 /* FrameExtractor.m */,
 				AC9702191FBC88050057C4C2 /* Globals.h */,
 				AC9702171FBC87DF0057C4C2 /* Globals.mm */,
-				AC00D0C8201D026000545604 /* Helpers.h */,
-				AC00D0C6201D01E900545604 /* Helpers.mm */,
 				AC1756CB200527770069EE99 /* Helpers.hpp */,
 				AC628C221F9A7D3F0043FCEE /* Assets.xcassets */,
 				AC628C271F9A7D3F0043FCEE /* Info.plist */,
@@ -678,7 +673,6 @@
 				ACC913162017F4F400B62682 /* ImagesVC.m in Sources */,
 				AC13BB3C200BD6C600369CAE /* NavigationController.m in Sources */,
 				AC13BB3F200BD6C600369CAE /* RightViewCell.m in Sources */,
-				AC00D0C7201D01E900545604 /* Helpers.mm in Sources */,
 				AC628C181F9A7D3F0043FCEE /* main.m in Sources */,
 				AC13BB2A200BD38600369CAE /* UIViewController+LGSideMenuController.m in Sources */,
 			);

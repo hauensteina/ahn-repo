@@ -990,7 +990,6 @@ inline void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst
     }
 } // translate_points()
 
-
 // Set any points to empty if outside of the image
 //----------------------------------------------------------------------------------------------
 inline
@@ -1004,6 +1003,78 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
         }
     }
 } // fix_diagram()
+
+// Save small crops around intersections for inspection
+//-------------------------------------------------------------------------------
+inline void save_intersections( const cv::Mat img,
+                               const Points &intersections, int delta_v, int delta_h)
+{
+    ILOOP( intersections.size())
+    {
+        int x = intersections[i].x;
+        int y = intersections[i].y;
+        int dx = round(delta_h/2.0); int dy = round(delta_v/2.0);
+        cv::Rect rect( x - dx, y - dy, 2*dx+1, 2*dy+1 );
+        if (0 <= rect.x &&
+            0 <= rect.width &&
+            rect.x + rect.width <= img.cols &&
+            0 <= rect.y &&
+            0 <= rect.height &&
+            rect.y + rect.height <= img.rows)
+        {
+            const cv::Mat &hood( img(rect));
+            NSString *fname = nsprintf(@"hood_%03d.jpg",i);
+            fname = getFullPath( fname);
+            cv::imwrite( [fname UTF8String], hood);
+        }
+    } // ILOOP
+} // save_intersections()
+
+// Find all intersections from corners and boardsize
+//---------------------------------------------------------------------------------------------
+template <typename Points_>
+void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
+                                    Points_ &result, double &delta_h, double &delta_v) // out
+{
+    if (corners.size() != 4) return;
+    
+    cv::Point2f tl = corners[0];
+    cv::Point2f tr = corners[1];
+    cv::Point2f br = corners[2];
+    cv::Point2f bl = corners[3];
+    
+    std::vector<double> left_x;
+    std::vector<double> left_y;
+    std::vector<double> right_x;
+    std::vector<double> right_y;
+    ILOOP (boardsz) {
+        left_x.push_back(  tl.x + i * (bl.x - tl.x) / (double)(boardsz-1));
+        left_y.push_back(  tl.y + i * (bl.y - tl.y) / (double)(boardsz-1));
+        right_x.push_back( tr.x + i * (br.x - tr.x) / (double)(boardsz-1));
+        right_y.push_back( tr.y + i * (br.y - tr.y) / (double)(boardsz-1));
+    }
+    std::vector<double> top_x;
+    std::vector<double> top_y;
+    std::vector<double> bot_x;
+    std::vector<double> bot_y;
+    ILOOP (boardsz) {
+        top_x.push_back( tl.x + i * (tr.x - tl.x) / (double)(boardsz-1));
+        top_y.push_back( tl.y + i * (tr.y - tl.y) / (double)(boardsz-1));
+        bot_x.push_back( bl.x + i * (br.x - bl.x) / (double)(boardsz-1));
+        bot_y.push_back( bl.y + i * (br.y - bl.y) / (double)(boardsz-1));
+    }
+    delta_v = (bot_y[0] - top_y[0]) / (boardsz -1);
+    delta_h = (right_x[0] - left_x[0]) / (boardsz -1);
+    
+    result = Points_();
+    RLOOP (boardsz) {
+        CLOOP (boardsz) {
+            cv::Point2f p = intersection( cv::Point2f( left_x[r], left_y[r]), cv::Point2f( right_x[r], right_y[r]),
+                                         cv::Point2f( top_x[c], top_y[c]), cv::Point2f( bot_x[c], bot_y[c]));
+            result.push_back(p);
+        }
+    }
+} // get_intersections_from_corners()
 
 
 #endif /* __clusplus */
