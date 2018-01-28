@@ -110,6 +110,30 @@ public:
         return res;
     } // classify()
     
+    // Vote across several video frames. The previous TIMEBUFSZ frames get to vote.
+    //---------------------------------------------------------------------------------------------------
+    inline
+    std::vector<int> frame_vote( const Points2f &intersections, const cv::Mat &img, const cv::Mat &gray,
+                                int TIMEBUFSZ = 1)
+    {
+        double match_quality;
+        std::vector<int> diagram = this->classify( img, gray,
+                                                  intersections, match_quality);
+        // Vote across time
+        static std::vector<std::vector<int> > timevotes(19*19);
+        assert( SZ(diagram) <= 19*19);
+        ISLOOP (diagram) {
+            ringpush( timevotes[i], diagram[i], TIMEBUFSZ);
+        }
+        ISLOOP (timevotes) {
+            std::vector<int> counts( DDONTKNOW, 0); // index is bwe
+            for (int bwe: timevotes[i]) { ++counts[bwe]; }
+            int winner = argmax( counts);
+            diagram[i] = winner;
+        }
+        return diagram;
+    } // frame_vote()
+    
     // Check if a rectangle makes sense
     //---------------------------------------------------------------------
     inline bool check_rect( const cv::Rect &r, int rows, int cols )

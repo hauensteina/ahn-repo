@@ -426,8 +426,6 @@ static BlackWhiteEmpty classifier;
     cv::Mat white_holes;
     cv::adaptiveThreshold( _pyr_masked, white_holes, 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY_INV,
                           nhood_sz, thresh);
-    //cv::Mat element = cv::getStructuringElement( cv::MORPH_RECT, cv::Size(2,2));
-    //cv::dilate( white_holes, white_holes, element );
     
     // Show results
     cv::Mat drawing;
@@ -439,22 +437,6 @@ static BlackWhiteEmpty classifier;
     UIImage *res = MatToUIImage( drawing);
     return res;
 } // f07_white_holes()
-
-// Visualize features, one per intersection.
-//------------------------------------------------------------------------------------------------------
-void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<double> features,
-                 cv::Mat &dst, const double multiplier = 255)
-{
-    dst = cv::Mat::zeros( img.size(), img.type());
-    ISLOOP (intersections) {
-        auto pf = intersections[i];
-        double feat = features[i];
-        auto hood = make_hood( pf, 5, 5);
-        if (check_rect( hood, img.rows, img.cols)) {
-            dst( hood) = fmin( 255, feat * multiplier);
-        }
-    }
-} // viz_feature()
 
 // Visualize some features
 //---------------------------
@@ -490,50 +472,6 @@ void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::
     return res;
 } // f08_features()
 
-// Translate a bunch of points
-//--------------------------------------------------------------------------
-void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
-{
-    dst = Points2f(SZ(pts));
-    ISLOOP (pts) {
-        dst[i] = Point2f( pts[i].x + dx, pts[i].y + dy);
-    }
-}
-
-//---------------------------------------------------------------------------------------------------
-std::vector<int> classify( const Points2f &intersections, const cv::Mat &img, const cv::Mat &gray,
-                          int TIMEBUFSZ = 1)
-{
-    double match_quality;
-    std::vector<int> diagram = classifier.classify( img, gray,
-                                                    intersections, match_quality);
-    // Vote across time
-    static std::vector<std::vector<int> > timevotes(19*19);
-    assert( SZ(diagram) <= 19*19);
-    ISLOOP (diagram) {
-        ringpush( timevotes[i], diagram[i], TIMEBUFSZ);
-    }
-    ISLOOP (timevotes) {
-        std::vector<int> counts( DDONTKNOW, 0); // index is bwe
-        for (int bwe: timevotes[i]) { ++counts[bwe]; }
-        int winner = argmax( counts);
-        diagram[i] = winner;
-    }
-    return diagram;
-} // classify()
-
-// Set any points to empty if outside of the image
-//----------------------------------------------------------------------------------------------
-void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const cv::Mat &img)
-{
-    double marg = 10;
-    ISLOOP (diagram) {
-        Point2f p = intersections[i];
-        if (p.x < marg || p.y < marg || p.x > img.cols - marg || p.y > img.rows - marg) {
-            diagram[i] = EEMPTY;
-        }
-    }
-} // fix_diagram()
 
 // Classify intersections into black, white, empty
 //-----------------------------------------------------------
@@ -547,7 +485,7 @@ void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const
         //cv::Mat gray_blurred;
         //cv::GaussianBlur( _gray_zoomed, gray_blurred, cv::Size(5, 5), 2, 2 );
         const int TIME_BUF_SZ = 1;
-        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
+        _diagram = classifier.frame_vote( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, TIME_BUF_SZ);
     }
     fix_diagram( _diagram, _intersections, _small_img);
     
@@ -720,7 +658,7 @@ void get_intersections_from_corners( const Points_ &corners, int boardsz, // in
         fill_outside_with_average_rgb( _pyr_zoomed, _corners_zoomed);
         
         // Classify
-        _diagram = classify( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, timeVotes);
+        _diagram = classifier.frame_vote( _intersections_zoomed, _pyr_zoomed, _gray_zoomed, timeVotes);
         fix_diagram( _diagram, _intersections, _small_img);
         
         // Copy diagram to NSMutableArray

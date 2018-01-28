@@ -21,7 +21,6 @@
 #include "Boardness.hpp"
 #include "Clust1D.hpp"
 
-
 // Apply inverse thresh and dilate grayscale image.
 //-------------------------------------------------------------------------------------------
 inline void thresh_dilate( const cv::Mat &img, cv::Mat &dst, int thresh = 8)
@@ -964,6 +963,47 @@ inline void fill_outside_with_average_rgb( cv::Mat &img, const Points2f &corners
                            else if (y > corners[3].y + 10) v = mean;
                        });
 } // fill_outside_with_average_rgb()
+
+// Visualize features, one per intersection.
+//---------------------------------------------------------------------------------------------------------------
+inline void viz_feature( const cv::Mat &img, const Points2f &intersections, const std::vector<double> features,
+                 cv::Mat &dst, const double multiplier = 255)
+{
+    dst = cv::Mat::zeros( img.size(), img.type());
+    ISLOOP (intersections) {
+        auto pf = intersections[i];
+        double feat = features[i];
+        auto hood = make_hood( pf, 5, 5);
+        if (check_rect( hood, img.rows, img.cols)) {
+            dst( hood) = fmin( 255, feat * multiplier);
+        }
+    }
+} // viz_feature()
+
+// Translate a bunch of points
+//--------------------------------------------------------------------------
+inline void translate_points( const Points2f &pts, int dx, int dy, Points2f &dst)
+{
+    dst = Points2f(SZ(pts));
+    ISLOOP (pts) {
+        dst[i] = Point2f( pts[i].x + dx, pts[i].y + dy);
+    }
+} // translate_points()
+
+
+// Set any points to empty if outside of the image
+//----------------------------------------------------------------------------------------------
+inline
+void fix_diagram( std::vector<int> &diagram, const Points2f intersections, const cv::Mat &img)
+{
+    double marg = 10;
+    ISLOOP (diagram) {
+        Point2f p = intersections[i];
+        if (p.x < marg || p.y < marg || p.x > img.cols - marg || p.y > img.rows - marg) {
+            diagram[i] = EEMPTY;
+        }
+    }
+} // fix_diagram()
 
 
 #endif /* __clusplus */
