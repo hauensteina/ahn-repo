@@ -249,13 +249,13 @@ def split_files( folder, trainpct, validpct):
     validfiles = files[ntrain:ntrain+nvalid]
     testfiles  = files[ntrain+nvalid:]
 
-    os.mkdir( 'test')
-    os.mkdir( 'train')
-    os.mkdir( 'valid')
+    os.makedirs( 'test/all_files')
+    os.makedirs( 'train/all_files')
+    os.makedirs( 'valid/all_files')
 
     for f in trainfiles:
-        shutil.copy2( folder + '/' + f, 'train/' + f)
+        shutil.copy2( folder + '/' + f, 'train/all_files/' + f)
     for f in validfiles:
-        shutil.copy2( folder + '/' + f, 'valid/' + f)
+        shutil.copy2( folder + '/' + f, 'valid/all_files/' + f)
     for f in testfiles:
-        shutil.copy2( folder + '/' + f, 'test/' + f)
+        shutil.copy2( folder + '/' + f, 'test/all_files/' + f)
