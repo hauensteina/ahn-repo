@@ -11,6 +11,9 @@ from __future__ import division,print_function
 
 from pdb import set_trace as BP
 import os,sys,re,json
+import shutil
+import glob
+import random
 import numpy as np
 import keras.preprocessing.image as kp
 import keras.activations as ka
@@ -232,3 +235,27 @@ def to_plot(img):
         return np.rollaxis(img, 0, 1).astype(np.uint8)
     else:
         return np.rollaxis(img, 0, 3).astype(np.uint8)
+
+# Randomly split the jpg files in a folder into
+# train, valid, test
+#-------------------------------------------------
+def split_files( folder, trainpct, validpct):
+    files = glob.glob( folder + '/*.jpg')
+    files = [os.path.basename(f) for f in files];
+    random.shuffle( files)
+    ntrain = int( round( len( files) * (trainpct / 100.0)))
+    nvalid = int( round( len( files) * (validpct / 100.0)))
+    trainfiles = files[:ntrain]
+    validfiles = files[ntrain:ntrain+nvalid]
+    testfiles  = files[ntrain+nvalid:]
+
+    os.mkdir( 'test')
+    os.mkdir( 'train')
+    os.mkdir( 'valid')
+
+    for f in trainfiles:
+        shutil.copy2( folder + '/' + f, 'train/' + f)
+    for f in validfiles:
+        shutil.copy2( folder + '/' + f, 'valid/' + f)
+    for f in testfiles:
+        shutil.copy2( folder + '/' + f, 'test/' + f)
