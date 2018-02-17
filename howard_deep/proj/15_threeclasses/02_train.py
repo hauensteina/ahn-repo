@@ -26,7 +26,7 @@ sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
 
-BATCH_SIZE=8
+BATCH_SIZE=32
 
 #---------------------------
 def usage(printmsg=False):
@@ -58,10 +58,13 @@ class BEWModel:
 
     #-----------------------
     def build_model(self):
-        nb_colors=1
+        nb_colors=3
         inputs = kl.Input( shape = ( nb_colors, self.resolution, self.resolution))
         x = kl.Flatten()(inputs)
-        x = kl.Dense( 3, activation='relu')(x)
+        #x = kl.Dense( 4, activation='relu')(x)
+        x = kl.Dense( 4, activation='relu')(x)
+        x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 4, activation='relu')(x)
         #x = kl.Dense( 16, activation='relu')(x)
         #x = kl.Dense(4, activation='relu')(x)
         output = kl.Dense( 3,activation='softmax', name='class')(x)
@@ -130,7 +133,7 @@ def main():
     parser.add_argument( "--rate", required=True, type=float)
     args = parser.parse_args()
     model = BEWModel( args.resolution, args.rate)
-    images = ut.get_data( SCRIPTPATH, (args.resolution,args.resolution))
+    images = ut.get_data( SCRIPTPATH, (args.resolution,args.resolution), color_mode='rgb')
     meta   = get_meta_from_fnames( SCRIPTPATH)
     # Normalize training and validation data by train data mean and std
     means,stds = ut.get_means_and_stds(images['train_data'])

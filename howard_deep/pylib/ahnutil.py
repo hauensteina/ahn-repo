@@ -239,9 +239,10 @@ def to_plot(img):
 # Randomly split the jpg files in a folder into
 # train, valid, test
 #-------------------------------------------------
-def split_files( folder, trainpct, validpct):
+def split_files( folder, trainpct, validpct, substr=''):
     files = glob.glob( folder + '/*.jpg')
     files = [os.path.basename(f) for f in files];
+    files = [f for f in files if substr in f];
     random.shuffle( files)
     ntrain = int( round( len( files) * (trainpct / 100.0)))
     nvalid = int( round( len( files) * (validpct / 100.0)))
