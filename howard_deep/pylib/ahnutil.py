@@ -143,6 +143,12 @@ def normalize(images, mean_per_channel, std_per_channel):
     images -= mean_per_channel
     images /= std_per_channel
 
+# Subtract 128, divide by 128
+#-------------------------------
+def dumb_normalize(images):
+    images -= 128.0
+    images /= 128.0
+
 # Get all images below a folder into one huge numpy array
 # WARNING: The images must be in *subfolders* of path/train and path/valid.
 #---------------------------------------------------------------------------

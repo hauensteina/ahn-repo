@@ -138,8 +138,10 @@ def main():
     meta   = get_meta_from_fnames( SCRIPTPATH)
     # Normalize training and validation data by train data mean and std
     means,stds = ut.get_means_and_stds(images['train_data'])
-    ut.normalize( images['train_data'],means,stds)
-    ut.normalize( images['valid_data'],means,stds)
+    # ut.normalize( images['train_data'], means, stds)
+    # ut.normalize( images['valid_data'], means, stds)
+    ut.dumb_normalize( images['train_data'])
+    ut.dumb_normalize( images['valid_data'])
     model.model.fit(images['train_data'], meta['train_classes_hot'],
                     batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
