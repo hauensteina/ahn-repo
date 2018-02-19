@@ -19,6 +19,7 @@ import argparse
 import keras.layers as kl
 import keras.models as km
 import keras.optimizers as kopt
+import coremltools
 
 # Look for modules in our pylib folder
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
@@ -59,11 +60,11 @@ class BEWModel:
     #-----------------------
     def build_model(self):
         nb_colors=3
-        inputs = kl.Input( shape = ( nb_colors, self.resolution, self.resolution))
+        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name='image')
         x = kl.Flatten()(inputs)
+        x = kl.Dense( 4, activation='relu')(x)
+        x = kl.Dense( 4, activation='relu')(x)
         #x = kl.Dense( 4, activation='relu')(x)
-        x = kl.Dense( 4, activation='relu')(x)
-        x = kl.Dense( 4, activation='relu')(x)
         #x = kl.Dense( 4, activation='relu')(x)
         #x = kl.Dense( 16, activation='relu')(x)
         #x = kl.Dense(4, activation='relu')(x)
@@ -137,11 +138,13 @@ def main():
     meta   = get_meta_from_fnames( SCRIPTPATH)
     # Normalize training and validation data by train data mean and std
     means,stds = ut.get_means_and_stds(images['train_data'])
-    ut.normalize(images['train_data'],means,stds)
-    ut.normalize(images['valid_data'],means,stds)
+    ut.normalize( images['train_data'],means,stds)
+    ut.normalize( images['valid_data'],means,stds)
     model.model.fit(images['train_data'], meta['train_classes_hot'],
                     batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
+    #preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
+    #print(preds)
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
     #     weights = layer.get_weights() # list of numpy arrays
@@ -149,9 +152,18 @@ def main():
     #     print(weights)
     #model.model.fit(images['train_data'], meta['train_classes'],
     #                batch_size=BATCH_SIZE, epochs=args.epochs)
-    #model.model.save('dump1.hd5')
-    preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
-    print(preds)
+    model.model.save('nn_bew.hd5')
+
+    coreml_model = coremltools.converters.keras.convert( model.model, input_names=['image'], image_input_names='image')
+    coreml_model.author = 'joe'
+    coreml_model.license = 'MIT'
+    coreml_model.short_description = 'Classify go stones and intersections'
+    coreml_model.input_description['image'] = 'A 23x23 pixel Image'
+    coreml_model.output_description['output1'] = 'A one-hot vector for classes black empty white'
+    #coreml_model.save('keras_mnist_cnn.mlmodel')
+
+    #coreml_model = coremltools.converters.keras.convert( model.model, input_names=['image'], image_input_names='image')
+    coreml_model.save("nn_bew.mlmodel")
 
 if __name__ == '__main__':
     main()
