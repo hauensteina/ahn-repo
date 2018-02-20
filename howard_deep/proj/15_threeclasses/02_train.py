@@ -160,7 +160,12 @@ def main():
                                                          input_names=['image'],
                                                          image_input_names='image',
                                                          class_labels = ['b', 'e', 'w'],
-                                                         predicted_feature_name='bew');
+                                                         predicted_feature_name='bew',
+                                                         image_scale = 1/128.0,
+                                                         red_bias = -1,
+                                                         green_bias = -1,
+                                                         blue_bias = -1);
+
     coreml_model.author = 'joe'
     coreml_model.license = 'MIT'
     coreml_model.short_description = 'Classify go stones and intersections'
