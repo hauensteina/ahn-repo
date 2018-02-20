@@ -156,7 +156,11 @@ def main():
     #                batch_size=BATCH_SIZE, epochs=args.epochs)
     model.model.save('nn_bew.hd5')
 
-    coreml_model = coremltools.converters.keras.convert( model.model, input_names=['image'], image_input_names='image')
+    coreml_model = coremltools.converters.keras.convert( model.model,
+                                                         input_names=['image'],
+                                                         image_input_names='image',
+                                                         class_labels = ['b', 'e', 'w'],
+                                                         predicted_feature_name='bew');
     coreml_model.author = 'joe'
     coreml_model.license = 'MIT'
     coreml_model.short_description = 'Classify go stones and intersections'
