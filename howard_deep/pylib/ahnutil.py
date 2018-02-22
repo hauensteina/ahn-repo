@@ -11,6 +11,7 @@ from __future__ import division,print_function
 
 from pdb import set_trace as BP
 import os,sys,re,json
+import fnmatch
 import shutil
 import glob
 import random
@@ -270,3 +271,13 @@ def split_files( folder, trainpct, validpct, substr=''):
         shutil.copy2( folder + '/' + f, 'valid/all_files/' + f)
     for f in testfiles:
         shutil.copy2( folder + '/' + f, 'test/all_files/' + f)
+
+# Return list of files matching filterstr
+# Example: fing( '/tmp', '*.jpg')
+#-------------------------------------------
+def find( folder, filterstr):
+    matches = []
+    for root, dirnames, filenames in os.walk( folder):
+        for filename in fnmatch.filter( filenames, filterstr):
+            matches.append( os.path.join( root, filename))
+    return matches
