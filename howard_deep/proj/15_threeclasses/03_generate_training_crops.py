@@ -24,6 +24,8 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
+import cv2
+
 #---------------------------
 def usage(printmsg=False):
     name = os.path.basename(__file__)
@@ -59,7 +61,7 @@ def collect_files( infolder):
     jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
     # Collect in dictionary
     files = {}
-    for i,bn in enumerate(basenames):
+    for i,bn in enumerate( basenames):
         d = {}
         files[bn] = d
         d['img'] = imgs[i]
@@ -79,6 +81,23 @@ def collect_files( infolder):
             exit(1)
     return files
 
+#---------------------------------
+def zoom_in( imgfile, jsonfile):
+    # Read the image
+    img = cv2.imread( imgfile, 1)
+    # Parse json
+    columns = json.load( open( jsonfile))
+    for c,col in enumerate( columns):
+        for r, row in enumerate( col):
+            x = row['x']
+            y = row['y']
+            cv2.circle( img,
+                        (int(x), int(y)),
+                        10,
+                        ( 0, 0, 255 ),
+                        -1 )
+    cv2.imwrite( '/home/ubuntu/ahn-repo/howard_deep/proj/15_threeclasses/tt.jpg', img);
+
 #-----------
 def main():
     if len(sys.argv) == 1:
@@ -92,8 +111,10 @@ def main():
     args = parser.parse_args()
     files = collect_files( args.infolder)
 
-    tt=42
-    BP()
+    for i,k in enumerate( files.keys()):
+        f = files[k]
+        img = zoom_in( f['img'], f['json'])
+        if i > 3: break
 
 
 if __name__ == '__main__':
