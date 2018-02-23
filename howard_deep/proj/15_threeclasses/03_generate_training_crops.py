@@ -51,7 +51,7 @@ def usage(printmsg=False):
 #----------------------------------------------------
 def collect_files( infolder):
     # Find images
-    imgs = ut.find( infolder, '*.jpeg')
+    imgs =  ut.find( infolder, '*.jpeg')
     imgs += ut.find( infolder, '*.jpg')
     # Basenames
     basenames = [os.path.basename(f) for f in imgs]
@@ -157,7 +157,8 @@ def save_intersections( img, intersections, r, basename, folder):
         y = isec['y']
         hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
         fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
-        cv2.imwrite( fname, hood)
+        if color in ['B','W','E']:
+            cv2.imwrite( fname, hood)
 
 #-----------
 def main():
