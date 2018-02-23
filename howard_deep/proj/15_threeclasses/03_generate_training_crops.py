@@ -26,6 +26,8 @@ import ahnutil as ut
 
 import cv2
 
+CROPSZ = 23
+
 #---------------------------
 def usage(printmsg=False):
     name = os.path.basename(__file__)
@@ -33,12 +35,11 @@ def usage(printmsg=False):
     Name:
       %s --   Get individual intersection crops for NN training material
     Synopsis:
-      %s --infolder <ifolder> --outfolder <ofolder> --trainpct <n> --validpct <n>
+      %s --infolder <ifolder> --outfolder <ofolder>
     Description:
       Scales and perspective transforms input images, save 361 crops for each.
     Example:
-      %s --infolder ~/training_data_kc/mike/20180113/verified --outfolder crops-kc --trainpct 80 --validpct 10
-      The remaining 10pct will be test data
+      %s --infolder ~/training_data_kc/mike/20180113/verified --outfolder crops-kc
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -46,7 +47,7 @@ def usage(printmsg=False):
     else:
         return msg
 
-# Collect matching speg, json, sgf in a dictionary
+# Collect matching jpeg and json in a dictionary
 #----------------------------------------------------
 def collect_files( infolder):
     # Find images
@@ -55,8 +56,6 @@ def collect_files( infolder):
     # Basenames
     basenames = [os.path.basename(f) for f in imgs]
     basenames = [os.path.splitext(f)[0] for f in basenames]
-    # sgf files
-    sgfs = [ut.find( infolder, '%s.sgf' % f)[0] for f in basenames]
     # json files
     jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
     # Collect in dictionary
@@ -65,16 +64,12 @@ def collect_files( infolder):
         d = {}
         files[bn] = d
         d['img'] = imgs[i]
-        d['sgf'] = sgfs[i]
         d['json'] = jsons[i]
     # Sanity check
     for bn in files.keys():
         d = files[bn]
         if not bn in d['img']:
             print( 'ERROR: Wrong img name for key %s' % (d['img'], bn))
-            exit(1)
-        elif not bn in d['sgf']:
-            print( 'ERROR: Wrong sgf name %s for key %s' % (d['sgf'], bn))
             exit(1)
         elif not bn in d['json']:
             print( 'ERROR: Wrong json name for key %s' % (d['json'], bn))
@@ -151,6 +146,18 @@ def zoom_in( imgfile, jsonfile):
     res = (warped_img, intersections_zoomed)
     return res
 
+# Save intersection crops of size rxr
+#-------------------------------------------------------------------
+def save_intersections( img, intersections, r, basename, folder):
+    dx = int(r / 2)
+    dy = int(r / 2)
+    for i,isec in enumerate( intersections):
+        color = isec['val'][0]
+        x = isec['x']
+        y = isec['y']
+        hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
+        fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
+        cv2.imwrite( fname, hood)
 
 #-----------
 def main():
@@ -159,16 +166,20 @@ def main():
 
     parser = argparse.ArgumentParser(usage=usage())
     parser.add_argument( "--infolder",      required=True)
-    parser.add_argument( "--outfolder",      required=True)
-    parser.add_argument( "--trainpct",    required=True, type=int)
-    parser.add_argument( "--validpct",    required=True, type=int)
+    parser.add_argument( "--outfolder",     required=True)
     args = parser.parse_args()
+
+    os.makedirs( args.outfolder)
     files = collect_files( args.infolder)
 
     for i,k in enumerate( files.keys()):
+        print( '%s ...' % k)
         f = files[k]
         img, intersections = zoom_in( f['img'], f['json'])
-        if i > 3: break
+        if len(intersections) != 19*19:
+            print( 'not a 19x19 board, skipping')
+            continue
+        save_intersections( img, intersections, CROPSZ, k, args.outfolder)
 
 
 if __name__ == '__main__':
