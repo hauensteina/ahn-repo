@@ -81,22 +81,76 @@ def collect_files( infolder):
             exit(1)
     return files
 
-#---------------------------------
+# Rescale image and intersections to width 350.
+# Make the board square.
+# Returns the new image and the transformed list of intersections like
+# [{u'y': 17, u'x': 17, u'val': u'EMPTY'}, ...
+#------------------------------------------------
 def zoom_in( imgfile, jsonfile):
     # Read the image
     img = cv2.imread( imgfile, 1)
     # Parse json
     columns = json.load( open( jsonfile))
+    # Linearize
+    board_sz = len(columns)
+    intersections = [0] * (board_sz * board_sz)
     for c,col in enumerate( columns):
         for r, row in enumerate( col):
-            x = row['x']
-            y = row['y']
-            cv2.circle( img,
-                        (int(x), int(y)),
-                        10,
-                        ( 0, 0, 255 ),
-                        -1 )
-    cv2.imwrite( '/home/ubuntu/ahn-repo/howard_deep/proj/15_threeclasses/tt.jpg', img);
+            idx = board_sz * r + c
+            intersections[idx] = row
+    #         x = row['x']
+    #         y = row['y']
+    #         cv2.circle( img,
+    #                     (int(x), int(y)),
+    #                     10,
+    #                     ( 0, 0, 255 ),
+    #                     -1 )
+    # cv2.imwrite( '/home/ubuntu/ahn-repo/howard_deep/proj/15_threeclasses/tt.jpg', img);
+
+    # Perspective transform
+    #-------------------------
+    # Corners
+    tl = intersections[0]
+    tr = intersections[board_sz-1]
+    br = intersections[board_sz * board_sz - 1]
+    bl = intersections[board_sz * board_sz - board_sz]
+    corners = np.array([
+        [tl['x'], tl['y']],
+        [tr['x'], tr['y']],
+        [br['x'], br['y']],
+        [bl['x'], bl['y']]], dtype = "float32")
+
+    WIDTH = 350
+    marg = WIDTH / 20.0;
+    # Target square for transform
+    square = np.array([
+        [marg, marg],
+        [WIDTH - marg, marg],
+        [WIDTH - marg, WIDTH - marg],
+        [marg, WIDTH - marg]], dtype = "float32")
+    M = cv2.getPerspectiveTransform( corners, square)
+    warped_img = cv2.warpPerspective( img, M, (WIDTH, WIDTH))
+
+    coords = []
+    for isec in intersections:
+        coords.append( [isec['x'], isec['y']])
+    coords = np.array( coords)
+    # Transform the intersections
+    # This needs a stupid empty dimension added
+    sz = len(coords)
+    coords_zoomed = cv2.perspectiveTransform( coords.reshape( 1, sz, 2).astype('float32'), M)
+    # And now get rid of the extra dim and back to int
+    coords_zoomed = coords_zoomed.reshape(sz,2).astype('int')
+    # Back to the old format
+    intersections_zoomed = []
+    for idx,isec in enumerate( intersections):
+        intersections_zoomed.append( isec.copy())
+        nnew = intersections_zoomed[-1]
+        nnew['x'] = coords_zoomed[idx][0]
+        nnew['y'] = coords_zoomed[idx][1]
+    res = (warped_img, intersections_zoomed)
+    return res
+
 
 #-----------
 def main():
@@ -113,7 +167,7 @@ def main():
 
     for i,k in enumerate( files.keys()):
         f = files[k]
-        img = zoom_in( f['img'], f['json'])
+        img, intersections = zoom_in( f['img'], f['json'])
         if i > 3: break
 
 
