@@ -11,7 +11,7 @@
 
 from __future__ import division, print_function
 from pdb import set_trace as BP
-import os,sys,re,json
+import os,sys,re,json,copy
 import numpy as np
 from numpy.random import random
 import argparse
@@ -39,7 +39,7 @@ def usage(printmsg=False):
     Description:
       Scales and perspective transforms input images, save 361 crops for each.
     Example:
-      %s --infolder ~/training_data_kc/mike/20180113/verified --outfolder crops-kc
+      %s --infolder ~/kc-trainingdata/andreas --outfolder crops-kc
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -53,26 +53,37 @@ def collect_files( infolder):
     # Find images
     imgs =  ut.find( infolder, '*.jpeg')
     imgs += ut.find( infolder, '*.jpg')
+    imgs += ut.find( infolder, '*.png')
     # Basenames
     basenames = [os.path.basename(f) for f in imgs]
     basenames = [os.path.splitext(f)[0] for f in basenames]
     # json files
-    jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
+    jsons = []
+    if ut.find( infolder, '*_intersections.json'):
+        jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
+    sgfs = []
+    if not jsons:
+        sgfs = [ut.find( infolder, '%s.sgf' % f)[0] for f in basenames]
+
     # Collect in dictionary
     files = {}
     for i,bn in enumerate( basenames):
         d = {}
         files[bn] = d
         d['img'] = imgs[i]
-        d['json'] = jsons[i]
+        if jsons: d['json'] = jsons[i]
+        if sgfs:  d['sgf']  = sgfs[i]
     # Sanity check
     for bn in files.keys():
         d = files[bn]
         if not bn in d['img']:
             print( 'ERROR: Wrong img name for key %s' % (d['img'], bn))
             exit(1)
-        elif not bn in d['json']:
+        elif jsons and not bn in d['json']:
             print( 'ERROR: Wrong json name for key %s' % (d['json'], bn))
+            exit(1)
+        elif sgfs and not bn in d['sgf']:
+            print( 'ERROR: Wrong sgf name for key %s' % (d['sgf'], bn))
             exit(1)
     return files
 
@@ -160,6 +171,67 @@ def save_intersections( img, intersections, r, basename, folder):
         if color in ['B','W','E']:
             cv2.imwrite( fname, hood)
 
+# e.g for board size, call get_sgf_tag( sgf, "SZ")
+#---------------------------------------------------
+def get_sgf_tag( tag, sgf):
+    m = re.search( tag + '\[[^\]]*', sgf)
+    if not m: return ''
+    mstr = m.group(0)
+    res = mstr.split( '[')[1]
+    res = res.split( ']')[0]
+    return res
+
+# Read and sgf file and linearize it into a list
+# ['b','w','e',...]
+#-------------------------------------------------
+def linearize_sgf( sgf):
+    boardsz = int( get_sgf_tag( 'SZ', sgf))
+    whites = re.findall( 'AW' + '\[[^\]]*', sgf)
+    blacks = re.findall( 'AB' + '\[[^\]]*', sgf)
+    res = ['EMPTY'] * boardsz * boardsz
+
+    for w in whites:
+        pos = w.split( '[')[1]
+        col = ord( pos[0]) - ord( 'a')
+        row = ord( pos[1]) - ord( 'a')
+        idx = col + row * boardsz
+        res[idx] = 'WHITE'
+
+    for b in blacks:
+        pos = b.split( '[')[1]
+        col = ord( pos[0]) - ord( 'a')
+        row = ord( pos[1]) - ord( 'a')
+        idx = col + row * boardsz
+        res[idx] = 'BLACK'
+
+    return res
+
+# Make a Wallstedt type json file from an sgf with the
+# intersection coordinates in the GC tag
+#--------------------------------------------
+def make_json_file( sgffile, ofname):
+    with open( sgffile) as f: sgf = f.read()
+    boardsz = int( get_sgf_tag( 'SZ', sgf))
+    diagram = linearize_sgf( sgf)
+    intersections = get_sgf_tag( 'GC', sgf)
+    intersections = re.sub( '\(','[',intersections)
+    intersections = re.sub( '\)',']',intersections)
+    intersections = re.sub( 'intersections','"intersections"',intersections)
+    intersections = '{' + intersections + '}'
+    intersections = json.loads( intersections)
+    intersections = intersections[ 'intersections']
+    elt = {'x':0, 'y':0, 'val':'EMPTY'}
+    coltempl = [ copy.copy(elt) for _ in range(boardsz) ]
+    res = [ copy.copy(coltempl) for _ in range(boardsz) ]
+    for col in range(boardsz):
+        for row in range(boardsz):
+            idx = row * boardsz + col
+            res[col][row]['val'] = diagram[idx]
+            res[col][row]['x'] = intersections[idx][0]
+            res[col][row]['y'] = intersections[idx][1]
+    jstr = json.dumps( res)
+    with open( ofname, 'w') as f: f.write( jstr)
+
 #-----------
 def main():
     if len(sys.argv) == 1:
@@ -176,6 +248,9 @@ def main():
     for i,k in enumerate( files.keys()):
         print( '%s ...' % k)
         f = files[k]
+        if not 'json' in f:
+            f['json'] = os.path.dirname( f['img']) + '/%s_intersections.json' % k
+            make_json_file( f['sgf'], f['json'])
         img, intersections = zoom_in( f['img'], f['json'])
         if len(intersections) != 19*19:
             print( 'not a 19x19 board, skipping')
