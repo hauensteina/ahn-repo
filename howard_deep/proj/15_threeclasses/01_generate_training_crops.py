@@ -39,7 +39,7 @@ def usage(printmsg=False):
     Description:
       Scales and perspective transforms input images, save 361 crops for each.
     Example:
-      %s --infolder ~/kc-trainingdata/andreas --outfolder crops-kc
+      %s --infolder ~/kc-trainingdata/andreas --outfolder kc-crops
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -154,6 +154,11 @@ def zoom_in( imgfile, jsonfile):
         nnew = intersections_zoomed[-1]
         nnew['x'] = coords_zoomed[idx][0]
         nnew['y'] = coords_zoomed[idx][1]
+        # Mark if off board
+        if (isec['x'] < marg
+            or isec['y'] < marg
+            or isec['x'] > WIDTH - marg
+            or isec['y'] > WIDTH - marg): nnew['off_board'] = 1
     res = (warped_img, intersections_zoomed)
     return res
 
@@ -168,7 +173,7 @@ def save_intersections( img, intersections, r, basename, folder):
         y = isec['y']
         hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
         fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
-        if color in ['B','W','E']:
+        if color in ['B','W','E'] and not 'off_board' in isec:
             cv2.imwrite( fname, hood)
 
 # e.g for board size, call get_sgf_tag( sgf, "SZ")
@@ -186,10 +191,24 @@ def get_sgf_tag( tag, sgf):
 #-------------------------------------------------
 def linearize_sgf( sgf):
     boardsz = int( get_sgf_tag( 'SZ', sgf))
-    whites = re.findall( 'AW' + '\[[^\]]*', sgf)
-    blacks = re.findall( 'AB' + '\[[^\]]*', sgf)
-    res = ['EMPTY'] * boardsz * boardsz
+    if 'GOWrite' in sgf:
+        # The AW[ab][ce]... case
+        match = re.search ( 'AW(\[[a-s][a-s]\])*', sgf)
+        whites = match.group(0)
+        whites = re.sub( 'AW', '', whites)
+        whites = re.sub( '\[', 'AW[', whites)
+        whites = re.findall( 'AW' + '\[[^\]]*', whites)
+        match = re.search ( 'AB(\[[a-s][a-s]\])*', sgf)
+        blacks = match.group(0)
+        blacks = re.sub( 'AB', '', blacks)
+        blacks = re.sub( '\[', 'AB[', blacks)
+        blacks = re.findall( 'AB' + '\[[^\]]*', blacks)
+    else:
+        # The AW[ab]AW[ce]... case
+        whites = re.findall( 'AW' + '\[[^\]]*', sgf)
+        blacks = re.findall( 'AB' + '\[[^\]]*', sgf)
 
+    res = ['EMPTY'] * boardsz * boardsz
     for w in whites:
         pos = w.split( '[')[1]
         col = ord( pos[0]) - ord( 'a')
@@ -211,7 +230,8 @@ def linearize_sgf( sgf):
 #--------------------------------------------
 def make_json_file( sgffile, ofname):
     with open( sgffile) as f: sgf = f.read()
-    if not 'intersections:' in sgf:
+    sgf = sgf.replace( '\\','')
+    if not 'intersections:' in sgf and not 'intersections\:' in sgf:
         print('no intersections in ' + sgffile)
         return
     boardsz = int( get_sgf_tag( 'SZ', sgf))
