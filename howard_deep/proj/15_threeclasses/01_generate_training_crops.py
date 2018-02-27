@@ -51,9 +51,9 @@ def usage(printmsg=False):
 #----------------------------------------------------
 def collect_files( infolder):
     # Find images
-    imgs =  ut.find( infolder, '*.jpeg')
-    imgs += ut.find( infolder, '*.jpg')
-    imgs += ut.find( infolder, '*.png')
+    imgs =  ut.find( infolder, '[!.]*.jpeg')
+    imgs += ut.find( infolder, '[!.]*.jpg')
+    imgs += ut.find( infolder, '[!.]*.png')
     # Basenames
     basenames = [os.path.basename(f) for f in imgs]
     basenames = [os.path.splitext(f)[0] for f in basenames]
@@ -62,7 +62,7 @@ def collect_files( infolder):
     if ut.find( infolder, '*_intersections.json'):
         jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
     sgfs = []
-    if not jsons:
+    if ut.find( infolder, '*.sgf'):
         sgfs = [ut.find( infolder, '%s.sgf' % f)[0] for f in basenames]
 
     # Collect in dictionary
@@ -211,6 +211,9 @@ def linearize_sgf( sgf):
 #--------------------------------------------
 def make_json_file( sgffile, ofname):
     with open( sgffile) as f: sgf = f.read()
+    if not 'intersections:' in sgf:
+        print('no intersections in ' + sgffile)
+        return
     boardsz = int( get_sgf_tag( 'SZ', sgf))
     diagram = linearize_sgf( sgf)
     intersections = get_sgf_tag( 'GC', sgf)
@@ -221,8 +224,8 @@ def make_json_file( sgffile, ofname):
     intersections = json.loads( intersections)
     intersections = intersections[ 'intersections']
     elt = {'x':0, 'y':0, 'val':'EMPTY'}
-    coltempl = [ copy.copy(elt) for _ in range(boardsz) ]
-    res = [ copy.copy(coltempl) for _ in range(boardsz) ]
+    coltempl = [ copy.deepcopy(elt) for _ in range(boardsz) ]
+    res = [ copy.deepcopy(coltempl) for _ in range(boardsz) ]
     for col in range(boardsz):
         for row in range(boardsz):
             idx = row * boardsz + col
@@ -248,9 +251,9 @@ def main():
     for i,k in enumerate( files.keys()):
         print( '%s ...' % k)
         f = files[k]
-        if not 'json' in f:
-            f['json'] = os.path.dirname( f['img']) + '/%s_intersections.json' % k
-            make_json_file( f['sgf'], f['json'])
+        f['json'] = os.path.dirname( f['img']) + '/%s_intersections.json' % k
+        make_json_file( f['sgf'], f['json'])
+        # BP()
         img, intersections = zoom_in( f['img'], f['json'])
         if len(intersections) != 19*19:
             print( 'not a 19x19 board, skipping')
