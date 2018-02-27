@@ -58,9 +58,9 @@ def collect_files( infolder):
     basenames = [os.path.basename(f) for f in imgs]
     basenames = [os.path.splitext(f)[0] for f in basenames]
     # json files
-    jsons = []
-    if ut.find( infolder, '*_intersections.json'):
-        jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
+    # jsons = []
+    # if ut.find( infolder, '*_intersections.json'):
+    #     jsons = [ut.find( infolder, '%s_intersections.json' % f)[0] for f in basenames]
     sgfs = []
     if ut.find( infolder, '*.sgf'):
         sgfs = [ut.find( infolder, '%s.sgf' % f)[0] for f in basenames]
@@ -71,7 +71,7 @@ def collect_files( infolder):
         d = {}
         files[bn] = d
         d['img'] = imgs[i]
-        if jsons: d['json'] = jsons[i]
+        #if jsons: d['json'] = jsons[i]
         if sgfs:  d['sgf']  = sgfs[i]
     # Sanity check
     for bn in files.keys():
@@ -79,9 +79,9 @@ def collect_files( infolder):
         if not bn in d['img']:
             print( 'ERROR: Wrong img name for key %s' % (d['img'], bn))
             exit(1)
-        elif jsons and not bn in d['json']:
-            print( 'ERROR: Wrong json name for key %s' % (d['json'], bn))
-            exit(1)
+        # elif jsons and not bn in d['json']:
+        #     print( 'ERROR: Wrong json name for key %s' % (d['json'], bn))
+        #     exit(1)
         elif sgfs and not bn in d['sgf']:
             print( 'ERROR: Wrong sgf name for key %s' % (d['sgf'], bn))
             exit(1)
@@ -128,6 +128,9 @@ def zoom_in( imgfile, jsonfile):
 
     WIDTH = 350
     marg = WIDTH / 20.0;
+    orig_height = img.shape[0]
+    orig_width = img.shape[1]
+    orig_marg = orig_width / 20.0
     # Target square for transform
     square = np.array([
         [marg, marg],
@@ -155,10 +158,11 @@ def zoom_in( imgfile, jsonfile):
         nnew['x'] = coords_zoomed[idx][0]
         nnew['y'] = coords_zoomed[idx][1]
         # Mark if off board
-        if (isec['x'] < marg
-            or isec['y'] < marg
-            or isec['x'] > WIDTH - marg
-            or isec['y'] > WIDTH - marg): nnew['off_board'] = 1
+        if (isec['x'] < orig_marg
+            or isec['y'] < orig_marg
+            or isec['x'] > orig_width - marg
+            or isec['y'] > orig_height - marg):
+            nnew['off_board'] = 1
     res = (warped_img, intersections_zoomed)
     return res
 
