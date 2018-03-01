@@ -195,7 +195,7 @@ def get_sgf_tag( tag, sgf):
 #-------------------------------------------------
 def linearize_sgf( sgf):
     boardsz = int( get_sgf_tag( 'SZ', sgf))
-    if 'GOWrite' in sgf:
+    if not 'KifuCam' in sgf:
         # The AW[ab][ce]... case
         match = re.search ( 'AW(\[[a-s][a-s]\])*', sgf)
         whites = match.group(0)
