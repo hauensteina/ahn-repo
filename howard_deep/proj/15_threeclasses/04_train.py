@@ -21,6 +21,10 @@ import keras.models as km
 import keras.optimizers as kopt
 import coremltools
 
+import matplotlib as mpl
+mpl.use('Agg') # This makes matplotlib work without a display
+from matplotlib import pyplot as plt
+
 # Look for modules in our pylib folder
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
@@ -142,10 +146,14 @@ def main():
     # ut.normalize( images['valid_data'], means, stds)
     ut.dumb_normalize( images['train_data'])
     ut.dumb_normalize( images['valid_data'])
+
+    ut.dsi( images['valid_data'][0], 'dsi.jpg')
+    BP()
+
     model.model.fit(images['train_data'], meta['train_classes_hot'],
                     batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
-    #preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
+    preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     #print(preds)
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
@@ -166,7 +174,7 @@ def main():
                                                          green_bias = -1,
                                                          blue_bias = -1);
 
-    coreml_model.author = 'joe'
+    coreml_model.author = 'ahn'
     coreml_model.license = 'MIT'
     coreml_model.short_description = 'Classify go stones and intersections'
     coreml_model.input_description['image'] = 'A 23x23 pixel Image'

@@ -16,6 +16,10 @@ import shutil
 import glob
 import random
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg') # This makes matplotlib work without a display
+from matplotlib import pyplot as plt
+
 import keras.preprocessing.image as kp
 import keras.activations as ka
 import keras.metrics as kmet
@@ -144,11 +148,19 @@ def normalize(images, mean_per_channel, std_per_channel):
     images -= mean_per_channel
     images /= std_per_channel
 
-# Subtract 128, divide by 128
-#-------------------------------
+# Subtract 128, divide by 128 to get to a [-1,1] interval
+#----------------------------------------------------------
 def dumb_normalize(images):
     images -= 128.0
     images /= 128.0
+
+# Save a normalized image for inspection.
+# Example: dsi( images['valid'][0], 'tt.jpg')
+#------------------------------------------------------------------
+def dsi( img_, fname):
+   img = img_.astype(np.float32)
+   img += 1.0; img /= 2.0 # denormalize from [-1,1] into [0,1]
+   plt.figure(); plt.imshow(img); plt.savefig(fname) # render and save
 
 # Get all images below a folder into one huge numpy array
 # WARNING: The images must be in *subfolders* of path/train and path/valid.
