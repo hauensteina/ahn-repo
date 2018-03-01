@@ -293,8 +293,8 @@ def n_best_results( n, preds, true_classes):
 #-----------------------------------------------------------------------
 def dump_n_best_and_worst( n, model, images, meta, sset='valid'):
     preds = model.predict(images['%s_data' % sset], batch_size=8)
-    worst_indexes, worst_preds = n_worst_results( 5, preds, meta['%s_classes' % sset])
-    best_indexes = n_best_results( 5, preds, meta['%s_classes' % sset])
+    worst_indexes, worst_preds = n_worst_results( n, preds, meta['%s_classes' % sset])
+    best_indexes = n_best_results( n, preds, meta['%s_classes' % sset])
 
     for i,idx in enumerate(worst_indexes):
         dsi( images['%s_data' % sset][idx],
