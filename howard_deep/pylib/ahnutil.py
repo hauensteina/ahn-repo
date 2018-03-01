@@ -158,9 +158,10 @@ def dumb_normalize(images):
 # Example: dsi( images['valid'][0], 'tt.jpg')
 #------------------------------------------------------------------
 def dsi( img_, fname):
-   img = img_.astype(np.float32)
-   img += 1.0; img /= 2.0 # denormalize from [-1,1] into [0,1]
-   plt.figure(); plt.imshow(img); plt.savefig(fname) # render and save
+    img = img_.astype(np.float32)
+    img += 1.0; img /= 2.0 # denormalize from [-1,1] into [0,1]
+    plt.figure(); plt.imshow(img); plt.savefig(fname) # render and save
+    plt.close()
 
 # Get all images below a folder into one huge numpy array
 # WARNING: The images must be in *subfolders* of path/train and path/valid.
@@ -258,6 +259,51 @@ def to_plot(img):
         return np.rollaxis(img, 0, 1).astype(np.uint8)
     else:
         return np.rollaxis(img, 0, 3).astype(np.uint8)
+
+# Get the n indexes who predicted the wrong class,
+# sorted descending by confidence
+# Example:
+# n_worst_results( 10, preds, meta['valid_classes'])
+#----------------------------------------------------
+def n_worst_results( n, preds, true_classes):
+    pred_classes = [np.argmax(x) for x in preds]
+    pred_confidences = [np.max(x) for x in preds]
+    bad_indexes = [idx for idx,c in enumerate(true_classes) if c != pred_classes[idx]]
+    bad_true_classes = np.array(true_classes)[bad_indexes]
+    bad_pred_classes = np.array(pred_classes)[bad_indexes]
+    sorted_indexes = sorted( bad_indexes, key=lambda idx: -pred_confidences[idx])
+    worst_preds = np.array(pred_classes)[sorted_indexes]
+    return sorted_indexes[:n], worst_preds
+
+# Get the n indexes who predicted the correct class,
+# sorted descending by confidence
+# Example:
+# n_worst_results( 10, preds, meta['valid_classes'])
+#----------------------------------------------------
+def n_best_results( n, preds, true_classes):
+    pred_classes = [np.argmax(x) for x in preds]
+    pred_confidences = [np.max(x) for x in preds]
+    good_indexes = [idx for idx,c in enumerate(true_classes) if c == pred_classes[idx]]
+    good_true_classes = np.array(true_classes)[good_indexes]
+    good_pred_classes = np.array(pred_classes)[good_indexes]
+    sorted_indexes = sorted( good_indexes, key=lambda idx: -pred_confidences[idx])
+    return sorted_indexes[:n]
+
+# Save best and worst images for inspection
+#-----------------------------------------------------------------------
+def dump_n_best_and_worst( n, model, images, meta, sset='valid'):
+    preds = model.predict(images['%s_data' % sset], batch_size=8)
+    worst_indexes, worst_preds = n_worst_results( 5, preds, meta['%s_classes' % sset])
+    best_indexes = n_best_results( 5, preds, meta['%s_classes' % sset])
+
+    for i,idx in enumerate(worst_indexes):
+        dsi( images['%s_data' % sset][idx],
+             'worst_%s_%02d_%d' % (sset,i,worst_preds[i]) + os.path.basename( meta['%s_filenames' % sset][idx]))
+
+    for i,idx in enumerate(best_indexes):
+        dsi( images['%s_data' % sset][idx],
+             'best_%s_%02d_' % (sset,i) + os.path.basename( meta['%s_filenames' % sset][idx]))
+
 
 # Randomly split the jpg files in a folder into
 # train, valid, test

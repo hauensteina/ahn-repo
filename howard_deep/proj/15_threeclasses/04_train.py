@@ -127,6 +127,7 @@ def get_meta_from_fnames( path):
     }
     return res
 
+
 #-----------
 def main():
     if len(sys.argv) == 1:
@@ -147,13 +148,15 @@ def main():
     ut.dumb_normalize( images['train_data'])
     ut.dumb_normalize( images['valid_data'])
 
-    ut.dsi( images['valid_data'][0], 'dsi.jpg')
-    BP()
+    # ut.dsi( images['valid_data'][0], 'dsi.jpg')
 
     model.model.fit(images['train_data'], meta['train_classes_hot'],
                     batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
-    preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
+    ut.dump_n_best_and_worst( 5, model.model, images, meta, 'train')
+
+    # Inspect best and worst on train, test, or valid
+
     #print(preds)
     # print('>>>>>iter %d' % i)
     # for idx,layer in enumerate(model.model.layers):
