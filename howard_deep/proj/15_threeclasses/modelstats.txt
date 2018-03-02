@@ -1,6 +1,45 @@
 
 Look for WINNER to see which one was chosen.
 
+First shot simple model:
+---------------------------
+
+   #-----------------------
+    def build_model(self):
+        nb_colors=3
+        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name='image')
+        x = kl.Flatten()(inputs)
+        x = kl.Dense( 4, activation='relu')(x)
+        x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 16, activation='relu')(x)
+        #x = kl.Dense(4, activation='relu')(x)
+        output = kl.Dense( 3,activation='softmax', name='class')(x)
+
+Total params: 6,387
+Trainable params: 6,387
+Non-trainable params: 0
+_________________________________________________________________
+Found 29039 images belonging to 1 classes.
+Found 3226 images belonging to 1 classes.
+Found 29039 images belonging to 1 classes.
+Found 3226 images belonging to 1 classes.
+Train on 29039 samples, validate on 3226 samples
+Epoch 1/50
+2018-03-02 22:55:15.495689: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+29039/29039 [==============================] - 1s 49us/step - loss: 0.2870 - acc: 0.9848 - val_loss: 0.0072 - val_acc: 0.9985
+Epoch 2/50
+29039/29039 [==============================] - 1s 45us/step - loss: 0.0063 - acc: 0.9980 - val_loss: 0.0076 - val_acc: 0.9975
+Epoch 3/50
+29039/29039 [==============================] - 1s 45us/step - loss: 0.0042 - acc: 0.9987 - val_loss: 0.0047 - val_acc: 0.9988
+Epoch 4/50
+29039/29039 [==============================] - 1s 45us/step - loss: 0.0033 - acc: 0.9988 - val_loss: 0.0031 - val_acc: 0.9985
+Epoch 5/50
+
+
+=============================
+=============================
 
   #-----------------------
     def build_model(self):
