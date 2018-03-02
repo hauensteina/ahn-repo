@@ -64,19 +64,40 @@ class BEWModel:
     #-----------------------
     def build_model(self):
         nb_colors=3
-        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name='image')
-        x = kl.Flatten()(inputs)
-        x = kl.Dense( 4, activation='relu')(x)
-        x = kl.Dense( 4, activation='relu')(x)
-        #x = kl.Dense( 4, activation='relu')(x)
-        #x = kl.Dense( 4, activation='relu')(x)
-        #x = kl.Dense( 16, activation='relu')(x)
-        #x = kl.Dense(4, activation='relu')(x)
-        output = kl.Dense( 3,activation='softmax', name='class')(x)
-        self.model = km.Model(inputs=inputs, outputs=output)
+        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name = 'image')
+
+        x = kl.Conv2D( 2, (3,3), activation='relu', padding='same', name='one_a')(inputs)
+        x = kl.BatchNormalization()(x)
+        x = kl.MaxPooling2D()(x)
+        x = kl.Conv2D( 4, (3,3), activation='relu', padding='same', name='one_b')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.MaxPooling2D()(x)
+
+        x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_a')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv2D( 4, (1,1), activation='relu', padding='same', name='two_b')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_c')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.MaxPooling2D()(x)
+
+        x = kl.Conv2D( 16,(3,3), activation='relu', padding='same', name='three_a')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv2D( 8, (1,1), activation='relu', padding='same', name='three_b')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv2D( 16, (3,3), activation='relu', padding='same', name='three_c')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.MaxPooling2D()(x)
+
+        # Classification block
+        x_class_conv = kl.Conv2D( 3, (1,1), padding='same', name='lastconv')(x)
+        x_class_pool = kl.GlobalAveragePooling2D()( x_class_conv)
+        output = kl.Activation( 'softmax', name='class')(x_class_pool)
+
+        self.model = km.Model( inputs=inputs, outputs=output)
         self.model.summary()
         if self.rate > 0:
-            opt = kopt.Adam(self.rate)
+            opt = kopt.Adam( self.rate)
         else:
             opt = kopt.Adam()
         #opt = kopt.Adam(0.001)
