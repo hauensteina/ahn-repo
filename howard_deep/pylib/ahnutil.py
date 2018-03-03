@@ -287,15 +287,18 @@ def visualize_channels( model, layer_name, channels, img_, fname):
     plt.imshow( img_) #  cmap='Greys')
 
     # Show output channels
-    BP()
     for idx,channel in enumerate( channels):
         data = channel_data[:,:,channel]
+        mmin = np.min(data)
+        data -= mmin
+        mmax = np.max(data)
+        data /= mmax
         dimg  = cv2.resize( data, (img_.shape[1], img_.shape[0]), interpolation = cv2.INTER_NEAREST)
         plt.subplot( nrows, ncols, idx+2)
         ax = plt.gca()
         ax.get_xaxis().set_visible( False)
         ax.get_yaxis().set_visible( False)
-        plt.imshow( dimg, cmap='cool', alpha=1.0)
+        plt.imshow( dimg, cmap='hot', alpha=1.0)
 
     plt.tight_layout()
     plt.savefig( fname)
