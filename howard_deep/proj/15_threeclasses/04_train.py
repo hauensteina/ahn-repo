@@ -175,6 +175,7 @@ def main():
                     batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'train')
+    ut.dump_n_best_and_worst( 10, model.model, images, meta, 'valid')
 
     # Inspect best and worst on train, test, or valid
 
@@ -187,6 +188,7 @@ def main():
     #model.model.fit(images['train_data'], meta['train_classes'],
     #                batch_size=BATCH_SIZE, epochs=args.epochs)
     model.model.save('nn_bew.hd5')
+    model.model.save_weights('nn_bew.weights')
 
     coreml_model = coremltools.converters.keras.convert( model.model,
                                                          input_names=['image'],

@@ -16,6 +16,7 @@ import shutil
 import glob
 import random
 import numpy as np
+import cv2
 import matplotlib as mpl
 mpl.use('Agg') # This makes matplotlib work without a display
 from matplotlib import pyplot as plt
@@ -78,13 +79,6 @@ def plogq(y_true, y_pred):
     return res
 klo.plogq = plogq
 
-# Feed one input to a model and return the result after some intermediate level
-#----------------------------------------------------------------------------------
-def get_output_of_layer(model, layer_name, input_data):
-    intermediate_model = kmod.Model(inputs=model.input,
-                                  outputs=model.get_layer(layer_name).output)
-    res = intermediate_model.predict(input_data)
-    return res
 
 # Return iterators to get batches of images from a folder.
 # Example:
@@ -97,27 +91,27 @@ def get_output_of_layer(model, layer_name, input_data):
 # If class_mode==None, just return  [image1,image2,...]
 # WARNING: The images must be in *subfolders* of  path/train and path/valid.
 #-----------------------------------------------------------------------
-def get_batches(path,
-                gen=kp.ImageDataGenerator(),
-                shuffle=True,
-                batch_size=4,
-                class_mode='categorical',
-                target_size=(224,224),
-                color_mode='grayscale'):
+def get_batches( path,
+                 gen=kp.ImageDataGenerator(),
+                 shuffle=True,
+                 batch_size=4,
+                 class_mode='categorical',
+                 target_size=(224,224),
+                 color_mode='grayscale'):
     train_path = path + '/' + 'train'
     valid_path = path + '/' + 'valid'
-    train_batches = gen.flow_from_directory(train_path,
-                                            target_size=target_size,
-                                            class_mode=class_mode,
-                                            shuffle=shuffle,
-                                            batch_size=batch_size,
-                                            color_mode=color_mode)
-    valid_batches = gen.flow_from_directory(valid_path,
-                                            target_size=target_size,
-                                            class_mode=class_mode,
-                                            shuffle=shuffle,
-                                            batch_size=batch_size,
-                                            color_mode=color_mode)
+    train_batches = gen.flow_from_directory( train_path,
+                                             target_size=target_size,
+                                             class_mode=class_mode,
+                                             shuffle=shuffle,
+                                             batch_size=batch_size,
+                                             color_mode=color_mode)
+    valid_batches = gen.flow_from_directory( valid_path,
+                                             target_size=target_size,
+                                             class_mode=class_mode,
+                                             shuffle=shuffle,
+                                             batch_size=batch_size,
+                                             color_mode=color_mode)
     res = {'train_batches':train_batches, 'valid_batches':valid_batches}
     return res
 
@@ -150,9 +144,10 @@ def normalize(images, mean_per_channel, std_per_channel):
 
 # Subtract 128, divide by 128 to get to a [-1,1] interval
 #----------------------------------------------------------
-def dumb_normalize(images):
+def dumb_normalize( images):
     images -= 128.0
     images /= 128.0
+
 
 # Save a normalized image for inspection.
 # Example: dsi( images['valid'][0], 'tt.jpg')
@@ -260,6 +255,51 @@ def to_plot(img):
     else:
         return np.rollaxis(img, 0, 3).astype(np.uint8)
 
+# Feed one input to a model and return the result after some intermediate level
+#----------------------------------------------------------------------------------
+def get_output_of_layer( model, layer_name, input_data):
+    intermediate_model = kmod.Model( inputs=model.input,
+                                     outputs=model.get_layer(layer_name).output)
+    res = intermediate_model.predict( [input_data], batch_size=1 )
+    return res
+
+
+# Dump jpegs of model conv layer channels to file
+#---------------------------------------------------------------------
+def visualize_channels( model, layer_name, channels, img_, fname):
+    img = img_.copy()
+    img *= 2.0; img -= 1.0 # normalize to [-1,1] before feeding to model
+    img = img.reshape( (1,) + img.shape) # Add dummy batch dimension
+    channel_data = get_output_of_layer( model, layer_name, img)[0]
+    nplots = len( channels) + 1 # channels plus orig
+    ncols = 1
+    nrows = nplots // ncols
+    plt.figure( edgecolor='k')
+    fig = plt.gcf()
+    scale = 6.0
+    fig.set_size_inches( scale*ncols, scale*nrows)
+
+    # Show input image
+    plt.subplot( nrows,ncols,1)
+    ax = plt.gca()
+    ax.get_xaxis().set_visible( False)
+    ax.get_yaxis().set_visible( False)
+    plt.imshow( img_) #  cmap='Greys')
+
+    # Show output channels
+    BP()
+    for idx,channel in enumerate( channels):
+        data = channel_data[:,:,channel]
+        dimg  = cv2.resize( data, (img_.shape[1], img_.shape[0]), interpolation = cv2.INTER_NEAREST)
+        plt.subplot( nrows, ncols, idx+2)
+        ax = plt.gca()
+        ax.get_xaxis().set_visible( False)
+        ax.get_yaxis().set_visible( False)
+        plt.imshow( dimg, cmap='cool', alpha=1.0)
+
+    plt.tight_layout()
+    plt.savefig( fname)
+
 # Get the n indexes who predicted the wrong class,
 # sorted descending by confidence
 # Example:
@@ -287,22 +327,28 @@ def n_best_results( n, preds, true_classes):
     good_true_classes = np.array(true_classes)[good_indexes]
     good_pred_classes = np.array(pred_classes)[good_indexes]
     sorted_indexes = sorted( good_indexes, key=lambda idx: -pred_confidences[idx])
-    return sorted_indexes[:n]
+    # The easiest ones and the hardest ones
+    return (sorted_indexes[:n], sorted_indexes[-n:])
+
 
 # Save best and worst images for inspection
 #-----------------------------------------------------------------------
 def dump_n_best_and_worst( n, model, images, meta, sset='valid'):
     preds = model.predict(images['%s_data' % sset], batch_size=8)
     worst_indexes, worst_preds = n_worst_results( n, preds, meta['%s_classes' % sset])
-    best_indexes = n_best_results( n, preds, meta['%s_classes' % sset])
+    easiest_indexes, hardest_indexes = n_best_results( n, preds, meta['%s_classes' % sset])
 
-    for i,idx in enumerate(worst_indexes):
+    for i,idx in enumerate( worst_indexes):
         dsi( images['%s_data' % sset][idx],
              'worst_%s_%02d_%d' % (sset,i,worst_preds[i]) + os.path.basename( meta['%s_filenames' % sset][idx]))
 
-    for i,idx in enumerate(best_indexes):
+    for i,idx in enumerate( easiest_indexes):
         dsi( images['%s_data' % sset][idx],
-             'best_%s_%02d_' % (sset,i) + os.path.basename( meta['%s_filenames' % sset][idx]))
+             'easiest_%s_%02d_' % (sset,i) + os.path.basename( meta['%s_filenames' % sset][idx]))
+
+    for i,idx in enumerate( hardest_indexes):
+        dsi( images['%s_data' % sset][idx],
+             'hardest_%s_%02d_' % (sset,i) + os.path.basename( meta['%s_filenames' % sset][idx]))
 
 
 # Randomly split the jpg files in a folder into
