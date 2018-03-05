@@ -90,28 +90,31 @@ klo.plogq = plogq
 # Classes are one-hot encoded.
 # If class_mode==None, just return  [image1,image2,...]
 # WARNING: The images must be in *subfolders* of  path/train and path/valid.
-#-----------------------------------------------------------------------
+#----------------------------------------------------------------------------
 def get_batches( path,
                  gen=kp.ImageDataGenerator(),
                  shuffle=True,
                  batch_size=4,
                  class_mode='categorical',
                  target_size=(224,224),
-                 color_mode='grayscale'):
+                 color_mode='grayscale',
+                 save_to_dir=None):
     train_path = path + '/' + 'train'
     valid_path = path + '/' + 'valid'
     train_batches = gen.flow_from_directory( train_path,
-                                             target_size=target_size,
-                                             class_mode=class_mode,
-                                             shuffle=shuffle,
-                                             batch_size=batch_size,
-                                             color_mode=color_mode)
+                                             target_size = target_size,
+                                             class_mode  = class_mode,
+                                             shuffle     = shuffle,
+                                             batch_size  = batch_size,
+                                             color_mode  = color_mode,
+                                             save_to_dir = save_to_dir)
     valid_batches = gen.flow_from_directory( valid_path,
-                                             target_size=target_size,
-                                             class_mode=class_mode,
-                                             shuffle=shuffle,
-                                             batch_size=batch_size,
-                                             color_mode=color_mode)
+                                             target_size = target_size,
+                                             class_mode  = class_mode,
+                                             shuffle     = shuffle,
+                                             batch_size  = batch_size,
+                                             color_mode  = color_mode,
+                                             save_to_dir = save_to_dir)
     res = {'train_batches':train_batches, 'valid_batches':valid_batches}
     return res
 
@@ -161,14 +164,16 @@ def dsi( img_, fname):
 # Get all images below a folder into one huge numpy array
 # WARNING: The images must be in *subfolders* of path/train and path/valid.
 #---------------------------------------------------------------------------
-def get_data(path, target_size=(224,224), color_mode='grayscale'):
+def get_data( path, target_size=(224,224), color_mode='grayscale', gen=kp.ImageDataGenerator(), save_to_dir=None):
     batches = get_batches(path,
+                          gen=gen,
                           shuffle=False,
                           batch_size=1,
                           class_mode=None,
                           target_size=target_size,
-                          color_mode=color_mode
-    )
+                          color_mode=color_mode,
+                          save_to_dir=save_to_dir)
+
     train_data =  np.concatenate( [batches['train_batches'].next() for i in range(batches['train_batches'].samples)])
     valid_data =  np.concatenate( [batches['valid_batches'].next() for i in range(batches['valid_batches'].samples)])
     res = {'train_data':train_data.astype(float), 'valid_data':valid_data.astype(float)}

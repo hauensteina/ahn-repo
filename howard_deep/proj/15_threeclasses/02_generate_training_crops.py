@@ -162,7 +162,7 @@ def zoom_in( imgfile, jsonfile):
             or isec['y'] < orig_marg
             or isec['x'] > orig_width - marg
             or isec['y'] > orig_height - marg):
-            nnew['off_board'] = 1
+            nnew['off_screen'] = 1
     res = (warped_img, intersections_zoomed)
     return res
 
@@ -177,7 +177,7 @@ def save_intersections( img, intersections, r, basename, folder):
         y = isec['y']
         hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
         fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
-        if color in ['B','W','E'] and not 'off_board' in isec:
+        if color in ['B','W','E'] and not 'off_screen' in isec:
             cv2.imwrite( fname, hood)
 
 # e.g for board size, call get_sgf_tag( sgf, "SZ")

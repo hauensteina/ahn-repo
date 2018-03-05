@@ -19,6 +19,7 @@ import argparse
 import keras.layers as kl
 import keras.models as km
 import keras.optimizers as kopt
+import keras.preprocessing.image as kp
 import coremltools
 
 import matplotlib as mpl
@@ -179,26 +180,43 @@ def main():
     parser.add_argument( "--epochs", required=True, type=int)
     parser.add_argument( "--rate", required=True, type=float)
     args = parser.parse_args()
+
+    # Model
     model = BEWModel( args.resolution, args.rate)
     wfname =  'nn_bew.weights'
     if os.path.exists( wfname):
         model.model.load_weights( wfname)
-    images = ut.get_data( SCRIPTPATH, (args.resolution,args.resolution), color_mode='rgb')
+
+    # Data Augmentation
+    gen=kp.ImageDataGenerator( rotation_range=5,
+                               width_shift_range=0.1,
+                               height_shift_range=0.1,
+                               horizontal_flip=True,
+                               vertical_flip=True,
+                               channel_shift_range=0.1)
+
+    # Images
+    save_to_dir='augmented_samples'
+    if not os.path.exists( save_to_dir): save_to_dir = None
+    images = ut.get_data( SCRIPTPATH, (args.resolution,args.resolution), color_mode='rgb', gen=gen, save_to_dir=save_to_dir)
     meta   = get_meta_from_fnames( SCRIPTPATH)
     ut.dumb_normalize( images['train_data'])
     ut.dumb_normalize( images['valid_data'])
 
+    # Train
     model.model.fit(images['train_data'], meta['train_classes_hot'],
                     batch_size=BATCH_SIZE, epochs=args.epochs,
                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'train')
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'valid')
 
+    # Save weights and model
     if os.path.exists( wfname):
         shutil.move( wfname, wfname + '.bak')
     model.model.save( 'nn_bew.hd5')
     model.model.save_weights( wfname)
 
+    # Convert for iOS CoreML
     coreml_model = coremltools.converters.keras.convert( model.model,
                                                          #input_names=['image'],
                                                          #image_input_names='image',
