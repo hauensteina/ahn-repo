@@ -174,7 +174,8 @@ def main():
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'train')
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'valid')
 
-    shutil.move( wfname, wfname + '.bak')
+    if os.path.exists( wfname):
+        shutil.move( wfname, wfname + '.bak')
     model.model.save( 'nn_bew.hd5')
     model.model.save_weights( wfname)
 
