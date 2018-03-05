@@ -73,9 +73,41 @@ def usage(printmsg=False):
     else:
         return msg
 
-# The model
+# A dense model
 #===================================================================================================
-class BEWModel:
+class BEWModelDense:
+    #------------------------------
+    def __init__(self, resolution, rate=0):
+        self.resolution = resolution
+        self.rate = rate
+        self.build_model()
+
+    #-----------------------
+    def build_model(self):
+        nb_colors=3
+        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name='image')
+        x = kl.Flatten()(inputs)
+        x = kl.Dense( 4, activation='relu')(x)
+        x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 4, activation='relu')(x)
+        #x = kl.Dense( 16, activation='relu')(x)
+        #x = kl.Dense(4, activation='relu')(x)
+        output = kl.Dense( 3,activation='softmax', name='class')(x)
+        self.model = km.Model(inputs=inputs, outputs=output)
+        self.model.summary()
+        if self.rate > 0:
+            opt = kopt.Adam(self.rate)
+        else:
+            opt = kopt.Adam()
+        #opt = kopt.Adam(0.001)
+        #opt = kopt.SGD(lr=0.01)
+        self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
+#===================================================================================================
+
+# A convolutional model
+#===================================================================================================
+class BEWModelConv:
     #------------------------------
     def __init__(self, resolution, rate=0):
         self.resolution = resolution
@@ -182,18 +214,19 @@ def main():
     args = parser.parse_args()
 
     # Model
-    model = BEWModel( args.resolution, args.rate)
+    #model = BEWModelConv( args.resolution, args.rate)
+    model = BEWModelDense( args.resolution, args.rate)
     wfname =  'nn_bew.weights'
     if os.path.exists( wfname):
         model.model.load_weights( wfname)
 
     # Data Augmentation
     gen=kp.ImageDataGenerator( rotation_range=5,
-                               width_shift_range=0.1,
-                               height_shift_range=0.1,
+                               width_shift_range=0.2,
+                               height_shift_range=0.2,
                                horizontal_flip=True,
                                vertical_flip=True,
-                               channel_shift_range=0.1)
+                               channel_shift_range=0.2)
 
     # Images
     save_to_dir='augmented_samples'
