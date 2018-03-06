@@ -6,7 +6,7 @@
 # Creation Date: Feb 22, 2018
 # **********************************************************************/
 #
-# Get individual intersection crops for NN training material in wallstedt format
+# Get individual intersection crops for NN training of Black, White, Empty
 #
 
 from __future__ import division, print_function
@@ -47,7 +47,7 @@ def usage(printmsg=False):
     else:
         return msg
 
-# Collect matching jpeg and json in a dictionary
+# Collect matching jpeg and sgf in a dictionary
 #----------------------------------------------------
 def collect_files( infolder):
     # Find images
