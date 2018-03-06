@@ -30,9 +30,7 @@ from matplotlib import pyplot as plt
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
-
-
-BATCH_SIZE=32
+from IOModelConv import IOModelConv
 
 #---------------------------
 def usage(printmsg=False):
@@ -53,56 +51,55 @@ def usage(printmsg=False):
     else:
         return msg
 
-# A convolutional model
-#===================================================================================================
-class IOModelConv:
-    #------------------------------
-    def __init__(self):
-        #self.resolution = resolution
-        #self.rate = rate
-        self.build_model()
+# Dump jpegs of model conv layer channels to file
+#---------------------------------------------------------------------
+def visualize_channels( model, layer_name, channels, img_, fname):
+    img = img_.copy()
+    img *= 2.0; img -= 1.0 # normalize to [-1,1] before feeding to model
+    img = img.reshape( (1,) + img.shape) # Add dummy batch dimension
+    channel_data = ut.get_output_of_layer( model, layer_name, img)[0]
+    nplots = len( channels) + 2 # channels plus orig + overlay
+    ncols = 1
+    nrows = nplots // ncols
+    plt.figure( edgecolor='k')
+    fig = plt.gcf()
+    scale = 6.0
+    fig.set_size_inches( scale*ncols, scale*nrows)
 
-    #-----------------------
-    def build_model(self):
-        nb_colors=3
-        inputs = kl.Input( shape = ( None, None, nb_colors), name = 'image')
+    # Show input image
+    plt.subplot( nrows, ncols, 1)
+    ax = plt.gca()
+    ax.get_xaxis().set_visible( False)
+    ax.get_yaxis().set_visible( False)
+    plt.imshow( img_) #  cmap='Greys')
 
-        x = kl.Conv2D( 2, (3,3), activation='relu', padding='same', name='one_a')(inputs)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
-        x = kl.Conv2D( 4, (3,3), activation='relu', padding='same', name='one_b')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
+    # Show overlay
+    plt.subplot( nrows, ncols, 2)
+    ax = plt.gca()
+    ax.get_xaxis().set_visible( False)
+    ax.get_yaxis().set_visible( False)
+    plt.imshow( img_) #  orig
+    data = channel_data[: ,:, 0] # onboardness
+    dimg  = cv2.resize( data, (img_.shape[1], img_.shape[0]), interpolation = cv2.INTER_NEAREST)
+    plt.imshow( dimg, cmap='hot', alpha=0.5)
 
-        x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_a')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 4, (1,1), activation='relu', padding='same', name='two_b')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_c')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
+    # Show output channels
+    for idx,channel in enumerate( channels):
+        data = channel_data[:,:,channel]
+        # Normalization unnecessary, done automagically
+        #mmin = np.min(data)
+        #data -= mmin
+        #mmax = np.max(data)
+        #data /= mmax
+        dimg  = cv2.resize( data, (img_.shape[1], img_.shape[0]), interpolation = cv2.INTER_NEAREST)
+        plt.subplot( nrows, ncols, idx+3)
+        ax = plt.gca()
+        ax.get_xaxis().set_visible( False)
+        ax.get_yaxis().set_visible( False)
+        plt.imshow( dimg, cmap='hot', alpha=1.0)
 
-        x = kl.Conv2D( 16,(3,3), activation='relu', padding='same', name='three_a')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 8, (1,1), activation='relu', padding='same', name='three_b')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 16, (3,3), activation='relu', padding='same', name='three_c')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
-
-        # Classification block
-        lastconv = kl.Conv2D( 2, (1,1), padding='same', name='lastconv')(x)
-        # x_class_pool = kl.GlobalAveragePooling2D()( x_class_conv)
-        # output = kl.Activation( 'softmax', name='class')(x_class_pool)
-
-        self.model = km.Model( inputs=inputs, outputs=lastconv)
-        self.model.summary()
-        # if self.rate > 0:
-        #     opt = kopt.Adam( self.rate)
-        # else:
-        #     opt = kopt.Adam()
-        # self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-#===================================================================================================
+    plt.tight_layout()
+    plt.savefig( fname)
 
 #-----------
 def main():
@@ -119,7 +116,7 @@ def main():
     #img = cv2.imread( args.image, 1).astype(np.float32)
     model = IOModelConv()
     model.model.load_weights( 'nn_io.weights', by_name=True)
-    ut.visualize_channels( model.model, 'lastconv', [0,1], img, 'viz.jpg')
+    visualize_channels( model.model, 'lastconv', [0,1], img, 'viz.jpg')
 
 if __name__ == '__main__':
     main()

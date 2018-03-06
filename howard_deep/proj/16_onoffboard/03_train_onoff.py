@@ -30,6 +30,7 @@ from matplotlib import pyplot as plt
 SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
+from IOModelConv import IOModelConv
 
 
 import tensorflow as tf
@@ -52,7 +53,7 @@ session = tf.Session(config=config)
 K.set_session(session)
 
 
-BATCH_SIZE=128
+BATCH_SIZE=1024
 
 #---------------------------
 def usage(printmsg=False):
@@ -74,86 +75,6 @@ def usage(printmsg=False):
     else:
         return msg
 
-# A dense model
-#===================================================================================================
-class IOModelDense:
-    #------------------------------
-    def __init__(self, resolution, rate=0):
-        self.resolution = resolution
-        self.rate = rate
-        self.build_model()
-
-    #-----------------------
-    def build_model(self):
-        nb_colors=3
-        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name='image')
-        x = kl.Flatten()(inputs)
-        x = kl.Dense( 4, activation='relu')(x)
-        x = kl.Dense( 4, activation='relu')(x)
-        #x = kl.Dense( 4, activation='relu')(x)
-        #x = kl.Dense( 4, activation='relu')(x)
-        #x = kl.Dense( 16, activation='relu')(x)
-        #x = kl.Dense(4, activation='relu')(x)
-        output = kl.Dense( 2,activation='softmax', name='class')(x)
-        self.model = km.Model(inputs=inputs, outputs=output)
-        self.model.summary()
-        if self.rate > 0:
-            opt = kopt.Adam(self.rate)
-        else:
-            opt = kopt.Adam()
-        self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-#===================================================================================================
-
-# A convolutional model
-#===================================================================================================
-class IOModelConv:
-    #------------------------------
-    def __init__(self, resolution, rate=0):
-        self.resolution = resolution
-        self.rate = rate
-        self.build_model()
-
-    #-----------------------
-    def build_model(self):
-        nb_colors=3
-        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name = 'image')
-
-        x = kl.Conv2D( 2, (3,3), activation='relu', padding='same', name='one_a')(inputs)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
-        x = kl.Conv2D( 4, (3,3), activation='relu', padding='same', name='one_b')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
-
-        x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_a')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 4, (1,1), activation='relu', padding='same', name='two_b')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_c')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
-
-        x = kl.Conv2D( 16,(3,3), activation='relu', padding='same', name='three_a')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 8, (1,1), activation='relu', padding='same', name='three_b')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 16, (3,3), activation='relu', padding='same', name='three_c')(x)
-        #x = kl.BatchNormalization()(x)
-        x = kl.MaxPooling2D()(x)
-
-        # Classification block
-        x_class_conv = kl.Conv2D( 2, (1,1), padding='same', name='lastconv')(x)
-        x_class_pool = kl.GlobalAveragePooling2D()( x_class_conv)
-        output = kl.Activation( 'softmax', name='class')(x_class_pool)
-
-        self.model = km.Model( inputs=inputs, outputs=output)
-        self.model.summary()
-        if self.rate > 0:
-            opt = kopt.Adam( self.rate)
-        else:
-            opt = kopt.Adam()
-        self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-#===================================================================================================
 
 # Get metadata from the image filenames
 #-----------------------------------------
@@ -164,9 +85,9 @@ def get_meta_from_fnames( path):
 
     train_classes=[]
     for idx,fname in enumerate(train_batches.filenames):
-        if '/O_' in fname:
+        if '/I_' in fname:
             train_classes.append(0)
-        elif '/I_' in fname:
+        elif '/O_' in fname:
             train_classes.append(1)
         else:
             print( 'ERROR: Bad filename %s' % fname)
@@ -175,9 +96,9 @@ def get_meta_from_fnames( path):
 
     valid_classes=[]
     for idx,fname in enumerate(valid_batches.filenames):
-        if '/O_' in fname:
+        if '/I_' in fname:
             valid_classes.append(0)
-        elif '/I_' in fname:
+        elif '/O_' in fname:
             valid_classes.append(1)
         else:
             print( 'ERROR: Bad filename %s' % fname)
@@ -256,9 +177,9 @@ def main():
 
     coreml_model.author = 'ahn'
     coreml_model.license = 'MIT'
-    coreml_model.short_description = 'Classify go stones and intersections'
+    coreml_model.short_description = 'Classify on the board or not (IO)'
     #coreml_model.input_description['image'] = 'A 23x23 pixel Image'
-    coreml_model.output_description['output1'] = 'A one-hot vector for classes black empty white'
+    coreml_model.output_description['output1'] = 'A one-hot vector for classes I(in) and O(out)'
     coreml_model.save("nn_io.mlmodel")
 
 if __name__ == '__main__':
