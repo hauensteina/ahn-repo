@@ -3,10 +3,10 @@
 # /********************************************************************
 # Filename: whole_image.py
 # Author: AHN
-# Creation Date: Mar 2, 2018
+# Creation Date: Mar 5, 2018
 # **********************************************************************/
 #
-# Run the model trained on small intersection crops on whole images
+# Run the onoff board model trained on small intersection crops on whole images
 #
 
 from __future__ import division, print_function
@@ -39,13 +39,13 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Run the model trained on small intersection crops on whole images
+      %s --  Run the onoff board model trained on small intersection crops on whole images
     Synopsis:
-      %s --img <image>
+      %s --image <image>
     Description:
-      Run bew model on a big image
+      Run io model on a big image
     Example:
-      %s --img
+      %s --image ~/kc-trainingdata/andreas/20180227/testcase_00030.png
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -53,11 +53,13 @@ def usage(printmsg=False):
     else:
         return msg
 
-# The model
+# A convolutional model
 #===================================================================================================
-class BEWModel:
+class IOModelConv:
     #------------------------------
     def __init__(self):
+        #self.resolution = resolution
+        #self.rate = rate
         self.build_model()
 
     #-----------------------
@@ -66,37 +68,40 @@ class BEWModel:
         inputs = kl.Input( shape = ( None, None, nb_colors), name = 'image')
 
         x = kl.Conv2D( 2, (3,3), activation='relu', padding='same', name='one_a')(inputs)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
         x = kl.Conv2D( 4, (3,3), activation='relu', padding='same', name='one_b')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_a')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.Conv2D( 4, (1,1), activation='relu', padding='same', name='two_b')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_c')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D( 16,(3,3), activation='relu', padding='same', name='three_a')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.Conv2D( 8, (1,1), activation='relu', padding='same', name='three_b')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.Conv2D( 16, (3,3), activation='relu', padding='same', name='three_c')(x)
-        x = kl.BatchNormalization()(x)
+        #x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
 
         # Classification block
-        lastconv = kl.Conv2D( 3, (1,1), padding='same', name='lastconv')(x)
-        #x_class_pool = kl.GlobalAveragePooling2D()( x_class_conv)
-        #output = kl.Activation( 'softmax', name='class')(x_class_pool)
+        lastconv = kl.Conv2D( 2, (1,1), padding='same', name='lastconv')(x)
+        # x_class_pool = kl.GlobalAveragePooling2D()( x_class_conv)
+        # output = kl.Activation( 'softmax', name='class')(x_class_pool)
 
-        # Model not compiled because we do prediction only
         self.model = km.Model( inputs=inputs, outputs=lastconv)
         self.model.summary()
-
+        # if self.rate > 0:
+        #     opt = kopt.Adam( self.rate)
+        # else:
+        #     opt = kopt.Adam()
+        # self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
 #===================================================================================================
 
 #-----------
@@ -112,9 +117,9 @@ def main():
     #plt.figure(); plt.imshow( img); plt.savefig( 'tt.jpg')
     #exit(0)
     #img = cv2.imread( args.image, 1).astype(np.float32)
-    model = BEWModel()
-    model.model.load_weights( 'nn_bew.weights', by_name=True)
-    ut.visualize_channels( model.model, 'lastconv', [0,1,2], img, 'viz.jpg')
+    model = IOModelConv()
+    model.model.load_weights( 'nn_io.weights', by_name=True)
+    ut.visualize_channels( model.model, 'lastconv', [0,1], img, 'viz.jpg')
 
 if __name__ == '__main__':
     main()
