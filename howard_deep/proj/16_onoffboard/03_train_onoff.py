@@ -233,8 +233,8 @@ def main():
     model.model.fit( images['train_data'], meta['train_classes_hot'],
                      batch_size=BATCH_SIZE, epochs=args.epochs,
                      validation_data=(images['valid_data'], meta['valid_classes_hot']))
-    ut.dump_n_best_and_worst( 10, model.model, images, meta, 'train')
-    ut.dump_n_best_and_worst( 10, model.model, images, meta, 'valid')
+    ut.dump_n_best_and_worst( 5, model.model, images, meta, 'train')
+    ut.dump_n_best_and_worst( 5, model.model, images, meta, 'valid')
 
     # Save weights and model
     if os.path.exists( wfname):
