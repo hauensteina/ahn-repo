@@ -214,8 +214,8 @@ def main():
     args = parser.parse_args()
 
     # Model
-    #model = BEWModelConv( args.resolution, args.rate)
-    model = BEWModelDense( args.resolution, args.rate)
+    model = BEWModelConv( args.resolution, args.rate)
+    #model = BEWModelDense( args.resolution, args.rate)
     wfname =  'nn_bew.weights'
     if os.path.exists( wfname):
         model.model.load_weights( wfname)

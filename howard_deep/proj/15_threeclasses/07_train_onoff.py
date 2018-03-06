@@ -3,10 +3,10 @@
 # /********************************************************************
 # Filename: train.py
 # Author: AHN
-# Creation Date: Feb 16, 2018
+# Creation Date: Mar 5, 2018
 # **********************************************************************/
 #
-# Build and train threeclasses model for Go board intersections (BEW)
+# Build and train model to distinguis on and off board (I=In, O=Off)
 #
 
 from __future__ import division, print_function
@@ -59,11 +59,12 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Build and train three classes model for Go board intersections (BEW)
+      %s --  Build and train two class model to tell on board intersections from off board crops.
     Synopsis:
       %s --resolution <n> --epochs <n> --rate <learning_rate>
     Description:
       Build a NN model with Keras, train on the data in the train subfolder.
+      Intersection crops are taken *before* zoom in.
     Example:
       %s --resolution 23 --epochs 10 --rate 0.001
     ''' % (name,name,name)
@@ -75,7 +76,7 @@ def usage(printmsg=False):
 
 # A dense model
 #===================================================================================================
-class BEWModelDense:
+class IOModelDense:
     #------------------------------
     def __init__(self, resolution, rate=0):
         self.resolution = resolution
@@ -93,21 +94,19 @@ class BEWModelDense:
         #x = kl.Dense( 4, activation='relu')(x)
         #x = kl.Dense( 16, activation='relu')(x)
         #x = kl.Dense(4, activation='relu')(x)
-        output = kl.Dense( 3,activation='softmax', name='class')(x)
+        output = kl.Dense( 2,activation='softmax', name='class')(x)
         self.model = km.Model(inputs=inputs, outputs=output)
         self.model.summary()
         if self.rate > 0:
             opt = kopt.Adam(self.rate)
         else:
             opt = kopt.Adam()
-        #opt = kopt.Adam(0.001)
-        #opt = kopt.SGD(lr=0.01)
         self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
 #===================================================================================================
 
 # A convolutional model
 #===================================================================================================
-class BEWModelConv:
+class IOModelConv:
     #------------------------------
     def __init__(self, resolution, rate=0):
         self.resolution = resolution
@@ -143,7 +142,7 @@ class BEWModelConv:
         x = kl.MaxPooling2D()(x)
 
         # Classification block
-        x_class_conv = kl.Conv2D( 3, (1,1), padding='same', name='lastconv')(x)
+        x_class_conv = kl.Conv2D( 2, (1,1), padding='same', name='lastconv')(x)
         x_class_pool = kl.GlobalAveragePooling2D()( x_class_conv)
         output = kl.Activation( 'softmax', name='class')(x_class_pool)
 
@@ -153,8 +152,6 @@ class BEWModelConv:
             opt = kopt.Adam( self.rate)
         else:
             opt = kopt.Adam()
-        #opt = kopt.Adam(0.001)
-        #opt = kopt.SGD(lr=0.01)
         self.model.compile( loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
 #===================================================================================================
 
@@ -167,12 +164,10 @@ def get_meta_from_fnames( path):
 
     train_classes=[]
     for idx,fname in enumerate(train_batches.filenames):
-        if '/B_' in fname:
+        if '/O_' in fname:
             train_classes.append(0)
-        elif '/E_' in fname:
+        elif '/I_' in fname:
             train_classes.append(1)
-        elif '/W_' in fname:
-            train_classes.append(2)
         else:
             print( 'ERROR: Bad filename %s' % fname)
             exit(1)
@@ -180,12 +175,10 @@ def get_meta_from_fnames( path):
 
     valid_classes=[]
     for idx,fname in enumerate(valid_batches.filenames):
-        if '/B_' in fname:
+        if '/O_' in fname:
             valid_classes.append(0)
-        elif '/E_' in fname:
+        elif '/I_' in fname:
             valid_classes.append(1)
-        elif '/W_' in fname:
-            valid_classes.append(2)
         else:
             print( 'ERROR: Bad filename %s' % fname)
             exit(1)
@@ -214,9 +207,9 @@ def main():
     args = parser.parse_args()
 
     # Model
-    #model = BEWModelConv( args.resolution, args.rate)
-    model = BEWModelDense( args.resolution, args.rate)
-    wfname =  'nn_bew.weights'
+    model = IOModelConv( args.resolution, args.rate)
+    #model = IOModelDense( args.resolution, args.rate)
+    wfname =  'nn_io.weights'
     if os.path.exists( wfname):
         model.model.load_weights( wfname)
 
@@ -237,24 +230,24 @@ def main():
     ut.dumb_normalize( images['valid_data'])
 
     # Train
-    model.model.fit(images['train_data'], meta['train_classes_hot'],
-                    batch_size=BATCH_SIZE, epochs=args.epochs,
-                    validation_data=(images['valid_data'], meta['valid_classes_hot']))
+    model.model.fit( images['train_data'], meta['train_classes_hot'],
+                     batch_size=BATCH_SIZE, epochs=args.epochs,
+                     validation_data=(images['valid_data'], meta['valid_classes_hot']))
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'train')
     ut.dump_n_best_and_worst( 10, model.model, images, meta, 'valid')
 
     # Save weights and model
     if os.path.exists( wfname):
         shutil.move( wfname, wfname + '.bak')
-    model.model.save( 'nn_bew.hd5')
+    model.model.save( 'nn_io.hd5')
     model.model.save_weights( wfname)
 
     # Convert for iOS CoreML
     coreml_model = coremltools.converters.keras.convert( model.model,
                                                          #input_names=['image'],
                                                          #image_input_names='image',
-                                                         class_labels = ['b', 'e', 'w'],
-                                                         predicted_feature_name='bew'
+                                                         class_labels = ['i', 'o'],
+                                                         predicted_feature_name='io'
                                                          #image_scale = 1/128.0,
                                                          #red_bias = -1,
                                                          #green_bias = -1,
@@ -266,7 +259,7 @@ def main():
     coreml_model.short_description = 'Classify go stones and intersections'
     #coreml_model.input_description['image'] = 'A 23x23 pixel Image'
     coreml_model.output_description['output1'] = 'A one-hot vector for classes black empty white'
-    coreml_model.save("nn_bew.mlmodel")
+    coreml_model.save("nn_io.mlmodel")
 
 if __name__ == '__main__':
     main()
