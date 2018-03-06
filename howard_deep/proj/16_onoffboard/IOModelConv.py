@@ -40,10 +40,11 @@ from keras import backend as K
 #===================================================================================================
 class IOModelConv:
     #------------------------------
-    def __init__( self, resolution=None, rate=0):
-        self.resolution = resolution
-        self.rate = rate
-        if resolution:
+    def __init__( self, width=None, height=None, rate=0, classify=True):
+        self.width  = width
+        self.height = height
+        self.rate   = rate
+        if classify:
             self.build_model_classify()
         else:
             self.build_model_conv()
@@ -81,7 +82,7 @@ class IOModelConv:
     #----------------------------------------------------------
     def build_model_classify( self):
         nb_colors=3
-        inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name = 'image')
+        inputs = kl.Input( shape = ( self.height, self.width, nb_colors), name = 'image')
         lastconv = self.make_layers( inputs)
 
         # Classification block
@@ -100,7 +101,7 @@ class IOModelConv:
     #------------------------------------------------------
     def build_model_conv( self):
         nb_colors=3
-        inputs = kl.Input( shape = ( None, None, nb_colors), name = 'image')
+        inputs = kl.Input( shape = ( self.height, self.width, nb_colors), name = 'image')
         lastconv = self.make_layers( inputs)
 
         # Just use highest convolutional layer as output

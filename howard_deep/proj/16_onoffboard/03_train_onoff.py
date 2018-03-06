@@ -128,8 +128,7 @@ def main():
     args = parser.parse_args()
 
     # Model
-    model = IOModelConv( args.resolution, args.rate)
-    #model = IOModelDense( args.resolution, args.rate)
+    model = IOModelConv( width=args.resolution, height=args.resolution, rate=args.rate, classify=True)
     wfname =  'nn_io.weights'
     if os.path.exists( wfname):
         model.model.load_weights( wfname)
@@ -163,23 +162,16 @@ def main():
     model.model.save( 'nn_io.hd5')
     model.model.save_weights( wfname)
 
-    # Convert for iOS CoreML
-    coreml_model = coremltools.converters.keras.convert( model.model,
-                                                         #input_names=['image'],
-                                                         #image_input_names='image',
-                                                         class_labels = ['i', 'o'],
-                                                         predicted_feature_name='io'
-                                                         #image_scale = 1/128.0,
-                                                         #red_bias = -1,
-                                                         #green_bias = -1,
-                                                         #blue_bias = -1
-    );
+    # Convert convolutional layers for iOS CoreML
+    model = IOModelConv( width=350, height=466, classify=False)
+    model.model.load_weights( wfname, by_name=True)
+    coreml_model = coremltools.converters.keras.convert( model.model)
 
     coreml_model.author = 'ahn'
     coreml_model.license = 'MIT'
-    coreml_model.short_description = 'Classify on the board or not (IO)'
+    coreml_model.short_description = 'Boardness feature'
     #coreml_model.input_description['image'] = 'A 23x23 pixel Image'
-    coreml_model.output_description['output1'] = 'A one-hot vector for classes I(in) and O(out)'
+    coreml_model.output_description['output1'] = 'A feature map for boardness'
     coreml_model.save("nn_io.mlmodel")
 
 if __name__ == '__main__':
