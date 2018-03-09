@@ -46,42 +46,6 @@ def usage(printmsg=False):
     else:
         return msg
 
-# Randomly split the jpg files in a folder into
-# train, valid, test
-#-------------------------------------------------
-def split_files( folder, trainpct, validpct, substr=''):
-    files = glob.glob( folder + '/*_hood_*.jpg')
-    files = [os.path.basename(f) for f in files];
-    files = [f for f in files if substr in f];
-    random.shuffle( files)
-    ntrain = int( round( len( files) * (trainpct / 100.0)))
-    nvalid = int( round( len( files) * (validpct / 100.0)))
-    trainfiles = files[:ntrain]
-    validfiles = files[ntrain:ntrain+nvalid]
-    testfiles  = files[ntrain+nvalid:]
-
-    # Also get the threshed versions
-    trainfiles_thresh = [ re.sub( '_hood_', '_thresh_', x) for x in trainfiles ]
-    validfiles_thresh = [ re.sub( '_hood_', '_thresh_', x) for x in validfiles ]
-    testfiles_thresh  = [ re.sub( '_hood_', '_thresh_', x) for x in testfiles ]
-
-    os.makedirs( 'test/all_files')
-    os.makedirs( 'train/all_files')
-    os.makedirs( 'valid/all_files')
-
-    for f in trainfiles:
-        shutil.copy2( folder + '/' + f, 'train/all_files/' + f)
-    for f in validfiles:
-        shutil.copy2( folder + '/' + f, 'valid/all_files/' + f)
-    for f in testfiles:
-        shutil.copy2( folder + '/' + f, 'test/all_files/' + f)
-
-    for f in trainfiles_thresh:
-        shutil.copy2( folder + '/' + f, 'train/all_files/' + f)
-    for f in validfiles_thresh:
-        shutil.copy2( folder + '/' + f, 'valid/all_files/' + f)
-    for f in testfiles_thresh:
-        shutil.copy2( folder + '/' + f, 'test/all_files/' + f)
 
 #-----------
 def main():
@@ -94,7 +58,7 @@ def main():
     parser.add_argument( "--trainpct",    required=True, type=int)
     parser.add_argument( "--validpct",    required=True, type=int)
     args = parser.parse_args()
-    split_files( args.folder, args.trainpct, args.validpct, args.substr)
+    ut.split_files( args.folder, args.trainpct, args.validpct, args.substr)
 
 
 if __name__ == '__main__':

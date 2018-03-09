@@ -179,11 +179,13 @@ def save_intersections( img, intersections, r, basename, folder):
         y = isec['y']
         hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
         fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
-        threshname = "%s/%s_rgb_%s_thresh_%03d.jpg" % (folder, color, basename, i)
+        rgtname = "%s/%s_rgt_%s_hood_%03d.jpg" % (folder, color, basename, i)
         if color in ['B','W','E'] and not 'off_screen' in isec:
             cv2.imwrite( fname, hood)
             thood = threshed[y-dy:y+dy+1, x-dx:x+dx+1]
-            cv2.imwrite( threshname, thood)
+            # replace blue channel with threshold result
+            hood[:,:,2] = thood
+            cv2.imwrite( rgtname, hood)
 
 
 # e.g for board size, call get_sgf_tag( sgf, "SZ")
