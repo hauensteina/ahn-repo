@@ -167,8 +167,10 @@ def zoom_in( imgfile, jsonfile):
     return res
 
 # Save intersection crops of size rxr
-#-------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
 def save_intersections( img, intersections, r, basename, folder):
+    gray = cv2.cvtColor( img, cv2.COLOR_BGR2GRAY)
+    threshed = cv2.adaptiveThreshold( gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, blockSize=5, C=4)
     dx = int(r / 2)
     dy = int(r / 2)
     for i,isec in enumerate( intersections):
@@ -177,8 +179,12 @@ def save_intersections( img, intersections, r, basename, folder):
         y = isec['y']
         hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
         fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
+        threshname = "%s/%s_rgb_%s_thresh_%03d.jpg" % (folder, color, basename, i)
         if color in ['B','W','E'] and not 'off_screen' in isec:
             cv2.imwrite( fname, hood)
+            thood = threshed[y-dy:y+dy+1, x-dx:x+dx+1]
+            cv2.imwrite( threshname, thood)
+
 
 # e.g for board size, call get_sgf_tag( sgf, "SZ")
 #---------------------------------------------------
