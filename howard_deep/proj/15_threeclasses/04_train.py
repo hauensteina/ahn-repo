@@ -52,7 +52,7 @@ session = tf.Session(config=config)
 K.set_session(session)
 
 
-BATCH_SIZE=128
+BATCH_SIZE=1024
 
 #---------------------------
 def usage(printmsg=False):
@@ -120,26 +120,18 @@ class BEWModelConv:
         inputs = kl.Input( shape = ( self.resolution, self.resolution, nb_colors), name = 'image')
 
         x = kl.Conv2D( 2, (3,3), activation='relu', padding='same', name='one_a')(inputs)
-        x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
         x = kl.Conv2D( 4, (3,3), activation='relu', padding='same', name='one_b')(x)
-        x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
 
         x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_a')(x)
-        x = kl.BatchNormalization()(x)
         x = kl.Conv2D( 4, (1,1), activation='relu', padding='same', name='two_b')(x)
-        x = kl.BatchNormalization()(x)
         x = kl.Conv2D( 8, (3,3), activation='relu', padding='same', name='two_c')(x)
-        x = kl.BatchNormalization()(x)
         x = kl.MaxPooling2D()(x)
 
-        x = kl.Conv2D( 16,(3,3), activation='relu', padding='same', name='three_a')(x)
-        x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 8, (1,1), activation='relu', padding='same', name='three_b')(x)
-        x = kl.BatchNormalization()(x)
-        x = kl.Conv2D( 16, (3,3), activation='relu', padding='same', name='three_c')(x)
-        x = kl.BatchNormalization()(x)
+        x = kl.Conv2D( 16,(3,3), activation='relu', padding='same', name='three_a1')(x)
+        x = kl.Conv2D( 8, (1,1), activation='relu', padding='same', name='three_b1')(x)
+        x = kl.Conv2D( 16, (3,3), activation='relu', padding='same', name='three_c1')(x)
         x = kl.MaxPooling2D()(x)
 
         # Classification block
