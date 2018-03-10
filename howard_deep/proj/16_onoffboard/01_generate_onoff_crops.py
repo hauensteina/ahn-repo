@@ -279,13 +279,44 @@ def save_offboard_crops( img, intersections, r, basename, folder):
     marg = r // 2 + 1
     for i in range( boardsz * boardsz):
         d = 0
-        while d > -dgrid:
+        while d > -dgrid: # close to board, try again
             x = randint( marg, width-marg)
             y = randint( marg, height-marg)
             d = cv2.pointPolygonTest (cnt, (x,y), measureDist=True)
         isec = {'x':x, 'y':y, 'val':'O'} # 'O' like OUT
         outside_points += [isec]
     save_intersections( img, outside_points, r, basename, folder)
+
+# Randomly find boardsize*boardsz onboard crops and save them to folder.
+#----------------------------------------------------------------------------
+def save_onboard_crops( img, intersections, r, basename, folder):
+    boardsz = int( np.sqrt( len( intersections)) + 0.5)
+    tl = intersections[0]
+    tr = intersections[boardsz-1]
+    br = intersections[boardsz*boardsz-1]
+    bl = intersections[boardsz*boardsz - boardsz]
+    cnt = np.array (
+        ((tl['x'], tl['y']),
+        (tr['x'], tr['y']),
+        (br['x'], br['y']),
+        (bl['x'], bl['y']))
+        , dtype='int32' )
+
+    dgrid = np.round( cv2.norm( (bl['x'],bl['y']), (br['x'], br['y']) ) / (boardsz - 1))
+    height = img.shape[0]
+    width  = img.shape[1]
+
+    inside_points = []
+    marg = r // 2 + 1
+    for i in range( boardsz * boardsz):
+        d = 0
+        while d <= 0: # off board, try again
+            x = randint( marg, width-marg)
+            y = randint( marg, height-marg)
+            d = cv2.pointPolygonTest( cnt, (x,y), measureDist=True)
+        isec = {'x':x, 'y':y, 'val':'I'} # 'I' like IN
+        inside_points += [isec]
+    save_intersections( img, inside_points, r, basename, folder)
 
 #-----------
 def main():
@@ -311,7 +342,8 @@ def main():
             print( 'not a 19x19 board, skipping')
             continue
         for isec in intersections: isec['val'] = 'I' # I like 'IN'
-        save_intersections(  img, intersections, CROPSZ, k, args.outfolder)
+        #save_intersections(  img, intersections, CROPSZ, k, args.outfolder)
+        save_onboard_crops(  img, intersections, CROPSZ, k, args.outfolder)
         save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
 
 
