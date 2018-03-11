@@ -342,8 +342,8 @@ def main():
             print( 'not a 19x19 board, skipping')
             continue
         for isec in intersections: isec['val'] = 'I' # I like 'IN'
-        #save_intersections(  img, intersections, CROPSZ, k, args.outfolder)
-        save_onboard_crops(  img, intersections, CROPSZ, k, args.outfolder)
+        save_intersections(  img, intersections, CROPSZ, k, args.outfolder)
+        #save_onboard_crops(  img, intersections, CROPSZ, k, args.outfolder)
         save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
 
 
