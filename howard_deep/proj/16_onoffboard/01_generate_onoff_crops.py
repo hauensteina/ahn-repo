@@ -318,6 +318,22 @@ def save_onboard_crops( img, intersections, r, basename, folder):
         inside_points += [isec]
     save_intersections( img, inside_points, r, basename, folder)
 
+# Randomly choose boardsize*boardsz crops and save them to folder.
+#----------------------------------------------------------------------------
+def save_random_crops( img, intersections, r, basename, folder):
+    boardsz = int( np.sqrt( len( intersections)) + 0.5)
+    height = img.shape[0]
+    width  = img.shape[1]
+
+    points = []
+    marg = r // 2 + 1
+    for i in range( boardsz * boardsz):
+        x = randint( marg, width-marg)
+        y = randint( marg, height-marg)
+        isec = {'x':x, 'y':y, 'val':'O'} # 'O' like Outside, because it's probably not an intersection
+        points += [isec]
+    save_intersections( img, points, r, basename, folder)
+
 #-----------
 def main():
     if len(sys.argv) == 1:
@@ -344,7 +360,8 @@ def main():
         for isec in intersections: isec['val'] = 'I' # I like 'IN'
         save_intersections(  img, intersections, CROPSZ, k, args.outfolder)
         #save_onboard_crops(  img, intersections, CROPSZ, k, args.outfolder)
-        save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
+        #save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
+        save_random_crops(   img, intersections, CROPSZ, k, args.outfolder)
 
 
 if __name__ == '__main__':
