@@ -169,8 +169,8 @@ def zoom_in( imgfile, jsonfile):
 # Save intersection crops of size rxr
 #-----------------------------------------------------------------------------------
 def save_intersections( img, intersections, r, basename, folder):
-    gray = cv2.cvtColor( img, cv2.COLOR_BGR2GRAY)
-    threshed = cv2.adaptiveThreshold( gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, blockSize=5, C=4)
+    #ray = cv2.cvtColor( img, cv2.COLOR_BGR2GRAY)
+    #threshed = cv2.adaptiveThreshold( gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, blockSize=5, C=4)
     dx = int(r / 2)
     dy = int(r / 2)
     for i,isec in enumerate( intersections):
@@ -179,13 +179,13 @@ def save_intersections( img, intersections, r, basename, folder):
         y = isec['y']
         hood = img[y-dy:y+dy+1, x-dx:x+dx+1]
         fname = "%s/%s_rgb_%s_hood_%03d.jpg" % (folder, color, basename, i)
-        rgtname = "%s/%s_rgt_%s_hood_%03d.jpg" % (folder, color, basename, i)
+        #rgtname = "%s/%s_rgt_%s_hood_%03d.jpg" % (folder, color, basename, i)
         if color in ['B','W','E'] and not 'off_screen' in isec:
             cv2.imwrite( fname, hood)
-            thood = threshed[y-dy:y+dy+1, x-dx:x+dx+1]
+            #thood = threshed[y-dy:y+dy+1, x-dx:x+dx+1]
             # replace blue channel with threshold result
-            hood[:,:,2] = thood
-            cv2.imwrite( rgtname, hood)
+            #hood[:,:,2] = thood
+            #cv2.imwrite( rgtname, hood)
 
 
 # e.g for board size, call get_sgf_tag( sgf, "SZ")
@@ -252,6 +252,7 @@ def make_json_file( sgffile, ofname):
     intersections = re.sub( '\(','[',intersections)
     intersections = re.sub( '\)',']',intersections)
     intersections = re.sub( 'intersections','"intersections"',intersections)
+    intersections = re.sub( '#.*','',intersections)
     intersections = '{' + intersections + '}'
     intersections = json.loads( intersections)
     intersections = intersections[ 'intersections']
