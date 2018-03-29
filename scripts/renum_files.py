@@ -51,7 +51,7 @@ def main():
 
     # Make a rename map based on basename
     newnames = {}
-    fnum = 0
+    fnum = -1
     for f in files:
         basename = f.split( os.extsep, 1)[0]
         if not basename in newnames:
