@@ -52,7 +52,8 @@ session = tf.Session(config=config)
 K.set_session(session)
 
 
-BATCH_SIZE=1024
+#BATCH_SIZE=1024
+BATCH_SIZE=32
 
 #---------------------------
 def usage(printmsg=False):

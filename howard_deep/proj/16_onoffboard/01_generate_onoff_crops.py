@@ -221,6 +221,15 @@ def linearize_sgf( sgf):
 
     return res
 
+# Parse phi and theta out of the sgf file
+#-------------------------------------------
+def get_phi_theta( fname):
+    with open( fname) as f: sgf = f.read()
+    gc = get_sgf_tag( 'GC', sgf)
+    phi = re.sub( r'.*#phi:([^#]*)#.*',r'\1',gc)
+    theta = re.sub( r'.*#theta:([^#]*)#.*',r'\1',gc)
+    return float(phi), float(theta)
+
 # Make a Wallstedt type json file from an sgf with the
 # intersection coordinates in the GC tag
 #--------------------------------------------
@@ -236,6 +245,7 @@ def make_json_file( sgffile, ofname):
     intersections = re.sub( '\(','[',intersections)
     intersections = re.sub( '\)',']',intersections)
     intersections = re.sub( 'intersections','"intersections"',intersections)
+    intersections = re.sub( '#.*','',intersections)
     intersections = '{' + intersections + '}'
     intersections = json.loads( intersections)
     intersections = intersections[ 'intersections']
@@ -334,6 +344,32 @@ def save_random_crops( img, intersections, r, basename, folder):
         points += [isec]
     save_intersections( img, points, r, basename, folder)
 
+
+# Return a perspective transform by angle phi
+#-----------------------------------------------
+def perspective_warp( rows, cols, phi):
+    phi *= np.pi / 180.0
+    center_x = cols / 2.0
+    center_y = rows / 2.0
+    a = 1.0 * rows # Distance of eye from image center
+    s = 1.0 # side of orig square
+    # Undistorted orig square
+    bl_sq = ( center_x - s/2.0, center_y)
+    br_sq = ( center_x + s/2.0, center_y)
+    tl_sq = ( center_x - s/2.0, center_y - s)
+    tr_sq = ( center_x + s/2.0, center_y - s)
+    # Distorted by angle phi
+    bl_dist = ( center_x - s/2.0, center_y)
+    br_dist = ( center_x + s/2.0, center_y)
+    l2r = a / (s * (np.sqrt( a*a + s*s - 2 * a * s * np.cos(phi)))) # distorted distance left to right
+    b2t = s * np.sin( phi) # distorted bottom to top
+    tl_dist = ( center_x - l2r/2.0, center_y - b2t)
+    tr_dist = ( center_x + l2r/2.0, center_y - b2t)
+    src = np.array( [tl_dist, tr_dist, br_dist, bl_dist], dtype = 'float32')
+    dst = np.array( [tl_sq, tr_sq, br_sq, bl_sq], dtype = 'float32')
+    M = cv2.getPerspectiveTransform( src, dst)
+    return M
+
 #-----------
 def main():
     if len(sys.argv) == 1:
@@ -352,16 +388,36 @@ def main():
         f = files[k]
         f['json'] = os.path.dirname( f['img']) + '/%s_intersections.json' % k
         make_json_file( f['sgf'], f['json'])
-        # BP()
+        phi, theta = get_phi_theta( f['sgf'])
         img, intersections = scale_350( f['img'], f['json'])
+        rows = img.shape[0]
+        cols = img.shape[1]
+        Ms = cv2.getRotationMatrix2D( (cols/2.0, rows/2.0), theta, 1.0)
+        Mp = perspective_warp( rows, cols, phi)
+        # Unwarp image
+        #cv2.imwrite( 'tt1.jpg', img)
+        img = cv2.warpAffine( img, Ms, (cols, rows))
+        #cv2.imwrite( 'tt2.jpg', img)
+        img = cv2.warpPerspective( img, Mp, (cols, rows))
+        #cv2.imwrite( 'tt3.jpg', img)
+        # Unwarp intersections
+        isecs = np.array( [[p['x'],p['y']] for p in intersections], dtype = 'float32')
+        # This needs a stupid empty dimension added
+        sz = len(isecs)
+        isecs_unwarped = cv2.transform( isecs.reshape( 1, sz, 2).astype('float32'), Ms)
+        isecs_unwarped = isecs_unwarped.reshape(sz,2).astype('int')
+        for idx,isec in enumerate(intersections):
+            isec['x'] = isecs_unwarped[idx][0]
+            isec['y'] = isecs_unwarped[idx][1]
+
         if len(intersections) != 19*19:
             print( 'not a 19x19 board, skipping')
             continue
         for isec in intersections: isec['val'] = 'I' # I like 'IN'
-        save_intersections(  img, intersections, CROPSZ, k, args.outfolder)
+        save_intersections( img, intersections, CROPSZ, k, args.outfolder)
         #save_onboard_crops(  img, intersections, CROPSZ, k, args.outfolder)
-        #save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
-        save_random_crops(   img, intersections, CROPSZ, k, args.outfolder)
+        save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
+        #save_random_crops( img, intersections, CROPSZ, k, args.outfolder)
 
 
 if __name__ == '__main__':
