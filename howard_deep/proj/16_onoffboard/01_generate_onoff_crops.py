@@ -226,6 +226,7 @@ def linearize_sgf( sgf):
 def get_phi_theta( fname):
     with open( fname) as f: sgf = f.read()
     gc = get_sgf_tag( 'GC', sgf)
+    gc = gc.replace( '\\','')
     phi = re.sub( r'.*#phi:([^#]*)#.*',r'\1',gc)
     theta = re.sub( r'.*#theta:([^#]*)#.*',r'\1',gc)
     return float(phi), float(theta)

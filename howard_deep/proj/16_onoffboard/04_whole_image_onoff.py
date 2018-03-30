@@ -98,6 +98,24 @@ def visualize_channels( model, layer_name, channels, img_, fname):
         ax.get_yaxis().set_visible( False)
         plt.imshow( dimg, cmap='hot', alpha=1.0)
 
+    # # Channel 0 minus Channel 1
+    # chan0 =  channel_data[:,:,0].astype(np.float32)
+    # chan1 =  channel_data[:,:,1].astype(np.float32)
+    # diff = chan0 - chan1
+    # mmax = np.max(diff)
+    # mmin = np.min(diff)
+    # diff -= mmin
+    # diff /= (mmax - mmin)
+    # diff *= 255
+    # diff = diff.astype(np.uint8)
+    # dimg = cv2.resize( diff, (img_.shape[1], img_.shape[0]), interpolation = cv2.INTER_NEAREST)
+    # plt.subplot( nrows, ncols, nrows)
+    # ax = plt.gca()
+    # ax.get_xaxis().set_visible( False)
+    # ax.get_yaxis().set_visible( False)
+    # plt.imshow( dimg, cmap='hot', alpha=1.0)
+
+
     plt.tight_layout()
     plt.savefig( fname)
 
