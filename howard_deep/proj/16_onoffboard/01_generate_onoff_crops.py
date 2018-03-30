@@ -356,7 +356,7 @@ def perspective_warp( rows, cols, phi):
     s = 1.0 # side of orig square
     # Undistorted orig square
     # Move the square down to avoid projecting the top edge off screen
-    d = (sz.height / 4.0) * cos(phi) * -1
+    d = (rows / 4.0) * np.cos(phi) * -1
     bl_sq = ( center_x - s/2.0, center_y + d)
     br_sq = ( center_x + s/2.0, center_y + d)
     tl_sq = ( center_x - s/2.0, center_y - s + d)
@@ -408,6 +408,7 @@ def main():
         # This needs a stupid empty dimension added
         sz = len(isecs)
         isecs_unwarped = cv2.transform( isecs.reshape( 1, sz, 2).astype('float32'), Ms)
+        isecs_unwarped = cv2.perspectiveTransform( isecs_unwarped, Mp)
         isecs_unwarped = isecs_unwarped.reshape(sz,2).astype('int')
         for idx,isec in enumerate(intersections):
             isec['x'] = isecs_unwarped[idx][0]
