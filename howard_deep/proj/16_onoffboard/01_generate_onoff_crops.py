@@ -355,10 +355,12 @@ def perspective_warp( rows, cols, phi):
     a = 1.0 * rows # Distance of eye from image center
     s = 1.0 # side of orig square
     # Undistorted orig square
-    bl_sq = ( center_x - s/2.0, center_y)
-    br_sq = ( center_x + s/2.0, center_y)
-    tl_sq = ( center_x - s/2.0, center_y - s)
-    tr_sq = ( center_x + s/2.0, center_y - s)
+    # Move the square down to avoid projecting the top edge off screen
+    d = (sz.height / 4.0) * cos(phi) * -1
+    bl_sq = ( center_x - s/2.0, center_y + d)
+    br_sq = ( center_x + s/2.0, center_y + d)
+    tl_sq = ( center_x - s/2.0, center_y - s + d)
+    tr_sq = ( center_x + s/2.0, center_y - s + d)
     # Distorted by angle phi
     bl_dist = ( center_x - s/2.0, center_y)
     br_dist = ( center_x + s/2.0, center_y)
