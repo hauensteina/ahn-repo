@@ -417,13 +417,21 @@ def main():
             print( 'not a 19x19 board, skipping')
             continue
         boardsz = 19
+        inner_isecs = []
+        outer_isecs = []
         for idx, isec in enumerate( intersections):
             isec['val'] = 'I'
             if idx % boardsz == 0: isec['val'] = 'O' # left
             if idx % boardsz == boardsz-1: isec['val'] = 'O' # right
             if idx < boardsz: isec['val'] = 'O' # top
             if idx >= boardsz*boardsz - boardsz: isec['val'] = 'O' # bottom
-        save_intersections( img, intersections, CROPSZ, k, args.outfolder)
+            if isec['val'] == 'I':
+            	inner_isecs.append( isec)
+            else:
+	            outer_isecs.append( isec)
+        # Make sure same number of example for each class
+        save_intersections( img, inner_isecs[:len(outer_isecs)], CROPSZ, k, args.outfolder)
+        save_intersections( img, outer_isecs, CROPSZ, k, args.outfolder)
 
 if __name__ == '__main__':
     main()
