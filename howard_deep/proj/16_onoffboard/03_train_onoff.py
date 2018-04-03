@@ -60,12 +60,12 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --  Build and train two class model to tell on board intersections from off board crops.
+      %s --  Build and train two class model to tell inner board intersections from edge board intersections.
     Synopsis:
       %s --resolution <n> --epochs <n> --rate <learning_rate>
     Description:
       Build a NN model with Keras, train on the data in the train subfolder.
-      Intersection crops are taken *before* zoom in.
+      Intersection crops are taken *before* zoom in, but after dewarp with phi and theta.
     Example:
       %s --resolution 23 --epochs 10 --rate 0.001
     ''' % (name,name,name)

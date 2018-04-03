@@ -34,14 +34,13 @@ def usage(printmsg=False):
     name = os.path.basename(__file__)
     msg = '''
     Name:
-      %s --   Get crops to train a two class classifier onboard/offboard
+      %s --   Get crops to train a two class classifier in_board / edge_of_board
     Synopsis:
       %s --infolder <ifolder> --outfolder <ofolder>
     Description:
-      Gets an equal number of crops on and off the board.
-      The on-board crops are intersections, the off-board ones are random.
+      Gets crops from inside the board vs edge of board.
     Example:
-      %s --infolder ~/kc-trainingdata/andreas/20180227 --outfolder kc-onoff-crops
+      %s --infolder ~/kc-trainingdata/andreas/phitheta --outfolder kc-inside-edge-crops
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -417,12 +416,14 @@ def main():
         if len(intersections) != 19*19:
             print( 'not a 19x19 board, skipping')
             continue
-        for isec in intersections: isec['val'] = 'I' # I like 'IN'
+        boardsz = 19
+        for idx, isec in enumerate( intersections):
+            isec['val'] = 'I'
+            if idx % boardsz == 0: isec['val'] = 'O' # left
+            if idx % boardsz == boardsz-1: isec['val'] = 'O' # right
+            if idx < boardsz: isec['val'] = 'O' # top
+            if idx >= boardsz*boardsz - boardsz: isec['val'] = 'O' # bottom
         save_intersections( img, intersections, CROPSZ, k, args.outfolder)
-        #save_onboard_crops(  img, intersections, CROPSZ, k, args.outfolder)
-        save_offboard_crops( img, intersections, CROPSZ, k, args.outfolder)
-        #save_random_crops( img, intersections, CROPSZ, k, args.outfolder)
-
 
 if __name__ == '__main__':
     main()
