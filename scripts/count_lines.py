@@ -61,8 +61,8 @@ def main():
                         continue
                     lcount_in_file += 1
                     lcount += 1
-                print( '%5d %s/%s' % (lcount_in_file, d[0], f))
-    print( '%d TOTAL' % lcount)
+                print( '%7d %s/%s' % (lcount_in_file, d[0], f))
+    print( '%7d TOTAL' % lcount)
 
 
 if __name__ == '__main__':
