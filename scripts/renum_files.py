@@ -34,6 +34,7 @@ def usage(printmsg=False):
 def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--prefix", required=True)
+    parser.add_argument( "--start", type=int)
     args = parser.parse_args()
 
     # Make backup
@@ -51,7 +52,7 @@ def main():
 
     # Make a rename map based on basename
     newnames = {}
-    fnum = -1
+    fnum = args.start-1
     for f in files:
         basename = f.split( os.extsep, 1)[0]
         if not basename in newnames:
