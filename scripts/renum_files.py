@@ -17,12 +17,13 @@ def usage(printmsg=False):
     Name:
       %s --  Rename files in current folder to be numbered consecutively
     Synopsis:
-      %s --prefix <prefix>
+      %s --prefix <prefix> --start <start_n>
     Description:
-      aaa.sgf aaa.png bbb.sgf bbb.png -> <prefix>_0001.sgf <prefix>_0001.png <prefix>_0002.sgf <prefix>_0002.png
-      A backup of the old files will be saved to the backup subfolder
+      aaa.sgf aaa.png bbb.sgf bbb.png -> <prefix>_0000.sgf <prefix>_0000.png <prefix>_0001.sgf <prefix>_0001.png
+      A backup of the old files will be saved to the backup subfolder.
+      <start_n> is the number of the first file and defaults to zero.
     Example:
-      %s --prefix testcase_
+      %s --prefix tc_ --start 42
     ''' % (name,name,name)
     if printmsg:
         print(msg)
@@ -45,7 +46,7 @@ def main():
         pass
     os.mkdir( BACKUP_FOLDER)
     files = os.listdir( '.')
-    files = [f for f in files if os.path.isfile(f)]
+    files = [f for f in files if os.path.isfile(f) and f[0] != '.']
     files = sorted( files)
     for f in files:
         shutil.copy2( f, BACKUP_FOLDER)
