@@ -303,9 +303,9 @@ class ViewController: UIViewController
                     //mbl_mw_logging_stop( self.device.board)
                     //self.device.clearAndReset()
                     mbl_mw_logging_stop(self.device.board)
-                    mbl_mw_metawearboard_tear_down(self.device.board)
-                    mbl_mw_logging_clear_entries(self.device.board)
-                    mbl_mw_macro_erase_all(self.device.board)
+                    //mbl_mw_metawearboard_tear_down(self.device.board)
+                    //mbl_mw_logging_clear_entries(self.device.board)
+                    //mbl_mw_macro_erase_all(self.device.board)
 
 
                     // Configuring sensor fusion
