@@ -31,23 +31,42 @@ extension MetaWear
     } // getAccuracy()
 } // extension MetaWear
 
+var g_handlers = MblMwLogDownloadHandler()
 
 //=========================================
 class ViewController: UIViewController
 {
     
     @IBOutlet weak var txtLog: UITextView!
-    var ccount:Int64!
+    var ccount:Int64 = 0
     var device:MetaWear!
     var logger_id:UInt8!
-    var handlers = MblMwLogDownloadHandler()
+//    static var handlers:MblMwLogDownloadHandler!
     
     //-----------------------------
     override func viewDidLoad()
     {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-    }
+        g_handlers.context = bridge(obj: self)
+        g_handlers.received_progress_update = { (context, entriesLeft, totalEntries) in
+            let this: ViewController = bridge(ptr: context!)
+            print( String( format: ">>>>>>>>> left: %d / %d", entriesLeft, totalEntries))
+            if entriesLeft == 0 {
+                this.device.clearAndReset()
+            }
+        }
+        g_handlers.received_unknown_entry = { (context, id, epoch, data, length) in
+            let this: ViewController = bridge(ptr: context!)
+            var tt = 42
+            tt += 1
+        }
+        g_handlers.received_unhandled_entry = { (context, data) in
+            let this: ViewController = bridge(ptr: context!)
+            var tt = 42
+            tt += 1
+        }
+
+    } // viewDidLoad()
     
     // Show a string on our textview
     //-------------------------------
@@ -111,7 +130,7 @@ class ViewController: UIViewController
         self.ccount = 0
         mbl_mw_datasignal_subscribe( sig, bridge(obj: self), { (context, dataPtr) in
             let this:ViewController = bridge( ptr: context!)
-            this.ccount! += 1
+            this.ccount += 1
             let acc = dataPtr!.pointee.valueAs() as MblMwCartesianFloat
             if this.ccount % 10 == 0 {
                 print( acc)
@@ -149,7 +168,7 @@ class ViewController: UIViewController
         self.ccount = 0
         mbl_mw_datasignal_subscribe( sig, bridge(obj: self), { (context, dataPtr) in
             let this:ViewController = bridge( ptr: context!)
-            this.ccount! += 1
+            this.ccount += 1
             let quat = dataPtr!.pointee.valueAs() as MblMwQuaternion
             if this.ccount % 10 == 0 {
                 print( quat.x)
@@ -186,7 +205,7 @@ class ViewController: UIViewController
         self.ccount = 0
         mbl_mw_datasignal_subscribe( sig, bridge(obj: self), { (context, dataPtr) in
             let this:ViewController = bridge( ptr: context!)
-            this.ccount! += 1
+            this.ccount += 1
             let euler = dataPtr!.pointee.valueAs() as MblMwEulerAngles
             if this.ccount % 10 == 0 {
                 print( euler.pitch)
@@ -260,6 +279,14 @@ class ViewController: UIViewController
     var logger:OpaquePointer!
     var accSignal:OpaquePointer!
     
+    class func received_progress_update (context:UnsafeMutableRawPointer?, entriesLeft:UInt32, totalEntries:UInt32) {
+        let this:ViewController = bridge(ptr: context!)
+        print( String( format: ">>>>>>>>> left: %d / %d", entriesLeft, totalEntries))
+        if entriesLeft == 0 {
+            this.device.clearAndReset()
+        }
+    }
+    
     // Start accelerometer logging //@@@
     //--------------------------------------------
     @IBAction func btnLogAccel(_ sender: Any) {
@@ -272,31 +299,68 @@ class ViewController: UIViewController
                         print(error); return
                     }
                     self.device = device
+                    //mbl_mw_metawearboard_tear_down( self.device.board)
                     //mbl_mw_logging_stop( self.device.board)
-                    // Configuring the accelerometer
-                    mbl_mw_acc_set_range( device.board, 2.0)
-                    mbl_mw_acc_set_odr( device.board, 100)
-                    mbl_mw_acc_write_acceleration_config( device.board)
+                    //self.device.clearAndReset()
+                    mbl_mw_logging_stop(self.device.board)
+                    mbl_mw_metawearboard_tear_down(self.device.board)
+                    mbl_mw_logging_clear_entries(self.device.board)
+                    mbl_mw_macro_erase_all(self.device.board)
+
+
+                    // Configuring sensor fusion
+                    mbl_mw_sensor_fusion_set_mode( device.board, MBL_MW_SENSOR_FUSION_MODE_IMU_PLUS)
+                    //mbl_mw_sensor_fusion_set_acc_range( device.board, MBL_MW_SENSOR_FUSION_ACC_RANGE_2G)
+                    mbl_mw_sensor_fusion_set_gyro_range( device.board, MBL_MW_SENSOR_FUSION_GYRO_RANGE_2000DPS)
+                    mbl_mw_sensor_fusion_write_config( device.board)
                     
-                    self.accSignal = mbl_mw_acc_get_acceleration_data_signal( device.board)
+                    self.accSignal = mbl_mw_sensor_fusion_get_data_signal( device.board,
+                                                                    MBL_MW_SENSOR_FUSION_DATA_LINEAR_ACC)
+                    
+                    // Start
+                    mbl_mw_sensor_fusion_enable_data( device.board, MBL_MW_SENSOR_FUSION_DATA_LINEAR_ACC)
+                    mbl_mw_sensor_fusion_start( device.board)
+
+                    
+//                    mbl_mw_acc_set_range( device.board, 2.0)
+//                    mbl_mw_acc_set_odr( device.board, 100)
+//                    mbl_mw_acc_write_acceleration_config( device.board)
+                    
+//                    self.accSignal = mbl_mw_acc_get_acceleration_data_signal( device.board)
 
                     // Start the accelerometer
-                    mbl_mw_acc_enable_acceleration_sampling( device.board)
-                    mbl_mw_acc_start( device.board)
+//                    mbl_mw_acc_enable_acceleration_sampling( device.board)
+//                    mbl_mw_acc_start( device.board)
                     
-                    //mbl_mw_logging_clear_entries( self.device.board)
+                    print("1")
+                    mbl_mw_logging_clear_entries( self.device.board)
+                    print("2")
                     mbl_mw_datasignal_log( self.accSignal, bridge(obj: self)) { (context, logger) in
                         let this:ViewController = bridge( ptr: context!)
                         if let logger = logger {
                             this.logger = logger
                             this.logger_id = mbl_mw_logger_get_id( logger)
+                            //mbl_mw_logging_download(this.device.board!, 1, &g_handlers)
+                            print("3")
+//                            mbl_mw_logger_subscribe( this.logger, context) { (context, dataPtr) in
+//                                print("4")
+//                                let this:ViewController = bridge( ptr: context!)
+//                                let xyz = dataPtr!.pointee.valueAs() as MblMwCartesianFloat
+//                                //this.pr( String(format: "%.2f %.2f %.2f", xyz.x, xyz.y, xyz.z))
+//                                print( String(format: "%d %.2f %.2f %.2f", this.ccount, xyz.x, xyz.y, xyz.z))
+//                                this.ccount += 1
+//                            }
+                            print("5")
                             mbl_mw_logging_start( this.device.board, 1)
+                            print("6")
                             this.wait_then_download()
+                            print("7")
                         }
                         else {
                             this.pr( "failed to get logger")
+                            //mbl_mw_metawearboard_tear_down( this.device.board)
                             this.device.clearAndReset()
-                            this.device.cancelConnection()
+                            //this.device.cancelConnection()
                         }
                     } // mbl_mw_datasignal_log()
                 } // connectAndSetup()
@@ -309,34 +373,44 @@ class ViewController: UIViewController
     func wait_then_download() {
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .seconds(5) )
         {
-            self.logger = mbl_mw_logger_lookup_id( self.device.board, self.logger_id)
-            mbl_mw_logger_subscribe( self.logger, bridge(obj: self)) { (context, dataPtr) in
+            print( ">>>>>>> timeout")
+            mbl_mw_logger_subscribe( self.logger, bridge(obj: self)) { (context, data) in
                 let this:ViewController = bridge( ptr: context!)
-                let xyz = dataPtr!.pointee.valueAs() as MblMwCartesianFloat
+                let xyz = data!.pointee.valueAs() as MblMwCartesianFloat
                 //this.pr( String(format: "%.2f %.2f %.2f", xyz.x, xyz.y, xyz.z))
-                //print( String(format: "%.2f %.2f %.2f", xyz.x, xyz.y, xyz.z))
+                print( String(format: "%d %.2f %.2f %.2f", this.ccount, xyz.x, xyz.y, xyz.z))
+                this.ccount += 1
             }
-            //mbl_mw_logging_stop( self.device.board)
+            
             // Setup the handlers for events during the download
-            self.handlers.context = bridge(obj: self)
-            self.handlers.received_progress_update = { (context, entriesLeft, totalEntries) in
-                let this: ViewController = bridge(ptr: context!)
-                var tt = 42
-                tt += 1
+            var handlers = MblMwLogDownloadHandler()
+            handlers.context = bridge(obj: self)
+            handlers.received_progress_update = { (context, entriesLeft, totalEntries) in
+                let this:ViewController = bridge( ptr: context!)
+                print( String( format: ">>>>>>>>> left: %d / %d", entriesLeft, totalEntries))
+                if entriesLeft == 0 {
+                    this.device.clearAndReset()
+                }
             }
-            self.handlers.received_unknown_entry = { (context, id, epoch, data, length) in
-                let this: ViewController = bridge(ptr: context!)
-                var tt = 42
-                tt += 1
+            handlers.received_unknown_entry = { (context, id, epoch, data, length) in
+                let this:ViewController = bridge( ptr: context!)
             }
-            self.handlers.received_unhandled_entry = { (context, data) in
-                let this: ViewController = bridge(ptr: context!)
-                var tt = 42
-                tt += 1
+            handlers.received_unhandled_entry = { (context, data) in
+                let this:ViewController = bridge( ptr: context!)
             }
             
             // Start the log download
-            mbl_mw_logging_download(self.device.board!, 100, &self.handlers)
+            mbl_mw_logging_download(self.device.board!, 100, &handlers)
+
+//            self.logger = mbl_mw_logger_lookup_id( self.device.board, self.logger_id)
+            //mbl_mw_logging_stop( self.device.board)
+            // Setup the handlers for events during the download
+            
+//            // Start the log download
+//            self.ccount = 0
+//            mbl_mw_logging_download(self.device.board!, 100, &g_handlers)
+//            var tt = 42
+//            tt += 1
         }
     } // wait_then_download
     

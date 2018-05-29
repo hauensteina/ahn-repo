@@ -1,0 +1,26 @@
+PODS:
+  - Bolts-Swift (1.3.0)
+  - MetaWear/AsyncUtils (3.0.0):
+    - MetaWear/Core
+  - MetaWear/Core (3.0.0):
+    - Bolts-Swift (~> 1.3.0)
+  - MetaWear/UI (3.0.0):
+    - MetaWear/AsyncUtils
+    - MetaWear/Core
+
+DEPENDENCIES:
+  - MetaWear/AsyncUtils
+  - MetaWear/UI
+
+SPEC REPOS:
+  https://github.com/CocoaPods/Specs.git:
+    - Bolts-Swift
+    - MetaWear
+
+SPEC CHECKSUMS:
+  Bolts-Swift: fa98d1b59fc1acea9b21a21306dcdca1c85e3737
+  MetaWear: 82da41e111536c1dd720a058ea18e0f03f0c358e
+
+PODFILE CHECKSUM: c0e2b45fb042a58beb13bc4e050f66e927440965
+
+COCOAPODS: 1.5.0
