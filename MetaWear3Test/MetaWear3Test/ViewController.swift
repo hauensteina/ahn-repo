@@ -31,8 +31,6 @@ extension MetaWear
     } // getAccuracy()
 } // extension MetaWear
 
-var g_handlers = MblMwLogDownloadHandler()
-
 //=========================================
 class ViewController: UIViewController
 {
@@ -47,25 +45,6 @@ class ViewController: UIViewController
     override func viewDidLoad()
     {
         super.viewDidLoad()
-        g_handlers.context = bridge(obj: self)
-        g_handlers.received_progress_update = { (context, entriesLeft, totalEntries) in
-            let this: ViewController = bridge(ptr: context!)
-            print( String( format: ">>>>>>>>> left: %d / %d", entriesLeft, totalEntries))
-            if entriesLeft == 0 {
-                this.device.clearAndReset()
-            }
-        }
-        g_handlers.received_unknown_entry = { (context, id, epoch, data, length) in
-            let this: ViewController = bridge(ptr: context!)
-            var tt = 42
-            tt += 1
-        }
-        g_handlers.received_unhandled_entry = { (context, data) in
-            let this: ViewController = bridge(ptr: context!)
-            var tt = 42
-            tt += 1
-        }
-
     } // viewDidLoad()
     
     // Show a string on our textview
@@ -278,16 +257,9 @@ class ViewController: UIViewController
     
     var logger:OpaquePointer!
     var accSignal:OpaquePointer!
+    var passThrough:OpaquePointer!
     
-    class func received_progress_update (context:UnsafeMutableRawPointer?, entriesLeft:UInt32, totalEntries:UInt32) {
-        let this:ViewController = bridge(ptr: context!)
-        print( String( format: ">>>>>>>>> left: %d / %d", entriesLeft, totalEntries))
-        if entriesLeft == 0 {
-            this.device.clearAndReset()
-        }
-    }
-    
-    // Start accelerometer logging //@@@
+    // Start accelerometer logging
     //--------------------------------------------
     @IBAction func btnLogAccel(_ sender: Any) {
         MetaWearScanner.shared.startScan(allowDuplicates: true) { (device) in
@@ -300,36 +272,43 @@ class ViewController: UIViewController
                     }
                     print( "connected")
                     self.device = device
-                    mbl_mw_logging_stop(self.device.board)
-                    // Configuring sensor fusion
+                    mbl_mw_logging_stop( self.device.board) // omitting this will crash
+                    
+                    // Configure sensor fusion and get a signal
                     mbl_mw_sensor_fusion_set_mode( device.board, MBL_MW_SENSOR_FUSION_MODE_IMU_PLUS)
                     mbl_mw_sensor_fusion_set_acc_range( device.board, MBL_MW_SENSOR_FUSION_ACC_RANGE_2G)
-                    mbl_mw_sensor_fusion_set_gyro_range( device.board, MBL_MW_SENSOR_FUSION_GYRO_RANGE_2000DPS)
+                    mbl_mw_sensor_fusion_set_gyro_range( device.board, MBL_MW_SENSOR_FUSION_GYRO_RANGE_2000DPS) // necessary
                     mbl_mw_sensor_fusion_write_config( device.board)
                     
                     self.accSignal = mbl_mw_sensor_fusion_get_data_signal( device.board,
                                                                     MBL_MW_SENSOR_FUSION_DATA_LINEAR_ACC)
                     
-                    // Start
-                    mbl_mw_sensor_fusion_enable_data( device.board, MBL_MW_SENSOR_FUSION_DATA_LINEAR_ACC)
-                    mbl_mw_sensor_fusion_start( device.board)
-
-                    mbl_mw_logging_clear_entries( self.device.board)
-                    mbl_mw_datasignal_log( self.accSignal, bridge(obj: self)) { (context, logger) in
+                    // Make a passthrough filter for only 100 samples
+                    mbl_mw_dataprocessor_passthrough_create( self.accSignal, MBL_MW_PASSTHROUGH_MODE_COUNT, 100,
+                                                             bridge(obj: self))
+                    { (context, proc) in
                         let this:ViewController = bridge( ptr: context!)
-                        if let logger = logger {
-                            this.logger = logger
-                            this.logger_id = mbl_mw_logger_get_id( logger)
-                            mbl_mw_logging_start( this.device.board, 1)
-                            this.wait_then_download()
-                        }
-                        else {
-                            this.pr( "failed to get logger")
-                            this.device.clearAndReset()
-                        }
-                    } // mbl_mw_datasignal_log()
+                        this.passThrough = proc
+                        mbl_mw_logging_clear_entries( this.device.board)
+                        mbl_mw_datasignal_log( this.passThrough, context) { (context, logger) in
+                            let this:ViewController = bridge( ptr: context!)
+                            if let logger = logger {
+                                this.logger = logger
+                                this.logger_id = mbl_mw_logger_get_id( logger)
+                                mbl_mw_logging_start( this.device.board, 1)
+                                this.wait_then_download()
+                            }
+                            else {
+                                this.pr( "failed to get logger")
+                                this.device.clearAndReset()
+                            }
+                        } // mbl_mw_datasignal_log()
+                        // Start
+                        mbl_mw_sensor_fusion_enable_data( this.device.board, MBL_MW_SENSOR_FUSION_DATA_LINEAR_ACC)
+                        mbl_mw_sensor_fusion_start( this.device.board)
+                    } // passthrough_create()
                 } // connectAndSetup()
-            } // id(rssi)
+            } // if(rssi)
         } // startScan
     } // btnLogAccel()
     
@@ -363,7 +342,7 @@ class ViewController: UIViewController
             // Start the log download
             mbl_mw_logging_download(self.device.board!, 100, &handlers)
         }
-    } // wait_then_download
+    } // wait_then_download()
     
     
     // Stop logging and download data

@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MetaWear3Test/ViewController.swift"
-            timestampString = "549329665.54898"
+            timestampString = "549331228.561543"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "152"
-            endingLineNumber = "152"
+            startingLineNumber = "131"
+            endingLineNumber = "131"
             landmarkName = "stopFusion(device:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -26,11 +26,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MetaWear3Test/ViewController.swift"
-            timestampString = "549329665.549541"
+            timestampString = "549331228.562435"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "135"
-            endingLineNumber = "135"
+            startingLineNumber = "114"
+            endingLineNumber = "114"
             landmarkName = "startFusion(device:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -42,11 +42,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MetaWear3Test/ViewController.swift"
-            timestampString = "549329665.549925"
+            timestampString = "549331228.563071"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "322"
-            endingLineNumber = "322"
+            startingLineNumber = "297"
+            endingLineNumber = "297"
             landmarkName = "btnLogAccel(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -58,11 +58,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MetaWear3Test/ViewController.swift"
-            timestampString = "549329665.550634"
+            timestampString = "549331228.5636359"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "295"
-            endingLineNumber = "295"
+            startingLineNumber = "267"
+            endingLineNumber = "267"
             landmarkName = "btnLogAccel(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -74,11 +74,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MetaWear3Test/ViewController.swift"
-            timestampString = "549329665.551113"
+            timestampString = "549331228.56418"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "340"
-            endingLineNumber = "340"
+            startingLineNumber = "318"
+            endingLineNumber = "318"
             landmarkName = "wait_then_download()"
             landmarkType = "7">
          </BreakpointContent>
