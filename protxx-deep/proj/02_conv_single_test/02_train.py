@@ -59,13 +59,9 @@ class ConvModel:
     def build_model(self):
         inputs = kl.Input( shape=self.input_shape)
 
-        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='a1')(inputs)
-        x = kl.Conv1D( 8, 1, activation='relu', padding='same', name='b1')(x)
-        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='c1')(x)
-
-        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='a1')(inputs)
-        x = kl.Conv1D( 8, 1, activation='relu', padding='same', name='b1')(x)
-        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='c1')(x)
+        x = kl.Conv1D( 128, 3, activation='relu', padding='same', name='a1')(inputs)
+        x = kl.Conv1D( 64, 1, activation='relu', padding='same', name='b1')(x)
+        x = kl.Conv1D( 128, 3, activation='relu', padding='same', name='c1')(x)
 
         # Classification block
         x_class_conv = kl.Conv1D( 2, 1, padding='same', name='lastconv')(x)
@@ -88,7 +84,6 @@ def main():
         usage(True)
 
     LENGTH = 100
-    BATCH_SIZE = 1
 
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--epochs", required=True, type=int)
