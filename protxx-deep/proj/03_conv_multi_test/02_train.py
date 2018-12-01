@@ -60,9 +60,19 @@ class ConvModel:
         inputs = kl.Input( shape=self.input_shape)
 
         x = kl.Conv1D( 128, 3, activation='relu', padding='same', name='a1')(inputs)
+
         x = kl.Conv1D( 64, 3, activation='relu', padding='same', name='b1')(x)
+        x = kl.Conv1D( 32, 1, activation='relu', padding='same', name='b2')(x)
+        x = kl.Conv1D( 64, 3, activation='relu', padding='same', name='b3')(x)
+
         x = kl.Conv1D( 32, 3, activation='relu', padding='same', name='c1')(x)
+        x = kl.Conv1D( 16, 1, activation='relu', padding='same', name='c2')(x)
+        x = kl.Conv1D( 32, 3, activation='relu', padding='same', name='c3')(x)
+
         x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='d1')(x)
+        x = kl.Conv1D(  8, 1, activation='relu', padding='same', name='d2')(x)
+        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='d3')(x)
+
         x = kl.Conv1D( 8, 3, activation='relu', padding='same', name='e1')(x)
         x = kl.Conv1D( 4, 3, activation='relu', padding='same', name='f1')(x)
 
@@ -104,10 +114,22 @@ def main():
     # valid_classes = ut.onehot( [0,1])
 
     model = ConvModel( (train_data.shape[1],train_data.shape[2]), args.rate)
+
+    wfname =  'nn.weights'
+    if os.path.exists( wfname):
+        model.model.load_weights( wfname)
+
     model.model.fit( train_data, train_classes,
                      batch_size=BATCH_SIZE,
                      epochs=args.epochs,
                      validation_data=(valid_data, valid_classes))
+
+    # Save weights and model
+    if os.path.exists( wfname):
+        shutil.move( wfname, wfname + '.bak')
+    model.model.save( 'nn_bew.hd5')
+    model.model.save_weights( wfname)
+
     # preds = model.model.predict(images['valid_data'], batch_size=BATCH_SIZE)
     # print(preds)
 
