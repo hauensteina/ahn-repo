@@ -24,7 +24,7 @@ from matplotlib import pyplot as plt
 WAVELEN1 = 10.0
 WAVELEN2 = 20.0
 AMPLITUDE = 2.0
-NOISE = 1.0 # sigma, relative to amplitude
+NOISE = 2.0 # sigma, relative to amplitude
 
 #---------------------------
 def usage(printmsg=False):

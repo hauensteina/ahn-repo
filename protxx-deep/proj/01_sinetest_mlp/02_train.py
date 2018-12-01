@@ -50,9 +50,8 @@ def usage(printmsg=False):
 #--------------------------
 class SimpleModel:
     #---------------------------------
-    def __init__(self,length, input_shape, rate):
+    def __init__(self, input_shape, rate):
         self.input_shape = input_shape
-        self.length = length
         self.rate = rate
         self.build_model()
 
@@ -74,9 +73,6 @@ def main():
     if len(sys.argv) == 1:
         usage(True)
 
-    LENGTH = 100
-    BATCH_SIZE = 1
-
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--epochs", required=True, type=int)
     parser.add_argument( "--rate", required=True, type=float)
@@ -92,7 +88,7 @@ def main():
     #                         [10,20,30,40,50]], float)
     # valid_classes = ut.onehot( [0,1])
 
-    model = SimpleModel( LENGTH, (train_data.shape[1],train_data.shape[2]), args.rate)
+    model = SimpleModel( (train_data.shape[1],train_data.shape[2]), args.rate)
     model.model.fit( train_data, train_classes,
                      batch_size=BATCH_SIZE,
                      epochs=args.epochs,
