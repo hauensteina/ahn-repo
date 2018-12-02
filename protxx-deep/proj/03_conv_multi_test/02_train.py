@@ -59,22 +59,33 @@ class ConvModel:
     def build_model(self):
         inputs = kl.Input( shape=self.input_shape)
 
-        x = kl.Conv1D( 128, 3, activation='relu', padding='same', name='a1')(inputs)
-
-        x = kl.Conv1D( 64, 3, activation='relu', padding='same', name='b1')(x)
+        x = kl.Conv1D( 128, 8, activation='relu', padding='same', name='a1')(inputs)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv1D( 64, 8, activation='relu', padding='same', name='b1')(x)
+        x = kl.BatchNormalization()(x)
         x = kl.Conv1D( 32, 1, activation='relu', padding='same', name='b2')(x)
-        x = kl.Conv1D( 64, 3, activation='relu', padding='same', name='b3')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv1D( 64, 8, activation='relu', padding='same', name='b3')(x)
+        x = kl.BatchNormalization()(x)
 
-        x = kl.Conv1D( 32, 3, activation='relu', padding='same', name='c1')(x)
+        x = kl.Conv1D( 32, 5, activation='relu', padding='same', name='c1')(x)
+        x = kl.BatchNormalization()(x)
         x = kl.Conv1D( 16, 1, activation='relu', padding='same', name='c2')(x)
-        x = kl.Conv1D( 32, 3, activation='relu', padding='same', name='c3')(x)
+        x = kl.BatchNormalization()(x)
+        x = kl.Conv1D( 32, 5, activation='relu', padding='same', name='c3')(x)
+        x = kl.BatchNormalization()(x)
 
         x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='d1')(x)
+        x = kl.BatchNormalization()(x)
         x = kl.Conv1D(  8, 1, activation='relu', padding='same', name='d2')(x)
+        x = kl.BatchNormalization()(x)
         x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='d3')(x)
+        x = kl.BatchNormalization()(x)
 
         x = kl.Conv1D( 8, 3, activation='relu', padding='same', name='e1')(x)
+        x = kl.BatchNormalization()(x)
         x = kl.Conv1D( 4, 3, activation='relu', padding='same', name='f1')(x)
+        x = kl.BatchNormalization()(x)
 
         # Classification block
         x_class_conv = kl.Conv1D( 2, 1, padding='same', name='lastconv')(x)
