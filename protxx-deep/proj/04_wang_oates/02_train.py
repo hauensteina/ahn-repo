@@ -3,11 +3,11 @@
 # /********************************************************************
 # Filename: train.py
 # Author: AHN
-# Creation Date: Nov 30, 2018
+# Creation Date: Dec 1, 2018
 # **********************************************************************/
 #
-# Train a convolutional two class 1D time series model
-#
+# Train a convolutional two class multivariate(x,y,z) time series model.
+# Architecture like Wang,Oates:Time Series Classification ...
 
 from __future__ import division, print_function
 from pdb import set_trace as BP
@@ -60,21 +60,11 @@ class ConvModel:
         inputs = kl.Input( shape=self.input_shape)
 
         x = kl.Conv1D( 128, 3, activation='relu', padding='same', name='a1')(inputs)
-
-        x = kl.Conv1D( 64, 3, activation='relu', padding='same', name='b1')(x)
-        x = kl.Conv1D( 32, 1, activation='relu', padding='same', name='b2')(x)
-        x = kl.Conv1D( 64, 3, activation='relu', padding='same', name='b3')(x)
-
-        x = kl.Conv1D( 32, 3, activation='relu', padding='same', name='c1')(x)
-        x = kl.Conv1D( 16, 1, activation='relu', padding='same', name='c2')(x)
-        x = kl.Conv1D( 32, 3, activation='relu', padding='same', name='c3')(x)
-
-        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='d1')(x)
-        x = kl.Conv1D(  8, 1, activation='relu', padding='same', name='d2')(x)
-        x = kl.Conv1D( 16, 3, activation='relu', padding='same', name='d3')(x)
-
-        x = kl.Conv1D( 8, 3, activation='relu', padding='same', name='e1')(x)
-        x = kl.Conv1D( 4, 3, activation='relu', padding='same', name='f1')(x)
+        x = kl.BatchNormalization()(x)	
+        x = kl.Conv1D( 256, 3, activation='relu', padding='same', name='a2')(x)
+        x = kl.BatchNormalization()(x)	
+        x = kl.Conv1D( 128, 3, activation='relu', padding='same', name='a3')(x)
+        x = kl.BatchNormalization()(x)	
 
         # Classification block
         x_class_conv = kl.Conv1D( 2, 1, padding='same', name='lastconv')(x)
