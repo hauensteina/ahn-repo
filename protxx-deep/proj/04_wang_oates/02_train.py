@@ -25,7 +25,7 @@ SCRIPTPATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(re.sub(r'/proj/.*',r'/pylib', SCRIPTPATH))
 import ahnutil as ut
 
-BATCH_SIZE=256
+BATCH_SIZE=16
 
 #---------------------------
 def usage(printmsg=False):
