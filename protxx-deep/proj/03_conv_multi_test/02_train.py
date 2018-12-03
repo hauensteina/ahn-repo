@@ -59,13 +59,13 @@ class ConvModel:
     def build_model(self):
         inputs = kl.Input( shape=self.input_shape)
 
-        x = kl.Conv1D( 128, 8, activation='relu', padding='same', name='a1')(inputs)
+        x = kl.Conv1D( 128, 7, activation='relu', padding='same', name='a1')(inputs)
         x = kl.BatchNormalization()(x)
-        x = kl.Conv1D( 64, 8, activation='relu', padding='same', name='b1')(x)
+        x = kl.Conv1D( 64, 7, activation='relu', padding='same', name='b1')(x)
         x = kl.BatchNormalization()(x)
         x = kl.Conv1D( 32, 1, activation='relu', padding='same', name='b2')(x)
         x = kl.BatchNormalization()(x)
-        x = kl.Conv1D( 64, 8, activation='relu', padding='same', name='b3')(x)
+        x = kl.Conv1D( 64, 7, activation='relu', padding='same', name='b3')(x)
         x = kl.BatchNormalization()(x)
 
         x = kl.Conv1D( 32, 5, activation='relu', padding='same', name='c1')(x)
