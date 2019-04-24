@@ -1,0 +1,236 @@
+<!DOCTYPE HTML>
+
+<script type='text/javascript'>
+ /* Filename: layout/static/index.html
+  * Author: AHN
+  * Creation Date: Apr, 2019
+  * Do a nested flexbox layout with bootstrap
+  */
+</script>
+
+<html lang='en'>
+  <head>
+    <!-- Required meta tags -->
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+
+    <!-- Bootstrap CSS -->
+    <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>
+
+    <title>Layout</title>
+
+
+
+    <!--  CSS  -->
+    <style>
+     body {
+       font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+       text-align: center;
+     }
+     .center {
+       margin-left:auto;
+       margin-right:auto;
+     }
+     /* Style the lines by removing the fill and applying a stroke */
+     .line {
+       fill: none;
+       stroke: #ffab00;
+       stroke-width: 3;
+     }
+
+     .overlay {
+       fill: none;
+       pointer-events: all;
+     }
+
+     /* Style the dots by assigning a fill and stroke */
+     .dot {
+       fill: #ffab00;
+       stroke: #fff;
+     }
+
+     .focus {
+       fill: #0000ff;
+       stroke: #fff;
+     }
+     .red-border { border-style:solid; border-color:red; }
+     .green-border { border-style:solid; border-color:green; }
+     .blue-border { border-style:solid; border-color:blue; }
+     .yellow-border { border-style:solid; border-color:yellow; }
+     .magenta-border { border-style:solid; border-color:magenta; }
+     .cyan-border { border-style:solid; border-color:cyan; }
+
+     .bl-align-text {
+       position: absolute;
+       bottom: 0;
+       left: 0;
+     }
+     .br-align-text {
+       position: absolute;
+       bottom: 0;
+       right: 0;
+     }
+     .b-align-text {
+       position: absolute;
+       bottom: 0;
+     }
+
+    </style>
+  </head>
+
+  <!-- HTML -->
+  <body>
+    <br>
+    <div class='container green-border'>
+      <div class='row red-border'>
+
+
+        <!-- left side -->
+        <div class='col-4 green-border' style='height:500px'>
+          <div class='row h-25 yellow-border'> <div class='col red-border' style='text-align:left'> top-left </div> </div>
+          <div class='row h-50 magenta-border'>
+            <div class='col-4 red-border' style='text-align:left; margin:auto'> mid-left </div>
+            <div class='col-8 red-border' style='text-align:right; margin:auto'> mid-right </div>
+          </div>
+          <div class='row h-25 cyan-border'>
+            <div class='col-8 red-border'> <div class='b-align-text'> bot-left </div> </div>
+            <div class='col-4 red-border'> <div class='br-align-text'> bot-right </div> </div>
+          </div>
+        </div>
+        <!-- right side -->
+        <div class='col-8 blue-border'>
+          <div class='row h-50 yellow-border'> <div class='col red-border' style='text-align:right'> top-right </div> </div>
+          <div class='row h-50 magenta-border'> <div class='col red-border' style='text-align:right; position:absolute; bottom:0'> really<br>bot-right </div> </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Third party JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src='https://d3js.org/d3.v5.min.js'></script>
+
+
+
+  <!-- JS -->
+  <script type='text/javascript'>
+   'use strict'
+
+   //-----------------
+   function main() {
+     $('#btn_chart').click( () => {
+       hit_endpoint( '/api/get_data', {'N':10}, (data) => {
+         //debugger
+         //$('#chart').html( JSON.stringify( data))
+         var xlim = tuples_min_max(data,0)
+         var ylim = tuples_min_max(data,1)
+         $('#chart').html('')
+         plot_line( '#chart', data, xlim, ylim)
+       })
+       return false
+     })
+   } // main()
+
+   //---------------------------------------------------
+   function plot_line( container, data, xlim, ylim) {
+     var C = d3.select( container)
+     var width  = $(container).width()
+     var height = $(container).height()
+
+     var margin = {top: 50, right: 50, bottom: 50, left: 50}
+       , width = width - margin.left - margin.right
+       , height = height - margin.top - margin.bottom
+
+     var scale_x = d3.scaleLinear()
+       .domain([xlim[0], xlim[1]]) // input
+       .range([0, width]) // output
+
+     var scale_y = d3.scaleLinear()
+       .domain([ylim[0], ylim[1]]) // input
+       .range([height, 0]) // output
+
+     var line = d3.line()
+       .x(function(d, i) {
+         return scale_x( d[0]) }) // set the x values for the line generator
+       .y(function(d, i) {
+         return scale_y( d[1]) }) // set the y values for the line generator
+       //.curve(d3.curveMonotoneX) // apply smoothing to the line
+
+     // Add the SVG to the container, with margins
+     var svg = C.append('svg')
+       .attr('width', width + margin.left + margin.right)
+       .attr('height', height + margin.top + margin.bottom)
+       .append('g')
+       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+     // Add x axis
+     svg.append('g')
+       .attr('class', 'x axis')
+       .attr('transform', 'translate(0,' + height + ')')
+       .call(d3.axisBottom(scale_x)) // run axisBottom on the g thingy
+
+     // Add y axis
+     svg.append('g')
+       .attr('class', 'y axis')
+       .call(d3.axisLeft(scale_y)) // run axisLeft on the g thingy
+
+     // Draw the line
+     svg.append('path')
+       .datum(data) // Binds data to the line
+       .attr('class', 'line') // Assign a class for styling
+       .attr('d', line) // Call the line generator
+
+     // Put a circle on each datapoint
+     svg.selectAll('no_circles_yet')
+       .data(data)        // For each element of data.
+       .enter().append('circle') // add a circle to the (initially empty) selection
+       .attr('class', 'dot') // give the circle a class for styling
+       .attr('cx', function(d, i) { return scale_x(d[0]) })
+       .attr('cy', function(d, i) { return scale_y(d[1]) })
+       .attr('r', 5)
+     // Do funky things if the user mouses on a point
+       .on('mouseover', function(d, i, all) {
+  			 console.log(d)
+         d3.select(this).classed('focus',true)
+		   })
+       .on('mouseout', function(d, i, all) {
+  			 console.log(d)
+         d3.select(this).classed('focus',false)
+		   })
+   } // plot_line()
+
+   // Hit any endpoint and call completion with result
+   //---------------------------------------------------
+   function hit_endpoint( url, args, completion) {
+     fetch( url,
+       {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify( args),
+       }
+     ).then( (resp) => { resp.json().then( (resp) => { completion( resp[0]) }) }
+     ).catch(
+       (error) => {
+         console.log( error)
+       }
+     )
+   } // hit_endpoint()
+
+   // Get min and max of nth tuple element for a list of tuples
+   //-------------------------------------------------------------
+   function tuples_min_max( data, nth) {
+     var mmin = data.reduce((min, p) => p[nth] < min ? p[nth] : min, data[0][nth])
+     var mmax = data.reduce((max, p) => p[nth] > max ? p[nth] : max, data[0][nth])
+     return [mmin,mmax]
+   } // tuples_min_max()
+
+   $(main)
+  </script>
+
+
+  </body>
+</html>

@@ -6,7 +6,7 @@
 
 import os,sys,re,glob,shutil,json, math
 import numpy as np
-np.set_printoptions(threshold='nan')
+np.set_printoptions(threshold=sys.maxsize)
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
