@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# Listen on stdin, reply on stdout
+# Listen on stdin, reply on stdout.
+# If w <n> comes in, sleep n secs, then reply.
 
 from pdb import set_trace as BP
 import sys,time
