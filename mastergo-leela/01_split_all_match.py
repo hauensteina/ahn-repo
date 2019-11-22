@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Split all_sgf.sgf into separate sgf files for mastergo import.
+# Split an sgf files with many games into separate sgf files for mastergo import.
 # AHN, Nov 2019
 
 import os,sys,shutil
@@ -9,7 +9,7 @@ from pdb import set_trace as BP
 
 OUTFOLDER = 'split_sgfs'
 MINDATE = '2018-08-01'
-FILES_PER_FOLDER = 100 * 1000
+FILES_PER_FOLDER = 10 * 1000
 
 #--------------
 def usage():
