@@ -1,0 +1,11 @@
+{
+    "dev": {
+        "app_function": "rest-lambda.app",
+        "aws_region": "us-west-2",
+        "profile_name": "default",
+        "project_name": "p04-rest-lambda",
+        "runtime": "python3.7",
+        "s3_bucket": "zappa-ahaux"
+    }
+}
+
