@@ -44,17 +44,18 @@ For our own version control, we still use ahn-repo on github.
 
 Testing
 ---------
+$ url=https://qt0e49zj21.execute-api.us-west-2.amazonaws.com/dev/todo/api/v1.0
 # List
-$ curl -i http://localhost:5000/todo/api/v1.0/tasks
+$ curl -i -u anybody:Pyiaboar. $url/tasks
 # Get
-$ curl -i http://localhost:5000/todo/api/v1.0/tasks/1
+$ curl -i -u anybody:Pyiaboar. $url/tasks/1
 # Error
-$ curl -i http://localhost:5000/todo/api/v1.0/tasks/100
+$ curl -i -u anybody:Pyiaboar. curl -i -u anybody:Pyiaboar. $url/tasks/100
 # Create
-$ curl -i -H "Content-Type: application/json" -X POST -d '{"title":"Read a book"}' http://localhost:5000/todo/api/v1.0/tasks
+$ curl -i -u anybody:Pyiaboar. -H "Content-Type: application/json" -X POST -d '{"title":"Read a book"}' $url/tasks
 # Update
-$ curl -i -H "Content-Type: application/json" -X PUT -d '{"done":true}' http://localhost:5000/todo/api/v1.0/tasks/2
+$ curl -i -u anybody:Pyiaboar. -H "Content-Type: application/json" -X PUT -d '{"done":true}' $url/tasks/2
 # Delete
-$ curl -i -X DELETE -d http://localhost:5000/todo/api/v1.0/tasks/3
+$ curl -i -u anybody:Pyiaboar. -X DELETE $url/tasks/3
 
 === The End ===

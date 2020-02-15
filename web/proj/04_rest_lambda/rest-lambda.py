@@ -11,9 +11,11 @@
 # https://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 #
 
-from flask import Flask, jsonify, abort, make_response, request, url_for
 from pdb import set_trace as BP
+from flask import Flask, jsonify, abort, make_response, request, url_for
+from flask_httpauth import HTTPBasicAuth
 
+auth = HTTPBasicAuth()
 app = Flask(__name__)
 
 tasks = [
@@ -31,15 +33,32 @@ tasks = [
     }
 ]
 
+# Security
+#=============
+
+@auth.get_password
+#----------------------------
+def get_password(username):
+    if username == 'anybody':
+        return 'Pyiaboar.'
+    return None
+
+@auth.error_handler
+#--------------------
+def unauthorized():
+    return make_response(jsonify({'error': 'Unauthorized access'}), 403)
+
 # Endpoints
 #=============
 
 @app.route('/todo/api/v1.0/tasks', methods=['GET'])
+@auth.login_required
 #-----------------------------------------------------
 def get_tasks():
     return jsonify({'tasks': [make_public_task(task) for task in tasks]})
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['GET'])
+@auth.login_required
 #-----------------------------------------------------------------
 def get_task(task_id):
     task = [task for task in tasks if task['id'] == task_id]
@@ -49,6 +68,7 @@ def get_task(task_id):
 
 
 @app.route('/todo/api/v1.0/tasks', methods=['POST'])
+@auth.login_required
 #-----------------------------------------------------
 def create_task():
     if not request.json or not 'title' in request.json:
@@ -63,6 +83,7 @@ def create_task():
     return jsonify({'task': make_public_task( task)}), 201
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['PUT'])
+@auth.login_required
 #--------------------------------------------------------------------
 def update_task(task_id):
     task = [task for task in tasks if task['id'] == task_id]
@@ -82,6 +103,7 @@ def update_task(task_id):
     return jsonify({'task': make_public_task( task[0])})
 
 @app.route('/todo/api/v1.0/tasks/<int:task_id>', methods=['DELETE'])
+@auth.login_required
 #---------------------------------------------------------------------
 def delete_task(task_id):
     task = [task for task in tasks if task['id'] == task_id]
