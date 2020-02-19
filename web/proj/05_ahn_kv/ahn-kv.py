@@ -12,13 +12,16 @@
 from pdb import set_trace as BP
 from flask import Flask, jsonify, abort, make_response, request, url_for
 from flask_httpauth import HTTPBasicAuth
-import json
+import json,os
 
 # AWS S3 api
 import boto3
 
 auth = HTTPBasicAuth()
 app = Flask(__name__)
+
+AWS_KEY = ''
+AWS_SECRET = ''
 
 # Security
 #=============
@@ -100,9 +103,12 @@ def not_found(error):
 # S3 stuff
 #===========
 
+AWS_KEY = os.environ['AWS_KEY']
+AWS_SECRET = os.environ['AWS_SECRET']
+
 S3 = boto3.client('s3',
-                  aws_access_key_id='AKIAJP3AUWREHKDDYAFQ',
-                  aws_secret_access_key='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')
+                  aws_access_key_id=AWS_KEY,
+                  aws_secret_access_key=AWS_SECRET)
 S3_BUCKET = 'zappa-ahaux'
 S3_FOLDER = 'ahn-kv'
 
