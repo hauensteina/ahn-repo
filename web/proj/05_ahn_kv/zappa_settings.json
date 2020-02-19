@@ -1,0 +1,10 @@
+{
+    "dev": {
+        "app_function": "ahn-kv.app",
+        "aws_region": "us-west-2",
+        "profile_name": "default",
+        "project_name": "ahn-kv",
+        "runtime": "python3.7",
+        "s3_bucket": "zappa-ahaux"
+    }
+}

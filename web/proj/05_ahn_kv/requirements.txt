@@ -1,4 +1,6 @@
 flask
 zappa
 flask-httpauth
-boto
+boto3
+
+
