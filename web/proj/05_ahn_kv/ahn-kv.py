@@ -26,11 +26,14 @@ AWS_SECRET = ''
 # Security
 #=============
 
+LOGIN  = os.environ['AHN_KV_LOGIN']
+PASSWD = os.environ['AHN_KV_PASSWD']
+
 @auth.get_password
 #----------------------------
 def get_password(username):
-    if username == 'anybody':
-        return 'Pyiaboar.'
+    if username == LOGIN:
+        return PASSWD
     return None
 
 @auth.error_handler
