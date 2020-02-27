@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.models import model_from_json
-from qlearn import Catch
+from qlearn import Catch, Action
 
 #--------------
 def main():
@@ -20,26 +20,24 @@ def main():
     for e in range(10):
         loss = 0.
         env.reset()
+        # env.state.fruit_col = 0 # Testing edge case
         game_over = False
-        # get initial input
-        input_t = env.observe()
+        # Get initial input. This is the canvas, linearized into a list.
+        next_input = env.observe()
 
-        plt.imshow(input_t.reshape((grid_size,)*2),
-                   interpolation='none', cmap='gray')
+        plt.imshow( next_input.reshape((grid_size,)*2), interpolation='none', cmap='gray')
         plt.savefig("%03d.png" % c)
         c += 1
         while not game_over:
-            input_tm1 = input_t
-
+            cur_input = next_input
             # get next action
-            q = model.predict(input_tm1)
-            action = np.argmax(q[0])
+            q = model.predict( cur_input[np.newaxis])[0]
+            action = Action.index( np.argmax( q))
 
             # apply action, get rewards and new state
-            input_t, reward, game_over = env.act(action)
+            next_input, reward, game_over = env.act( action)
 
-            plt.imshow(input_t.reshape((grid_size,)*2),
-                       interpolation='none', cmap='gray')
+            plt.imshow( next_input.reshape((grid_size,)*2), interpolation='none', cmap='gray')
             plt.savefig("%03d.png" % c)
             c += 1
 
