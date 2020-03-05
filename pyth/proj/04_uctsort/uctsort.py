@@ -20,7 +20,7 @@ def usage(printmsg=False):
     msg = '''
 
     Name:
-      %s: Sort shuffled numbers 0..size-1 ucing UCT search and simple heuristics.
+      %s: Sort shuffled numbers 0..size-1 using UCT search and simple heuristics.
     Synopsis:
       %s --size <size> --playouts <playouts>
     Description:
