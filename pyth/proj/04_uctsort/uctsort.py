@@ -94,13 +94,6 @@ class State:
     def random( cls, size):
         return cls( random.sample(range(0,size), size))
 
-    #----------------------
-    def is_sorted( self):
-        for i,x in enumerate( self.arr):
-            if x != i:
-                return False
-        return True
-
 # Action swaps elements swap_index and swap_index+1
 #====================================================
 class Action:
