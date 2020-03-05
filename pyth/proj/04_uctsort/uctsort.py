@@ -43,8 +43,7 @@ def main():
     parser.add_argument( "--size", required=True, type=int)
     parser.add_argument( "--playouts", required=True, type=int)
     args = parser.parse_args()
-    initial_state = State.random( args.size)
-    state = initial_state
+    state = State.random( args.size)
     tree =  UCTree( state, get_v_p, get_next_state, c_puct=0.6)
     while not tree.done( state):
         print( '>>> state: %s' % str(state.arr))
