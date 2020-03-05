@@ -33,9 +33,7 @@ class UCTree:
         self.get_v_p = get_v_p
         self.get_next_state = get_next_state
         self.c_puct = c_puct
-        value, policy = self.get_v_p( self.root.state) # The first move
-        self.root.v = value
-        self.root.N = 1
+        self.expand_leaf( self.root) # possible first moves
 
     # Search by expanding at most n_playout leaves.
     # Returns an action index.
@@ -52,7 +50,7 @@ class UCTree:
         if len(self.root.children) == 0:
             print( 'error: UCTree.search(): empty search result')
             return None
-        winner = self.root.get_best_child( self.c_puct)
+        winner = self.root.get_best_child( self.c_puct) # We could use largest N here, too.
         #print( '>>> move: %s' % winner.state.arr)
         # The winner is the new root
         self.root = winner
