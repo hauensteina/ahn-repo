@@ -50,7 +50,7 @@ def main():
         action, state = tree.search( n_playouts=args.playouts)
     print( '>>> final state: %s' % str(state.arr))
 
-# Action on state returns next state
+# Action on state swaps idx and idx+1
 #---------------------------------------
 def get_next_state( state, action_idx):
     next_state = State( state.arr.copy())
@@ -92,13 +92,6 @@ class State:
     #-------------------------
     def random( cls, size):
         return cls( random.sample(range(0,size), size))
-
-# Action swaps elements swap_index and swap_index+1
-#====================================================
-class Action:
-    #---------------------------------
-    def __init__( self, swap_index):
-        self.swap_index = swap_index
 
 if __name__ == '__main__':
     main()
