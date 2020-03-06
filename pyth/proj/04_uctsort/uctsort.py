@@ -44,45 +44,16 @@ def main():
     parser.add_argument( "--playouts", required=True, type=int)
     args = parser.parse_args()
     state = State.random( args.size)
-    tree =  UCTree( state, get_v_p, get_next_state, c_puct=0.6)
+    tree =  UCTree( state, c_puct=0.6)
     while not tree.done( state):
         print( '>>> state: %s' % str(state.arr))
         action, state = tree.search( n_playouts=args.playouts)
     print( '>>> final state: %s' % str(state.arr))
 
-# Action on state swaps idx and idx+1
-#---------------------------------------
-def get_next_state( state, action_idx):
-    next_state = State( state.arr.copy())
-    arr = next_state.arr; idx = action_idx
-    arr[idx+1], arr[idx] = arr[idx], arr[idx+1]
-    #print( '>>>>>> trying: %s -> %s' % (str(state.arr), str(arr)))
-    return next_state
 
-# v: How many are in the right place.
-# p[i]: 1 if p[i] larger than p[i+1] else 0
-# Both v and p get normalized.
-# v,p == 1.0,None means we found a solution.
-#--------------------------------------------
-def get_v_p( state):
-    arr = state.arr
-    ngood = 0
-    for i,x in enumerate( arr):
-        if i == x: ngood +=1
-    v = ngood / len( arr)
-    p = np.zeros( len(arr)-1)
-    for i,x in enumerate(p):
-        p[i] = 1 if arr[i+1] < arr[i] else 0
-    if ngood == len(arr):     # Solution
-        v = 1.0
-        p = None
-    else: # No solution, keep going
-        p /= np.sum(p)
-
-    return v,p
-
-# State is just a shuffled array of integers 0 .. size-1
-#=========================================================
+# State is just a shuffled array of integers 0 .. size-1 .
+# The act() and get_v_p() methods are required by UCTree .
+#===========================================================
 class State:
     #--------------------------
     def __init__( self, arr):
@@ -92,6 +63,37 @@ class State:
     #-------------------------
     def random( cls, size):
         return cls( random.sample(range(0,size), size))
+
+    # Apply an action and return new state
+    #----------------------------------------
+    def act( self, action_idx):
+        next_state = State( self.arr.copy())
+        arr = next_state.arr; idx = action_idx
+        arr[idx+1], arr[idx] = arr[idx], arr[idx+1]
+        return next_state
+
+    # v: How many are in the right place.
+    # p[i]: 1 if p[i] larger than p[i+1] else 0
+    # Both v and p get normalized.
+    # v,p == 1.0,None means we found a solution.
+    #--------------------------------------------
+    def get_v_p( self):
+        arr = self.arr
+        ngood = 0
+        for i,x in enumerate( arr):
+            if i == x: ngood +=1
+        v = ngood / len( arr)
+
+        p = np.zeros( len(arr)-1)
+        for i,x in enumerate(p):
+            p[i] = 1 if arr[i+1] < arr[i] else 0
+
+        if ngood == len(arr):     # Solution
+            v = 1.0
+            p = None
+        else: # No solution, keep going
+            p /= np.sum(p)
+        return v,p
 
 if __name__ == '__main__':
     main()

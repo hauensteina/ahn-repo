@@ -12,7 +12,7 @@ import math
 
 # Example usage:
 # state = initial_state
-# tree = UCTree( state, get_v_p, get_next_state, c_puct=0.6)
+# tree = UCTree( state, c_puct=0.6)
 # while not tree.done( state):
 #   action,state = tree.search( n_playouts=256)
 
@@ -20,18 +20,11 @@ import math
 class UCTree:
     LARGE = 1E9
 
-    # state: The current position.
-    # get_v_p: A function that takes a state and computes a quality estimate v
-    #          and a sorted array p of next action probabilities. Typically this
-    #          would feed state through a neural net, but not necessarily.
-    # get_next_state: A function that takes a (state,action) pair and returns
-    #                 the next state.
-    # c_puct: A constant used in the puct calculation.
-    #-------------------------------------------------------------
-    def __init__( self, state, get_v_p, get_next_state, c_puct):
+    # state: The current position. Must have methods get_v_p() and act(action_idx).
+    # c_puct: How much to rely on hope (exploration) in the puct calculation.
+    #-------------------------------------------------------------------------------
+    def __init__( self, state, c_puct):
         self.root = UCTNode( state)
-        self.get_v_p = get_v_p
-        self.get_next_state = get_next_state
         self.c_puct = c_puct
         self.expand_leaf( self.root) # possible first moves
 
@@ -59,7 +52,7 @@ class UCTree:
     # Termination
     #-------------------------
     def done( self, state):
-        return self.get_v_p( state) == (1.0, None)
+        return state.get_v_p() == (1.0, None)
 
     # Which leaf to expand.
     # Walk down the tree until the end, using best UCT score.
@@ -74,7 +67,7 @@ class UCTree:
     # Add children to a leaf, one per possible action.
     #---------------------------------------------------
     def expand_leaf( self, leaf):
-        value, policy = self.get_v_p( leaf.state) # Run the net
+        value, policy = leaf.state.get_v_p() # Run the net
         if value == 1.0: # Solution, do not expand.
             leaf.N = 1
             leaf.v = 1.0
@@ -86,7 +79,7 @@ class UCTree:
         # Create a child for each policy entry, largest policy first
         leaf.children = []
         for idx,p in enumerate(policy):
-            next_state = self.get_next_state( leaf.state, action_idx=idx)
+            next_state = leaf.state.act( action_idx=idx)
             new_child = UCTNode( next_state, action=idx, parent=leaf, p=p)
             leaf.children.append( new_child)
 
@@ -137,7 +130,7 @@ class UCTNode:
             experience = self.parent.v / self.parent.N
         else:
             experience = self.v / self.N # Our own winrate experience
-        hope = self.p * ( math.sqrt(self.parent.N) / (1.0 + self.N) ) # Hope makes us try bad things
+        hope = self.p * ( math.sqrt(self.parent.N) / (1.0 + self.N) ) # Hope helps us try new things
         res = experience + c_puct * hope
         return res
 
