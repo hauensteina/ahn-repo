@@ -203,7 +203,7 @@ class State:
             new_state.history.append( self.hash())
         return new_state
 
-    # v: Normalized Manhattan distance from solution.
+    # v: Manhattan distance from solution, mogrified into (0,1] interval.
     # p[i]: Normalized v values of next possible states.
     # v,p == 1.0,None means we found a solution.
     #--------------------------------------------

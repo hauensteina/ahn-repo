@@ -36,7 +36,6 @@ class UCTree:
         N = 0
         while N < n_playouts:
             N += 1
-            #print( '>>> playout %d' % N)
             leaf = None
             LIMIT = 1000
             loopcount = 0
@@ -49,10 +48,9 @@ class UCTree:
             self.expand_leaf( leaf)
         # Find best action
         if len(self.root.children) == 0:
-            print( 'error: UCTree.search(): empty search result')
+            print( "Error: UCTree.search(): I don't think there is a solution.")
             return None
-        winner = self.root.get_best_child( self.c_puct) # We could use largest N here, too.
-        #print( '>>> move: %s' % winner.state.arr)
+        winner = self.root.get_best_child( self.c_puct)
         # The winner is the new root
         self.root = winner
         return winner.action, winner.state
@@ -85,8 +83,6 @@ class UCTree:
             leaf.N = 1
             leaf.v = 1.0
             return
-
-        #print( policy)
         leaf.v = value
         leaf.N = 1
         # Create a child for each policy entry, largest policy first
