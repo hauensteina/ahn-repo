@@ -174,7 +174,8 @@ class State:
         return res
 
     # A number in (0,1] where 1 indicates a solution.
-    #--------------------------------------------------
+    # This is the heuristic guiding the search instead of a neural net.
+    #--------------------------------------------------------------------
     def quality( self):
         TEMP = 4.0
         alpha = TEMP * (1.0 / (self.s * self.s * self.s))
