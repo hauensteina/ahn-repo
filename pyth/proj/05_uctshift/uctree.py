@@ -37,7 +37,15 @@ class UCTree:
         while N < n_playouts:
             N += 1
             #print( '>>> playout %d' % N)
-            leaf = self.pick_leaf_to_expand()
+            leaf = None
+            LIMIT = 1000
+            loopcount = 0
+            while not leaf and loopcount < LIMIT:
+                loopcount += 1
+                leaf = self.pick_leaf_to_expand()
+            if loopcount == LIMIT:
+                print( 'Error: Not getting anywhere. Strange ...')
+                exit(1)
             self.expand_leaf( leaf)
         # Find best action
         if len(self.root.children) == 0:
@@ -62,12 +70,17 @@ class UCTree:
         while 1:
             if not node.children: # leaf
                 return node
-            node = node.get_best_child( self.c_puct)
+            newnode = node.get_best_child( self.c_puct)
+            if not newnode: # all children are dead ends
+                node.dead_end = True # Don't try again
+                return None
+            else:
+                node = newnode
 
     # Add children to a leaf, one per possible action.
     #---------------------------------------------------
     def expand_leaf( self, leaf):
-        value, policy = leaf.state.get_v_p() # Run the net
+        value, policy = leaf.state.get_v_p() # >>>>>>>> Run the net <<<<<<<<<
         if value == 1.0: # Solution, do not expand.
             leaf.N = 1
             leaf.v = 1.0
@@ -83,7 +96,9 @@ class UCTree:
             next_state = leaf.state.act( action_idx=idx)
             new_child = UCTNode( next_state, action=idx, parent=leaf, p=p)
             leaf.children.append( new_child)
-
+        if not leaf.children:
+            leaf.dead_end = True
+            return
         leaf.children = sorted( leaf.children)
         self.update_tree( leaf)
 
@@ -111,12 +126,24 @@ class UCTNode:
         self.children = None
         self.v = None # Populates when we expand and run the net
         self.N = 0
+        self.dead_end = False
+
+    #---------------------
+    def __repr__( self):
+        res = self.state.__repr__()
+        res += 'policy: %f\n' % (self.p or 0.0)
+        res += 'value: %f\n' % (self.v or 0.0)
+        res += 'N: %d\n' % (self.N or 0)
+        res += 'children: %d\n' % (len(self.children) if self.children else 0)
+        return res
 
     #-----------------------------------
     def get_best_child( self, c_puct):
         mmax = -1 * UCTree.LARGE
         winner = None
         for child in self.children:
+            if child.dead_end:
+                continue
             score = child.get_uct_score( c_puct)
             if score > mmax:
                 mmax = score
@@ -127,6 +154,7 @@ class UCTNode:
     # c_puct: How much to rely on hope. Larger means more exploration.
     #-------------------------------------------------------------------
     def get_uct_score( self, c_puct):
+        if self.p == 0.0: return 0.0
         if not self.N: # Leaf
             experience = self.parent.v / self.parent.N
         else:

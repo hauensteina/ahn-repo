@@ -48,22 +48,19 @@ def main():
     parser.add_argument( "--size", required=True, type=int)
     parser.add_argument( "--playouts", required=True, type=int)
     args = parser.parse_args()
+
+    if args.playouts < 4:
+        print( 'Error: You need at least four playouts for LEFT, RIGHT, UP, DOWN')
+        exit(1)
+
     state = State.random( args.size)
-
-    # for i in range(10):
-    #     state = State.random( args.size)
-    #     d = state.dist_from_solution()
-    #     q = state.quality()
-    #     print( state)
-    #     print(d)
-    #     print(q)
-    # exit(0)
-
     tree =  UCTree( state, c_puct=0.6)
+    niter = 0
     while not tree.done( state):
-        print( str(state))
+        niter += 1
+        print( state)
         action, state = tree.search( n_playouts=args.playouts)
-    print( '>>> final state: %s' % str(state))
+    print( '>>> final state after %d iterations: %s' % (niter,state))
 
 
 #=================
@@ -72,6 +69,9 @@ class State:
     def __init__( self, size):
         self.s = size
         self.empty_idx = 0
+        self.arr = None
+        self.history = []
+        self.hashval = None
 
     #---------------------
     def __repr__( self):
@@ -90,6 +90,7 @@ class State:
     def clone( self):
         res = State( self.s)
         res.arr = self.arr.copy()
+        res.history = self.history.copy()
         res.s = self.s
         return res
 
@@ -104,7 +105,7 @@ class State:
         for _ in range(NMOVES):
             acts = res.possible_actions() # len 4, impossible ones are marked 0
             acts = np.nonzero( acts)[0] # indexes of nonzero actions
-            res = res.act( random.choice(acts))
+            res = res.act( random.choice(acts), store_history=False)
         return res
 
     # Return an array of length 4 where impossible actions are marked 0
@@ -177,27 +178,29 @@ class State:
         q = math.exp( -1 * alpha * d)
         return q
 
+    #----------------
+    def hash( self):
+        if not self.hashval: self.hashval = hash(self.arr.tobytes())
+        return self.hashval
+
     #=============================
     # Methods required by UCTree
     #=============================
 
     # Apply an action and return new state
-    #----------------------------------------
-    def act( self, action_idx):
+    #------------------------------------------------
+    def act( self, action_idx, store_history=True):
         tile_idx = self.new_idx( action_idx)
         new_state = self.clone()
-        try:
-            new_state.arr[self.empty_idx] = new_state.arr[tile_idx]
-            new_state.arr[tile_idx] = 0
-            new_state.empty_idx = tile_idx
-        except:
-            BP()
-            tt=42
+        new_state.arr[self.empty_idx] = new_state.arr[tile_idx]
+        new_state.arr[tile_idx] = 0
+        new_state.empty_idx = tile_idx
+        if (store_history):
+            new_state.history.append( self.hash())
         return new_state
 
-    # v: How many are in the right place.
-    # p[i]: 1 if p[i] larger than p[i+1] else 0
-    # Both v and p get normalized.
+    # v: Normalized Manhattan distance from solution.
+    # p[i]: Normalized v values of next possible states.
     # v,p == 1.0,None means we found a solution.
     #--------------------------------------------
     def get_v_p( self):
@@ -213,13 +216,13 @@ class State:
         for action in (LEFT,RIGHT,UP,DOWN):
             if (possible[action]):
                 next_state = self.act( action)
-                p[action] = next_state.quality()
+                if next_state.hash() in self.history: # No cycles.
+                    p[action] = 0.0
+                else:
+                    p[action] = next_state.quality()
 
-        try:
+        if np.sum(p):
             p /= np.sum(p)
-        except:
-            BP()
-            tt=42
 
         return v,p
 
