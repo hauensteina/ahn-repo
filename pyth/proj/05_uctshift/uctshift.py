@@ -59,6 +59,9 @@ def main():
     while not tree.done( state):
         niter += 1
         print( state)
+        print('iteration: %d' % niter)
+        print('v: %.4f' % ( tree.root.v / tree.root.N ))
+        print('visits: %d' % ( tree.root.N ))
         action, state = tree.search( n_playouts=args.playouts)
     print( '>>> final state after %d iterations: %s' % (niter,state))
 
@@ -82,8 +85,9 @@ class State:
             if row != old_row:
                 old_row = row
                 res += '\n'
-            res += ' %d' % x
-        res += '\n'
+            if x: res += '%3d' % x
+            else: res += '   '
+
         return res
 
     #--------------------------
