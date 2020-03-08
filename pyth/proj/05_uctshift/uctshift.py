@@ -27,17 +27,19 @@ def usage(printmsg=False):
     Name:
       %s: Solve a shifting puzzle using UCT search and simple heuristics.
     Synopsis:
-      %s --size <int> --playouts <int> [--cpuct <float=0.05>] [--forget_tree]
+      %s --size <int> --playouts <int> [--cpuct <float=0.1>] [--forget_tree] [--simple]
     Description:
       --size: Side length. A 15-puzzle is size=4.
       --playouts: How many additional nodes to explore before deciding on a move.
          The relevant part of the tree is inherited from the previous move.
       --cpuct: Hope factor. Larger means more exploration.
       --forget-tree: Do not keep the relevant tree branch in the next iteration.
-    Example:
-      %s --size 3 --playouts 10
+      --simple: Use a simpler heuristic. Just counts how many are correct.
+    Examples:
+      %s --size 4 --playouts 1000 --cpuct 0.1
+      %s --size 4 --playouts 1000 --simple --cpuct 0.4
 --
-    ''' % (name,name,name)
+    ''' % (name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -49,13 +51,17 @@ def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--size", required=True, type=int)
     parser.add_argument( "--playouts", required=True, type=int)
-    parser.add_argument( "--cpuct", type=float, default=0.05)
+    parser.add_argument( "--cpuct", type=float, default=0.1)
     parser.add_argument( "--forget_tree", action='store_true')
+    parser.add_argument( "--simple", action='store_true')
     args = parser.parse_args()
 
     if args.playouts < 4:
         print( 'Error: You need at least four playouts for LEFT, RIGHT, UP, DOWN')
         exit(1)
+
+    if args.simple:
+        State.set_quality_func('simple')
 
     state = State.random( args.size)
     tree =  UCTree( state, c_puct=args.cpuct, forget_tree=args.forget_tree)
@@ -180,15 +186,37 @@ class State:
 
     # A number in (0,1] where 1 indicates a solution.
     # This is the heuristic guiding the search instead of a neural net.
+    # Scale Manhattan distance into (0,1] interval.
     #--------------------------------------------------------------------
-    def quality( self):
+    def manhattan_quality( state):
         TEMP = 4.0
-        alpha = TEMP * (1.0 / (self.s * self.s * self.s))
-        d = self.dist_from_solution()
+        alpha = TEMP * (1.0 / (state.s * state.s * state.s))
+        d = state.dist_from_solution()
         q = math.exp( -1 * alpha * d)
         return q
 
-    #----------------
+    # A number in (0,1] where 1 indicates a solution.
+    # This is the heuristic guiding the search instead of a neural net.
+    # Just count how many are in the right place.
+    #--------------------------------------------------------------------
+    def simple_quality( state):
+        MMIN = 1E-9
+        res = 0
+        for i,x in enumerate( state.arr):
+            if x == i: res += 1
+        res /= len(state.arr)
+        return max(res,MMIN)
+
+    quality_funcs = { 'manhattan': manhattan_quality, 'simple': simple_quality }
+    quality = quality_funcs['manhattan']
+
+    # Change quality func ('manhattan' or 'simple')
+    #------------------------------------------------
+    def set_quality_func( func_key):
+        State.quality = State.quality_funcs[func_key]
+
+    # Hash state to avoid cycles
+    #-----------------------------
     def hash( self):
         if not self.hashval: self.hashval = hash(self.arr.tobytes())
         return self.hashval
@@ -209,13 +237,13 @@ class State:
             new_state.history.add( self.hash())
         return new_state
 
-    # v: Manhattan distance from solution, mogrified into (0,1] interval.
+    # v: Quality of current position, in (0,1] interval.
     # p[i]: Normalized v values of next possible states.
     # v,p == 1.0,None means we found a solution.
     #--------------------------------------------
     def get_v_p( self):
         # Current quality
-        v = self.quality()
+        v = State.quality(self)
 
         if v == 1.0: # We're done
             return v,None
@@ -229,7 +257,7 @@ class State:
                 if next_state.hash() in self.history: # No cycles.
                     p[action] = 0.0
                 else:
-                    p[action] = next_state.quality()
+                    p[action] = State.quality( next_state)
 
         if np.sum(p):
             p /= np.sum(p)
