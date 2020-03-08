@@ -78,7 +78,7 @@ class State:
         self.s = size
         self.empty_idx = 0
         self.arr = None
-        self.history = []
+        self.history = set()
         self.hashval = None
 
     #---------------------
@@ -206,7 +206,7 @@ class State:
         new_state.arr[tile_idx] = 0
         new_state.empty_idx = tile_idx
         if (store_history):
-            new_state.history.append( self.hash())
+            new_state.history.add( self.hash())
         return new_state
 
     # v: Manhattan distance from solution, mogrified into (0,1] interval.
