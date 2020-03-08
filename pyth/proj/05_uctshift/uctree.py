@@ -23,10 +23,10 @@ class UCTree:
     # state: The current position. Must have methods get_v_p() and act(action_idx).
     # c_puct: How much to rely on hope (exploration) in the puct calculation.
     #-------------------------------------------------------------------------------
-    def __init__( self, state, c_puct):
+    def __init__( self, state, c_puct, forget_tree=False):
         self.root = UCTNode( state)
         self.c_puct = c_puct
-        self.expand_leaf( self.root) # possible first moves
+        self.forget_tree = forget_tree
 
     # Search by expanding at most n_playout leaves.
     # Returns an action index.
@@ -51,8 +51,14 @@ class UCTree:
             print( "Error: UCTree.search(): I don't think there is a solution.")
             return None
         winner = self.root.get_best_child( self.c_puct)
-        # The winner is the new root
-        self.root = winner
+
+        if self.forget_tree:
+            # New tree starting with winner state
+            self.root = UCTNode( winner.state)
+        else:
+            # Inherit tree below winner
+            self.root = winner
+
         return winner.action, winner.state
 
     # Termination

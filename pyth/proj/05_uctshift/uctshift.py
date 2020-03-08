@@ -27,11 +27,13 @@ def usage(printmsg=False):
     Name:
       %s: Solve a shifting puzzle using UCT search and simple heuristics.
     Synopsis:
-      %s --size <s> --playouts <playouts>
+      %s --size <int> --playouts <int> [--cpuct <float=0.05>] [--forget_tree]
     Description:
-      --size: Side length. s=4 is a 15-puzzle.
+      --size: Side length. A 15-puzzle is size=4.
       --playouts: How many additional nodes to explore before deciding on a move.
          The relevant part of the tree is inherited from the previous move.
+      --cpuct: Hope factor. Larger means more exploration.
+      --forget-tree: Do not keep the relevant tree branch in the next iteration.
     Example:
       %s --size 3 --playouts 10
 --
@@ -47,6 +49,8 @@ def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--size", required=True, type=int)
     parser.add_argument( "--playouts", required=True, type=int)
+    parser.add_argument( "--cpuct", type=float, default=0.05)
+    parser.add_argument( "--forget_tree", action='store_true')
     args = parser.parse_args()
 
     if args.playouts < 4:
@@ -54,14 +58,15 @@ def main():
         exit(1)
 
     state = State.random( args.size)
-    tree =  UCTree( state, c_puct=0.6)
+    tree =  UCTree( state, c_puct=args.cpuct, forget_tree=args.forget_tree)
     niter = 0
     while not tree.done( state):
         niter += 1
         print( state)
         print('iteration: %d' % niter)
-        print('v: %.4f' % ( tree.root.v / tree.root.N ))
-        print('visits: %d' % ( tree.root.N ))
+        if tree.root.N:
+            print('v: %.4f' % ( tree.root.v / tree.root.N ))
+            print('visits: %d' % ( tree.root.N ))
         action, state = tree.search( n_playouts=args.playouts)
     print( '>>> final state after %d iterations: %s' % (niter,state))
 
