@@ -104,9 +104,9 @@ class State:
     #--------------------------
     def clone( self):
         res = State( self.s)
+        res.empty_idx = self.empty_idx
         res.arr = self.arr.copy()
         res.history = self.history.copy()
-        res.s = self.s
         return res
 
     @classmethod
