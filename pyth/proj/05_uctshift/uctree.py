@@ -3,7 +3,7 @@
 # A generic tree class for UCT search.
 # It might play a game, or solve a puzzle, or just sort an array.
 # Leela Zero and AlphaGo Zero work like this, with minor tweaks.
-# Look in uctshift.py to see how it solves a shidting puzzle.
+# Look in uctshift.py to see how it solves a sliding puzzle.
 # Python 3
 # AHN, Mar 2020
 
