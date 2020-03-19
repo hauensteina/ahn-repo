@@ -45,11 +45,13 @@ class Astar:
 
     #--------------------------
     def get_best_leaf( self):
+        LAMBDA = 1.0
         winner = None
         self.best_leaf_estimate = Astar.LARGE
         for i,leaf in enumerate(self.leaves):
-            if leaf.state.estimate + leaf.depth < self.best_leaf_estimate:
-                self.best_leaf_estimate = leaf.state.estimate + leaf.depth
+            est = leaf.state.estimate + LAMBDA*leaf.depth
+            if est < self.best_leaf_estimate:
+                self.best_leaf_estimate = est
                 self.best_leaf_depth = leaf.depth
                 self.best_leaf_distance = leaf.state.estimate
                 winner = leaf

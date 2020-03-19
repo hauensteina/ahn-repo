@@ -27,7 +27,7 @@ def usage(printmsg=False):
     Synopsis:
       %s --size <int>
     Description:
-      --size: Side length. An 8-puzzle is size=4.
+      --size: Side length. An 8-puzzle is size=3.
     Example:
       %s --size 3
 --
