@@ -1,0 +1,74 @@
+
+Puzzles as a competition
+===========================
+AHN, Mar 2020
+
+Abstract
+----------
+
+Trying to adapt the AlphaZero approach to puzzles hits a snag because puzzles are not a fighting game between two opponents like chess or Go. How can you train v if there never is a win?
+
+The idea is to turn any puzzle into a competition by letting two networks try to solve it, and the one with the better solution is called the winner.
+
+We start with simple puzzle states, which are close to the solution, and then scale up to harder configurations.
+
+Policy and Value
+------------------
+I thought policy was just a performance optimization because in Go, running the value net for each possible move is really expensive. Most puzzles do not have this issue. So you might try to just train the value, and use that to generate the policy.
+
+However, this throws away most of the information gained during the UCT search. The policy is an attempt to train the results of the dynamic search effort into a static network. So next time around, you get the old answer straight from the net, and the same effort of search will explore further into the future. It seems stupid to throw that information away. Might be worth a try, though, just to make sure. It is also makes the code and the data structures a little simpler.
+
+Parts
+--------
+
+Player
+~~~~~~~~
+p = Player( network, playouts)
+move, newstate = p.move( state)
+
+This class contains the UCTSearch. Implement this first, see how it does if I feed it the networks trained in
+07_valitershift.
+
+Game
+~~~~~
+A game between two players.
+
+p1 = Player( network1, playouts)
+p2 = Player( network2, playouts)
+g = Game( p1,p2)
+g.play( movelimit) # Abort if neither player finishes within limit
+
+Data Generator
+~~~~~~~~~~~~~~~~
+
+Continuously generates training inputs by playing games, only keeping the newest n training inputs. Does this by playing games and storing the resulting training data in a folder. After each game, check if there is a new network.
+
+p1 = Player( network1)
+p2 = Player( network2)
+
+gen = DataGen( p1, p2, folder)
+gen.run()
+
+Training Process
+~~~~~~~~~~~~~~~~~~
+
+Randomly sucks M training samples from folder, then trains on them in batches of size N. When done with all M samples, store the new network.
+
+Match
+~~~~~~~~
+
+Matches two networks against each other in a tournament of N games. The result is appended to a json file. Fields are network hashes, number of games, number of wins for each player, number of aborted draws. No need to store the games themselves, I don't think I want to look at those.
+
+Scripts
+~~~~~~~~~
+
+There will be three scripts:
+- generate
+- train
+- match
+
+Generate and train run forever until aborted.
+Match completes one match and stores the result.
+
+
+=== The End ===
