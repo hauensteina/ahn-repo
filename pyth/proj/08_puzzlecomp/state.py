@@ -51,6 +51,16 @@ class State:
             res = res.act( random.choice(acts), store_history=False)
         return res
 
+    @classmethod
+    def from_list( cls, size, tile_list):
+        '''
+        Set position as specified by tile_list
+        '''
+        res = cls( size)
+        res.arr = np.array( tile_list, int)
+        res.empty_idx = np.argmin( res.arr)
+        return res
+
     def solved( self):
         for i in range( self.s * self.s):
             if i != self.arr[i]: return False

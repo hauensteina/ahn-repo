@@ -18,7 +18,8 @@ import tensorflow as tf
 from keras import backend as K
 from keras.callbacks import ModelCheckpoint
 
-num_cores = 4
+#num_cores = 4
+num_cores = 1
 GPU=0
 
 if GPU:

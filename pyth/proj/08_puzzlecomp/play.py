@@ -27,13 +27,14 @@ def usage(printmsg=False):
       %s: Solve a shifting puzzle using UCT search with a DNN.
       Uses model_3x3.weights, taken from 07_valitershift.py .
     Synopsis:
-      %s --playouts <int> [--cpuct <float=0.1>]
+      %s --playouts <int> --nshuffles <int> [--cpuct <float=0.1>]
     Description:
       --playouts: How many additional nodes to explore before deciding on a move.
          The relevant part of the tree is inherited from the previous move.
+      --nshuffles: Start position is this many shifts away from solution.
       --cpuct: Hope factor. Larger means more exploration.
     Examples:
-      %s --playouts 256 --cpuct 0.1
+      %s --playouts 256 --nshuffles 2
 --
     ''' % (name,name,name)
     if printmsg:
@@ -45,6 +46,7 @@ def usage(printmsg=False):
 def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--playouts", required=True, type=int)
+    parser.add_argument( "--nshuffles", required=True, type=int)
     parser.add_argument( "--cpuct", type=float, default=0.1)
     args = parser.parse_args()
 
@@ -54,7 +56,8 @@ def main():
 
     model = ShiftModel( SIZE)
     model.load_weights( 'model_3x3.weights')
-    state = State.random( SIZE, nmoves=2)
+    state = State.random( SIZE, nmoves=args.nshuffles)
+    #state = State.from_list( SIZE, [3,1,2,6,4,5,0,7,8]) # test
     player = Player( state, model, int(args.playouts), args.cpuct)
     niter = 0
     while not state.solved():

@@ -86,10 +86,11 @@ class Player:
         '''
         if leaf.state.solved(): # Solution, do not expand.
             leaf.N += 1 # leaf.N = 1
-            leaf.v = 1.0
+            leaf.v = float(leaf.N)
+            #print( 'solution N:%d v:%f' % (leaf.N, leaf.v))
             return
 
-        value, policy = self.model.get_v_p( leaf.state) # >>>>>>>> Run the net <<<<<<<<<
+        value, policy = self.model.get_v_p( leaf.state) # >>>>>>>> Run the network <<<<<<<<<
         leaf.v = value
         leaf.N = 1
         # Create a child for each policy entry, largest policy first
@@ -139,8 +140,8 @@ class UCTNode:
 
     def __repr__( self):
         res = self.state.__repr__()
-        res += 'policy: %f\n' % (self.p or 0.0)
-        res += 'value: %f\n' % (self.v or 0.0)
+        res += '\npolicy: %f\n' % (self.p or 0.0)
+        res += 'value: %f\n' % (self.v / self.N if self.N  else 0.0)
         res += 'N: %d\n' % (self.N or 0)
         res += 'children: %d\n' % (len(self.children) if self.children else 0)
         return res
