@@ -50,9 +50,9 @@ def main():
     parser.add_argument( "--cpuct", type=float, default=0.1)
     args = parser.parse_args()
 
-    if args.playouts < 4:
-        print( 'Error: You need at least four playouts for LEFT, RIGHT, UP, DOWN')
-        exit(1)
+    # if args.playouts < 4:
+    #     print( 'Error: You need at least four playouts for LEFT, RIGHT, UP, DOWN')
+    #     exit(1)
 
     model = ShiftModel( SIZE)
     model.load_weights( 'model_3x3.weights')

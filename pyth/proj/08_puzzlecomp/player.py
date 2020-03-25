@@ -87,6 +87,7 @@ class Player:
         if leaf.state.solved(): # Solution, do not expand.
             leaf.N += 1 # leaf.N = 1
             leaf.v = float(leaf.N)
+            self.__update_tree( leaf, v=1.0, N=1)
             #print( 'solution N:%d v:%f' % (leaf.N, leaf.v))
             return
 
@@ -104,16 +105,16 @@ class Player:
             leaf.dead_end = True
             return
         leaf.children = sorted( leaf.children)
-        self.__update_tree( leaf)
+        self.__update_tree( leaf, leaf.v, leaf.N)
 
-    def __update_tree( self, leaf):
+    def __update_tree( self, leaf, v, N):
         '''
         Update visit counts and values of all ancestors.
         '''
         node = leaf
         while node.parent:
-            node.parent.v += leaf.v
-            node.parent.N += leaf.N # Usually N=1 for a leaf, except if solution.
+            node.parent.v += v
+            node.parent.N += N
             node = node.parent
 
 #================

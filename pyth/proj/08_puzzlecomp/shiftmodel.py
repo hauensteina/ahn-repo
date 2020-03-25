@@ -109,6 +109,7 @@ class ShiftModel:
             next_state = state.act( action)
             if next_state.hash() in state.history: # No cycles.
                 p[action] = 0.0
+                print( '>>>>>>>> cycle')
             else:
                 p[action] = self.predict( next_state.encode())
 
