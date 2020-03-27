@@ -102,16 +102,12 @@ class ShiftModel:
         # Current quality
         v = self.predict( state.encode())[0][0]
 
-        # quality with lookahaead 1 gives p
+        # quality with lookahead 1 gives p
         p = np.zeros( 4, float)
         actions = state.action_list()
         for action in actions:
             next_state = state.act( action)
-            if next_state.hash() in state.history: # No cycles.
-                p[action] = 0.0
-                print( '>>>>>>>> cycle')
-            else:
-                p[action] = self.predict( next_state.encode())
+            p[action] = self.predict( next_state.encode())
 
         ssum = np.sum(p)
         if ssum:

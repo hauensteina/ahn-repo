@@ -8,6 +8,7 @@ AHN, Mar 2020
 from pdb import set_trace as BP
 import numpy as np
 import random
+from collections import defaultdict
 
 #=================
 class State:
@@ -21,7 +22,6 @@ class State:
         self.s = size
         self.empty_idx = 0
         self.arr = None
-        self.history = set()
         self.hashval = None
 
     def __repr__( self):
@@ -48,7 +48,7 @@ class State:
 
         for _ in range(nmoves):
             acts = res.action_list()
-            res = res.act( random.choice(acts), store_history=False)
+            res = res.act( random.choice(acts))
         return res
 
     @classmethod
@@ -71,7 +71,7 @@ class State:
         res = np.nonzero( self.__action_flags())[0]
         return res
 
-    def act( self, action_idx, store_history=True):
+    def act( self, action_idx):
         '''
         Act method required by Player
         Apply an action and return new state
@@ -81,8 +81,6 @@ class State:
         new_state.arr[self.empty_idx] = new_state.arr[tile_idx]
         new_state.arr[tile_idx] = 0
         new_state.empty_idx = tile_idx
-        if (store_history):
-            new_state.history.add( self.hash())
         return new_state
 
     def encode( self):
@@ -100,12 +98,10 @@ class State:
         if not self.hashval: self.hashval = hash(self.arr.tobytes())
         return self.hashval
 
-
     def __clone( self):
         res = State( self.s)
         res.empty_idx = self.empty_idx
         res.arr = self.arr.copy()
-        res.history = self.history.copy()
         return res
 
     def __action_flags( self):

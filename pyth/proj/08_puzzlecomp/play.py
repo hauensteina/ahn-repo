@@ -62,11 +62,13 @@ def main():
     niter = 0
     while not state.solved():
         niter += 1
+        # if niter > 10:
+        #     print('>>>>>>>>> aborting')
+        #     break
         print( state)
         print('iteration: %d' % niter)
-        if player.root.N:
-            print('v: %.4f' % ( player.root.v / player.root.N ))
-            print('visits: %d' % ( player.root.N ))
+        print('v: %.4f' % player.v())
+        print('visits: %d' % player.N() )
         action, state = player.move()
     print( '>>> final state after %d iterations: %s' % (niter,state))
 
