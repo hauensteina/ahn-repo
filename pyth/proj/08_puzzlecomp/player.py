@@ -15,7 +15,9 @@ while not state.solved():
 
 from pdb import set_trace as BP
 import math
+import numpy as np
 from collections import defaultdict
+from state import State
 
 #================
 class Player:
@@ -45,6 +47,32 @@ class Player:
         if not node: node = self.root
         v,N = self.v_N_table[node.state.hash()]
         return v/N if N else 0
+
+    def normalized_child_visits( self, node = None):
+        'How many visits did each child have, divided by total child visits'
+        res = self.child_visits( node)
+        ssum = np.sum( res)
+        if ssum:
+            res /= ssum
+        return res
+
+    def child_visits( self, node = None):
+        'How many visits did each child have'
+        if not node: node = self.root
+        res = np.zeros( State.n_actions(), float)
+        for child in node.children:
+            vN = self.v_N_table[child.state.hash()]
+            res[child.action] = vN[1]
+        return res
+
+    def child_scores( self, node = None):
+        'UCT score for each child'
+        if not node: node = self.root
+        res = np.zeros( State.n_actions(), float)
+        for child in node.children:
+            score = child.get_uct_score( self.c_puct, self.v_N_table)
+            res[child.action] = score
+        return res
 
     def move( self):
         '''
@@ -154,15 +182,10 @@ class UCTNode:
         self.parent = parent
         self.p = p # Our value from the parent policy array
         self.children = None
-        #self.v = None # Populates when we expand and run the net
-        #self.N = 0
-        #self.dead_end = False
 
     def __repr__( self):
         res = self.state.__repr__()
         res += '\npolicy: %f\n' % (self.p or 0.0)
-        #res += 'value: %f\n' % (self.v / self.N if self.N  else 0.0)
-        #res += 'N: %d\n' % (self.N or 0)
         res += 'children: %d\n' % (len(self.children) if self.children else 0)
         return res
 
@@ -173,10 +196,7 @@ class UCTNode:
         mmax = -1 * Player.LARGE
         winner = None
         for child in self.children:
-            # if child.dead_end:
-            #     continue
             score = child.get_uct_score( c_puct, v_N_table)
-            #BP()
             if score > mmax:
                 mmax = score
                 winner = child

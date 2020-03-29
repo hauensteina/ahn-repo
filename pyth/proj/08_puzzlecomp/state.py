@@ -7,6 +7,7 @@ AHN, Mar 2020
 
 from pdb import set_trace as BP
 import numpy as np
+import math
 import random
 from collections import defaultdict
 
@@ -49,6 +50,11 @@ class State:
         for _ in range(nmoves):
             acts = res.action_list()
             res = res.act( random.choice(acts))
+        # Make sure it is shuffled at all
+        while res.solved():
+            acts = res.action_list()
+            res = res.act( random.choice(acts))
+
         return res
 
     @classmethod
@@ -61,6 +67,16 @@ class State:
         res.empty_idx = np.argmin( res.arr)
         return res
 
+    @classmethod
+    def n_actions( cls):
+        ' Returns maximum number of different actions. '
+        return 4
+
+    @classmethod
+    def v_from_dist( cls, dist, lmbda=0.035):
+        ' Convert steps to go to a number in [0,1) '
+        return math.exp(-lmbda * dist)
+
     def solved( self):
         for i in range( self.s * self.s):
             if i != self.arr[i]: return False
@@ -70,6 +86,7 @@ class State:
         ' Return a list of possible actions. '
         res = np.nonzero( self.__action_flags())[0]
         return res
+
 
     def act( self, action_idx):
         '''

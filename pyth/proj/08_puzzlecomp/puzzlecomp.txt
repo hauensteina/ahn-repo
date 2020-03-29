@@ -1,5 +1,5 @@
 
-Puzzles as a competition
+Puzzles with UCT search
 ===========================
 AHN, Mar 2020
 
@@ -18,6 +18,10 @@ I thought policy was just a performance optimization because in Go, running the 
 
 However, this throws away most of the information gained during the UCT search. The policy is an attempt to train the results of the dynamic search effort into a static network. So next time around, you get the old answer straight from the net, and the same effort of search will explore further into the future. It seems stupid to throw that information away. Might be worth a try, though, just to make sure. It is also makes the code and the data structures a little simpler.
 
+The game result is just a way to get a quality measure for a two person game. In a puzzle, remaining effort is the natural choice. We want numbers between 0 and 1, where remaining effort zero maps to 1, and large remaining effort maps to 0. exp(-lambda * x) comes to mind. Say exp(-lambda * 20) = 0.5 as a first fit, so lambda ~ 0.035.
+
+So v = exp(-lambda * steps_to_solution) . p as usual, which means the normalized node counts beneath the children.
+
 Parts
 --------
 
@@ -31,22 +35,27 @@ This class contains the UCTSearch. Implement this first, see how it does if I fe
 
 Game
 ~~~~~
-A game between two players.
+One puzzle solution
 
-p1 = Player( network1, playouts)
-p2 = Player( network2, playouts)
-g = Game( p1,p2)
-g.play( movelimit) # Abort if neither player finishes within limit
+p = Player( network, playouts)
+g = Game( p)
+seq,movecount = g.play( random_shifts, movelimit) # Abort if player does not finish within limit.
+
+For simplicity, just set the move limit to min( 100, 2 * random_shifts).
+
+seq: List( state, p, v). The game class automatically populates v after the puzzle is solved and the number of moves is known.
+
+The elements in seq are training examples.
 
 Data Generator
 ~~~~~~~~~~~~~~~~
 Continuously generates training inputs by playing games, only keeping the newest n training inputs. Does this by playing games and storing the resulting training data in a folder. After each game, check if there is a new network.
 
-p1 = Player( network1)
-p2 = Player( network2)
-
-gen = DataGen( p1, p2, folder)
+p = Player( network)
+gen = DataGen( p, folder)
 gen.run()
+
+A training sample maps a state to a pair ([p_left,p_right,p_up,p_down], v)
 
 Training Process
 ~~~~~~~~~~~~~~~~~~
