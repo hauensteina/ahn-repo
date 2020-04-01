@@ -89,8 +89,6 @@ class ShiftModel:
 
     def load_weights( self, fname):
         weightsfname = fname + '.weights'
-        if not os.path.exists( weightsfname):
-            return False
         self.model.load_weights( weightsfname)
         return True
 

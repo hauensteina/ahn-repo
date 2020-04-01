@@ -6,21 +6,17 @@ AHN, Mar 2020
 Abstract
 ----------
 
-Trying to adapt the AlphaZero approach to puzzles hits a snag because puzzles are not a fighting game between two opponents like chess or Go. How can you train v if there never is a win?
+The policy p is problem independent. v (the quality) is the interesting part.
+We try reinforcement learning where v = exp(-lambda*remaining_effort). All else is more or less like Alpha Zero.
 
-The idea is to turn any puzzle into a competition by letting two networks try to solve it, and the one with the better solution is called the winner.
-
-We start with simple puzzle states, which are close to the solution, and then scale up to harder configurations.
+We start with simple puzzle states, which are close to the solution, and then scale up to harder initial configurations.
 
 Policy and Value
 ------------------
-I thought policy was just a performance optimization because in Go, running the value net for each possible move is really expensive. Most puzzles do not have this issue. So you might try to just train the value, and use that to generate the policy.
 
-However, this throws away most of the information gained during the UCT search. The policy is an attempt to train the results of the dynamic search effort into a static network. So next time around, you get the old answer straight from the net, and the same effort of search will explore further into the future. It seems stupid to throw that information away. Might be worth a try, though, just to make sure. It is also makes the code and the data structures a little simpler.
+The game result is just a way to get a quality measure for a two person game. In a puzzle, remaining effort is the natural choice. We want numbers between 0 and 1, where no remaining effort maps to 1.0, and large remaining effort maps to values close to 0. Intuitively, exp(-lambda * x) comes to mind. Say we want exp(-lambda * 20) = 0.5 as a first fit, so lambda ~ 0.035.
 
-The game result is just a way to get a quality measure for a two person game. In a puzzle, remaining effort is the natural choice. We want numbers between 0 and 1, where remaining effort zero maps to 1, and large remaining effort maps to 0. exp(-lambda * x) comes to mind. Say exp(-lambda * 20) = 0.5 as a first fit, so lambda ~ 0.035.
-
-So v = exp(-lambda * steps_to_solution) . p as usual, which means the normalized node counts beneath the children.
+Policy p as usual, which means the normalized node counts beneath the children.
 
 Parts
 --------
@@ -30,7 +26,7 @@ Player
 p = Player( network, playouts)
 move, newstate = p.move( state)
 
-This class contains the UCTSearch. Implement this first, see how it does if I feed it the networks trained in
+This class contains the UCT Search. Implement this first, see how it does if I feed it the networks trained in
 07_valitershift.
 
 Game

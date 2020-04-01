@@ -39,39 +39,50 @@ class Game:
             old_root = pl.root
             action, state = pl.move() # changes pl.root
             res.append( {'state':old_root.state,
+                         'visits':pl.N( old_root),
                          'uct':pl.child_scores( old_root),
+                         'child_nn_v':pl.child_nn_v( old_root),
+                         'v':0.0,
+                         'child_visits':pl.child_visits( old_root),
                          'p':pl.normalized_child_visits( old_root) })
 
         if not pl.root.state.solved():
-            return None
-        # Fill in the v values after we know the solution length
-        for idx in range( nmoves):
-            res[idx]['v'] = State.v_from_dist( nmoves - idx)
+            found = False
+        else:
+            found = True
+            # Fill in the v values after we know the solution length
+            for idx in range( nmoves):
+                res[idx]['v'] = State.v_from_dist( nmoves - idx)
+            # Add solution at the end
+            res.append( {'state':pl.root.state,
+                         'visits':pl.N( pl.root),
+                         'uct':np.zeros( State.n_actions(),float),
+                         'child_nn_v':np.zeros( State.n_actions(),float),
+                         'child_visits':np.zeros( State.n_actions(),float),
+                         'p':np.zeros( State.n_actions(),float),
+                         'v':1.0} )
 
-        # Add solution at the end
-        res.append( {'state':pl.root.state,
-                     'p':np.zeros( State.n_actions(),float),
-                     'uct':np.zeros( State.n_actions(),float),
-                     'v':1.0} )
-
-        return res
+        return res,found
 
 def main():
     ' Test the Game class '
     SIZE=3
     model = ShiftModel( SIZE)
-    model.load_weights( 'model_3x3.weights')
-    state = State.random( SIZE, nmoves=4)
-    player = Player( state, model)
+    model.load_weights( 'model_3x3')
+    state = State.random( SIZE, nmoves=16)
+    #state = State.from_list( SIZE, [1,4,2,3,0,5,6,7,8])
+    player = Player( state, model, playouts=256, c_puct=0.1)
     g = Game(player)
-    seq = g.play( movelimit=10)
-    if not seq:
-        print( 'No solution found')
-        exit(1)
-    print( '\nSolution:')
+    seq, found = g.play( movelimit=100)
+    if not found:
+        print( '>>>>>>>>>> No solution found!')
+    print( '\nPath:')
     for s in seq:
         print( s['state'])
+        print('visits: %d' % s['visits'])
         print('v:%f' % s['v'])
+        print('child_nn_v:%s' % s['child_nn_v'])
+        print('child_visits:%s' % s['child_visits'])
         print('uct:%s' % s['uct'])
         print('p:%s' % s['p'])
 

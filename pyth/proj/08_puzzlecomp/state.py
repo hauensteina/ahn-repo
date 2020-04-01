@@ -77,6 +77,21 @@ class State:
         ' Convert steps to go to a number in [0,1) '
         return math.exp(-lmbda * dist)
 
+    @classmethod
+    def dist_from_v( cls, v, lmbda=0.035):
+        ' Convert steps to go to a number in [0,1) '
+        return -1 * math.log(v) / lmbda
+
+    @classmethod
+    def v_plus_one( cls, v, lmbda=0.035):
+        ' Get v(d(v)+1) '
+        return cls.v_from_dist( cls.dist_from_v(v) + 1.0 )
+
+    @classmethod
+    def v_minus_one( cls, v, lmbda=0.035):
+        ' Get v(d(v)-1) '
+        return cls.v_from_dist( cls.dist_from_v(v) - 1.0 )
+
     def solved( self):
         for i in range( self.s * self.s):
             if i != self.arr[i]: return False
