@@ -6,10 +6,21 @@ AHN, Mar 2020
 '''
 
 from pdb import set_trace as BP
-import numpy as np
-import math
-import random
+import math, random, json
 from collections import defaultdict
+import numpy as np
+
+#===========================================
+class StateJsonEncoder( json.JSONEncoder):
+     def default(self, obj):
+         if isinstance(obj, State):
+             return {'s':obj.s, 'arr':list(obj.arr)}
+         elif isinstance(obj, np.int64):
+             return int(obj)
+         elif isinstance(obj, np.ndarray):
+             return list(obj)
+         else:
+             return json.JSONEncoder.default(self, obj)
 
 #=================
 class State:

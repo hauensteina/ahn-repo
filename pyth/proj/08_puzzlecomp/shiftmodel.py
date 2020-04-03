@@ -88,8 +88,9 @@ class ShiftModel:
         self.model.save_weights( weightsfname)
 
     def load_weights( self, fname):
-        weightsfname = fname + '.weights'
-        self.model.load_weights( weightsfname)
+        if not fname.endswith( '.weights'):
+            fname += '.weights'
+        self.model.load_weights( fname)
         return True
 
     def get_v_p( self, state):
