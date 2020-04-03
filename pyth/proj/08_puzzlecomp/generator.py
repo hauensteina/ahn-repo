@@ -57,9 +57,9 @@ class Generator:
                   max_shuffles=1000,
                   playouts=256,
                   c_puct=0.1,
-                  maxfiles=10000 ):
+                  maxfiles=100 ):
         self.model = model # The model used for self-play
-        self.weightsfile = weightsfile # Training process independently stores updated weights
+        self.weightsfile = weightsfile # Separate training process stores updated weights here
         self.folder = folder # Folder to store generated training data
         self.movelimit = movelimit # Abort game if still no solution
         self.chunksize = chunksize # If we solved this many, increase shuffles
@@ -124,8 +124,10 @@ class Generator:
     def delete_old_files( self):
         'Only keep the newest maxfiles training examples around'
         files = glob.glob("%s/*.json" % self.folder)
+        if len(files) < self.maxfiles: return
         files.sort( key=os.path.getmtime)
         delfiles = files[:len(files)-self.maxfiles]
+        print( 'Deleting %d old files' % len(delfiles))
         for f in delfiles:
             os.remove( f)
 
