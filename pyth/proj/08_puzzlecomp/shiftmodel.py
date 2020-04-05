@@ -150,4 +150,11 @@ class ShiftModel:
         res = self.predict( state.encode())
         p = res[0][0]
         v = res[1][0]
+        # v is a tanh, so in (-1,1). We need (0,1).
+        v = (v+1) / 2
+        # Eliminate illegal moves
+        flags = state.action_flags()
+        p = [ x if flags[i] else 0.0 for i,x in enumerate(p) ]
+        ssum = np.sum(p)
+        if ssum: p /= ssum
         return v,p

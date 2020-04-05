@@ -132,6 +132,8 @@ class Player:
             return
 
         value, policy = self.model.get_v_p( leaf.state) # >>>>>>>> Run the network <<<<<<<<<
+        #print(value)
+        #print(policy)
         leaf.nn_v = value
         leaf.v = value
         leaf.N = 1

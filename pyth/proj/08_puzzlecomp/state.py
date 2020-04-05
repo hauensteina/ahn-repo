@@ -91,6 +91,11 @@ class State:
     @classmethod
     def dist_from_v( cls, v, lmbda=0.035):
         ' Convert steps to go to a number in [0,1) '
+        try:
+            res = -1 * math.log(v) / lmbda
+        except:
+            BP()
+            tt=42
         return -1 * math.log(v) / lmbda
 
     @classmethod
@@ -108,11 +113,35 @@ class State:
             if i != self.arr[i]: return False
         return True
 
-    def action_list( self):
-        ' Return a list of possible actions. '
-        res = np.nonzero( self.__action_flags())[0]
+    def action_flags( self):
+        'Return an array of length 4 where impossible actions are marked 0'
+        mmax = self.s - 1
+        row,col = self.__coords( self.empty_idx)
+        res = np.zeros( 4, int)
+        if col == 0 and row == 0:
+            res[State.DOWN] = res[State.RIGHT] = 1
+        elif col == 0 and row == mmax:
+            res[State.UP] = res[State.RIGHT] = 1
+        elif col == mmax and row == 0:
+            res[State.DOWN] = res[State.LEFT] = 1
+        elif col == mmax and row == mmax:
+            res[State.UP] = res[State.LEFT] = 1
+        elif col == 0:
+            res[State.UP] = res[State.DOWN] = res[State.RIGHT] = 1
+        elif col == mmax:
+            res[State.UP] = res[State.DOWN] = res[State.LEFT] = 1
+        elif row == 0:
+            res[State.LEFT] = res[State.RIGHT] = res[State.DOWN] = 1
+        elif row == mmax:
+            res[State.LEFT] = res[State.RIGHT] = res[State.UP] = 1
+        else:
+            res[State.LEFT] = res[State.RIGHT] = res[State.UP] = res[State.DOWN] = 1
         return res
 
+    def action_list( self):
+        ' Return a list of possible actions. '
+        res = np.nonzero( self.action_flags())[0]
+        return res
 
     def act( self, action_idx):
         '''
@@ -147,30 +176,6 @@ class State:
         res.arr = self.arr.copy()
         return res
 
-    def __action_flags( self):
-        'Return an array of length 4 where impossible actions are marked 0'
-        mmax = self.s - 1
-        row,col = self.__coords( self.empty_idx)
-        res = np.zeros( 4, int)
-        if col == 0 and row == 0:
-            res[State.DOWN] = res[State.RIGHT] = 1
-        elif col == 0 and row == mmax:
-            res[State.UP] = res[State.RIGHT] = 1
-        elif col == mmax and row == 0:
-            res[State.DOWN] = res[State.LEFT] = 1
-        elif col == mmax and row == mmax:
-            res[State.UP] = res[State.LEFT] = 1
-        elif col == 0:
-            res[State.UP] = res[State.DOWN] = res[State.RIGHT] = 1
-        elif col == mmax:
-            res[State.UP] = res[State.DOWN] = res[State.LEFT] = 1
-        elif row == 0:
-            res[State.LEFT] = res[State.RIGHT] = res[State.DOWN] = 1
-        elif row == mmax:
-            res[State.LEFT] = res[State.RIGHT] = res[State.UP] = 1
-        else:
-            res[State.LEFT] = res[State.RIGHT] = res[State.UP] = res[State.DOWN] = 1
-        return res
 
     def __coords( self, index):
         row = index // self.s

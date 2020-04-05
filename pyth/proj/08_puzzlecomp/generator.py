@@ -53,7 +53,7 @@ class Generator:
                   weightsfile='generator.weights',
                   folder='generator.out',
                   movelimit=50,
-                  chunksize=10,
+                  chunksize=100,
                   max_shuffles=1000,
                   playouts=256,
                   c_puct=0.1,
