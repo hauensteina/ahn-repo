@@ -44,10 +44,13 @@ class Game:
                          'child_nn_v':pl.child_nn_v( old_root),
                          'v':0.0,
                          'child_visits':pl.child_visits( old_root),
-                         'p':pl.normalized_child_visits( old_root) })
+                         'p':self.__onehot(pl.child_visits( old_root)) })
 
         if not pl.root.state.solved():
             found = False
+            # Use the shortest network v value if we failed
+            for idx in range( nmoves):
+                res[idx]['v'] = max(res[idx]['child_nn_v'])
         else:
             found = True
             # Fill in the v values after we know the solution length
@@ -63,6 +66,12 @@ class Game:
                          'v':1.0} )
 
         return res,found
+
+    def __onehot( self, visits):
+        ' Set the largest element to 1, the rest to 0 '
+        res = np.zeros( len(visits))
+        res[ np.argmax( visits)] = 1.0
+        return res
 
 def main():
     ' Test the Game class '

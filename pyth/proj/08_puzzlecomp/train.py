@@ -9,6 +9,7 @@ AHN, Apr 2020
 from pdb import set_trace as BP
 import argparse
 import math, os, glob, json
+import time
 from math import log, exp
 import numpy as np
 import random
@@ -32,7 +33,7 @@ def usage(printmsg=False):
                   The model is saved when we are done with them.
       --batchsize: How many examples in a batch
     Example:
-      %s --puzzlesize 3 --batchsize 32 --loadsize 100
+      %s --puzzlesize 3 --batchsize 100 --loadsize 10
 --
     ''' % (name,name,name)
     if printmsg:
@@ -42,7 +43,8 @@ def usage(printmsg=False):
         return msg
 
 def main():
-    WEIGHTSFNAME = 'generator.weights'
+    WEIGHTSFNAME = 'generator.h5'
+    GENDIR = 'generator.out'
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--puzzlesize", required=True, type=int)
     parser.add_argument( "--batchsize", required=True, type=int)
@@ -53,21 +55,33 @@ def main():
     if os.path.isfile( WEIGHTSFNAME):
         model.load_weights( WEIGHTSFNAME)
 
+    # Save initial model so generator.py can start chugging
+    model.save_weights( WEIGHTSFNAME)
+    print( 'Waiting for generated files in %s ...' % GENDIR)
+    while len( glob.glob( "%s/*.json" % GENDIR)) < 100:
+        time.sleep(1)
+
+    print( 'Kicking off...')
     print( 'Batchsize is %d. An epoch has %d batches = %d samples' % (args.batchsize, args.loadsize, args.loadsize * args.batchsize))
 
     epoch = 0
     while 1: # Hit Ctrl-C if you want to stop training
         epoch += 1
-        inputs,v_targets, p_targets = load_random_samples( 'generator.out', args.loadsize * args.batchsize, args.puzzlesize)
+        print( 'Loading %d samples...' % (args.loadsize * args.batchsize))
+        inputs,v_targets, p_targets = load_random_samples( GENDIR, args.loadsize * args.batchsize, args.puzzlesize)
+        v_loss = p_loss = 0.0
         for i in range( args.loadsize):
             batch_inputs = inputs[ i*args.batchsize : (i+1) * args.batchsize ]
             batch_v_targets = v_targets[ i*args.batchsize : (i+1) * args.batchsize ]
             batch_p_targets = p_targets[ i*args.batchsize : (i+1) * args.batchsize ]
-            model.train_on_batch( batch_inputs, [batch_p_targets, batch_v_targets] )
+            cur_total_loss, cur_p_loss, cur_v_loss = model.train_on_batch( batch_inputs, [batch_p_targets, batch_v_targets] )
+            v_loss += cur_v_loss; p_loss += cur_p_loss
+        v_loss /= args.loadsize; p_loss /= args.loadsize
         model.save_weights( WEIGHTSFNAME)
-        epfname = 'train_%d.weights' % epoch
-        print( 'Saving weights %s' % epfname)
-        model.save_weights( epfname)
+        #epfname = 'train_%d.weights' % epoch
+        print( 'p_loss:%e v_loss %e' % (p_loss, v_loss))
+        print( 'Saving weights after %d samples epoch %d' % (args.loadsize * args.batchsize, epoch))
+        #model.save_weights( epfname)
 
 def load_random_samples( folder, n_files, puzzlesize):
     ' Load n_files into memory, split into inputs and targets'
@@ -77,13 +91,16 @@ def load_random_samples( folder, n_files, puzzlesize):
     v_targets = []
     p_targets = []
     for fname in files:
-        with open( fname) as f:
-            jsn = json.load(f)
+        try:
+            with open( fname) as f:
+                jsn = json.load(f)
+        except Exception as e:
+            print( 'load_random_samples(): Could not load %s. Skipping.' % fname)
         state = State.from_list( puzzlesize, jsn['state']['arr'])
         inp = state.encode()
         #target = (jsn['v'], np.array(jsn['p']))
         inputs.append( inp)
-        v_targets.append( jsn['v'])
+        v_targets.append( 2.0 * jsn['v'] - 1.0) # Map to (-1,1) for tanh
         p_targets.append( np.array(jsn['p']))
 
     return np.array( inputs), np.array( v_targets), np.array( p_targets)

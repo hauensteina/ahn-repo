@@ -50,14 +50,15 @@ def main():
 class Generator:
 
     def __init__( self, model,
-                  weightsfile='generator.weights',
+                  weightsfile='generator.h5',
                   folder='generator.out',
                   movelimit=50,
                   chunksize=100,
                   max_shuffles=1000,
-                  playouts=256,
+                  playouts=128,
+                  #playouts=256,
                   c_puct=0.1,
-                  maxfiles=100 ):
+                  maxfiles=20000 ):
         self.model = model # The model used for self-play
         self.weightsfile = weightsfile # Separate training process stores updated weights here
         self.folder = folder # Folder to store generated training data
@@ -70,6 +71,8 @@ class Generator:
         self.modeltime = datetime.utcnow()
 
     def run( self):
+        print( '>>> Looking for new weights %s every %d games' % (self.weightsfile, self.chunksize))
+        print( '>>> Keeping %d newest files in %s' % (self.maxfiles, self.folder))
         if not os.path.isdir( self.folder):
             os.mkdir( self.folder)
         nshuffles = 1
@@ -88,26 +91,29 @@ class Generator:
                 seq, found = g.play( movelimit)
                 if not found:
                     failures += 1
+                    self.save_steps( seq)
                     print( 'Game %d failed' % gameno)
                 else:
                     self.save_steps( seq)
-                    print( 'Game %d solved and saved' % gameno)
+                    print( 'Game %d solved' % gameno)
 
             if failures == 0: # Our excellent model needs a new challenge
-                print( '>>> 0/%d failures at %d shuffles' % (self.chunksize,nshuffles))
+                print( '0/%d failures at %d shuffles' % (self.chunksize,nshuffles))
                 nshuffles += 1
-                print( '>>> increasing to %d shuffles' % nshuffles)
+                print( '>>> %s increasing to %d shuffles' % (datetime.now(), nshuffles))
             else: # we still need to improve
-                print( '>>> %d/%d failures at %d shuffles' % (failures, self.chunksize,nshuffles))
-                print( '>>> staying at %d shuffles' % nshuffles)
+                print( '%d/%d failures at %d shuffles' % (failures, self.chunksize,nshuffles))
+                print( 'staying at %d shuffles' % nshuffles)
 
             self.delete_old_files()
+            print( 'Deleted all but %d files in %s' % (self.maxfiles, self.folder))
 
     def load_weights_if_newer( self):
         modtime = datetime.utcfromtimestamp( os.path.getmtime( self.weightsfile))
         if modtime > self.modeltime:
             self.modeltime = modtime
             self.model.load_weights( self.weightsfile)
+            print( '>>> %s loaded new weights file' % datetime.now())
 
     def save_steps( self, seq):
         'Save individual solution steps as training samples'
