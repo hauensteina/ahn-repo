@@ -9,31 +9,34 @@ import os,shutil
 import numpy as np
 from numpy.random import random
 
-import keras.layers as kl
-import keras.models as km
-import keras.optimizers as kopt
-import keras.preprocessing.image as kp
 import tensorflow as tf
-from keras import backend as K
-from keras.callbacks import ModelCheckpoint
+import tensorflow.keras.layers as kl
+import tensorflow.keras.models as km
+import tensorflow.keras.optimizers as kopt
+import tensorflow.keras.preprocessing.image as kp
+from tensorflow.keras import backend as K
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 #num_cores = 4
 num_cores = 1
 GPU=0
 
 if GPU:
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
-    session = tf.Session( config=config)
-    K.set_session( session)
+    session = tf.compat.v1.Session( config=config)
+    tf.compat.v1.keras.backend.set_session( session)
+    #K.set_session( session)
 else:
-    num_CPU = 1
-    num_GPU = 0
-    config = tf.ConfigProto( intra_op_parallelism_threads=num_cores,\
-                             inter_op_parallelism_threads=num_cores, allow_soft_placement=True,\
-                             device_count = {'CPU' : num_CPU, 'GPU' : num_GPU})
-    session = tf.Session( config=config)
-    K.set_session( session)
+    tf.config.experimental.set_visible_devices([], 'GPU')
+    # num_CPU = 1
+    # num_GPU = 0
+    # config = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=num_cores,\
+    #                          inter_op_parallelism_threads=num_cores, allow_soft_placement=True,\
+    #                          device_count = {'CPU' : num_CPU, 'GPU' : num_GPU})
+    # session = tf.compat.v1.Session( config=config)
+    # tf.compat.v1.keras.backend.set_session( session)
+    #K.set_session( session)
 
 #------------------
 class ShiftModel:
@@ -151,10 +154,10 @@ class ShiftModel:
         p = res[0][0]
         v = res[1][0]
         # v is a tanh, so in (-1,1). We need (0,1).
-        v = (v+1) / 2
+        v = (v+1) / 2.0
         # Eliminate illegal moves
         flags = state.action_flags()
-        p = [ x if flags[i] else 0.0 for i,x in enumerate(p) ]
+        p *= flags
         ssum = np.sum(p)
         if ssum: p /= ssum
         return v,p

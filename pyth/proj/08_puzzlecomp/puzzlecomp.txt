@@ -56,11 +56,10 @@ A training sample maps a state to a pair ([p_left,p_right,p_up,p_down], v)
 Training Process
 ~~~~~~~~~~~~~~~~~~
 Randomly sucks M training samples from folder, then trains on them in batches of size N. When done with all M samples, store the new network.
-- We stratify the samples. First pick a random nshuffles from 1..max_shuffles. Then pick a random sample with nshuffles.
-  Repeat until chunk full.
-- Save new net if better than previous.
-- The generator will generate mode difficult samples as the net gets better, i.e. max_shuffles in the training folder increases.
-
+train.py --puzzlesize <int> --loadsize <int> --batchsize <int>
+Ideas:
+   - I could sort the input files and only train on a sample from the top n% to focus on harder inputs
+   - Pick n randomly.
 
 Match
 ~~~~~~~~
