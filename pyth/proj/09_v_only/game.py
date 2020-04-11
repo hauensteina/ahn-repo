@@ -86,10 +86,10 @@ def main():
     ' Test the Game class '
     SIZE=3
     model = ShiftModel( SIZE)
-    model.load_weights( 'model_3x3')
-    state = State.random( SIZE, nmoves=16)
+    model.load_weights( 'generator.h5')
+    state = State.random( SIZE, nmoves=3)
     #state = State.from_list( SIZE, [1,4,2,3,0,5,6,7,8])
-    player = Player( state, model, playouts=256, c_puct=0.1)
+    player = Player( state, model)
     g = Game(player)
     seq, found = g.play( movelimit=100)
     if not found:

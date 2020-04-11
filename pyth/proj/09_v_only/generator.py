@@ -43,7 +43,7 @@ def main():
     parser.add_argument( "--run", required=True, action='store_true')
     args = parser.parse_args()
     model = ShiftModel( size=3)
-    gen = Generator( model)
+    gen = Generator( model, c_puct=0.016)
     gen.run()
 
 #==================
@@ -122,7 +122,7 @@ class Generator:
             if dist == 0: # solution, no need to train
                 continue
             fname = self.folder + '/%d_%04d_%s.json' % (self.model.size, dist, shortuuid.uuid()[:8])
-            step = { 'state':step['state'], 'v':step['v'], 'p':step['p'], 'dist':dist }
+            step = { 'state':step['state'], 'v':step['v'], 'dist':dist }
             jsn = json.dumps( step, cls=StateJsonEncoder)
             with open(fname,'w') as f:
                 f.write(jsn)

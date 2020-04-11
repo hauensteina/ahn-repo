@@ -25,7 +25,7 @@ class Player:
     Uses a model and UCT search to find the next move.
     '''
 
-    def __init__( self, state, model, playouts=256, c_puct=0.1):
+    def __init__( self, state, model, playouts=256, c_puct=0.016):
         '''
         model: The model. Must have a method get_v_p( state).
         playouts: How many nodes to expand before deciding on a move.
