@@ -2,12 +2,12 @@
 '''
 A Player tries to solve a shifting puzzle using UCTSearch and a DNN.
 Python 3
-AHN, Mar 2020
+AHN, Apr 2020
 
 Example usage (also look in game.py):
 
 state = initial_state
-p = Player( state, model, playouts, c_puct=0.6)
+p = Player( state, model, playouts, c_puct=0.1)
 while not state.solved():
   action, state = p.move()
 
@@ -131,20 +131,20 @@ class Player:
             #print( 'solution N:%d v:%f' % (self.N(leaf), self.v(leaf)))
             return
 
-        value, policy = self.model.get_v_p( leaf.state) # >>>>>>>> Run the network <<<<<<<<<
+        value = self.model.get_v( leaf.state) # >>>>>>>> Run the network <<<<<<<<<
         #print(value)
         #print(policy)
         leaf.nn_v = value
         leaf.v = value
         leaf.N = 1
-        # Create a child for each policy entry, largest policy first
+        # Create children
+        actions = leaf.state.action_list()
         leaf.children = []
-        for idx,p in enumerate(policy):
-            if p == 0.0: continue
-            next_state = leaf.state.act( action_idx=idx)
-            new_child = UCTNode( next_state, action=idx, parent=leaf, p=p)
+        for action in actions:
+            next_state = leaf.state.act( action)
+            new_child = UCTNode( next_state, action=action, parent=leaf)
             leaf.children.append( new_child)
-        leaf.children = sorted( leaf.children)
+        #leaf.children = sorted( leaf.children)
         self.__update_tree( leaf, leaf.v, leaf.N)
 
     def __update_tree( self, leaf, v, N):
@@ -164,17 +164,15 @@ class UCTNode:
     '''
     LARGE = 1E9
 
-    def __init__( self, state, action=None, parent=None, p=None):
+    def __init__( self, state, action=None, parent=None):
         '''
         state: State at this node.
         action: What action got us here.
         parent: Parent node.
-        p: Policy value we were assigned when the net ran on the parent.
         '''
         self.state = state
         self.action = action
         self.parent = parent
-        self.p = p # Our value from the parent policy array
         self.children = None
         self.nn_v = 0.0 # Our network score when we got expanded
         self.v = 0.0 # Accumulated experience
@@ -182,12 +180,8 @@ class UCTNode:
 
     def __repr__( self):
         res = self.state.__repr__()
-        res += '\npolicy: %f\n' % (self.p or 0.0)
         res += 'children: %d\n' % (len(self.children) if self.children else 0)
         return res
-
-    def __lt__( self, other):
-        return self.p > other.p
 
     def get_best_child( self, c_puct):
         mmax = -1 * UCTNode.LARGE
@@ -216,7 +210,6 @@ class UCTNode:
         UCT score decides which node gets expanded next.
         c_puct: How much to rely on hope. Larger means more exploration.
         '''
-        if self.p == 0.0: return 0.0
         try:
             if not self.N: # unexpanded leaf
                 experience = self.worst_left_node_experience()
@@ -225,6 +218,6 @@ class UCTNode:
         except:
             BP()
             tt=42
-        hope = self.p * ( math.sqrt(self.parent.N) / (1.0 + self.N) ) # Hope helps us try new things
+        hope = math.sqrt(self.parent.N) / (1.0 + self.N)  # Hope helps us try new things
         res = experience + c_puct * hope
         return res

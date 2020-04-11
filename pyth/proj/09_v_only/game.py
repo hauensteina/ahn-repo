@@ -43,8 +43,8 @@ class Game:
                          'uct':pl.child_scores( old_root),
                          'child_nn_v':pl.child_nn_v( old_root),
                          'v':0.0,
-                         'child_visits':pl.child_visits( old_root),
-                         'p':self.__onehot(pl.child_visits( old_root)) })
+                         'child_visits':pl.child_visits( old_root)
+            })
 
         if not pl.root.state.solved():
             found = False
@@ -102,7 +102,6 @@ def main():
         print('child_nn_v:%s' % s['child_nn_v'])
         print('child_visits:%s' % s['child_visits'])
         print('uct:%s' % s['uct'])
-        print('p:%s' % s['p'])
 
 
 if __name__ == '__main__':

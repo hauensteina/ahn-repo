@@ -1,0 +1,17 @@
+
+Puzzles with UCT search
+===========================
+AHN, Apr 2020
+
+Abstract
+----------
+
+We try reinforcement learning where v = exp(-lambda*remaining_effort).
+The policy is a constant. The search is UCT.
+
+We start with simple puzzle states, which are close to the solution, and then scale up to harder initial configurations.
+
+Files and classes similar to ../08_puzzlecomp
+
+
+=== The End ===

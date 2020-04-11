@@ -27,7 +27,7 @@ def usage(printmsg=False):
       %s --run
     Description:
       Solve increasingly more difficult shifting puzzles using the model in shiftmodel.py .
-      Each (state,p,v) gets saved to the generator.out folder for use by a separate training process.
+      Each (state,v) gets saved to the generator.out folder for use by a separate training process.
     Example:
       %s --run
 --

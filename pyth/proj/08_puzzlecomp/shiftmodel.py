@@ -43,6 +43,7 @@ class ShiftModel:
 
     N_VALUE_DENSE_UNITS=32
     N_POLICY_DENSE_UNITS=32
+    CONV_INIT='glorot_uniform' # 'he_normal'
 
     def __init__( self, size, n_filters=32, n_blocks=6):
         self.size = size
@@ -53,7 +54,8 @@ class ShiftModel:
         self.model = ShiftModel.dual_conv_network( shape, n_blocks, self.n_filters)
         opt = kopt.Adam()
         self.model.compile(
-            loss=['categorical_crossentropy', 'mse'],
+            #loss=['categorical_crossentropy', 'mse'],
+            loss=['mse', 'mse'],
             optimizer=opt)
         # self.model.fit(
         #     model_input, [action_target, value_target],
@@ -74,17 +76,17 @@ class ShiftModel:
 
     @classmethod
     # Try bn_conv_relu_block
-    def conv_bn_relu_block( cls, name, n_filters, kernel_size=(3,3),
-                            strides=(1,1), padding='same', init='he_normal'): # try glorot_normal or glorot_uniform
+    def conv_bn_relu_block( cls, name, n_filters):
         def f(inputs):
             batch_norm = kl.BatchNormalization( axis=-1, name='%s_batch_norm' % name)(inputs)
             conv = kl.Conv2D( filters=n_filters,
-                              kernel_size=kernel_size,
-                              strides=strides,
-                              padding=padding,
-                              kernel_initializer=init,
+                              kernel_size=(3,3),
+                              strides=(1,1),
+                              padding='same',
+                              activation='relu',
+                              kernel_initializer=ShiftModel.CONV_INIT,
                               name='%s_conv_block' % name)(batch_norm)
-            return kl.Activation( 'relu', name='%s_relu' % name)(conv)
+            return conv
         return f
 
     @classmethod
@@ -100,17 +102,25 @@ class ShiftModel:
     def policy_head( cls):
         def f(inputs):
             batch_norm = kl.BatchNormalization( axis=-1, name='policy_head_batch_norm')(inputs)
-            conv = kl.Conv2D( filters=1,
-                              kernel_size=(1, 1),
-                              strides=(1, 1),
+            conv = kl.Conv2D( filters=4,
+                              kernel_size=(3,3),
+                              strides=(1,1),
                               padding='same',
+                              activation='relu',
+                              kernel_initializer=ShiftModel.CONV_INIT,
                               name='policy_head_conv_block')(batch_norm)
-            activation = kl.Activation( 'relu', name='policy_head_relu')(conv)
+            # Pooling block
+            pool = kl.GlobalAveragePooling2D()( conv)
+            output = kl.Activation( 'softmax', name='policy_head_output')(pool)
+            return output
+
+            #batch_norm = kl.BatchNormalization( axis=-1, name='policy_head_batch_norm')(conv)
+            #activation = kl.Activation( 'relu', name='policy_head_relu')(conv)
             # Try to use 4 channels and average pooling instead
-            policy_flat = kl.Flatten()( activation)
-            dense =  kl.Dense( units=ShiftModel.N_POLICY_DENSE_UNITS, name='policy_head_dense', activation='relu')(policy_flat)
+            #policy_flat = kl.Flatten()( conv)
+            #dense =  kl.Dense( units=ShiftModel.N_POLICY_DENSE_UNITS, name='policy_head_dense', activation='relu')(policy_flat)
             # Four policy outputs for LEFT, RIGHT, UP, DOWN
-            return kl.Dense( units=4, name='policy_head_output', activation='softmax')(dense)
+            #return kl.Dense( units=4, name='policy_head_output', activation='softmax')(dense)
         return f
 
     @classmethod
@@ -118,16 +128,22 @@ class ShiftModel:
         def f(inputs):
             batch_norm = kl.BatchNormalization( axis=-1, name='value_head_batch_norm')(inputs)
             conv = kl.Conv2D( filters=1,
-                              kernel_size=(1, 1),
-                              strides=(1, 1),
+                              kernel_size=(3,3),
+                              strides=(1,1),
                               padding='same',
+                              activation='relu',
+                              kernel_initializer=ShiftModel.CONV_INIT,
                               name='value_head_conv_block')(batch_norm)
-            activation = kl.Activation( 'relu', name='value_head_relu')(conv)
+            # Pooling block
+            pool = kl.GlobalAveragePooling2D()( conv)
+            output = kl.Activation( 'tanh', name='value_head_output')(pool)
+            return output
+
             # Try to use 1 conv channel and average pooling instead
-            value_flat = kl.Flatten()( activation)
-            dense =  kl.Dense( units=ShiftModel.N_VALUE_DENSE_UNITS, name='value_head_dense', activation='relu')(value_flat)
+            #value_flat = kl.Flatten()( conv)
+            #dense =  kl.Dense( units=ShiftModel.N_VALUE_DENSE_UNITS, name='value_head_dense', activation='relu')(value_flat)
             # One output for the value
-            return kl.Dense( units=1, name='value_head_output', activation='tanh')(dense)
+            #return kl.Dense( units=1, name='value_head_output', activation='tanh')(dense)
         return f
 
     def predict( self, input):
