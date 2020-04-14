@@ -91,7 +91,7 @@ class Generator:
                 seq, found = g.play( movelimit)
                 if not found:
                     failures += 1
-                    self.save_steps( seq)
+                    #self.save_steps( seq) #@@@ re-enable once things converge
                     print( 'Game %d   failed' % gameno)
                 else:
                     self.save_steps( seq)
@@ -106,7 +106,6 @@ class Generator:
                 print( 'staying at %d shuffles' % nshuffles)
 
             self.delete_old_files()
-            print( 'Deleted all but %d files in %s' % (self.maxfiles, self.folder))
 
     def load_weights_if_newer( self):
         modtime = datetime.utcfromtimestamp( os.path.getmtime( self.weightsfile))
@@ -119,6 +118,9 @@ class Generator:
         'Save individual solution steps as training samples'
         for idx,step in enumerate(seq):
             dist = int(round(State.dist_from_v( step['v'])))
+            if dist > 50:
+                BP()
+                tt=42
             if dist == 0: # solution, no need to train
                 continue
             fname = self.folder + '/%d_%04d_%s.json' % (self.model.size, dist, shortuuid.uuid()[:8])
@@ -133,7 +135,7 @@ class Generator:
         if len(files) < self.maxfiles: return
         files.sort( key=os.path.getmtime)
         delfiles = files[:len(files)-self.maxfiles]
-        print( 'Deleting %d old files' % len(delfiles))
+        print( 'Deleting %d old files, leaving %d' % (len(delfiles),self.maxfiles))
         for f in delfiles:
             os.remove( f)
 

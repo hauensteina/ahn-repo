@@ -88,13 +88,13 @@ class Player:
             N += 1
             leaf = None
             LIMIT = 1000
-            loopcount = 0
-            while not leaf and loopcount < LIMIT:
-                loopcount += 1
-                leaf = self.__pick_leaf_to_expand()
-            if loopcount == LIMIT:
-                print( 'Error: Not getting anywhere. Strange ...')
-                exit(1)
+            #loopcount = 0
+            #while not leaf and loopcount < LIMIT:
+            #    loopcount += 1
+            leaf = self.__pick_leaf_to_expand()
+            #if loopcount == LIMIT:
+            #    print( 'Error: Not getting anywhere. Strange ...')
+            #    exit(1)
             self.__expand_leaf( leaf)
         # Find best action
         if len(self.root.children) == 0:
@@ -107,7 +107,7 @@ class Player:
 
         return winner.action, winner.state
 
-    def __pick_leaf_to_expand( self):
+    def __pick_leaf_to_expand( self): #@@@
         '''
         Decide which leaf to expand.
         Walk down the tree until the end, using best UCT score at each level.
@@ -117,6 +117,7 @@ class Player:
             if not node.children: # leaf
                 return node
             newnode,uct_score = node.get_best_child( self.c_puct)
+            #BP()
             node = newnode
 
     def __expand_leaf( self, leaf):
@@ -125,9 +126,10 @@ class Player:
         '''
         if leaf.state.solved(): # Solution, do not expand.
             leaf.N += 1
-            leaf.v = float(leaf.N)
-            leaf.nn_v = leaf.v
-            self.__update_tree( leaf, v=1.0, N=1)
+            #leaf.v = float(leaf.N)
+            leaf.v = 1.0
+            leaf.nn_v = 1.0
+            self.__update_tree( leaf, N=1)
             #print( 'solution N:%d v:%f' % (self.N(leaf), self.v(leaf)))
             return
 
@@ -145,16 +147,17 @@ class Player:
             new_child = UCTNode( next_state, action=action, parent=leaf)
             leaf.children.append( new_child)
         #leaf.children = sorted( leaf.children)
-        self.__update_tree( leaf, leaf.v, leaf.N)
+        self.__update_tree( leaf, leaf.N)
 
-    def __update_tree( self, leaf, v, N):
+    def __update_tree( self, leaf, N):
         '''
         Update visit counts and values of all ancestors.
         '''
         node = leaf
         while node.parent:
-            node.parent.v += State.v_plus_one(v)
             node.parent.N += N
+            if node.parent.v < State.v_plus_one( node.v):
+                node.parent.v = State.v_plus_one( node.v)
             node = node.parent
 
 #================
@@ -180,7 +183,7 @@ class UCTNode:
 
     def __repr__( self):
         res = self.state.__repr__()
-        res += 'children: %d\n' % (len(self.children) if self.children else 0)
+        res += '\nchildren: %d\n' % (len(self.children) if self.children else 0)
         return res
 
     def get_best_child( self, c_puct):
@@ -193,17 +196,17 @@ class UCTNode:
                 winner = child
         return winner,mmax
 
-    def worst_left_node_experience( self):
-        '''
-        Quality of the worst expanded node to the left of self at this point in the search.
-        Used to estimate v for unexpanded nodes. This is a new idea.
-        '''
-        res = self.parent.nn_v
-        for child in self.parent.children:
-            if child is self: break
-            if child.N:
-                res = min( res, child.v / child.N)
-        return res
+    # def worst_left_node_experience( self):
+    #     '''
+    #     Quality of the worst expanded node to the left of self at this point in the search.
+    #     Used to estimate v for unexpanded nodes. This is a new idea.
+    #     '''
+    #     res = self.parent.nn_v
+    #     for child in self.parent.children:
+    #         if child is self: break
+    #         if child.N:
+    #             res = min( res, child.v / child.N)
+    #     return res
 
     def get_uct_score( self, c_puct):
         '''
@@ -212,9 +215,12 @@ class UCTNode:
         '''
         try:
             if not self.N: # unexpanded leaf
-                experience = self.worst_left_node_experience()
+                #experience = self.worst_left_node_experience()
+                #experience = State.v_minus_one( self.parent.v)
+                experience = State.v_plus_one( self.parent.v)
             else:
-                experience = self.v / self.N # Our own cost to go estimate. Aka winrate in games.
+                #experience = self.v / self.N # Our own cost to go estimate. Aka winrate in games.
+                experience = self.v
         except:
             BP()
             tt=42

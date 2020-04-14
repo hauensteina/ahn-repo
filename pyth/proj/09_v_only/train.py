@@ -76,10 +76,10 @@ def main():
             cur_v_loss = model.train_on_batch( batch_inputs, [batch_v_targets] )
             v_loss += cur_v_loss
         v_loss /= args.loadsize
-        model.save_weights( WEIGHTSFNAME)
+        #model.save_weights( WEIGHTSFNAME)
         #epfname = 'train_%d.weights' % epoch
         print( 'v_loss %e' % v_loss)
-        print( 'Saving weights after %d samples epoch %d' % (args.loadsize * args.batchsize, epoch))
+        #print( 'Saving weights after %d samples epoch %d' % (args.loadsize * args.batchsize, epoch))
         #model.save_weights( epfname)
 
 def load_random_samples( folder, n_files, puzzlesize):

@@ -69,11 +69,11 @@ class Game:
         return res,found
 
     def __nn_v( self, node):
-        ' Get average network v of best child, incr dist by 1 '
+        ' Get network v of best child, incr dist by 1 '
         children_nn_v = node['child_nn_v']
         best_idx = np.argmax( children_nn_v)
-        best_N = node['child_visits'][best_idx]
-        v = State.v_plus_one( children_nn_v[best_idx] / best_N)
+        #best_N = node['child_visits'][best_idx]
+        v = State.v_plus_one( children_nn_v[best_idx])
         return v
 
     def __onehot( self, visits):
