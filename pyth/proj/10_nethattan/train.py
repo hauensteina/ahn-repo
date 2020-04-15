@@ -61,7 +61,7 @@ def main():
 
     model = ShiftModel( args.puzzlesize, args.mode)
     if os.path.exists( MODELFNAME):
-        BP()
+        print( 'Loading model from %s' % MODELFNAME)
         model.load( MODELFNAME)
 
     valid_inputs, valid_targets = load_folder_samples( VALDIR, args.puzzlesize, args.mode)
@@ -88,6 +88,7 @@ def main():
                      epochs=args.epochs,
                      validation_data = (valid_inputs, valid_targets),
                      callbacks=callbacks_list)
+    model.save( MODELFNAME)
 
 def load_random_samples( folder, n_files, puzzlesize, mode):
     ' Load random n_files into memory, split into inputs and targets'
@@ -119,8 +120,8 @@ def load_folder_samples( folder, puzzlesize, mode):
     inputs = None
 
     for idx,fname in enumerate(files):
-        if idx % 100 == 0:
-            print( 'loaded %d samples' % idx)
+        if idx % 10000 == 0:
+            print( 'loaded %d/%d samples' % (idx,len(files)))
         try:
             with open( fname) as f:
                 jsn = json.load(f)

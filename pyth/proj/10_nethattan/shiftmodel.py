@@ -86,27 +86,12 @@ class ShiftModel:
         res = self.model.train_on_batch( inputs, targets)
         return res
 
-    def save_weights( self, fname):
-        #if not fname.endswith( '.h5'):
-        #    fname += '.h5'
-        if os.path.exists( fname):
-            shutil.move( fname, fname + '.bak')
-        self.model.save_weights( fname)
+    def save( self, fname):
+        self.model.save( fname)
 
     def load( self, fname):
-        #if not fname.endswith( '.h5'):
-        #    fname += '.h5'
-        BP()
         try:
             self.model = km.load_model( fname)
         except: # Try again. Collision between train.py and generate.py
             self.model = km.load_model( fname)
         return True
-
-    # def get_v( self, state):
-    #     'Run the net, return value estimate as a scalar.'
-    #     res = self.predict( state.encode())
-    #     v = res[0][0]
-    #     # v is a tanh, so in (-1,1). We need (0,1).
-    #     v = (v+1) / 2.0
-    #     return v
