@@ -45,13 +45,13 @@ def usage(printmsg=False):
     else:
         return msg
 
+VALDIR = 'validation_data'
+
 def main():
     TRAINDIR = 'training_data'
-    VALDIR = 'validation_data'
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--puzzlesize', required=True, type=int)
     parser.add_argument( '--batchsize', required=True, type=int)
-    #parser.add_argument( '--loadsize', required=True, type=int)
     parser.add_argument( '--epochs', required=True, type=int)
     parser.add_argument( '--mode', required=True, choices=['v','d'])
     args = parser.parse_args()
@@ -63,6 +63,7 @@ def main():
     if os.path.exists( MODELFNAME):
         print( 'Loading model from %s' % MODELFNAME)
         model.load( MODELFNAME)
+        test_model( model, args.puzzlesize, args.mode); exit(1)
 
     valid_inputs, valid_targets = load_folder_samples( VALDIR, args.puzzlesize, args.mode)
     #train_generator = FitGenerator( TRAINDIR, args.batchsize, args.puzzlesize, args.mode)
@@ -75,10 +76,10 @@ def main():
     #batches_per_epoch = train_generator.total_samples() // args.batchsize
 
     print( 'Loading validation data')
-    valid_inputs, valid_targets = load_folder_samples( VALDIR, args.puzzlesize, args.mode)
+    valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, args.puzzlesize, args.mode)
     print( 'Loaded %d validation samples' % len(valid_inputs))
     print( 'Loading trainig data')
-    train_inputs, train_targets = load_folder_samples( TRAINDIR, args.puzzlesize, args.mode)
+    train_inputs, train_targets, _ = load_folder_samples( TRAINDIR, args.puzzlesize, args.mode)
     print( 'Loaded %d training samples' % len(train_inputs))
     print( 'Kicking off...')
     model.model.fit( x=train_inputs,
@@ -113,11 +114,36 @@ def load_random_samples( folder, n_files, puzzlesize, mode):
 
     return np.array( inputs), np.array( targets)
 
-def load_folder_samples( folder, puzzlesize, mode):
+def test_model( model, puzzlesize, mode, metric_func=None):
+    ' Test model quality on validation data with our own metrics. '
+    valid_inputs, valid_targets, valid_json = load_folder_samples( VALDIR, puzzlesize, mode, return_json=True)
+    print( 'Loaded %d validation samples' % len(valid_inputs))
+    loss,metric = model.model.evaluate( valid_inputs, valid_targets)
+    preds = model.predict( valid_inputs)
+    # Our own metrics
+    avg_sqerr = 0.0; n_corr_samples = 0;
+    for idx,jsn in enumerate(valid_json):
+        #state = State.from_list( puzzlesize, jsn['state']['arr'])
+        inp = valid_inputs[idx]
+        pred = preds[idx][0]
+        #BP()
+        if mode == 'v':
+            corr =  2.0 * jsn['v'] - 1.0 # Map to (-1,1) for tanh
+        else:
+            corr = jsn['dist']
+            if round(pred) == corr: n_corr_samples += 1
+        delta = pred - corr
+        avg_sqerr += delta * delta
+
+    nsamples = len(valid_json)
+    print( 'mse: %.4f pct_corr: %.2f' % (avg_sqerr / nsamples, 100 * n_corr_samples / nsamples ))
+
+def load_folder_samples( folder, puzzlesize, mode, return_json=False):
     ' Load all samples from folder into memory, split into inputs and targets'
     files = glob.glob( '%s/*.json' % folder) # [:1000]
     targets = np.empty( len(files), dtype=float)
     inputs = None
+    json_list = []
 
     for idx,fname in enumerate(files):
         if idx % 10000 == 0:
@@ -127,6 +153,7 @@ def load_folder_samples( folder, puzzlesize, mode):
                 jsn = json.load(f)
         except Exception as e:
             print( 'load_folder_samples(): Could not load %s. Skipping.' % fname)
+        if return_json: json_list.append( jsn)
         state = State.from_list( puzzlesize, jsn['state']['arr'])
         inp = state.encode()
         if inputs is None:
@@ -139,7 +166,7 @@ def load_folder_samples( folder, puzzlesize, mode):
         else:
             targets[idx] = jsn['dist'] # Manhattan distance
 
-    return inputs, targets
+    return inputs, targets, json_list
 
 #=====================
 class FitGenerator:

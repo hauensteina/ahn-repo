@@ -17,28 +17,9 @@ import tensorflow.keras.preprocessing.image as kp
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import ModelCheckpoint
 
-'''
-num_cores = 3
-#num_cores = 1
-GPU=1
-
-if GPU:
-    config = tf.compat.v1.ConfigProto()
-    config.gpu_options.allow_growth = True
-    session = tf.compat.v1.Session( config=config)
-    tf.compat.v1.keras.backend.set_session( session)
-    #K.set_session( session)
-else:
-    tf.config.experimental.set_visible_devices([], 'GPU')
-    # num_CPU = 1
-    # num_GPU = 0
-    # config = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=num_cores,\
-    #                          inter_op_parallelism_threads=num_cores, allow_soft_placement=True,\
-    #                          device_count = {'CPU' : num_CPU, 'GPU' : num_GPU})
-    # session = tf.compat.v1.Session( config=config)
-    # tf.compat.v1.keras.backend.set_session( session)
-    #K.set_session( session)
-'''
+def mean_pred(y_true, y_pred):
+    ' First attempt at a custom metric '
+    return K.mean(y_pred)
 
 #------------------
 class ShiftModel:
@@ -60,6 +41,7 @@ class ShiftModel:
         else:
             self.model.compile(
                 loss=['mse'], metrics=['mse'] # TODO: Use custom metric here
+                #loss=['mse'], metrics=[mean_pred] # TODO: Use custom metric here
             )
 
         self.model.summary()
@@ -76,9 +58,9 @@ class ShiftModel:
             output_layer = kl.Dense( units=1, name='value_head_output', activation='linear')(layer)
         return km.Model( inputs=inputs, outputs=[output_layer])
 
-    def predict( self, input):
-        res = self.model.predict( input[np.newaxis])[0][0]
-        if mode == 'v': # res is a tanh, so in (-1,1). We need (0,1).
+    def predict( self, inputs):
+        res = self.model.predict( inputs)
+        if self.mode == 'v': # res is a tanh, so in (-1,1). We need (0,1).
             res = (res+1) / 2.0
         return res
 
