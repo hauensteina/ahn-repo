@@ -30,15 +30,15 @@ def usage(printmsg=False):
       %s --puzzlesize <int> --batchsize <int> --loadsize <int>
     Description:
       --puzzlesize: Side length of the puzzle. A 15-puzzle has puzzlesize 4.
-      --loadsize: How many batches to suck into memory at a time.
-                  The model is saved when we are done with them.
       --batchsize: How many examples in a batch
       --mode: d means train on distance, v means train on v_from_dist in (0,1)
       --epochs: How many epochs to train
-    Example:
+      --valid_only: Just load and validate the model, then exit
+    Examples:
       %s --puzzlesize 3 --batchsize 100 --loadsize 1000 --mode d --epochs 100
+      %s --puzzlesize 3 --mode d --valid_only
 --
-    ''' % (name,name,name)
+    ''' % (name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -51,9 +51,10 @@ def main():
     TRAINDIR = 'training_data'
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--puzzlesize', required=True, type=int)
-    parser.add_argument( '--batchsize', required=True, type=int)
-    parser.add_argument( '--epochs', required=True, type=int)
+    parser.add_argument( '--batchsize', type=int, default=100)
+    parser.add_argument( '--epochs', type=int, default=10)
     parser.add_argument( '--mode', required=True, choices=['v','d'])
+    parser.add_argument( '--valid_only', action = 'store_true')
     args = parser.parse_args()
 
     MODELFNAME = 'net_d.hd5'
@@ -63,9 +64,11 @@ def main():
     if os.path.exists( MODELFNAME):
         print( 'Loading model from %s' % MODELFNAME)
         model.load( MODELFNAME)
-        test_model( model, args.puzzlesize, args.mode); exit(1)
+        if args.valid_only:
+            test_model( model, args.puzzlesize, args.mode)
+            exit(1)
 
-    valid_inputs, valid_targets = load_folder_samples( VALDIR, args.puzzlesize, args.mode)
+    valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, args.puzzlesize, args.mode)
     #train_generator = FitGenerator( TRAINDIR, args.batchsize, args.puzzlesize, args.mode)
 
     # checkpoint
@@ -108,7 +111,7 @@ def load_random_samples( folder, n_files, puzzlesize, mode):
         #target = (jsn['v'], np.array(jsn['p']))
         inputs.append( inp)
         if mode == 'v':
-            targets.append( 2.0 * jsn['v'] - 1.0) # Map to (-1,1) for tanh
+            targets.append( jsn['v'])
         else:
             targets.append( jsn['dist']) # Manhattan distance
 
@@ -128,15 +131,19 @@ def test_model( model, puzzlesize, mode, metric_func=None):
         pred = preds[idx][0]
         #BP()
         if mode == 'v':
-            corr =  2.0 * jsn['v'] - 1.0 # Map to (-1,1) for tanh
+            delta = pred - jsn['v']
+            corr = jsn['dist']
+            est  =  State.dist_from_v( jsn['v'])
+            if round(est) == corr: n_corr_samples += 1
+            #print('est:%f corr:%f delta:%f' % (est,corr,delta))
         else:
             corr = jsn['dist']
+            delta = pred - corr
             if round(pred) == corr: n_corr_samples += 1
-        delta = pred - corr
         avg_sqerr += delta * delta
 
     nsamples = len(valid_json)
-    print( 'mse: %.4f pct_corr: %.2f' % (avg_sqerr / nsamples, 100 * n_corr_samples / nsamples ))
+    print( 'mse: %e pct_corr: %.2f' % (avg_sqerr / nsamples, 100 * n_corr_samples / nsamples ))
 
 def load_folder_samples( folder, puzzlesize, mode, return_json=False):
     ' Load all samples from folder into memory, split into inputs and targets'
@@ -162,7 +169,7 @@ def load_folder_samples( folder, puzzlesize, mode, return_json=False):
         #target = (jsn['v'], np.array(jsn['p']))
         #inputs.append( inp)
         if mode == 'v':
-            targets[idx] = 2.0 * jsn['v'] - 1.0 # Map to (-1,1) for tanh
+            targets[idx] = jsn['v']
         else:
             targets[idx] = jsn['dist'] # Manhattan distance
 

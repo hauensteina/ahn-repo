@@ -60,12 +60,8 @@ class ShiftModel:
 
     def predict( self, inputs):
         res = self.model.predict( inputs)
-        if self.mode == 'v': # res is a tanh, so in (-1,1). We need (0,1).
-            res = (res+1) / 2.0
-        return res
-
-    def train_on_batch( self, inputs, targets):
-        res = self.model.train_on_batch( inputs, targets)
+        #if self.mode == 'v': # res is a tanh, so in (-1,1). We need (0,1).
+        #    res = ShiftModel.from_tanh( res)
         return res
 
     def save( self, fname):
@@ -77,3 +73,13 @@ class ShiftModel:
         except: # Try again. Collision between train.py and generate.py
             self.model = km.load_model( fname)
         return True
+
+    # @classmethod
+    # def to_tanh( cls, zero2one):
+    #     ' (0,1) -> (-1,1) '
+    #     return 2.0 * zero2one - 1.0
+
+    # @classmethod
+    # def from_tanh( cls, ttanh):
+    #     ' (-1,1) -> (0,1) '
+    #     return (ttanh+1) / 2.0

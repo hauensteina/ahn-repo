@@ -30,6 +30,8 @@ class State:
     UP=2
     DOWN=3
 
+    LAMBDA=0.035
+
     def __init__( self, size):
         self.s = size
         self.empty_idx = 0
@@ -84,27 +86,22 @@ class State:
         return 4
 
     @classmethod
-    def v_from_dist( cls, dist, lmbda=0.035):
-        ' Convert steps to go to a number in [0,1) '
-        return math.exp(-lmbda * dist)
+    def v_from_dist( cls, dist, lmbda=LAMBDA):
+        ' Convert steps to go to a number in (-1,1) for tanh output '
+        return 2 * math.exp(-lmbda * dist) - 1.0
 
     @classmethod
-    def dist_from_v( cls, v, lmbda=0.035):
-        ' Convert steps to go to a number in [0,1) '
-        try:
-            res = -1 * math.log(v) / lmbda
-        except:
-            BP()
-            tt=42
-        return -1 * math.log(v) / lmbda
+    def dist_from_v( cls, v, lmbda=LAMBDA):
+        ' Convert tanh to steps to go '
+        return -1 * math.log( (v+1)/2) / lmbda
 
     @classmethod
-    def v_plus_one( cls, v, lmbda=0.035):
+    def v_plus_one( cls, v, lmbda=LAMBDA):
         ' Get v(d(v)+1) '
         return cls.v_from_dist( cls.dist_from_v(v) + 1.0 )
 
     @classmethod
-    def v_minus_one( cls, v, lmbda=0.035):
+    def v_minus_one( cls, v, lmbda=LAMBDA):
         ' Get v(d(v)-1) '
         return cls.v_from_dist( cls.dist_from_v(v) - 1.0 )
 
