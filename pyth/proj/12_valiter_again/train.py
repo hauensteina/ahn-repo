@@ -59,7 +59,7 @@ TRAINDIR = 'training_data'
 MODELFNAME = 'net_v.hd5'
 
 def main():
-    N_EPOCHS = 3
+    N_EPOCHS = 10
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--puzzlesize', required=True, type=int)
     parser.add_argument( '--epochs', type=int, default=10)
