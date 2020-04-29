@@ -13,12 +13,20 @@ import time
 from math import log, exp
 import numpy as np
 import random
+import multiprocessing as mp
 
 import tensorflow as tf
 from tensorflow.keras.callbacks import ModelCheckpoint
 
 from shiftmodel import ShiftModel
 from state import State
+
+
+# Limit GPU memory usage to 5GB
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_virtual_device_configuration(
+    gpus[0],
+    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5*1024)])
 
 def usage(printmsg=False):
     name = os.path.basename(__file__)
@@ -60,43 +68,49 @@ def main():
     args = parser.parse_args()
 
     if args.valid_only:
+        model = ShiftModel( args.puzzlesize)
         test_model( model, args.puzzlesize)
         exit(1)
 
     # If no data, at least give the generator an initialized model.
     if not os.path.exists( TRAINDIR):
+        model = ShiftModel( args.puzzlesize)
         model.save( MODELFNAME)
         print( 'Folder %s not found. Saving model to %s and exiting.' % (TRAINDIR, MODELFNAME))
         exit(1)
 
-    model = ShiftModel( args.puzzlesize)
+    while(1):
+        ctx = mp.get_context('spawn')
+        p = ctx.Process(target=train, args=(args.puzzlesize, args.batchsize, N_EPOCHS))
+        p.start()
+        p.join()
 
-    while 1: # Hit Ctrl-C to stop
-        if os.path.exists( MODELFNAME):
-            print( 'Loading model from %s' % MODELFNAME)
-            model.load( MODELFNAME)
+def train( puzzlesize, batchsize, n_epochs):
+    ' Function to execute in a separate process and train n_epochs '
+    model = ShiftModel( puzzlesize)
+    # checkpoint
+    #filepath='model-improvement-{epoch:02d}-{val_loss:e}.hd5'
+    filepath = MODELFNAME
+    checkpoint = ModelCheckpoint( filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
+    callbacks_list = [checkpoint]
 
-        valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, args.puzzlesize)
+    if os.path.exists( MODELFNAME):
+        print( 'Loading model from %s' % MODELFNAME)
+        model.load( MODELFNAME)
 
-        # checkpoint
-        #filepath='model-improvement-{epoch:02d}-{val_loss:e}.hd5'
-        filepath = MODELFNAME
-        checkpoint = ModelCheckpoint( filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
-        callbacks_list = [checkpoint]
-
-        print( 'Loading validation data')
-        valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, args.puzzlesize)
-        print( 'Loaded %d validation samples' % len(valid_inputs))
-        print( 'Loading trainig data')
-        train_inputs, train_targets, _ = load_folder_samples( TRAINDIR, args.puzzlesize)
-        print( 'Loaded %d training samples' % len(train_inputs))
-        print( 'Kicking off...')
-        model.model.fit( x = train_inputs,
-                         y = train_targets,
-                         batch_size = args.batchsize,
-                         epochs = N_EPOCHS,
-                         validation_data = (valid_inputs, valid_targets),
-                         callbacks = callbacks_list)
+    print( 'Loading validation data')
+    valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, puzzlesize)
+    print( 'Loaded %d validation samples' % len(valid_inputs))
+    print( 'Loading trainig data')
+    train_inputs, train_targets, _ = load_folder_samples( TRAINDIR, puzzlesize)
+    print( 'Loaded %d training samples' % len(train_inputs))
+    print( 'Kicking off...')
+    model.model.fit( x = train_inputs,
+                     y = train_targets,
+                     batch_size = batchsize,
+                     epochs = n_epochs,
+                     validation_data = (valid_inputs, valid_targets),
+                     callbacks = callbacks_list)
 
 def test_model( model, puzzlesize, metric_func=None):
     ' Test model quality on validation data with our own metrics. '

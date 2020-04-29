@@ -54,6 +54,12 @@ class Search:
             if best_leaf.state.solved():
                 best_leaf.v = 1.0
                 print( '>>> Solved after %d node expansions' % N)
+                # If solved, replace v estimates with true distance
+                node = best_leaf.parent
+                d = 1
+                while node:
+                    node.v = State.v_from_dist(d)
+                    d += 1; node = node.parent
                 break
             if best_leaf.depth < self.maxdepth and N+1 < self.maxnodes:
                 newleaves = best_leaf.expand( self.model)
@@ -65,8 +71,21 @@ class Search:
                     print( self.leaves)
                     print( '--------------------')
                 '''
-        seq = best_leaf.get_nodeseq()
+        seq = []
+        if best_leaf.state.solved():
+            seq = best_leaf.get_nodeseq()
+        #seq = self.get_all_expanded_nodes()
         return seq, best_leaf.state.solved()
+
+    def get_all_expanded_nodes( self):
+        ' Walk through the tree, bottom up '
+        nodes = set()
+        for leaf in self.leaves:
+            seq = leaf.get_nodeseq()
+            for node in seq:
+                nodes.add(node)
+        return nodes
+
 
 #==================
 class SearchNode:
@@ -105,6 +124,9 @@ class SearchNode:
     def __eq__( self, other):
         return self.state.hash() == other.state.hash()
 
+    def __hash__( self):
+        return self.state.hash()
+
     def in_my_history( self, state):
         ' Return True if state is in my history '
         statehash = state.hash()
@@ -129,6 +151,7 @@ class SearchNode:
         #print( res)
         #BP()
         return res
+
 
     def expand( self, model):
         ' Expand leaf by adding non-cycle children '

@@ -64,14 +64,14 @@ class Generator:
 
     def __init__( self, model,
                   validpct=10,
-                  maxnodes=100,
+                  maxnodes=200,
                   chunksize=100,
                   max_shuffles=1024,
                   maxfiles=0,
                   del_old=False):
         self.model = model # The model used for self-play
         self.validpct = validpct
-        self.maxnodes = maxnodes # Abort game if still no solution at this tree size
+        self.maxnodes = maxnodes # Abort game if still no solution at this man node expansions.
         self.chunksize = chunksize # If we solved this many, increase shuffles
         self.max_shuffles = max_shuffles # Upper limit for shuffles. We start with 1, then increase.
         self.maxfiles = maxfiles # Only keep the newest maxfiles training samples
@@ -85,13 +85,13 @@ class Generator:
             os.mkdir( Generator.TRAIN_FOLDER)
         if not os.path.isdir( Generator.VALID_FOLDER):
             os.mkdir( Generator.VALID_FOLDER)
-        nshuffles = 1
+        nshuffles = 64
         gameno = 0
         while nshuffles <= self.max_shuffles:
             maxdepth = nshuffles
             # A training process runs independently and will occasionally
             # save a better model.
-            self.load_weights_if_newer()
+            self.reload_model_if_newer()
             failures = 0
             for idx in range( self.chunksize):
                 gameno += 1
@@ -102,10 +102,10 @@ class Generator:
                 if not found:
                     failures += 1
                     self.save_steps( seq)
-                    print( 'Game %d   failed' % gameno)
+                    print( 'Game %d   failed\n' % gameno)
                 else:
                     self.save_steps( seq)
-                    print( 'Game %d solved' % gameno)
+                    print( 'Game %d solved in %d steps\n' % (gameno, len(seq)))
 
             if failures == 0: # Our excellent model needs a new challenge
                 print( '0/%d failures at %d shuffles' % (self.chunksize,nshuffles))
@@ -118,7 +118,7 @@ class Generator:
             if self.maxfiles:
                 self.delete_old_files()
 
-    def load_weights_if_newer( self):
+    def reload_model_if_newer( self):
         modtime = datetime.utcfromtimestamp( os.path.getmtime( self.modelfile))
         if self.modeltime is None or modtime > self.modeltime:
             self.modeltime = modtime
