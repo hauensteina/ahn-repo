@@ -64,7 +64,7 @@ def main():
     print( 'Generating inputs ...')
     inputs = []
     for idx in range( args.nsamples):
-        inp = State.random( model.size, NSHUFFLES).encode()
+        inp = State.random_no_cycle( model.size, NSHUFFLES)[0].encode()
         inputs.append( inp)
     print( 'Running the model ...')
     outputs = model.predict( np.asarray(inputs))
