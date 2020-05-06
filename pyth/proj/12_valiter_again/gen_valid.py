@@ -34,8 +34,6 @@ def usage(printmsg=False):
       %s --size <int> --maxshuffles <int> --nfiles <int>
     Description:
       Pull a number 1 to maxshuffles. Shuffle without cycles, save.
-      Sometimes, the solution can be shorter. Validation needs a metric to prefer
-      shorter solutions.
     Example:
       %s --size 4 --maxshuffles 100 --nfiles 1000
 --

@@ -35,7 +35,7 @@ def usage(printmsg=False):
       %s --size <int> [--maxfiles <int>]
     Description:
       Solve increasingly more difficult shifting puzzles using the model in shiftmodel.py .
-      Each (state,v) gets saved to training_data for use by a separate training process.
+      Each (state,v) gets saved to generated_data for use by a separate training process.
       --maxfiles: If specified, delete old files to keep total number of files below maxfiles.
                   If you have several generators running, only one of them should have maxfiles specified.
     Example:
@@ -61,7 +61,7 @@ def main():
 
 #==================
 class Generator:
-    TRAIN_FOLDER = 'training_data'
+    OUTFOLDER = 'generated_data'
 
     def __init__( self, model,
                   #maxnodes=200,
@@ -79,9 +79,9 @@ class Generator:
         self.modelfile = 'net_v.hd5' # Separate training process stores updated weights here
 
     def run( self):
-        print( '>>> Writing to folder %s' % Generator.TRAIN_FOLDER)
-        if not os.path.isdir( Generator.TRAIN_FOLDER):
-            os.mkdir( Generator.TRAIN_FOLDER)
+        print( '>>> Writing to folder %s' % Generator.OUTFOLDER)
+        if not os.path.isdir( Generator.OUTFOLDER):
+            os.mkdir( Generator.OUTFOLDER)
         maxshuffles = 4
         failhisto = np.full( maxshuffles, 1.0)
         gameno = 0
@@ -96,7 +96,7 @@ class Generator:
             for idx in range( self.chunksize):
                 # Pull a bin index from the failhisto density
                 nshuffles = np.random.choice( len(failhisto), size=1, p=failhisto)[0] + 1
-                state = State.random_no_cycle( self.model.size, nshuffles)
+                state = State.random_no_cycle( self.model.size, nshuffles)[0]
                 states.append( (state,nshuffles))
                 maxdepth = nshuffles
 
@@ -158,7 +158,7 @@ class Generator:
         ' Save one state and its cost to go as training sample '
         v = State.v_from_dist( d)
         step = { 'state':state, 'v':v, 'dist':d }
-        folder = Generator.TRAIN_FOLDER
+        folder = Generator.OUTFOLDER
         fname = folder + '/%d_%04d_%s.json' % (self.model.size, d, shortuuid.uuid()[:8])
         jsn = json.dumps( step, cls=StateJsonEncoder)
         with open(fname,'w') as f:
@@ -167,7 +167,7 @@ class Generator:
     def delete_old_files( self):
         maxtrain = self.maxfiles
         'Limit number of training samples'
-        files = glob.glob("%s/*.json" % Generator.TRAIN_FOLDER)
+        files = glob.glob("%s/*.json" % Generator.OUTFOLDER)
         if len(files) > maxtrain:
             files = sorted( files) # easy ones first
             delfiles = files[:len(files)-maxtrain] # delete the easier ones
