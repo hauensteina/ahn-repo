@@ -84,8 +84,8 @@ class Generator:
             os.mkdir( Generator.OUTFOLDER)
         maxshuffles = 4
         failhisto = np.full( maxshuffles, 1.0)
-        gameno = 0
         while 1:
+            gameno = 0
             # A training process runs independently and will occasionally
             # save a better model.
             self.reload_model_if_newer()
@@ -98,7 +98,11 @@ class Generator:
                 nshuffles = np.random.choice( len(failhisto), size=1, p=failhisto)[0] + 1
                 state = State.random_no_cycle( self.model.size, nshuffles)[0]
                 states.append( (state,nshuffles))
-                maxdepth = nshuffles
+                # For each max len example, do one that is even longer.
+                if nshuffles == maxshuffles:
+                    nshuffles += 1
+                    state = State.random_no_cycle( self.model.size, nshuffles)[0]
+                    states.append( (state,nshuffles))
 
             # Reset failure stats
             failhisto = np.full( maxshuffles, 1.0)
@@ -112,13 +116,11 @@ class Generator:
                 g = Game(search)
                 seq, found = g.play()
                 if not found:
-                    failhisto[nshuffles-1] += 1
-                    nfailures += 1
-                    print( 'Game %d   failed' % gameno)
+                    if nshuffles <= maxshuffles :
+                        failhisto[nshuffles-1] += 1
+                        nfailures += 1
+                        print( 'Game %d   failed' % gameno)
                 else:
-                    if len(seq) == 1:
-                        BP()
-                        tt=42
                     print( 'Game %d solved in %d steps' % (gameno, len(seq)-1))
 
                 dist = nshuffles
