@@ -59,7 +59,7 @@ TRAINDIR = 'training_data'
 MODELFNAME = 'net_v.hd5'
 
 def main():
-    N_EPOCHS = 10
+    N_EPOCHS = 3
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--puzzlesize', required=True, type=int)
     parser.add_argument( '--epochs', type=int, default=10)
@@ -79,6 +79,7 @@ def main():
         print( 'Folder %s not found. Saving model to %s and exiting.' % (TRAINDIR, MODELFNAME))
         exit(1)
 
+    # Restart training process every N_EPOCHS to work around memory leak
     while(1):
         ctx = mp.get_context('spawn')
         p = ctx.Process(target=train, args=(args.puzzlesize, args.batchsize, N_EPOCHS))
@@ -91,16 +92,16 @@ def train( puzzlesize, batchsize, n_epochs):
     # checkpoint
     #filepath='model-improvement-{epoch:02d}-{val_loss:e}.hd5'
     filepath = MODELFNAME
-    checkpoint = ModelCheckpoint( filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
-    callbacks_list = [checkpoint]
+    #checkpoint = ModelCheckpoint( filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
+    #callbacks_list = [checkpoint]
 
     if os.path.exists( MODELFNAME):
         print( 'Loading model from %s' % MODELFNAME)
         model.load( MODELFNAME)
 
-    print( 'Loading validation data')
-    valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, puzzlesize)
-    print( 'Loaded %d validation samples' % len(valid_inputs))
+    #print( 'Loading validation data')
+    #valid_inputs, valid_targets, _ = load_folder_samples( VALDIR, puzzlesize)
+    #print( 'Loaded %d validation samples' % len(valid_inputs))
     print( 'Loading trainig data')
     train_inputs, train_targets, _ = load_folder_samples( TRAINDIR, puzzlesize)
     print( 'Loaded %d training samples' % len(train_inputs))
@@ -108,9 +109,10 @@ def train( puzzlesize, batchsize, n_epochs):
     model.model.fit( x = train_inputs,
                      y = train_targets,
                      batch_size = batchsize,
-                     epochs = n_epochs,
-                     validation_data = (valid_inputs, valid_targets),
-                     callbacks = callbacks_list)
+                     epochs = n_epochs)
+                     #validation_data = (valid_inputs, valid_targets))
+                     #callbacks = callbacks_list)
+    model.save( MODELFNAME)
 
 def test_model( model, puzzlesize, metric_func=None):
     ' Test model quality on validation data with our own metrics. '
@@ -132,9 +134,11 @@ def test_model( model, puzzlesize, metric_func=None):
     nsamples = len(valid_json)
     print( 'mse: %e pct_corr: %.2f' % (avg_sqerr / nsamples, 100 * n_corr_samples / nsamples ))
 
-def load_folder_samples( folder, puzzlesize, return_json=False):
+def load_folder_samples( folder, puzzlesize, hardest_percentile=1.0, return_json=False):
     ' Load all samples from folder into memory, split into inputs and targets'
     files = glob.glob( '%s/*.json' % folder) # [:1000]
+    files = sorted( files)
+    files = files[int(-1*len(files)*hardest_percentile):]
     targets = np.empty( len(files), dtype=float)
     inputs = None
     json_list = []

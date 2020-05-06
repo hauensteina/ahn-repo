@@ -53,7 +53,7 @@ class Search:
             self.leaves.remove( best_leaf)
             if best_leaf.state.solved():
                 best_leaf.v = 1.0
-                print( '>>> Solved after %d node expansions' % N)
+                print( '\n>>> Solved after %d node expansions' % N)
                 # If solved, replace v estimates with true distance
                 node = best_leaf.parent
                 d = 1

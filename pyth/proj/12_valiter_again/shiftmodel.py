@@ -20,6 +20,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 #------------------
 class ShiftModel:
 
+    #def __init__( self, size, n_units=32, n_layers=16):
     def __init__( self, size, n_units=32, n_layers=8):
         self.size = size
         self.model = None
@@ -58,3 +59,15 @@ class ShiftModel:
         except: # Try again. Collision between train.py and generate.py
             self.model = km.load_model( fname)
         return True
+
+    @classmethod
+    def from_file( cls, fname):
+        ' Reconstruct a ShiftModel model from an hd5 file '
+        model = km.load_model( fname)
+        size = model.layers[0].output_shape[0][1]
+        names = [ layer.name for layer in model.layers ]
+        n_layers = len( [ n for n in names if 'dense' in n ] )
+        n_units = model.layers[2].output_shape[1]
+        res = cls( size, n_units, n_layers)
+        res.model = model
+        return res
