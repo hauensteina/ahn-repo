@@ -63,7 +63,7 @@ ARCHDIR = 'train_data_archive'
 MODELFNAME = 'net_v.hd5'
 
 def main():
-    MAX_EPOCHS = 1000
+    MAX_EPOCHS = 10000
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--puzzlesize', required=True, type=int)
     parser.add_argument( '--batchsize', type=int, default=32)
@@ -75,12 +75,10 @@ def main():
         test_model( model, args.puzzlesize)
         exit(1)
 
-    # If no data, at least give the generator an initialized model.
+    # If no training data, start with whatever the generator has so far
     if not os.path.exists( TRAINDIR):
-        model = ShiftModel( args.puzzlesize)
-        model.save( MODELFNAME)
-        print( 'Folder %s not found. Saving model to %s and exiting.' % (TRAINDIR, MODELFNAME))
-        exit(1)
+        mkpath( TRAINDIR)
+        copy_tree( GENDIR, TRAINDIR)
 
     # Restart training process whenever new files are available
     while(1):
@@ -171,7 +169,8 @@ class stop_if_new_files( Callback):
     '''
     Stop training if enough new files are available for the next cycle
     '''
-    def __init__( self, files_needed=2000):
+    #def __init__( self, files_needed=2000):
+    def __init__( self, files_needed=1000):
         #super(keras.callbacks.Callback, self).__init__()
         super( stop_if_new_files, self).__init__()
         self.files_needed = files_needed

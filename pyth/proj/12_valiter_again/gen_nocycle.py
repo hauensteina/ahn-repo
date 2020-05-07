@@ -82,7 +82,7 @@ class Generator:
         print( '>>> Writing to folder %s' % Generator.OUTFOLDER)
         if not os.path.isdir( Generator.OUTFOLDER):
             os.mkdir( Generator.OUTFOLDER)
-        maxshuffles = 4
+        maxshuffles = 2
         failhisto = np.full( maxshuffles, 1.0)
         while 1:
             gameno = 0
@@ -98,11 +98,6 @@ class Generator:
                 nshuffles = np.random.choice( len(failhisto), size=1, p=failhisto)[0] + 1
                 state = State.random_no_cycle( self.model.size, nshuffles)[0]
                 states.append( (state,nshuffles))
-                # For each max len example, do one that is even longer.
-                if nshuffles == maxshuffles:
-                    nshuffles += 1
-                    state = State.random_no_cycle( self.model.size, nshuffles)[0]
-                    states.append( (state,nshuffles))
 
             # Reset failure stats
             failhisto = np.full( maxshuffles, 1.0)
@@ -116,21 +111,26 @@ class Generator:
                 g = Game(search)
                 seq, found = g.play()
                 if not found:
-                    if nshuffles <= maxshuffles :
-                        failhisto[nshuffles-1] += 1
-                        nfailures += 1
-                        print( 'Game %d   failed' % gameno)
+                    failhisto[nshuffles-1] += 1
+                    nfailures += 1
+                    print( 'Game %d   failed' % gameno)
                 else:
                     print( 'Game %d solved in %d steps' % (gameno, len(seq)-1))
 
                 dist = nshuffles
                 seqsteps = len(seq) - 1
                 if found and seqsteps < dist:
+                    # Save each step of the shorter solution for training
                     print( 'Found shorter solution: %d < %d' % (seqsteps, dist))
-                    dist = seqsteps
-                self.save_one_state( state, dist)
+                    for idx,s in enumerate(seq[:-1]):
+                        self.save_one_state( s.state, len(seq) - idx - 1)
+                else: # Just save the initial state
+                    self.save_one_state( state, nshuffles)
 
-            if nfailures == 0:
+            # We increase if up to one less than the max is error free, hence -1.
+            # This means we train with a lookahead of 1, which helps a lot.
+            nerrors = sum(failhisto[:-1] - 1.0)
+            if nerrors == 0:
                 stepsize = 1
                 newshuffles = maxshuffles + stepsize
                 # Histogram support longer, all equally likely
@@ -140,7 +140,7 @@ class Generator:
                 print('No errors at maxshuffles=%d, increasing to %d' % (maxshuffles, newshuffles))
                 maxshuffles = newshuffles
             else:
-                print('%d errors at maxshuffles=%d, staying at %d' % (nfailures, maxshuffles, maxshuffles))
+                print('%d errors at maxshuffles=%d, staying at %d' % (nerrors, maxshuffles, maxshuffles))
                 print(failhisto)
 
             if self.maxfiles:
