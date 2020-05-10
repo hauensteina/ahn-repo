@@ -96,7 +96,7 @@ def train( puzzlesize, batchsize, max_epochs):
     filepath2 = MODELFNAME
     checkpoint1 = ModelCheckpoint( filepath1, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
     checkpoint2 = ModelCheckpoint( filepath2, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
-    callbacks_list = [checkpoint1, checkpoint2, stop_if_new_files()]
+    callbacks_list = [checkpoint2, stop_if_new_files()]
 
     if os.path.exists( MODELFNAME):
         print( 'Loading model from %s' % MODELFNAME)
@@ -169,8 +169,7 @@ class stop_if_new_files( Callback):
     '''
     Stop training if enough new files are available for the next cycle
     '''
-    #def __init__( self, files_needed=2000):
-    def __init__( self, files_needed=1000):
+    def __init__( self, files_needed=2000):
         #super(keras.callbacks.Callback, self).__init__()
         super( stop_if_new_files, self).__init__()
         self.files_needed = files_needed

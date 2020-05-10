@@ -62,6 +62,7 @@ def main():
 #==================
 class Generator:
     OUTFOLDER = 'generated_data'
+    EPSILON = 1.0
 
     def __init__( self, model,
                   #maxnodes=200,
@@ -82,8 +83,8 @@ class Generator:
         print( '>>> Writing to folder %s' % Generator.OUTFOLDER)
         if not os.path.isdir( Generator.OUTFOLDER):
             os.mkdir( Generator.OUTFOLDER)
-        maxshuffles = 2
-        failhisto = np.full( maxshuffles, 1.0)
+        maxshuffles = 4
+        failhisto = np.full( maxshuffles, Generator.EPSILON)
         while 1:
             gameno = 0
             # A training process runs independently and will occasionally
@@ -91,7 +92,9 @@ class Generator:
             self.reload_model_if_newer()
 
             # Pull sample for next chunk
+            #failhisto = np.sqrt( failhisto)
             failhisto /= np.sum(failhisto)
+            #print(failhisto)
             states = []
             for idx in range( self.chunksize):
                 # Pull a bin index from the failhisto density
@@ -100,7 +103,7 @@ class Generator:
                 states.append( (state,nshuffles))
 
             # Reset failure stats
-            failhisto = np.full( maxshuffles, 1.0)
+            failhisto = np.full( maxshuffles, Generator.EPSILON)
             # Run on the new chunk
             lengths = set()
             nfailures = 0
@@ -111,6 +114,7 @@ class Generator:
                 g = Game(search)
                 seq, found = g.play()
                 if not found:
+                    #BP()
                     failhisto[nshuffles-1] += 1
                     nfailures += 1
                     print( 'Game %d   failed' % gameno)
@@ -122,25 +126,31 @@ class Generator:
                 if found and seqsteps < dist:
                     # Save each step of the shorter solution for training
                     print( 'Found shorter solution: %d < %d' % (seqsteps, dist))
-                    for idx,s in enumerate(seq[:-1]):
-                        self.save_one_state( s.state, len(seq) - idx - 1)
-                else: # Just save the initial state
-                    self.save_one_state( state, nshuffles)
+                    #for idx,s in enumerate(seq[:-1]):
+                    #    self.save_one_state( s.state, len(seq) - idx - 1)
+                # Save the whole tree with iterated values for training
+                nodes = search.get_all_expanded_nodes()
+                for node in nodes:
+                    if State.dist_from_v( node.v) >= 100:
+                        BP()
+                        print('Oops')
+                        exit(1)
+                    self.save_one_state( node.state, State.dist_from_v( node.v))
 
             # We increase if up to one less than the max is error free, hence -1.
             # This means we train with a lookahead of 1, which helps a lot.
-            nerrors = sum(failhisto[:-1] - 1.0)
+            nerrors = sum(failhisto[:-1] - Generator.EPSILON)
             if nerrors == 0:
                 stepsize = 1
                 newshuffles = maxshuffles + stepsize
                 # Histogram support longer, all equally likely
-                failhisto = np.full( newshuffles, 1.0)
+                failhisto = np.full( newshuffles, Generator.EPSILON)
                 # The new ones get half the total probability mass
-                failhisto[-stepsize:] = np.sum(failhisto[:maxshuffles]) / stepsize
-                print('No errors at maxshuffles=%d, increasing to %d' % (maxshuffles, newshuffles))
+                #failhisto[-stepsize:] = np.sum(failhisto[:maxshuffles]) / stepsize
+                print('No failures at maxshuffles=%d, increasing to %d' % (maxshuffles, newshuffles))
                 maxshuffles = newshuffles
             else:
-                print('%d errors at maxshuffles=%d, staying at %d' % (nerrors, maxshuffles, maxshuffles))
+                print('%d failures at maxshuffles=%d, staying at %d' % (nerrors, maxshuffles, maxshuffles))
                 print(failhisto)
 
             if self.maxfiles:

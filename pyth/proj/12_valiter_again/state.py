@@ -115,16 +115,17 @@ class State:
     @classmethod
     def v_from_dist( cls, dist, lmbda=LAMBDA):
         ' Convert steps to go to a number in (-1,1) for tanh output '
-        return 2 * math.exp(-lmbda * dist) - 1.0
-        #return max( -1.0, -1 * dist / (State.MAXDIST / 2.0) + 1)
+        #return 2 * math.exp(-lmbda * dist) - 1.0
+        return max( -1.0, -1 * dist / (State.MAXDIST / 2.0) + 1)
 
     @classmethod
     def dist_from_v( cls, v, lmbda=LAMBDA):
         ' Convert tanh to steps to go '
-        if v <= -1: return int(1E6)
-        #if v <= -1: return State.MAXDIST
-        return -1 * math.log( (v+1)/2) / lmbda
-        #return (1.0 - v) * (State.MAXDIST / 2.0)
+        #if v <= -1: return int(1E6)
+        if v <= -1: return State.MAXDIST
+        if v >= 1: return 0
+        #return -1 * math.log( (v+1)/2) / lmbda
+        return (1.0 - v) * (State.MAXDIST / 2.0)
 
     @classmethod
     def v_plus_one( cls, v, lmbda=LAMBDA):

@@ -71,9 +71,12 @@ class Search:
                     print( self.leaves)
                     print( '--------------------')
                 '''
-        seq = []
-        if best_leaf.state.solved():
-            seq = best_leaf.get_nodeseq()
+        #seq = []
+        #if best_leaf.state.solved():
+        seq = best_leaf.get_nodeseq()
+        #else:
+        #    BP()
+        #    tt=42
         #seq = self.get_all_expanded_nodes()
         return seq, best_leaf.state.solved()
 
@@ -81,7 +84,7 @@ class Search:
         ' Walk through the tree, bottom up '
         nodes = set()
         for leaf in self.leaves:
-            seq = leaf.get_nodeseq()
+            seq = leaf.get_nodeseq()[:-1]
             for node in seq:
                 nodes.add(node)
         return nodes
