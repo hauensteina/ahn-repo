@@ -18,6 +18,7 @@ import argparse
 import math, os, glob, json
 import numpy as np
 import random
+import multiprocessing as mp
 from game import Game
 from search import Search
 from datetime import datetime
@@ -50,42 +51,50 @@ def usage(printmsg=False):
 
 def main():
     parser = argparse.ArgumentParser( usage=usage())
-    #parser.add_argument( '--validpct', type=int, required=True)
     parser.add_argument( '--size', type=int, required=True)
-    #parser.add_argument( '--maxnodes', type=int, required=True)
     parser.add_argument( '--maxfiles', type=int, default=0)
     args = parser.parse_args()
-    model = ShiftModel( size=args.size)
-    gen = Generator( model, maxfiles=args.maxfiles)
-    gen.run()
+
+    # Restart everything in a new process periodically
+    return_dict = mp.Manager().dict()
+    return_dict['maxshuffles'] = 4
+    while(1):
+        print( 'Restarting generator')
+        ctx = mp.get_context('spawn')
+        p = ctx.Process( target=generate, args=(args.size, args.maxfiles, return_dict))
+        p.start()
+        p.join()
+
+def generate( size, maxfiles, return_dict):
+    model = ShiftModel( size)
+    gen = Generator( model, maxfiles=maxfiles)
+    return_dict['maxshuffles'] = gen.run( return_dict['maxshuffles'] )
 
 #==================
 class Generator:
     OUTFOLDER = 'generated_data'
     EPSILON = 1.0
+    MAXLOOPS = 2
 
     def __init__( self, model,
-                  #maxnodes=200,
                   chunksize=100,
-                  #max_shuffles = 4 * 1024,
                   maxfiles=0):
         self.model = model # The model used for self-play
-        #self.validpct = validpct
-        #self.maxnodes = maxnodes # Abort game if still no solution at this man node expansions.
         self.chunksize = chunksize # If we solved this many, increase shuffles
-        #self.max_shuffles = max_shuffles # Upper limit for shuffles. We start with 1, then increase.
         self.maxfiles = maxfiles # Only keep the newest maxfiles training samples
 
         self.modeltime = None # Reload model if newer
         self.modelfile = 'net_v.hd5' # Separate training process stores updated weights here
 
-    def run( self):
+    def run( self, maxshuffles_):
         print( '>>> Writing to folder %s' % Generator.OUTFOLDER)
         if not os.path.isdir( Generator.OUTFOLDER):
             os.mkdir( Generator.OUTFOLDER)
-        maxshuffles = 4
+        maxshuffles = maxshuffles_
         failhisto = np.full( maxshuffles, Generator.EPSILON)
-        while 1:
+        loop_idx = 0
+        while loop_idx < Generator.MAXLOOPS:
+            loop_idx += 1
             gameno = 0
             # A training process runs independently and will occasionally
             # save a better model.
@@ -155,6 +164,7 @@ class Generator:
 
             if self.maxfiles:
                 self.delete_old_files()
+        return maxshuffles
 
     def reload_model_if_newer( self):
         if not os.path.exists( self.modelfile):
