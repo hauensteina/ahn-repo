@@ -30,7 +30,10 @@ class State:
     UP=2
     DOWN=3
 
-    LAMBDA=0.035
+    LAMBDA=0.035 # orig
+    #LAMBDA=0.070
+    #LAMBDA=0.017
+    MAXDIST=100.0
 
     def __init__( self, size):
         self.s = size
@@ -71,6 +74,30 @@ class State:
         return res
 
     @classmethod
+    def random_no_cycle( cls, size, nmoves=1000):
+        '''
+        Scramble solution nmoves times without cycles
+        '''
+        res = cls( size)
+        res.arr = np.zeros( size * size, int)
+        for i,_ in enumerate( res.arr): res.arr[i] = i
+
+        n = 0
+        hist = set()
+        hist.add( res.hash())
+        while n < nmoves:
+            acts = res.action_list()
+            children = [ res.act( act) for act in acts ]
+            children = list( filter( lambda x: x.hash() not in hist, children))
+            if not children:
+                print( 'dead end at %d shuffles' % n)
+                break;
+            res = random.choice(children)
+            n += 1
+            hist.add( res.hash())
+        return res,n
+
+    @classmethod
     def from_list( cls, size, tile_list):
         '''
         Set position as specified by tile_list
@@ -88,13 +115,17 @@ class State:
     @classmethod
     def v_from_dist( cls, dist, lmbda=LAMBDA):
         ' Convert steps to go to a number in (-1,1) for tanh output '
-        return 2 * math.exp(-lmbda * dist) - 1.0
+        #return 2 * math.exp(-lmbda * dist) - 1.0
+        return max( -1.0, -1 * dist / (State.MAXDIST / 2.0) + 1)
 
     @classmethod
     def dist_from_v( cls, v, lmbda=LAMBDA):
         ' Convert tanh to steps to go '
-        if v <= -1: return int(1E6)
-        return -1 * math.log( (v+1)/2) / lmbda
+        #if v <= -1: return int(1E6)
+        if v <= -1: return State.MAXDIST
+        if v >= 1: return 0
+        #return -1 * math.log( (v+1)/2) / lmbda
+        return (1.0 - v) * (State.MAXDIST / 2.0)
 
     @classmethod
     def v_plus_one( cls, v, lmbda=LAMBDA):

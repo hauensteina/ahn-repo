@@ -14,9 +14,11 @@ from math import log, exp
 import numpy as np
 import random
 import multiprocessing as mp
+import shutil
+from distutils.dir_util import copy_tree, remove_tree, mkpath
 
 import tensorflow as tf
-from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint, Callback
 
 from shiftmodel import ShiftModel
 from state import State
@@ -56,13 +58,14 @@ def usage(printmsg=False):
 
 VALDIR = 'validation_data'
 TRAINDIR = 'training_data'
+GENDIR = 'generated_data'
+ARCHDIR = 'train_data_archive'
 MODELFNAME = 'net_v.hd5'
 
 def main():
-    N_EPOCHS = 10
+    MAX_EPOCHS = 10000
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--puzzlesize', required=True, type=int)
-    parser.add_argument( '--epochs', type=int, default=10)
     parser.add_argument( '--batchsize', type=int, default=32)
     parser.add_argument( '--valid_only', action = 'store_true')
     args = parser.parse_args()
@@ -72,27 +75,28 @@ def main():
         test_model( model, args.puzzlesize)
         exit(1)
 
-    # If no data, at least give the generator an initialized model.
+    # If no training data, start with whatever the generator has so far
     if not os.path.exists( TRAINDIR):
-        model = ShiftModel( args.puzzlesize)
-        model.save( MODELFNAME)
-        print( 'Folder %s not found. Saving model to %s and exiting.' % (TRAINDIR, MODELFNAME))
-        exit(1)
+        mkpath( TRAINDIR)
+        copy_tree( GENDIR, TRAINDIR)
 
+    # Restart training process whenever new files are available
     while(1):
+        print( 'Restarting training on new data')
         ctx = mp.get_context('spawn')
-        p = ctx.Process(target=train, args=(args.puzzlesize, args.batchsize, N_EPOCHS))
+        p = ctx.Process( target=train, args=(args.puzzlesize, args.batchsize, MAX_EPOCHS))
         p.start()
         p.join()
 
-def train( puzzlesize, batchsize, n_epochs):
-    ' Function to execute in a separate process and train n_epochs '
+def train( puzzlesize, batchsize, max_epochs):
+    ' Function to execute in a separate process and train until a new set of training files is available '
     model = ShiftModel( puzzlesize)
     # checkpoint
-    #filepath='model-improvement-{epoch:02d}-{val_loss:e}.hd5'
-    filepath = MODELFNAME
-    checkpoint = ModelCheckpoint( filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
-    callbacks_list = [checkpoint]
+    filepath1='model-improvement-{epoch:02d}-{val_loss:e}.hd5'
+    filepath2 = MODELFNAME
+    checkpoint1 = ModelCheckpoint( filepath1, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
+    checkpoint2 = ModelCheckpoint( filepath2, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='min')
+    callbacks_list = [checkpoint2, stop_if_new_files()]
 
     if os.path.exists( MODELFNAME):
         print( 'Loading model from %s' % MODELFNAME)
@@ -108,9 +112,10 @@ def train( puzzlesize, batchsize, n_epochs):
     model.model.fit( x = train_inputs,
                      y = train_targets,
                      batch_size = batchsize,
-                     epochs = n_epochs,
+                     epochs = max_epochs,
                      validation_data = (valid_inputs, valid_targets),
                      callbacks = callbacks_list)
+    #model.save( MODELFNAME)
 
 def test_model( model, puzzlesize, metric_func=None):
     ' Test model quality on validation data with our own metrics. '
@@ -132,9 +137,11 @@ def test_model( model, puzzlesize, metric_func=None):
     nsamples = len(valid_json)
     print( 'mse: %e pct_corr: %.2f' % (avg_sqerr / nsamples, 100 * n_corr_samples / nsamples ))
 
-def load_folder_samples( folder, puzzlesize, return_json=False):
+def load_folder_samples( folder, puzzlesize, hardest_percentile=1.0, return_json=False):
     ' Load all samples from folder into memory, split into inputs and targets'
     files = glob.glob( '%s/*.json' % folder) # [:1000]
+    files = sorted( files)
+    files = files[int(-1*len(files)*hardest_percentile):]
     targets = np.empty( len(files), dtype=float)
     inputs = None
     json_list = []
@@ -156,6 +163,28 @@ def load_folder_samples( folder, puzzlesize, return_json=False):
         targets[idx] = jsn['v']
 
     return inputs, targets, json_list
+
+#==================================================
+class stop_if_new_files( Callback):
+    '''
+    Stop training if enough new files are available for the next cycle
+    '''
+    def __init__( self, files_needed=2000):
+        #super(keras.callbacks.Callback, self).__init__()
+        super( stop_if_new_files, self).__init__()
+        self.files_needed = files_needed
+
+    def on_epoch_end( self, epoch, logs={}):
+        files = glob.glob( "%s/*.json" % GENDIR)
+        if len(files) >= self.files_needed:
+            archfolder = ARCHDIR + '/' + '%04d' % random.randint( 1, 1000)
+            print( 'Moving old training files to %s' % archfolder)
+            copy_tree( TRAINDIR, archfolder)
+            remove_tree( TRAINDIR)
+            mkpath( TRAINDIR)
+            print( 'Moving %d new files to %s' % (len(files), TRAINDIR))
+            for f in files: shutil.move( f, TRAINDIR)
+            self.model.stop_training = True
 
 if __name__ == '__main__':
     main()
