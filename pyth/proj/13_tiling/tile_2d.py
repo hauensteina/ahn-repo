@@ -92,22 +92,22 @@ def add_window( arr, window, r, c):
     ' Add window to arr at position r,c for left upper corner of win in arr '
     arr[ r:r+window.shape[0], c:c+window.shape[1] ] += window
 
-def rotations( piece):
-    ' Return a list with all 8 rotations/mirrors of a piece '
-    h = piece.shape[0]
-    w = piece.shape[1]
+def rotations( grid):
+    ' Return a list with all 8 rotations/mirrors of a grid '
+    h = grid.shape[0]
+    w = grid.shape[1]
     res = []
     strs = set()
 
     for i in range(4):
-        if not repr(piece) in strs: res.append( piece)
-        strs.add(repr(piece))
-        piece = rot( piece)
-    piece = mirror( piece)
+        if not repr(grid) in strs: res.append( grid)
+        strs.add(repr(grid))
+        grid = rot( grid)
+    grid = mirror( grid)
     for i in range(4):
-        if not repr(piece) in strs: res.append( piece)
-        strs.add(repr(piece))
-        piece = rot( piece)
+        if not repr(grid) in strs: res.append( grid)
+        strs.add(repr(grid))
+        grid = rot( grid)
     return res
 
 def islegal( g, cur_piece_num):
@@ -121,20 +121,12 @@ def islegal( g, cur_piece_num):
     if np.max(g) > cur_piece_num: return False
     return True
 
-def rot( piece):
-    ' Rotate a piece clockwise '
-    return np.rot90( piece,1,(1,0))
+def rot( grid):
+    ' Rotate a 2d grid clockwise '
+    return np.rot90( grid,1,(1,0))
 
-def mirror( piece):
-    ' Mirrors a piece left to right'
-    return np.flip( piece,1)
-
-def test_add_win( grid):
-    win = np.array( [
-        [1,1],
-        [1,1]
-    ])
-    add_win( grid, win, 1, 2)
-    print( grid)
+def mirror( grid):
+    ' Mirrors a 2d grid left to right'
+    return np.flip( grid,1)
 
 main()
