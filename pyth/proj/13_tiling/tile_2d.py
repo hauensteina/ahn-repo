@@ -142,7 +142,12 @@ def solve( size, grid, pieces, depth=0):
             print( '>>>>>>>>> New solution found after %d loops' % solve.loopcount)
             return 'success'
         for pidx, p in enumerate( pieces):
-            for rp in rotations( p):
+            if depth == 0:
+                print( 'Piece %d/%d' % (pidx+1, len(pieces)))
+            rots = rotations( p)
+            for ridx,rp in enumerate( rots):
+                if depth == 0:
+                    print( 'Rotation %d/%d' % (ridx+1, len(rots)))
                 for row in range( size - rp.shape[0] + 1):
                     for col in range( size - rp.shape[1] + 1):
                         solve.loopcount += 1
