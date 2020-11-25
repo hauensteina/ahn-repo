@@ -1,0 +1,66 @@
+
+  0 1 2 3
+  =========
+  2 2 1 1
+---------
+a 1 0 0 0
+b 0 1 0 0
+c 0 0 1 1
+d 1 1 0 0
+
+remaining_cols = { 0,1,2,3 }
+error if a col in remaining_cols has 0 size
+
+pick col 2 (min size); this is never undone
+pick row c (go thru all of them; this can be undone)
+sol = { row_c }
+no overlappers
+remove row c
+remaining_cols = { 0,1 }
+remembered_rows = { ( c 0 0 1 1 ) } # so we can undo
+
+  0 1 2 3
+  =========
+  2 2 0 0
+  ---------
+a 1 0 0 0
+b 0 1 0 0
+d 1 1 0 0
+
+backtrack if a col in remaining_cols went to zero
+error if any col not in remaining_cols has size > 0
+
+pick col 0
+pick row a
+sol = { row_c, row_a }
+overlaps with row d
+remove row a
+remaining_cols = { 1 }
+remove row d
+remembered_rows = { ( c 0 0 1 1 ), (a 1 0 0 0), (d 1 1 0 0) }
+
+  0 1 2 3
+  =========
+  0 1 0 0
+  ---------
+b 0 1 0 0
+
+backtrack if a col in remaining_cols went to zero
+error if any col not in remaining_cols has size > 0
+
+pick col 1
+pick row b
+sol = { row_c, row_a, row_b }
+no overlaps
+remove row b
+remaining_cols = {}
+remembered_rows = { ( c 0 0 1 1 ), (a 1 0 0 0), (d 1 1 0 0), (b 0 1 0 0)  }
+backtrack if a col in remaining_cols went to zero
+error if any col not in remaining_cols has size > 0
+
+solved if no rows;
+error if remaining_cols not empty
+
+There are two potentially expensive operations:
+(1) Which rows overlap with row x
+(2) Remove row x
