@@ -202,6 +202,7 @@ for k in g_pieces.keys():
 def main():
     solver = AlgoX2D( g_pieces['3x3'])
     solver.solve()
+    solver.print_solutions()
 
 class CompleteCoverage:
     ''' Knuth's Algorithm X '''
@@ -216,8 +217,8 @@ class CompleteCoverage:
             return self.hhash
         def __eq__( self, other):
             self.hhash == other.hhash
-        def __str__( self):
-            print( self.hhash)
+        def __repr__( self):
+            return self.colheader.name
 
     class Header:
         ''' A hashable X matrix col or row header '''
@@ -229,19 +230,21 @@ class CompleteCoverage:
             return self.hhash
         def __eq__( self, other):
             self.name == other.name
-        def __str__( self):
-            print( self.name)
-            print( self.entries)
+        def __repr__( self):
+            return '\n' + self.name + '\n' + str( self.entries)
 
     def __init__( self, rownames, colnames, entries):
         ''' Entries are pairs of (rowidx, colidx) '''
 
         self.colnames = colnames
-        self.solution = []
+        self.solution = [] # A solution is a list of row headers
+        self.solutions = [] # A list of solutions
         # Row headers
         self.rows = {}
+        self.complete_rows = {} # Retain to print solution
         for rname in rownames:
             self.rows[rname] = CompleteCoverage.Header( rname)
+            self.complete_rows[rname] = CompleteCoverage.Header( rname)
         # Column headers
         self.cols = {}
         for cname in colnames:
@@ -251,25 +254,43 @@ class CompleteCoverage:
         for rowidx,colidx in entries:
             rname = rownames[rowidx]
             cname = colnames[colidx]
-            entry = CompleteCoverage.Entry( rname, cname, self.rows, self.cols)
+            entry = CompleteCoverage.Entry( rname, cname, self.rows[rname], self.cols[cname])
             self.rows[rname].entries.add( entry)
+            self.complete_rows[rname].entries.add( entry)
             self.cols[cname].entries.add( entry)
+
+    def print_state( self):
+        print( 'State:')
+        print( '---------------------')
+        print( '%d rows' % len(self.rows))
+        print( '%d columns:' % len(self.cols))
+        for col in self.cols.values():
+            print( '%s:%s ' % (col.name, len( col.entries)), end='')
+        rowelts = sum( [len(x.entries) for x in self.rows.values()])
+        colelts = sum( [len(x.entries) for x in self.cols.values()])
+        print( 'rowelts:%d colelts:%d' % (rowelts, colelts))
+        if colelts != rowelts:
+            print( 'ERROR: rowelts not equal to colelts!')
 
     def remove_col( self, colheader):
         '''
         Remove a column.
         '''
         # Remove column from all its rows; @@@ is this needed?
-        for e in colheader.entries:
-            e.rowheader.entries.remove(e)
+        try:
+            for e in colheader.entries:
+                e.rowheader.entries.remove(e)
+        except:
+            BP()
+            ee=42
 
         # Remove the col itself
-        self.cols.remove( colheader)
+        del self.cols[colheader.name]
         return colheader
 
     def restore_col( self, colheader):
         ''' Put the column back '''
-        self.cols.add( colheader)
+        self.cols[colheader.name] = colheader
         # Add each col entry to its row @@@ Is this needed?
         for e in colheader.entries:
             e.rowheader.entries.add(e)
@@ -282,12 +303,12 @@ class CompleteCoverage:
         for e in rowheader.entries:
             e.colheader.entries.remove(e)
         # Remove the row itself
-        self.rows.remove( rowheader)
+        del self.rows[rowheader.name]
         return rowheader
 
     def restore_row( self, rowheader):
         ''' Put the row back '''
-        self.rows.add( rowheader)
+        self.rows[rowheader.name] = rowheader
         # Add each row entry to its col
         for e in rowheader.entries:
             e.colheader.entries.add(e)
@@ -299,10 +320,11 @@ class CompleteCoverage:
             self.restore_row( r)
         # Restore columns
         for c in colheaders:
-            sef.restore_col( c)
+            self.restore_col( c)
 
     def get_overlappers( self, rowheader):
         ''' Find all row headers which overlap this row '''
+        res = set()
         for e in rowheader.entries:
             for colentry in e.colheader.entries:
                 res.add( colentry.rowheader)
@@ -333,39 +355,80 @@ class CompleteCoverage:
         return res
 
     def print_solution( self):
+        print( '\nSolution: %s' % str( [x.name for x in self.solution]))
+        print( '---------------')
         for rowheader in self.solution:
             print( self.row2list( rowheader))
 
     def solve( self):
         ''' Run Algorithm X '''
+        #print( 'State entering solve():')
+        #self.print_state()
+        #BP()
+        #tt=42
+
+        def check_dead_end( cheads):
+            'If any column has no more entries, we are stuck'
+            for chead in cheads:
+                if len(chead.entries) == 0:
+                    return True
+            return False
+
         colheader = self.pick_col() # A hole to cover or a piece to place
+        print( '\nworking on col %s' % colheader.name)
+        #rows = colheader.entries.copy()
         for rowentry in colheader.entries: # for images covering this hole
-            self.solution.append( rowentry.rowheader)
+        #for rowentry in rows: # for images covering this hole
+            #BP()
+            #rr=42
             rem_rows = set()
             rem_cols = set()
             rowheader = rowentry.rowheader
+            orows = self.get_overlappers( rowheader)
             # Remove all columns we cover
-            for e in rowheader.entries:
+            cols_to_remove = rowheader.entries.copy()
+            for e in cols_to_remove:
                 rem_cols.add( self.remove_col( e.colheader))
             # Remove all overlapping rows
-            orows = self.get_overlappers( rowheader)
             for r in orows:
                 rem_rows.add( self.remove_row( r))
             # If no cols are left, we are done
-            if len(cols) == 0:
-                self.print_solution()
-                self.restore( rem_rows, rem_cols)
+            if len( self.cols) == 0:
+                print( 'Found a solution')
+                self.solution.append( self.complete_rows[rowentry.rowheader.name])
+                self.solutions.append( self.solution.copy())
+                #self.print_solution()
                 self.solution.pop()
+                #BP()
+                #ss=42
+                self.restore( rem_rows, rem_cols)
                 continue # Look for more solutions
-            # If any column has no more entries, we are stuck
-            for chead,cname in enumerate(self.cols):
-                if len(chead.entries) == 0:
-                    print( 'Dead End')
-                    self.restore( rem_rows, rem_cols)
-                    self.solution.pop()
-                    continue
+
+
+            if check_dead_end( self.cols.values()):
+                print( 'Dead End')
+                self.restore( rem_rows, rem_cols)
+                continue
+
+            partial_solution = self.solution.copy()
+            self.solution.append( self.complete_rows[rowentry.rowheader.name])
+            #print( 'partial solution: %s' % str([x.name for x in self.solution]))
             # Alright, so we filled a hole. Now fill another one.
             self.solve()
+            self.solution = partial_solution
+            #print( 'State before restore:')
+            #self.print_state()
+            #BP()
+            #br=42
+            self.restore( rem_rows, rem_cols)
+            #print( 'State after restore:')
+            #self.print_state()
+            #BP()
+            #ar=42
+        #print( 'State leaving solve():')
+        #self.print_state()
+        #BP()
+        #xx=42
 
 #=================================================================================
 class AlgoX2D:
@@ -410,6 +473,12 @@ class AlgoX2D:
 
     def solve( self):
         self.solver.solve()
+
+    def print_solutions( self):
+        solutions = self.solver.solutions
+        BP()
+        tt=42
+
 
     @staticmethod
     def rotations2D(grid):
