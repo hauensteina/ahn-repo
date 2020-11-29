@@ -205,7 +205,7 @@ def main():
     solver.print_solutions()
 
 class CompleteCoverage:
-    ''' Knuth's Algorithm X '''
+    ''' Knuth's Algorithm X, general purpose '''
 
     class Entry:
         ''' A hashable X matrix element '''
@@ -475,10 +475,23 @@ class AlgoX2D:
         self.solver.solve()
 
     def print_solutions( self):
-        solutions = self.solver.solutions
-        BP()
-        tt=42
-
+        for idx,s in enumerate( self.solver.solutions):
+            pic = np.full( self.size * self.size, 'A')
+            print()
+            print( 'Solution %d:' % (idx+1))
+            print( '=============')
+            # s is a list of row headers
+            for row in s:
+                es = row.entries
+                filled_holes = [ x.colheader.name for x in row.entries if AlgoX2D.isnumeric (x.colheader.name) ]
+                piece = [ x.colheader.name for x in row.entries if not AlgoX2D.isnumeric (x.colheader.name) ][0]
+                for h in filled_holes:
+                    pic[int(h)] = piece
+            pic = pic.reshape( self.size, self.size)
+            for r in range( self.size):
+                for c in range( self.size):
+                    print( pic[r,c] + ' ', end='')
+                print()
 
     @staticmethod
     def rotations2D(grid):
@@ -513,6 +526,15 @@ class AlgoX2D:
     def mirror( grid):
         ' Mirrors a 2d grid left to right'
         return np.flip( grid,1)
+
+    @staticmethod
+    def isnumeric(s):
+        try:
+            res = float( s)
+            return True
+        except ValueError:
+            return False
+
 
 # #===================
 # class Solution:
