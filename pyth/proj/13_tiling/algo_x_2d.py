@@ -1,7 +1,11 @@
+#!/usr/bin/env python
+
 # Tile a size by size grid with the given pieces, using Knuth's Algorithm X
 # AHN, Nov 2020
 
 from pdb import set_trace as BP
+import sys,os
+import argparse
 import numpy as np
 from algox import AlgoX
 
@@ -17,6 +21,26 @@ g_pieces = {
         np.array([
             [0,0,1],
             [1,1,1]
+        ])
+    ],
+    '4x4':
+    [
+        np.array([
+            [1,1,1]
+        ]),
+        np.array([
+            [1,0],
+            [1,0],
+            [1,1]
+        ]),
+        np.array([
+            [1,0],
+            [1,0],
+            [1,0],
+            [1,1]
+        ]),
+        np.array([
+            [1,1,1,1]
         ])
     ],
     '5x5':
@@ -200,10 +224,54 @@ g_pieces = {
 for k in g_pieces.keys():
     g_pieces[k] = [p * (idx + 1) for idx,p in enumerate( g_pieces[k])]
 
+#-----------------------------
+def usage( printmsg=False):
+    name = os.path.basename( __file__)
+    msg = '''
+
+    Description:
+      %s: Solve 2D nxn tiling puzzles.
+    Synopsis:
+      %s --n <size>
+      %s --test
+    Example:
+      %s --n 5
+
+--
+''' % (name,name,name,name)
+    if printmsg:
+        print(msg)
+        exit(1)
+    else:
+        return msg
+
+
 def main():
-    solver = AlgoX2D( g_pieces['5x5'])
+    if len(sys.argv) == 1: usage( True)
+
+    parser = argparse.ArgumentParser( usage=usage())
+    parser.add_argument( "--n", type=int, choices=[3,4,5,6,7])
+    parser.add_argument( "--test", action='store_true')
+    args = parser.parse_args()
+
+    if args.test:
+        unittest()
+
+    if not args.n:
+        usage( True)
+
+    solver = AlgoX2D( g_pieces['' + str(args.n) + 'x' + str(args.n)])
     solver.solve()
     solver.print_solutions()
+
+def unittest():
+    solver = AlgoX2D( g_pieces['5x5'])
+    solver.solve()
+    if len(solver.solver.solutions) == 74:
+        print( 'Unit test passed')
+    else:
+        print( 'Unit test failed: Found %d solutions, should be 74' % len(solver.solutions))
+    exit(1)
 
 #=================================================================================
 class AlgoX2D:

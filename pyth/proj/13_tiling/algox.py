@@ -35,6 +35,7 @@ class AlgoX:
     def __init__( self, rownames, colnames, entries):
         ''' Entries are pairs of (rowidx, colidx) '''
 
+        self.nsolutions = 0
         self.colnames = colnames
         self.solution = [] # A solution is a list of row headers
         self.solutions = [] # A list of solutions
@@ -155,7 +156,7 @@ class AlgoX:
         for rowheader in self.solution:
             print( self.row2list( rowheader))
 
-    def solve( self):
+    def solve( self, depth=0):
         ''' Run Algorithm X '''
 
         def check_dead_end( cheads):
@@ -166,8 +167,10 @@ class AlgoX:
             return False
 
         colheader = self.pick_col() # A hole to cover or a piece to place
-        print( '\nworking on col %s' % colheader.name)
-        for rowentry in colheader.entries: # for images covering this hole
+        #print( '\nworking on col %s' % colheader.name)
+        for ridx, rowentry in enumerate(colheader.entries): # for images covering this hole
+            if depth == 0:
+                print( 'Working on row %d/%d' % (ridx+1, len(colheader.entries)))
             rem_rows = set()
             rem_cols = set()
             rowheader = rowentry.rowheader
@@ -181,7 +184,8 @@ class AlgoX:
                 rem_rows.add( self.remove_row( r))
             # If no cols are left, we are done
             if len( self.cols) == 0:
-                print( 'Found a solution')
+                self.nsolutions += 1
+                #print( 'Found solution %d' % self.nsolutions)
                 self.solution.append( self.complete_rows[rowentry.rowheader.name])
                 self.solutions.append( self.solution.copy())
                 self.solution.pop()
@@ -189,13 +193,13 @@ class AlgoX:
                 continue # Look for more solutions
 
             if check_dead_end( self.cols.values()):
-                print( 'Dead End')
+                #print( 'Dead End')
                 self.restore( rem_rows, rem_cols)
                 continue
 
             partial_solution = self.solution.copy()
             self.solution.append( self.complete_rows[rowentry.rowheader.name])
             # Alright, so we filled a hole. Now fill another one.
-            self.solve()
+            self.solve( depth+1)
             self.solution = partial_solution
             self.restore( rem_rows, rem_cols)
