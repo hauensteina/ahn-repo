@@ -159,6 +159,147 @@ g_pieces = {
             [1]
         ])
     ],
+    '7x7a':
+    [
+        np.array([
+            [1]
+        ]),
+        np.array([
+            [1,1],
+            [1,0]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[1,0,0]
+            ,[1,0,0]
+        ]),
+        np.array([
+            [1,1,1,1]
+            ,[1,0,0,0]
+            ,[1,0,0,0]
+            ,[1,0,0,0]
+        ]),
+        np.array([
+            [1,1,1,1,1]
+            ,[1,0,0,0,0]
+            ,[1,0,0,0,0]
+            ,[1,0,0,0,0]
+            ,[1,0,0,0,0]
+        ]),
+        np.array([
+            [1,1,1,1,1,1]
+            ,[1,0,0,0,0,0]
+            ,[1,0,0,0,0,0]
+            ,[1,0,0,0,0,0]
+            ,[1,0,0,0,0,0]
+            ,[1,0,0,0,0,0]
+        ]),
+        np.array([
+            [1,1,1,1,1,1,1]
+            ,[1,0,0,0,0,0,0]
+            ,[1,0,0,0,0,0,0]
+            ,[1,0,0,0,0,0,0]
+            ,[1,0,0,0,0,0,0]
+            ,[1,0,0,0,0,0,0]
+            ,[1,0,0,0,0,0,0]
+        ])
+    ],
+    '7x7b':
+    [
+        np.array([
+            [1,1,1]
+            ,[1,1,0]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[0,1,0]
+        ]),
+        np.array([
+            [1,1],
+            [1,1]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[0,0,1]
+            ,[0,0,1]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[1,1,1]
+            ,[1,0,0]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[0,0,1]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[1,1,1]
+            ,[0,1,0]
+        ]),
+        np.array([
+            [1]
+            ,[1]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[1,1,1]
+        ]),
+        np.array([
+            [1,0,1]
+            ,[1,1,1]
+        ])
+    ],
+    '7x7c':
+    [
+        np.array([
+            [1,1,1,1]
+            ,[1,0,0,0]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[1,0,0]
+        ]),
+        np.array([
+            [1,1,1]
+        ]),
+        np.array([
+            [0,1,1,1]
+            ,[1,1,1,0]
+        ]),
+        np.array([
+            [0,1]
+            ,[1,1]
+            ,[1,0]
+        ]),
+        np.array([
+            [1,1,1]
+            ,[0,1,0]
+        ]),
+        np.array([
+            [1,0,1]
+            ,[1,1,1]
+            ,[0,0,1]
+        ]),
+        np.array([
+            [0,1,1,1]
+            ,[1,1,0,0]
+            ,[1,0,0,0]
+            ,[1,0,0,0]
+        ]),
+        np.array([
+            [1,1]
+        ]),
+        np.array([
+            [0,1,1]
+            ,[1,1,0]
+            ,[1,0,0]
+        ]),
+        np.array([
+            [0,1]
+            ,[1,1]
+        ]),
+    ],
     '8x8':
     [
         np.array([
@@ -232,10 +373,10 @@ def usage( printmsg=False):
     Description:
       %s: Solve 2D nxn tiling puzzles.
     Synopsis:
-      %s --n <size>
+      %s --case <case_id>
       %s --test
     Example:
-      %s --n 5
+      %s --case 6x6
 
 --
 ''' % (name,name,name,name)
@@ -250,19 +391,22 @@ def main():
     if len(sys.argv) == 1: usage( True)
 
     parser = argparse.ArgumentParser( usage=usage())
-    parser.add_argument( "--n", type=int, choices=[3,4,5,6,7])
+    parser.add_argument( "--case")
     parser.add_argument( "--test", action='store_true')
+    parser.add_argument( "--print", action='store_true')
     args = parser.parse_args()
 
     if args.test:
         unittest()
 
-    if not args.n:
+    if not args.case:
         usage( True)
 
-    solver = AlgoX2D( g_pieces['' + str(args.n) + 'x' + str(args.n)])
+    solver = AlgoX2D( g_pieces[args.case])
     solver.solve()
-    solver.print_solutions()
+    if args.print:
+        solver.print_solutions()
+    print( '\nFound %d solutions' % len( solver.solver.solutions))
 
 def unittest():
     solver = AlgoX2D( g_pieces['5x5'])
