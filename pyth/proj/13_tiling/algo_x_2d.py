@@ -462,8 +462,8 @@ class AlgoX2D:
 
         self.solver = AlgoX( rownames, colnames, entries)
 
-    def get_worst_piece_idx( self, pieces):
-        ' Find the piece with most symmetries,positions '
+    def get_worst_piece_old( self, pieces):
+        ' Find the piece with most symmetries and positions '
         maxpositions = maxrots = maxidx = -1
         for pidx,p in enumerate( pieces):
             rots = AlgoX2D.rotations2D( p)
@@ -475,6 +475,24 @@ class AlgoX2D:
             maxpositions = npositions
             maxidx = pidx
         return maxidx
+
+    def get_worst_piece_idx( self, pieces):
+        '''
+        Find the piece with most symmetries and least positions.
+        Actually, this is not noticeably faster than the old version.
+        '''
+        maxrots = residx = -1
+        minpositions = int(1E9)
+        for pidx,p in enumerate( pieces):
+            rots = AlgoX2D.rotations2D( p)
+            if len(rots) <= maxrots: continue
+            if len(rots) > maxrots: minpositions = int(1E9)
+            maxrots = len(rots)
+            npositions = (self.size - p.shape[0] + 1) * (self.size - p.shape[1] + 1)
+            if npositions >= minpositions: continue
+            minpositions = npositions
+            residx = pidx
+        return residx
 
     def solve( self):
         self.solver.solve()
