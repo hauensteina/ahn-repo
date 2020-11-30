@@ -76,7 +76,7 @@ class AlgoX:
         '''
         Remove a column.
         '''
-        # Remove column from all its rows; @@@ is this needed?
+        # Remove column from all its rows. This is necessary to avoid dups.
         for e in colheader.entries:
             e.rowheader.entries.remove(e)
 
@@ -87,7 +87,7 @@ class AlgoX:
     def restore_col( self, colheader):
         ''' Put the column back '''
         self.cols[colheader.name] = colheader
-        # Add each col entry to its row @@@ Is this needed?
+        # Add each col entry to its row
         for e in colheader.entries:
             e.rowheader.entries.add(e)
 
