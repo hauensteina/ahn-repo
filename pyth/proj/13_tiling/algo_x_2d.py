@@ -373,10 +373,10 @@ def usage( printmsg=False):
     Description:
       %s: Solve 2D nxn tiling puzzles.
     Synopsis:
-      %s --case <case_id>
+      %s --case <case_id> [--print]
       %s --test
     Example:
-      %s --case 6x6
+      %s --case 6x6 --print
 
 --
 ''' % (name,name,name,name)
@@ -513,8 +513,15 @@ class AlgoX2D:
             pic = pic.reshape( self.size, self.size)
             for r in range( self.size):
                 for c in range( self.size):
-                    print( pic[r,c] + ' ', end='')
+                    AlgoX2D.print_colored_letter( pic[r,c])
                 print()
+
+    @staticmethod
+    def print_colored_letter( letter):
+        ' Print a letter. Color depends on what letter it is. '
+        color = ord(letter) - ord('A')
+        color %= 16
+        print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
 
     @staticmethod
     def rotations2D(grid):
