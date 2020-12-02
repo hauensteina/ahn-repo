@@ -358,6 +358,73 @@ g_pieces = {
         np.array([
             [1,1,1,1]
         ])
+    ],
+    'pentomino':
+    [
+        # The Center Square
+        np.array([
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,1,1,0,0,0],
+            [0,0,0,1,1,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ]),
+        np.array([
+            [1,1,1,1,1]
+        ]),
+        np.array([
+            [1,1,1,1],
+            [0,0,0,1]
+        ]),
+        np.array([
+            [0,1,1,1],
+            [1,1,0,0]
+        ]),
+        np.array([
+            [1,0,1],
+            [1,1,1]
+        ]),
+        np.array([
+            [0,1,0],
+            [1,1,1],
+            [0,1,0]
+        ]),
+        np.array([
+            [1,1,0],
+            [0,1,1],
+            [0,0,1]
+        ]),
+        np.array([
+            [1,1,1],
+            [0,1,1]
+        ]),
+        np.array([
+            [0,0,1],
+            [1,1,1],
+            [0,1,0]
+        ]),
+        np.array([
+            [0,1,1],
+            [0,1,0],
+            [1,1,0]
+        ]),
+        np.array([
+            [1,0,0],
+            [1,1,1],
+            [1,0,0]
+        ]),
+        np.array([
+            [0,0,1,0],
+            [1,1,1,1]
+        ]),
+        np.array([
+            [0,0,1],
+            [0,0,1],
+            [1,1,1]
+        ])
     ]
 } # g_pieces
 
@@ -386,7 +453,7 @@ def usage( printmsg=False):
     else:
         return msg
 
-
+#------------------
 def main():
     if len(sys.argv) == 1: usage( True)
 
@@ -408,6 +475,7 @@ def main():
         solver.print_solutions()
     print( '\nFound %d solutions' % len( solver.solver.solutions))
 
+#----------------
 def unittest():
     solver = AlgoX2D( g_pieces['5x5'])
     solver.solve()
@@ -434,11 +502,25 @@ class AlgoX2D:
 
         rownames = []
         piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
+
         colnames = [str(x) for x in range( self.nholes)] + piece_ids
         entries = set() # Pairs (rowidx, colidx)
 
-        worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
+        def add_image( piece_id, img_id, img, row, col):
+            ' Add an image to the set of images to try '
+            rowname = piece_id + '_' + str(img_id)
+            rownames.append( rowname)
+            rowidx = len( rownames) - 1
+            entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
+            grid = np.zeros( (self.size, self.size))
+            AlgoX2D.add_window( grid, img, row, col)
+            filled_holes = set( np.flatnonzero( grid))
+            for h in filled_holes: # Image fills these holes
+                colidx = colnames.index( str(h))
+                entries.add( (rowidx, colidx) )
 
+        # Add all images
+        worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
         for pidx,p in enumerate( pieces):
             rots = AlgoX2D.rotations2D( p)
             piece_id = piece_ids[pidx]
@@ -449,17 +531,7 @@ class AlgoX2D:
                 for row in range( self.size - img.shape[0] + 1):
                     for col in range( self.size - img.shape[1] + 1):
                         img_id += 1
-                        rowname = piece_id + '_' + str(img_id)
-                        rownames.append( rowname)
-                        rowidx = len( rownames) - 1
-                        entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
-                        grid = np.zeros( (self.size, self.size))
-                        AlgoX2D.add_window( grid, img, row, col)
-                        filled_holes = set( np.flatnonzero( grid))
-                        for h in filled_holes: # Image fills these holes
-                            colidx = colnames.index( str(h))
-                            entries.add( (rowidx, colidx) )
-
+                        add_image( piece_id, img_id, img, row, col)
         self.solver = AlgoX( rownames, colnames, entries)
 
     def get_worst_piece_old( self, pieces):

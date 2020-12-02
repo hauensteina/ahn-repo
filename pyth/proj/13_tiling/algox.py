@@ -171,6 +171,8 @@ class AlgoX:
         for ridx, rowentry in enumerate(colheader.entries): # for images covering this hole
             if depth == 0:
                 print( 'Working on row %d/%d' % (ridx+1, len(colheader.entries)))
+            elif depth == 1:
+                print( '    Working on row %d/%d' % (ridx+1, len(colheader.entries)))
             rem_rows = set()
             rem_cols = set()
             rowheader = rowentry.rowheader
