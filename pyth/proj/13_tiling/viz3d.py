@@ -9,13 +9,13 @@ import argparse
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+from matplotlib.widgets import Button
 from mpl_toolkits.mplot3d import Axes3D
-
-#mpl.use("Qt5Agg")
 
 g_pieces = { # xyz = right back top = ribato
     '3x3x3':
     [
+        # The Waiter
         np.array([
             [
                 # Rear plane
@@ -163,26 +163,48 @@ def main():
 
 #------------------------
 def visualize( pieces):
-    fig = plt.figure()
-    ax = fig.gca( projection='3d')
-    ax.set_aspect('auto')
+    FIG = plt.figure( figsize=(8,8))
+    ax_cube = FIG.add_axes( [0.05, 0.05, 0.8, 0.8], projection='3d')
+
+    # Add button
+    ax_add = FIG.add_axes( [0.05, 0.90, 0.1, 0.05] )
+    btn_add = Button( ax_add, 'Add')
+    btn_add.on_clicked( cb_btn_add)
+
+    # Remove button
+    ax_remove = FIG.add_axes( [0.20, 0.90, 0.1, 0.05] )
+    btn_remove = Button( ax_remove, 'Remove')
+    btn_remove.on_clicked( cb_btn_remove)
+
+    #fig = plt.figure()
+    #ax = fig.gca( projection='3d')
+    ax_cube.set_aspect('auto')
     #plt.axis( 'off')
     # Manually fix aspect ratio. Uggh.
-    ax.set_xlim3d(-0.5, 5.7)
-    ax.set_ylim3d(-0.5, 5.7)
-    ax.set_zlim3d(-0.5, 4.5)
+    ax_cube.set_xlim3d(-0.5, 5.7)
+    ax_cube.set_ylim3d(-0.5, 5.7)
+    ax_cube.set_zlim3d(-0.5, 4.5)
 
-    ax.set_xlabel( "x")
-    ax.set_ylabel( "y")
-    ax.set_zlabel( "z")
-    ax.grid( False)
+    ax_cube.set_xlabel( "x")
+    ax_cube.set_ylabel( "y")
+    ax_cube.set_zlabel( "z")
+    ax_cube.grid( False)
     for idx,p in enumerate(pieces):
         cmap = plt.get_cmap('Set1')
         color = cmap.colors[idx]
-        viz_piece( p, ax, color)
+        viz_piece( p, ax_cube, color)
+
+#----------------------------
+def cb_btn_add( event):
+    pass
+
+#----------------------------
+def cb_btn_remove( event):
+    pass
 
 #-----------------------------
 def viz_piece( p, ax, color):
+    # Rotate to the non-intuitive dimension order voxels wants
     p = np.rot90( p, 1, axes=(2,1))
     p = np.rot90( p, 1, axes=(1,0))
     ax.voxels( p, facecolors=color,edgecolors='gray', shade=True)
