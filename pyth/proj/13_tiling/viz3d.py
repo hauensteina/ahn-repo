@@ -163,31 +163,52 @@ def main():
 
 #------------------------
 def visualize( pieces):
-    FIG = plt.figure( figsize=(8,8))
-    ax_cube = FIG.add_axes( [0.05, 0.05, 0.8, 0.8], projection='3d')
+    w = 14.0
+    h = 8.0
+    space = 0.05
+    marg = 0.05
+    cube_s = 0.9
+    fig = plt.figure( figsize=(w,h))
 
-    # Add button
-    ax_add = FIG.add_axes( [0.05, 0.90, 0.1, 0.05] )
-    btn_add = Button( ax_add, 'Add')
-    btn_add.on_clicked( cb_btn_add)
+    # The whole cube
+    ax_cube = fig.add_axes( [marg * h/w, marg, cube_s * h/w, cube_s], projection='3d')
+    plt.axis( 'off')
+    # A 4x4 grid for the individual pieces
+    ax_pieces = []
+    rowheight = (1.0 - 2*marg - 3*space) / 4
+    colwidth = rowheight * h/w
+    for r in range(4):
+        ax_pieces.append([])
+        y = marg + r * rowheight
+        if r: y += (r) * space
+        for c in range(4):
+            x = h/w * 0.8 * cube_s + c * colwidth
+            if c: x += (c) * space * h/w
+            ax = fig.add_axes( [x, y, colwidth, rowheight], projection='3d')
+            #plt.axis( 'off')
+            ax_pieces[-1].append(ax)
 
-    # Remove button
-    ax_remove = FIG.add_axes( [0.20, 0.90, 0.1, 0.05] )
-    btn_remove = Button( ax_remove, 'Remove')
-    btn_remove.on_clicked( cb_btn_remove)
+    # # Add button
+    # ax_add = FIG.add_axes( [0.05, 0.90, 0.1, 0.05] )
+    # btn_add = Button( ax_add, 'Add')
+    # btn_add.on_clicked( cb_btn_add)
+
+    # # Remove button
+    # ax_remove = FIG.add_axes( [0.20, 0.90, 0.1, 0.05] )
+    # btn_remove = Button( ax_remove, 'Remove')
+    # btn_remove.on_clicked( cb_btn_remove)
 
     #fig = plt.figure()
     #ax = fig.gca( projection='3d')
     ax_cube.set_aspect('auto')
-    #plt.axis( 'off')
     # Manually fix aspect ratio. Uggh.
     ax_cube.set_xlim3d(-0.5, 5.7)
     ax_cube.set_ylim3d(-0.5, 5.7)
     ax_cube.set_zlim3d(-0.5, 4.5)
 
-    ax_cube.set_xlabel( "x")
-    ax_cube.set_ylabel( "y")
-    ax_cube.set_zlabel( "z")
+    #ax_cube.set_xlabel( "x")
+    #ax_cube.set_ylabel( "y")
+    #ax_cube.set_zlabel( "z")
     ax_cube.grid( False)
     for idx,p in enumerate(pieces):
         cmap = plt.get_cmap('Set1')
