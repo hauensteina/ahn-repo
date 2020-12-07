@@ -141,7 +141,7 @@ def usage( printmsg=False):
     Synopsis:
       %s --case <case_id>
     Example:
-      %s --case waiter
+      %s --case 3x3x3
 
 --
 ''' % (name,name,name)
@@ -168,25 +168,53 @@ def visualize( pieces):
     space = 0.05
     marg = 0.05
     cube_s = 0.9
+    cmap = plt.get_cmap('Set1')
     fig = plt.figure( figsize=(w,h))
+    assembled = [False] * len(pieces)
+
+    def cb_click_piece( event):
+        ' Click on a piece axes'
+        try:
+            piece_idx = ax_pieces.index( event.artist)
+            p = pieces[piece_idx]
+        except:
+            return
+        if not assembled[piece_idx]:
+            color = cmap.colors[piece_idx]
+            artist_list = viz_piece( p, ax_cube, color)
+            assembled[piece_idx] = artist_list
+        else:
+            artist_list = assembled[piece_idx].values()
+            for a in artist_list:
+                a.remove()
+            assembled[piece_idx] = False
+
+        fig.canvas.draw()
+
+    fig.canvas.mpl_connect( 'pick_event', cb_click_piece)
 
     # The whole cube
-    ax_cube = fig.add_axes( [marg * h/w, marg, cube_s * h/w, cube_s], projection='3d')
+    ax_cube = fig.add_axes( [-marg * h/w, marg, cube_s * h/w, cube_s], projection='3d')
+    #ax_cube = fig.add_axes( [0, marg, cube_s * h/w, cube_s], projection='3d')
     plt.axis( 'off')
     # A 4x4 grid for the individual pieces
     ax_pieces = []
     rowheight = (1.0 - 2*marg - 3*space) / 4
     colwidth = rowheight * h/w
-    for r in range(4):
-        ax_pieces.append([])
+    piece_grid_sz = 4
+    for r in range( piece_grid_sz):
+        r = piece_grid_sz - r - 1 # mpl y goes from bottom to top => flip
         y = marg + r * rowheight
         if r: y += (r) * space
-        for c in range(4):
+        for c in range( piece_grid_sz):
             x = h/w * 0.8 * cube_s + c * colwidth
             if c: x += (c) * space * h/w
-            ax = fig.add_axes( [x, y, colwidth, rowheight], projection='3d')
-            #plt.axis( 'off')
-            ax_pieces[-1].append(ax)
+            # Setting picker arg to a tolerance margin enables pick event on axes
+            ax = fig.add_axes( [x, y, colwidth, rowheight], projection='3d', picker=5)
+            plt.axis( 'off')
+            ax.grid( False)
+            ax_pieces.append(ax)
+
 
     # # Add button
     # ax_add = FIG.add_axes( [0.05, 0.90, 0.1, 0.05] )
@@ -211,23 +239,26 @@ def visualize( pieces):
     #ax_cube.set_zlabel( "z")
     ax_cube.grid( False)
     for idx,p in enumerate(pieces):
-        cmap = plt.get_cmap('Set1')
         color = cmap.colors[idx]
-        viz_piece( p, ax_cube, color)
+        # The assembled cube
+        if assembled[idx]:
+            viz_piece( p, ax_cube, color)
+        else: # Individual piece
+            viz_piece( p, ax_pieces[idx], color)
 
-#----------------------------
-def cb_btn_add( event):
-    pass
+    # The individual pieces
+    for idx,p in enumerate(pieces):
+        color = cmap.colors[idx]
 
-#----------------------------
-def cb_btn_remove( event):
-    pass
+
+
 
 #-----------------------------
 def viz_piece( p, ax, color):
     # Rotate to the non-intuitive dimension order voxels wants
     p = np.rot90( p, 1, axes=(2,1))
     p = np.rot90( p, 1, axes=(1,0))
-    ax.voxels( p, facecolors=color,edgecolors='gray', shade=True)
+    res = ax.voxels( p, facecolors=color,edgecolors='gray', shade=True)
+    return res
 
 main()
