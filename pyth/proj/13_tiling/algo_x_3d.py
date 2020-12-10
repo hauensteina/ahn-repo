@@ -4,10 +4,12 @@
 # AHN, Nov 2020
 
 from pdb import set_trace as BP
-import sys,os
+import sys,os,pickle
 import argparse
 import numpy as np
 from algox import AlgoX
+
+OUTFILE = 'algo_x_3d_solutions.pickle'
 
 g_pieces = {
     '3x3x3':
@@ -118,7 +120,7 @@ def main():
     parser.add_argument( "--max_solutions", type=int)
     args = parser.parse_args()
 
-    solver = AlgoX3D( g_pieces[args.case])
+    solver = AlgoX3D( g_pieces[args.case], args.max_solutions)
     solver.solve()
     print( '\nFound %d solutions' % len( solver.solver.solutions))
 
@@ -129,7 +131,7 @@ class AlgoX3D:
     We don't do the dancing links (DLX), just use dicts of sets.
     A shifted rotated instance of a piece is called an image.
     '''
-    def __init__( self, pieces):
+    def __init__( self, pieces, max_solutions=0):
         '''
         Build a matrix with a column per gridpoint plus a column per piece.
         The rows are the images (rot + trans) of the pieces that fit in the grid.
@@ -174,7 +176,7 @@ class AlgoX3D:
                         for layer in range( self.size - img.shape[2] + 1):
                             img_id += 1
                             add_image( piece_id, img_id, img, row, col, layer)
-        self.solver = AlgoX( rownames, colnames, entries)
+        self.solver = AlgoX( rownames, colnames, entries, max_solutions)
 
     def get_worst_piece_idx( self, pieces):
         '''
@@ -195,6 +197,29 @@ class AlgoX3D:
 
     def solve( self):
         self.solver.solve()
+        self.save_solutions()
+
+    def save_solutions( self):
+        solutions = []
+        for idx,s in enumerate( self.solver.solutions):
+            # s is a list of row headers
+            solution = []
+            for row in s:
+                es = row.entries
+                filled_holes = [ x.colheader.name for x in row.entries if AlgoX3D.isnumeric (x.colheader.name) ]
+                piece = [ x.colheader.name for x in row.entries if not AlgoX3D.isnumeric (x.colheader.name) ][0]
+                piece_in_cube = np.full( self.size * self.size * self.size, 0)
+                for h in filled_holes:
+                    piece_in_cube[int(h)] = ord(piece) - ord('A') + 1
+                piece_in_cube = piece_in_cube.reshape( self.size, self.size, self.size)
+                solution.append( piece_in_cube)
+            solutions.append( solution)
+        with open( OUTFILE, 'wb') as f:
+            pickle.dump( solutions, f)
+
+        with open( OUTFILE, 'rb') as f:
+            xx = pickle.load( f)
+
 
     # def print_solutions( self):
     #     for idx,s in enumerate( self.solver.solutions):
@@ -275,14 +300,12 @@ class AlgoX3D:
         ' Rotate a brick clockwise viewed from left '
         return np.rot90( brick,1,(0,1))
 
-
-
-    # @staticmethod
-    # def isnumeric(s):
-    #     try:
-    #         res = float( s)
-    #         return True
-    #     except ValueError:
-    #         return False
+    @staticmethod
+    def isnumeric(s):
+        try:
+            res = float( s)
+            return True
+        except ValueError:
+            return False
 
 main()

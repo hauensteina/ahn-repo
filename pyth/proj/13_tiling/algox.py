@@ -32,9 +32,10 @@ class AlgoX:
         def __repr__( self):
             return '\n' + self.name + '\n' + str( self.entries)
 
-    def __init__( self, rownames, colnames, entries):
+    def __init__( self, rownames, colnames, entries, max_solutions=0):
         ''' Entries are pairs of (rowidx, colidx) '''
 
+        self.max_solutions = max_solutions
         self.nsolutions = 0
         self.colnames = colnames
         self.solution = [] # A solution is a list of row headers
@@ -159,6 +160,8 @@ class AlgoX:
     def solve( self, depth=0):
         ''' Run Algorithm X '''
 
+        if self.max_solutions and (self.nsolutions >= self.max_solutions): return
+
         def check_dead_end( cheads):
             'If any column has no more entries, we are stuck'
             for chead in cheads:
@@ -192,6 +195,7 @@ class AlgoX:
                 self.solutions.append( self.solution.copy())
                 self.solution.pop()
                 self.restore( rem_rows, rem_cols)
+                if self.max_solutions and (self.nsolutions >= self.max_solutions): return
                 continue # Look for more solutions
 
             if check_dead_end( self.cols.values()):
