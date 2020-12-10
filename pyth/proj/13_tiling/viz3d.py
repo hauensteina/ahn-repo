@@ -5,6 +5,7 @@
 
 from pdb import set_trace as BP
 import sys,os
+import pickle
 import argparse
 import numpy as np
 import matplotlib as mpl
@@ -140,11 +141,13 @@ def usage( printmsg=False):
       %s: Visuzlize 3D tiling puzzles
     Synopsis:
       %s --case <case_id>
-    Example:
+      %s --file <fname.pickle> --nth <nth solution>
+    Examples:
       %s --case 3x3x3
+      %s --file algo_x_3d_solutions.pickle --nth 1
 
 --
-''' % (name,name,name)
+''' % (name,name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -157,8 +160,17 @@ def main():
 
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--case")
+    parser.add_argument( "--file")
+    parser.add_argument( "--nth", type=int, default=1)
     args = parser.parse_args()
-    visualize( g_pieces[args.case])
+    if args.case:
+        visualize( g_pieces[args.case])
+    else:
+        with open( args.file, 'rb') as f:
+            solutions = pickle.load( f)
+            solution = solutions[args.nth]
+            visualize( solution)
+
     plt.show()
 
 #------------------------

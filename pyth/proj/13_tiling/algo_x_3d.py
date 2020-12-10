@@ -217,36 +217,6 @@ class AlgoX3D:
         with open( OUTFILE, 'wb') as f:
             pickle.dump( solutions, f)
 
-        with open( OUTFILE, 'rb') as f:
-            xx = pickle.load( f)
-
-
-    # def print_solutions( self):
-    #     for idx,s in enumerate( self.solver.solutions):
-    #         pic = np.full( self.size * self.size, 'A')
-    #         print()
-    #         print( 'Solution %d:' % (idx+1))
-    #         print( '=============')
-    #         # s is a list of row headers
-    #         for row in s:
-    #             es = row.entries
-    #             filled_holes = [ x.colheader.name for x in row.entries if AlgoX2D.isnumeric (x.colheader.name) ]
-    #             piece = [ x.colheader.name for x in row.entries if not AlgoX2D.isnumeric (x.colheader.name) ][0]
-    #             for h in filled_holes:
-    #                 pic[int(h)] = piece
-    #         pic = pic.reshape( self.size, self.size)
-    #         for r in range( self.size):
-    #             for c in range( self.size):
-    #                 AlgoX2D.print_colored_letter( pic[r,c])
-    #             print()
-
-    # @staticmethod
-    # def print_colored_letter( letter):
-    #     ' Print a letter. Color depends on what letter it is. '
-    #     color = ord(letter) - ord('A')
-    #     color %= 16
-    #     print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
-
     @staticmethod
     def rotations3D( brick):
         ' Return a list with all 24 rotations of a brick, or less if symmetries exist '
