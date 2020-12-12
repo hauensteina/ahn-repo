@@ -8,6 +8,7 @@ import sys,os,pickle
 import argparse
 import numpy as np
 from algox import AlgoX
+import tiling_helpers as helpers
 
 OUTFILE = 'algo_x_3d_solutions.pickle'
 
@@ -83,9 +84,154 @@ g_pieces = {
                 [1,0]
             ]
         ])
+    ],
+    'abraxis':
+    [
+        # The Pillar
+        np.array([
+            [   # Rear Plane
+                [0,0,1],
+                [1,1,1]
+            ],
+            [   # Front plane
+                [0,0,0],
+                [0,0,1]
+            ]
+        ]),
+        # Letter S plus Head
+        np.array([
+            [
+                [0,0,0],
+                [0,1,1]
+            ],
+            [
+                [0,1,0],
+                [1,1,0]
+            ]
+        ]),
+        # Yellow Wiggle
+        np.array([
+            [
+                [0,1,1],
+                [1,1,0]
+            ],
+            [
+                [0,0,0],
+                [1,0,0]
+            ]
+        ]),
+        # The Cannon
+        np.array([
+            [
+                [0,0,0],
+                [0,1,0]
+            ],
+            [
+                [0,1,0],
+                [1,1,1]
+            ]
+        ]),
+        # Letter L plus Head
+        np.array([
+            [
+                [0,0,0],
+                [0,0,1]
+            ],
+            [
+                [0,1,0],
+                [1,1,1]
+            ]
+        ]),
+        # The Barkeeper
+        np.array([
+            [
+                [0,1,0],
+                [0,1,0]
+            ],
+            [
+                [0,0,0],
+                [1,1,1]
+            ]
+        ]),
+        # Two plus Head
+        np.array([
+            [
+                [0,1,0],
+                [1,1,0]
+            ],
+            [
+                [0,0,0],
+                [0,1,1]
+            ]
+        ]),
+        # Letter L Snake
+        np.array([
+            [
+                [0,0,0],
+                [0,0,1]
+            ],
+            [
+                [1,0,0],
+                [1,1,1]
+            ]
+        ]),
+        # The Shamrock
+        np.array([
+            [
+                [0,1],
+                [1,1]
+            ],
+            [
+                [0,0],
+                [0,1]
+            ]
+        ]),
+        # Left Stack
+        np.array([
+            [
+                [1,1,0],
+                [0,1,0]
+            ],
+            [
+                [0,0,0],
+                [0,1,1]
+            ]
+        ]),
+        # Right Stack
+        np.array([
+            [
+                [0,1,1],
+                [0,1,0]
+            ],
+            [
+                [0,0,0],
+                [1,1,0]
+            ]
+        ]),
+        # Roman Couch
+        np.array([
+            [
+                [0,0,0],
+                [1,1,1]
+            ],
+            [
+                [0,0,1],
+                [0,0,1]
+            ]
+        ]),
+        # Left L plus Head
+        np.array([
+            [
+                [0,1,0],
+                [1,1,1]
+            ],
+            [
+                [0,0,0],
+                [0,0,1]
+            ]
+        ])
     ]
 } # g_pieces
-
 
 # Turn the ones into piece number
 for k in g_pieces.keys():
@@ -100,11 +246,12 @@ def usage( printmsg=False):
       %s: Solve 3D nxn tiling puzzles.
     Synopsis:
       %s --case <case_id> [--max_solutions <n>]
-    Example:
+    Examples:
       %s --case 3x3x3
+      %s --case abraxis
 
 --
-''' % (name,name,name)
+''' % (name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -155,7 +302,7 @@ class AlgoX3D:
             rowidx = len( rownames) - 1
             entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
             cube = np.zeros( (self.size, self.size, self.size))
-            AlgoX3D.add_window( cube, img, row, col, layer)
+            helpers.add_window( cube, img, row, col, layer)
             filled_holes = set( np.flatnonzero( cube))
             for h in filled_holes: # Image fills these holes
                 colidx = colnames.index( str(h))
@@ -164,7 +311,7 @@ class AlgoX3D:
         # Add all images
         worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
         for pidx,p in enumerate( pieces):
-            rots = AlgoX3D.rotations3D( p)
+            rots = helpers.rotations3D( p)
             print( len(rots))
             piece_id = piece_ids[pidx]
             img_id = -1
@@ -185,7 +332,7 @@ class AlgoX3D:
         maxrots = residx = -1
         minpositions = int(1E9)
         for pidx,p in enumerate( pieces):
-            rots = AlgoX3D.rotations3D( p)
+            rots = helpers.rotations3D( p)
             if len(rots) <= maxrots: continue
             if len(rots) > maxrots: minpositions = int(1E9)
             maxrots = len(rots)
@@ -206,8 +353,8 @@ class AlgoX3D:
             solution = []
             for row in s:
                 es = row.entries
-                filled_holes = [ x.colheader.name for x in row.entries if AlgoX3D.isnumeric (x.colheader.name) ]
-                piece = [ x.colheader.name for x in row.entries if not AlgoX3D.isnumeric (x.colheader.name) ][0]
+                filled_holes = [ x.colheader.name for x in row.entries if helpers.isnumeric (x.colheader.name) ]
+                piece = [ x.colheader.name for x in row.entries if not helpers.isnumeric (x.colheader.name) ][0]
                 piece_in_cube = np.full( self.size * self.size * self.size, 0)
                 for h in filled_holes:
                     piece_in_cube[int(h)] = ord(piece) - ord('A') + 1
@@ -216,66 +363,5 @@ class AlgoX3D:
             solutions.append( solution)
         with open( OUTFILE, 'wb') as f:
             pickle.dump( solutions, f)
-
-    @staticmethod
-    def rotations3D( brick):
-        ' Return a list with all 24 rotations of a brick, or less if symmetries exist '
-        h = brick.shape[0]
-        w = brick.shape[1]
-        d = brick.shape[2]
-        res = []
-        strs = set()
-
-        for i in range(6):
-            # Top remaining, four sides can face forward
-            for j in range(4):
-                #print('----------')
-                #print(brick)
-                if not repr(brick) in strs:
-                    res.append( brick)
-                strs.add( repr(brick))
-                brick = AlgoX3D.rot_top( brick)
-            # Change top
-            if i < 3:
-                #print('>>>>>>>>>>>>>> < 3')
-                brick = AlgoX3D.rot_front( brick)
-            elif i == 3: # bring back to top
-                #print('############## == 3')
-                brick = AlgoX3D.rot_front( brick) # initial orientation
-                brick = AlgoX3D.rot_left( brick)
-            elif i == 4: # bring front to top
-                #print('$$$$$$$$$$$$$ == 4')
-                brick = AlgoX3D.rot_left( brick)
-                brick = AlgoX3D.rot_left( brick)
-
-        return res
-
-    @staticmethod
-    def add_window( arr, window, r, c, l):
-        ' Add window to arr at position r,c,l for left upper corner of win in arr '
-        arr[ r:r+window.shape[0], c:c+window.shape[1], l:l+window.shape[2] ] += window
-
-    @staticmethod
-    def rot_top( brick):
-        ' Rotate a brick clockwise viewed from top '
-        return np.rot90( brick,1,(2,0))
-
-    @staticmethod
-    def rot_front( brick):
-        ' Rotate a brick clockwise viewed from front '
-        return np.rot90( brick,1,(2,1))
-
-    @staticmethod
-    def rot_left( brick):
-        ' Rotate a brick clockwise viewed from left '
-        return np.rot90( brick,1,(0,1))
-
-    @staticmethod
-    def isnumeric(s):
-        try:
-            res = float( s)
-            return True
-        except ValueError:
-            return False
 
 main()

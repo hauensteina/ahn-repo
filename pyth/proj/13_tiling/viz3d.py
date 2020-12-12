@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Visualize 3x3 tiling puzzles
+# Visualize 3D tiling puzzles
 # AHN, Dec 2020
 
 from pdb import set_trace as BP
@@ -12,6 +12,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Button
 from mpl_toolkits.mplot3d import Axes3D
+import tiling_helpers as helpers
 
 g_pieces = { # xyz = right back top = ribato
     '3x3x3':
@@ -168,20 +169,23 @@ def main():
     else:
         with open( args.file, 'rb') as f:
             solutions = pickle.load( f)
-            solution = solutions[args.nth]
+            solution = solutions[args.nth - 1]
             visualize( solution)
 
     plt.show()
 
 #------------------------
 def visualize( pieces):
-    w = 14.0
+    # Sort pieces by shape to have consistent colors.
+    #pieces = sorted( pieces, key = lambda x: helpers.hash_piece_image_3d(x))
+    pieces = sorted( pieces, key = helpers.hash_piece_image_3d)
+    w = 12.5
     h = 8.0
     S = pieces[0].shape[0]
     space = 0.05
     marg = 0.05
-    cube_s = 0.7
-    cmap = plt.get_cmap('Set1')
+    cube_s = 0.5
+    cmap = plt.get_cmap('tab20')
     fig = plt.figure( figsize=(w,h))
     assembled = [False] * len(pieces)
 
@@ -209,11 +213,11 @@ def visualize( pieces):
     # The whole cube
     cube_x = marg * h/w
     cube_width = cube_s * h/w
-    ax_cube = fig.add_axes( [cube_x, 3 * marg, cube_width, cube_s], projection='3d')
+    ax_cube = fig.add_axes( [cube_x, 4.5 * marg, cube_width, cube_s], projection='3d')
     ax_cube.set_xlabel( "x")
     ax_cube.set_ylabel( "y")
     ax_cube.set_zlabel( "z")
-    ax_cube.grid( False)
+    #ax_cube.grid( False)
     plt.axis( 'off')
     # A 4x4 grid for the individual pieces
     ax_pieces = []
@@ -230,7 +234,7 @@ def visualize( pieces):
             # Setting picker arg to a tolerance margin enables pick event on axes
             ax = fig.add_axes( [x, y, colwidth, rowheight], projection='3d', picker=5)
             plt.axis( 'off')
-            ax.grid( False)
+            #ax.grid( False)
             ax_pieces.append(ax)
 
 
@@ -282,5 +286,6 @@ def viz_piece_in_cube( p, ax_cube, color):
     return res
 
 viz_piece_in_cube.firstcall = True
+
 
 main()

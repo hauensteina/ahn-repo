@@ -190,7 +190,7 @@ class AlgoX:
             # If no cols are left, we are done
             if len( self.cols) == 0:
                 self.nsolutions += 1
-                #print( 'Found solution %d' % self.nsolutions)
+                print( 'Found solution %d' % self.nsolutions)
                 self.solution.append( self.complete_rows[rowentry.rowheader.name])
                 self.solutions.append( self.solution.copy())
                 self.solution.pop()
