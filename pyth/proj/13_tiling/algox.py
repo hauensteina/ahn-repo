@@ -1,3 +1,4 @@
+
 '''
 A Python implementation of Knuth's Algorithm X
 AHN, Nov 2020
@@ -34,7 +35,6 @@ class AlgoX:
 
     def __init__( self, rownames, colnames, entries, max_solutions=0):
         ''' Entries are pairs of (rowidx, colidx) '''
-
         self.max_solutions = max_solutions
         self.nsolutions = 0
         self.colnames = colnames

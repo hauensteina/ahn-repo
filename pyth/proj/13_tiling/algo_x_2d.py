@@ -7,7 +7,8 @@ from pdb import set_trace as BP
 import sys,os
 import argparse
 import numpy as np
-from algox import AlgoX
+#from algox import AlgoX
+from algox_assaf import AlgoX # This is twice as fast
 
 g_pieces = {
     '3x3':
@@ -473,13 +474,13 @@ def main():
     solver.solve()
     if args.print:
         solver.print_solutions()
-    print( '\nFound %d solutions' % len( solver.solver.solutions))
+    print( '\nFound %d solutions' % len( solver.solutions))
 
 #----------------
 def unittest():
     solver = AlgoX2D( g_pieces['5x5'])
     solver.solve()
-    if len(solver.solver.solutions) == 74:
+    if len(solver.solutions) == 74:
         print( 'Unit test passed')
     else:
         print( 'Unit test failed: Found %d solutions, should be 74' % len(solver.solutions))
@@ -567,10 +568,10 @@ class AlgoX2D:
         return residx
 
     def solve( self):
-        self.solver.solve()
+        self.solutions = list(self.solver.solve())
 
     def print_solutions( self):
-        for idx,s in enumerate( self.solver.solutions):
+        for idx,s in enumerate( self.solutions):
             pic = np.full( self.size * self.size, 'A')
             print()
             print( 'Solution %d:' % (idx+1))

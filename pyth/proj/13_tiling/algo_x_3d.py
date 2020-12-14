@@ -7,8 +7,9 @@ from pdb import set_trace as BP
 import sys,os,pickle
 import argparse
 import numpy as np
-from algox import AlgoX
 import tiling_helpers as helpers
+#from algox import AlgoX
+from algox_assaf import AlgoX # This is twice as fast
 
 OUTFILE = 'algo_x_3d_solutions.pickle'
 
@@ -343,12 +344,12 @@ class AlgoX3D:
         return residx
 
     def solve( self):
-        self.solver.solve()
+        self.solutions = list(self.solver.solve())
         self.save_solutions()
 
     def save_solutions( self):
         solutions = []
-        for idx,s in enumerate( self.solver.solutions):
+        for idx,s in enumerate( self.solutions):
             # s is a list of row headers
             solution = []
             for row in s:
