@@ -4,6 +4,8 @@ A Python implementation of Knuth's Algorithm X
 AHN, Nov 2020
 '''
 
+from pdb import set_trace as BP
+
 class AlgoX:
     ''' Knuth's Algorithm X, general purpose '''
 
@@ -157,7 +159,17 @@ class AlgoX:
         for rowheader in self.solution:
             print( self.row2list( rowheader))
 
-    def solve( self, depth=0):
+    def get_col_idxs( self, rowname): #@@@
+        rowheader = self.rows[rowname]
+        res = [self.colnames.index( e.colheader.name) for e in rowheader.entries]
+        return res
+
+    def solve( self):
+        self.solve_()
+        res = [ [r.name for r in s] for s in self.solutions]
+        return res
+
+    def solve_( self, depth=0):
         ''' Run Algorithm X '''
 
         if self.max_solutions and (self.nsolutions >= self.max_solutions): return
@@ -206,6 +218,6 @@ class AlgoX:
             partial_solution = self.solution.copy()
             self.solution.append( self.complete_rows[rowentry.rowheader.name])
             # Alright, so we filled a hole. Now fill another one.
-            self.solve( depth+1)
+            self.solve_( depth+1)
             self.solution = partial_solution
             self.restore( rem_rows, rem_cols)

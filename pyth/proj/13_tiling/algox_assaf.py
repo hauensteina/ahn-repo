@@ -33,13 +33,17 @@ class AlgoX:
             c = min( self.X, key=lambda c: len( self.X[c]))
             for r in list( self.X[c]):
                 solution.append( self.rownames[r])
-                cols = self.select( r)
+                cols = self.select_( r)
                 for s in self.solve( solution):
                     yield s
-                self.deselect( r, cols)
+                self.deselect_( r, cols)
                 solution.pop()
 
-    def select( self, r):
+    def get_col_idxs( self, rowname):
+        rowidx = self.rownames.index(rowname)
+        return self.Y[rowidx]
+
+    def select_( self, r):
         cols = []
         for j in self.Y[r]:
             for i in self.X[j]:
@@ -49,7 +53,7 @@ class AlgoX:
             cols.append( self.X.pop(j))
         return cols
 
-    def deselect( self, r, cols):
+    def deselect_( self, r, cols):
         for j in reversed( self.Y[r]):
             self.X[j] = cols.pop()
             for i in self.X[j]:

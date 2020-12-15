@@ -576,11 +576,10 @@ class AlgoX2D:
             print()
             print( 'Solution %d:' % (idx+1))
             print( '=============')
-            # s is a list of row headers
-            for row in s:
-                es = row.entries
-                filled_holes = [ x.colheader.name for x in row.entries if AlgoX2D.isnumeric (x.colheader.name) ]
-                piece = [ x.colheader.name for x in row.entries if not AlgoX2D.isnumeric (x.colheader.name) ][0]
+            # s is a list of row names like 'H_23'
+            for rowname in s:
+                piece = rowname.split('_')[0]
+                filled_holes = [x for x in self.solver.get_col_idxs( rowname) if x < self.size * self.size]
                 for h in filled_holes:
                     pic[int(h)] = piece
             pic = pic.reshape( self.size, self.size)

@@ -270,7 +270,7 @@ def main():
 
     solver = AlgoX3D( g_pieces[args.case], args.max_solutions)
     solver.solve()
-    print( '\nFound %d solutions' % len( solver.solver.solutions))
+    print( '\nFound %d solutions' % len( solver.solutions))
 
 #=================================================================================
 class AlgoX3D:
@@ -350,12 +350,12 @@ class AlgoX3D:
     def save_solutions( self):
         solutions = []
         for idx,s in enumerate( self.solutions):
-            # s is a list of row headers
+            # s is a list of row names like 'H_23'
             solution = []
-            for row in s:
-                es = row.entries
-                filled_holes = [ x.colheader.name for x in row.entries if helpers.isnumeric (x.colheader.name) ]
-                piece = [ x.colheader.name for x in row.entries if not helpers.isnumeric (x.colheader.name) ][0]
+            for rowname in s:
+                piece = rowname.split('_')[0]
+                filled_holes = [x for x in self.solver.get_col_idxs( rowname)
+                                if x < self.size * self.size * self.size]
                 piece_in_cube = np.full( self.size * self.size * self.size, 0)
                 for h in filled_holes:
                     piece_in_cube[int(h)] = ord(piece) - ord('A') + 1
