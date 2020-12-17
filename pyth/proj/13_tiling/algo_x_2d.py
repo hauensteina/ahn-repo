@@ -8,7 +8,8 @@ import sys,os
 import argparse
 import numpy as np
 #from algox import AlgoX
-from algox_assaf import AlgoX # This is twice as fast
+from algox1 import AlgoX
+#from algox_assaf import AlgoX # This is twice as fast
 
 g_pieces = {
     '3x3':

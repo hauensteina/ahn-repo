@@ -14,11 +14,11 @@ class AlgoX:
         self.colnames = colnames
         self.n_solutions = 0
 
-        # Build the row dictionary Y
+        # Build the row dictionary Y:dict(int:list(int))
         self.Y = { y:[] for y in range( len(rownames)) }
         for e in entries:
             self.Y[e[0]].append( e[1])
-        # Build the column dictionary X
+        # Build the column dictionary X:dict(int:set(int))
         self.X = { x:set() for x in range( len(colnames)) }
         for e in entries:
             self.X[e[1]].add( e[0])
@@ -70,14 +70,14 @@ def main():
         (3,2),(3,4),(3,5),
         (4,1),(4,2),(4,5),(4,6),
         (5,1),(5,6),
-        (6,1),(6,6)
+        (6,1),(6,2),(6,4),(6,5)
     ]
     rownames = ['A','B','C','D','E','F','G']
     colnames = [0,1,2,3,4,5,6]
 
-    solvgen = AlgoX( rownames, colnames, entries, 1).solve()
+    solvgen = AlgoX( rownames, colnames, entries).solve()
     for s in solvgen:
-        print( s) # Should be ['B', 'D', 'F'] and ['B', 'D', 'G']
+        print( s) # Should be ['A', 'G'] and ['B', 'D', 'F']
 
 if __name__ == '__main__':
     main()
