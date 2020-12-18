@@ -1,0 +1,16 @@
+
+{
+  "name": "simple"
+  ,"dims":[2,3]
+  ,"pieces":{
+    "one":
+    [
+      [1]
+    ]
+    ,"two":
+    [
+      [1,1]
+    ]
+  }
+  ,"piece_counts": { "one":2, "two":1 }
+}

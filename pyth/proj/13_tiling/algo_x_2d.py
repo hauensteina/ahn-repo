@@ -4,7 +4,7 @@
 # AHN, Nov 2020
 
 from pdb import set_trace as BP
-import sys,os
+import sys,os,json
 import argparse
 import numpy as np
 #from algox import AlgoX
@@ -443,12 +443,14 @@ def usage( printmsg=False):
       %s: Solve 2D nxn tiling puzzles.
     Synopsis:
       %s --case <case_id> [--print]
+      %s --json <file> [--print]
       %s --test
-    Example:
+    Examples:
       %s --case 6x6 --print
+      %s --json pento_3x30.json --print
 
 --
-''' % (name,name,name,name)
+''' % (name,name,name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -461,6 +463,7 @@ def main():
 
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--case")
+    parser.add_argument( "--json")
     parser.add_argument( "--test", action='store_true')
     parser.add_argument( "--print", action='store_true')
     args = parser.parse_args()
@@ -468,14 +471,29 @@ def main():
     if args.test:
         unittest()
 
-    if not args.case:
+    if not args.case and not args.json:
         usage( True)
-
-    solver = AlgoX2D( g_pieces[args.case])
+    if args.case:
+        solver = AlgoX2D( g_pieces[args.case])
+    else:
+        pieces, piece_names, piece_counts, dims = parse_puzzle( args.json)
+        BP()
+        solver = AlgoX2D( pieces, piece_names, piece_counts, dims)
     solver.solve()
     if args.print:
         solver.print_solutions()
     print( '\nFound %d solutions' % len( solver.solutions))
+
+def parse_puzzle( fname):
+    with open( fname) as f:
+        puzzle = json.load(f)
+    dims = puzzle['dims']
+    piece_counts = puzzle['piece_counts']
+    piece_names = puzzle['pieces'].keys()
+    pieces = []
+    for p in puzzle['pieces']:
+        pieces.append( np.array( puzzle['pieces'][p]))
+    return pieces, piece_names, piece_counts, dims
 
 #----------------
 def unittest():
@@ -494,13 +512,20 @@ class AlgoX2D:
     We don't do the dancing links (DLX), just use dicts of sets.
     A shifted rotated instance of a piece is called an image.
     '''
-    def __init__( self, pieces):
+    def __init__( self, pieces, piece_names=None, piece_counts=None, dims=None):
         '''
         Build a matrix with a column per gridpoint plus a column per piece.
         The rows are the images (rot + trans) of the pieces that fit in the grid.
         '''
-        self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
-        self.size = int(np.sqrt( self.nholes))
+        self.dims = dims
+        if dims is None:
+            #self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
+            self.size = int(np.sqrt( self.nholes))
+            self.dims = (self.size, self.size)
+
+        self.piece_counts = piece_counts
+        if piece_counts is None:
+            self.piece_counts = [1] * len(pieces)
 
         rownames = []
         piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
