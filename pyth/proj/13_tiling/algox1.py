@@ -15,62 +15,51 @@ class AlgoX:
         if len( self.cols) == 0:
             #print( 'Solution!')
             self.solutions.append( self.solution.copy())
+            #print( self.solution)
             return
         # Pick the column with the least rows
         min_col_idx = min( self.cols, key = lambda x: len( self.cols[x]))
+        min_col = self.cols[min_col_idx]
         # If min column empty, dead end; return
-        if len( self.cols[min_col_idx]) == 0:
+        #if len( min_col) == 0:
             #print( 'Dead End!')
-            return
-        # Remove mmin_col from the list of columns.
-        min_col = self.cols.pop( min_col_idx)
-
-        for row in min_col: # Tentatively try this row
-            #print( 'Trying col,row %d %d' % (min_col_idx, row[0]))
-            self.solution.append( self.rownames[row[0]])
-            # Remove overlapping rows
-            removed_rows = set()
-            removed_cols = { idx:self.cols[idx] for idx in row[1:] if idx in self.cols }
-            # For each column in row
-            #BP()
-            for col_idx in row[1:] :
-                #if rcol == c: continue
-                # Now rcol is a set of overlapping rows
-                # Remember the overlappers
-                if col_idx in self.cols:
-                    removed_rows.update( self.remove( col_idx))
-                # Each overlapping row has to be removed from all its columns
-                #for crow in rcol:
-                    # Now crow is a list of columns that need to lose the rows in the set rcol
-                #    for col in crow:
-                #        col.difference_update( rcol)
-                        #self.cols[col].discard( crow) # Kill the overlapper
-            #del( self.cols[min_col_idx])
-            # Solve the rest without this row/col
+        #    return
+        #BP()
+        for row in list(min_col): # Tentatively try this row
+            #print( 'Trying col,row %d %d' % (min_col_idx, row))
+            self.solution.append( self.rownames[row])
+            cols = self.remove( row)
             self.solve_( depth+1)
             #print( 'Depth: %d' % depth)
-            self.restore( removed_rows, removed_cols)
+            self.restore( row, cols)
             #BP()
             self.solution.pop()
-        self.cols[min_col_idx] = min_col
+        #self.cols[min_col_idx] = min_col
 
-    def remove( self, col_idx):
-        rows = self.cols[col_idx]
-        del( self.cols[col_idx])
-        for row in rows:
-            for colidx in row[1:] :
-                if colidx != col_idx:
-                    if colidx in self.cols:
-                        self.cols[colidx].discard( row)
-        return rows
+    def remove( self, row):
+        #print('removing')
+        #BP()
+        cols = []
+        #BP()
+        for c in self.rows[row][1:]: # for each hole the row fills
+            for r in self.cols[c]: # r also fills hole c
+                #print( 'piece %d also fills hole %d' % (r,c))
+                for c1 in self.rows[r][1:]: # remove r from all its columns c1
+                    if c1 != c:
+                        self.cols[c1].discard( r)
+                        #print( 'removing piece %d from hole %d' % (r,c1))
+            cols.append( self.cols.pop(c))
+        return cols
 
-    def restore( self, overlapping_rows, removed_col_idxs):
-        for col_idx in removed_col_idxs:
-            self.cols[col_idx] = removed_col_idxs[col_idx]
-        for row in overlapping_rows:
-            for col_idx in row[1:]:
-                if col_idx in self.cols:
-                    self.cols[col_idx].add(row)
+    def restore( self, row, cols):
+        #print('restoring')
+        #BP()
+        for c in reversed( self.rows[row][1:]):
+            self.cols[c] = cols.pop()
+            for r in self.cols[c]:
+                for c1 in self.rows[r][1:]:
+                    if c1 != c:
+                        self.cols[c1].add( r)
 
     def get_col_idxs( self, rowname):
         rowidx = self.rownames.index(rowname)
@@ -85,17 +74,12 @@ class AlgoX:
         self.solutions = [] # A list of solutions
         # Each row is an id, followed by tuple of column indexes. A column is a set of rows.
         self.rows = [[idx] for idx in range( len(self.rownames))]
-        # Each column is a set of rows. A row is a tuple of column indexes.
+        # Each column is a set of row indexes.
         self.cols = { idx:set()  for idx in range( len(self.colnames)) }
-        # Matrix entries. Weirdly self-referential.
+        # Matrix entries.
         for rowidx,colidx in entries:
             self.rows[rowidx].append( colidx)
-        # Convert rows from sets to tuples so they hash
-        for idx, r in enumerate( self.rows):
-            self.rows[idx] = tuple( self.rows[idx])
-        # Put the rows into the column sets
-        for rowidx,colidx in entries:
-            self.cols[colidx].add( self.rows[rowidx])
+            self.cols[colidx].add( rowidx)
 
 def main():
     entries = [

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 '''
 A Python implementation of Knuth's Algorithm X
@@ -221,3 +222,24 @@ class AlgoX:
             self.solve_( depth+1)
             self.solution = partial_solution
             self.restore( rem_rows, rem_cols)
+
+def main():
+    entries = [
+        (0,0),(0,3),(0,6),
+        (1,0),(1,3),
+        (2,3),(2,4),(2,6),
+        (3,2),(3,4),(3,5),
+        (4,1),(4,2),(4,5),(4,6),
+        (5,1),(5,6),
+        (6,1),(6,2),(6,4),(6,5)
+    ]
+    rownames = ['A','B','C','D','E','F','G']
+    colnames = ['0','1','2','3','4','5','6']
+
+    solver = AlgoX( rownames, colnames, entries)
+    solutions = solver.solve()
+    for s in solutions:
+        print( s) # Should be ['A', 'G'] and ['B', 'D', 'F']
+
+if __name__ == '__main__':
+    main()
