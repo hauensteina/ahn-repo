@@ -8,8 +8,8 @@ import sys,os,json
 import argparse
 import numpy as np
 #from algox import AlgoX
-from algox1 import AlgoX
-#from algox_assaf import AlgoX # This is twice as fast
+#from algox1 import AlgoX
+from algox_assaf import AlgoX # This is twice as fast
 
 g_pieces = {
     '3x3':
@@ -447,7 +447,7 @@ def usage( printmsg=False):
       %s --test
     Examples:
       %s --case 6x6 --print
-      %s --json pento_3x30.json --print
+      %s --json simple.json --print
 
 --
 ''' % (name,name,name,name,name,name)
@@ -477,7 +477,6 @@ def main():
         solver = AlgoX2D( g_pieces[args.case])
     else:
         pieces, piece_names, piece_counts, dims = parse_puzzle( args.json)
-        BP()
         solver = AlgoX2D( pieces, piece_names, piece_counts, dims)
     solver.solve()
     if args.print:
@@ -489,7 +488,7 @@ def parse_puzzle( fname):
         puzzle = json.load(f)
     dims = puzzle['dims']
     piece_counts = puzzle['piece_counts']
-    piece_names = puzzle['pieces'].keys()
+    piece_names = list(puzzle['pieces'].keys())
     pieces = []
     for p in puzzle['pieces']:
         pieces.append( np.array( puzzle['pieces'][p]))
@@ -519,27 +518,43 @@ class AlgoX2D:
         '''
         self.dims = dims
         if dims is None:
-            #self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
-            self.size = int(np.sqrt( self.nholes))
-            self.dims = (self.size, self.size)
+            self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
+            size = int(np.sqrt( self.nholes))
+            self.dims = (size, size)
 
-        self.piece_counts = piece_counts
         if piece_counts is None:
             self.piece_counts = [1] * len(pieces)
+        else:
+            self.piece_counts = piece_counts.values()
+
+        if piece_names is None:
+            piece_names = [chr( ord('A') + 1 + x) for x in range( len( pieces))]
+
+        # Make multiple copies of a piece explicit
+        newpieces = []
+        piece_ids = []
+        for idx,c in enumerate( self.piece_counts):
+            newpieces.extend( [pieces[idx]] * c)
+            piece_ids.extend( [piece_names[idx] + '#' + str(x) for x in range(c)])
+        pieces= newpieces
+        self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
 
         rownames = []
-        piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
+        rowclasses = []
+        #piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
 
         colnames = [str(x) for x in range( self.nholes)] + piece_ids
         entries = set() # Pairs (rowidx, colidx)
 
         def add_image( piece_id, img_id, img, row, col):
             ' Add an image to the set of images to try '
-            rowname = piece_id + '_' + str(img_id)
+            rowname = piece_id + '_' + str(img_id) # A#0_1
+            rowclass = piece_id.split('#')[0] + '#' + str(img_id) # A#1
             rownames.append( rowname)
+            rowclasses.append( rowclass)
             rowidx = len( rownames) - 1
             entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
-            grid = np.zeros( (self.size, self.size))
+            grid = np.zeros( (self.dims[0], self.dims[1]))
             AlgoX2D.add_window( grid, img, row, col)
             filled_holes = set( np.flatnonzero( grid))
             for h in filled_holes: # Image fills these holes
@@ -555,11 +570,11 @@ class AlgoX2D:
             for rotidx,img in enumerate( rots):
                 if pidx == worst_piece_idx and rotidx > 0: # Restrict worst piece to eliminate syms
                     break
-                for row in range( self.size - img.shape[0] + 1):
-                    for col in range( self.size - img.shape[1] + 1):
+                for row in range( self.dims[0] - img.shape[0] + 1):
+                    for col in range( self.dims[1] - img.shape[1] + 1):
                         img_id += 1
                         add_image( piece_id, img_id, img, row, col)
-        self.solver = AlgoX( rownames, colnames, entries)
+        self.solver = AlgoX( rownames, rowclasses, colnames, entries)
 
     def get_worst_piece_old( self, pieces):
         ' Find the piece with most symmetries and positions '
@@ -587,32 +602,40 @@ class AlgoX2D:
             if len(rots) <= maxrots: continue
             if len(rots) > maxrots: minpositions = int(1E9)
             maxrots = len(rots)
-            npositions = (self.size - p.shape[0] + 1) * (self.size - p.shape[1] + 1)
+            npositions = (self.dims[0] - p.shape[0] + 1) * (self.dims[1] - p.shape[1] + 1)
             if npositions >= minpositions: continue
             minpositions = npositions
             residx = pidx
         return residx
 
     def solve( self):
-        self.solutions = list(self.solver.solve())
+        self.solutions = []
+        for idx, s in enumerate( self.solver.solve()):
+            #self.print_solution( idx, s)
+            self.solutions.append(s)
 
     def print_solutions( self):
         for idx,s in enumerate( self.solutions):
-            pic = np.full( self.size * self.size, 'A')
+            self.print_solution( idx, s)
+
+    def print_solution( self, idx, s):
+        pic = np.full( self.dims[0] * self.dims[1], 'A')
+        print()
+        print( 'Solution %d:' % (idx+1))
+        print( '=============')
+        # s is a list of row names like 'H_23'
+        for rowname in s:
+            piece = rowname.split('_')[0]
+            filled_holes = [x for x in self.solver.get_col_idxs( rowname)
+                            if x < self.dims[0] * self.dims[1]]
+            for h in filled_holes:
+                pic[int(h)] = piece
+        pic = pic.reshape( self.dims[0], self.dims[1])
+        for r in range( self.dims[0]):
+            for c in range( self.dims[1]):
+                AlgoX2D.print_colored_letter( pic[r,c])
             print()
-            print( 'Solution %d:' % (idx+1))
-            print( '=============')
-            # s is a list of row names like 'H_23'
-            for rowname in s:
-                piece = rowname.split('_')[0]
-                filled_holes = [x for x in self.solver.get_col_idxs( rowname) if x < self.size * self.size]
-                for h in filled_holes:
-                    pic[int(h)] = piece
-            pic = pic.reshape( self.size, self.size)
-            for r in range( self.size):
-                for c in range( self.size):
-                    AlgoX2D.print_colored_letter( pic[r,c])
-                print()
+        print()
 
     @staticmethod
     def print_colored_letter( letter):

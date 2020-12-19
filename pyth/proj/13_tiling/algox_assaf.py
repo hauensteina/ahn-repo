@@ -7,12 +7,14 @@ class AlgoX:
     Knuth's Algorithm X, as implemented at
     https://www.cs.mcgill.ca/~aassaf9/python/algorithm_x.html
     '''
-    def __init__( self, rownames, colnames, entries, max_solutions=0):
+    def __init__( self, rownames, rowclasses, colnames, entries, max_solutions=0):
         ''' Entries are pairs of (rowidx, colidx) '''
         self.max_solutions = max_solutions
         self.rownames = rownames
+        self.rowclasses = rowclasses
         self.colnames = colnames
         self.n_solutions = 0
+        self.seen_classes = set()
 
         # Build the row dictionary Y:dict(int:list(int))
         self.Y = { y:[] for y in range( len(rownames)) }
@@ -23,21 +25,32 @@ class AlgoX:
         for e in entries:
             self.X[e[1]].add( e[0])
 
-    def solve( self, solution=[]):
+    def solve( self, solution=[], depth=0):
         ''' Beautiful recursive generator '''
+        #print( 'depth %d' % depth)
+        seen_classes = set()
         if self.max_solutions and (self.n_solutions == self.max_solutions): return
         if not self.X:
             self.n_solutions += 1
             yield list(solution)
         else:
             c = min( self.X, key=lambda c: len( self.X[c]))
+            #print('column %s' % self.colnames[c])
+            seen_here = set()
             for r in list( self.X[c]):
+                # If we have a piece more than once, don't try the dups again
+                if self.rowclasses[r] in self.seen_classes:
+                    continue
+                self.seen_classes.add( self.rowclasses[r])
+                seen_here.add( self.rowclasses[r])
+                #print('rowclass:%s' % (self.rowclasses[r]))
                 solution.append( self.rownames[r])
                 cols = self.select_( r)
-                for s in self.solve( solution):
+                for s in self.solve( solution, depth+1):
                     yield s
                 self.deselect_( r, cols)
                 solution.pop()
+            self.seen_classes.difference_update( seen_here)
 
     def get_col_idxs( self, rowname):
         rowidx = self.rownames.index(rowname)
