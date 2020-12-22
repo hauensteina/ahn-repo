@@ -37,7 +37,13 @@ class AlgoX:
             c = min( self.X, key=lambda c: len( self.X[c]))
             #print('column %s' % self.colnames[c])
             seen_here = set()
-            for r in list( self.X[c]):
+            rows =  list( self.X[c])
+            for ridx, r in enumerate( rows):
+                if depth == 0:
+                    print( 'Working on row %d/%d' % (ridx+1, len(rows)))
+                elif depth == 1:
+                    print( '    Working on row %d/%d' % (ridx+1, len(rows)))
+
                 # If we have a piece more than once, don't try the dups again
                 if self.rowclasses[r] in self.seen_classes:
                     continue

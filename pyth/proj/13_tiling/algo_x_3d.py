@@ -8,8 +8,7 @@ import sys,os,pickle
 import argparse
 import numpy as np
 import tiling_helpers as helpers
-#from algox import AlgoX
-from algox_assaf import AlgoX # This is twice as fast
+from algox_assaf import AlgoX
 
 OUTFILE = 'algo_x_3d_solutions.pickle'
 
@@ -247,12 +246,14 @@ def usage( printmsg=False):
       %s: Solve 3D nxn tiling puzzles.
     Synopsis:
       %s --case <case_id> [--max_solutions <n>]
+      %s --json <file>
     Examples:
       %s --case 3x3x3
       %s --case abraxis
+      %s --json gelo-1289.json
 
 --
-''' % (name,name,name,name)
+''' % (name,name,name,name,name,name)
     if printmsg:
         print(msg)
         exit(1)
@@ -264,11 +265,20 @@ def main():
     if len(sys.argv) == 1: usage( True)
 
     parser = argparse.ArgumentParser( usage=usage())
-    parser.add_argument( "--case", required=True)
+    parser.add_argument( "--case")
+    parser.add_argument( "--json")
     parser.add_argument( "--max_solutions", type=int)
     args = parser.parse_args()
 
-    solver = AlgoX3D( g_pieces[args.case], args.max_solutions)
+    if not args.case and not args.json:
+        usage( True)
+
+    if args.case:
+        solver = AlgoX3D( g_pieces[args.case], max_solutions=args.max_solutions)
+    else:
+        pieces, piece_names, piece_counts, dims, one_sided = helpers.parse_puzzle( args.json)
+        solver = AlgoX3D( pieces, piece_names, piece_counts, args.max_solutions)
+
     solver.solve()
     print( '\nFound %d solutions' % len( solver.solutions))
 
@@ -279,17 +289,42 @@ class AlgoX3D:
     We don't do the dancing links (DLX), just use dicts of sets.
     A shifted rotated instance of a piece is called an image.
     '''
-    def __init__( self, pieces, max_solutions=0):
+    def __init__( self, pieces, piece_names=None, piece_counts=None, max_solutions=0):
         '''
         Build a matrix with a column per gridpoint plus a column per piece.
         The rows are the images (rot + trans) of the pieces that fit in the grid.
         '''
-        self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
-        self.size = int(np.cbrt( self.nholes))
 
-        rownames = []
         piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
 
+        if piece_counts is None:
+            self.piece_counts = [1] * len(pieces)
+        else:
+            self.piece_counts = piece_counts.values()
+
+        if piece_names is None:
+            piece_names = [chr( ord('A') + 1 + x) for x in range( len( pieces))]
+
+        if len(pieces) != len(piece_counts):
+            print( 'ERROR: Piece counts wrong length: %d' % len(piece_counts))
+            exit(1)
+
+        # Make multiple copies of a piece explicit
+        newpieces = []
+        piece_ids = []
+        for idx,c in enumerate( self.piece_counts):
+            newpieces.extend( [pieces[idx]] * c)
+            piece_ids.extend( [piece_names[idx] + '#' + str(x) for x in range(c)])
+        pieces = newpieces
+        self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
+        self.size = int( np.cbrt( self.nholes))
+        self.dims = (self.size, self.size, self.size)
+        if self.nholes != np.prod( self.dims):
+            print( 'ERROR: Pieces do not cover grid: %d of %d covered' % (self.nholes, np.prod( self.dims)))
+            exit(1)
+
+        rownames = [] # Multiple copies of a piece are different
+        rowclasses = [] # Multiple copies of a piece are the same
         colnames = [str(x) for x in range( self.nholes)] + piece_ids
         entries = set() # Pairs (rowidx, colidx)
 
@@ -298,8 +333,10 @@ class AlgoX3D:
             Add an image to the set of images to try.
             We call the third dimension *layer*
             '''
-            rowname = piece_id + '_' + str(img_id)
+            rowname = piece_id + '_' + str(img_id) # A#0_1
+            rowclass = piece_id.split('#')[0] + '#' + str(img_id) # A#1
             rownames.append( rowname)
+            rowclasses.append( rowclass)
             rowidx = len( rownames) - 1
             entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
             cube = np.zeros( (self.size, self.size, self.size))
@@ -313,7 +350,7 @@ class AlgoX3D:
         worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
         for pidx,p in enumerate( pieces):
             rots = helpers.rotations3D( p)
-            print( len(rots))
+            #print( len(rots))
             piece_id = piece_ids[pidx]
             img_id = -1
             for rotidx,img in enumerate( rots):
@@ -324,7 +361,7 @@ class AlgoX3D:
                         for layer in range( self.size - img.shape[2] + 1):
                             img_id += 1
                             add_image( piece_id, img_id, img, row, col, layer)
-        self.solver = AlgoX( rownames, colnames, entries, max_solutions)
+        self.solver = AlgoX( rownames, rowclasses, colnames, entries, max_solutions)
 
     def get_worst_piece_idx( self, pieces):
         '''
@@ -358,6 +395,8 @@ class AlgoX3D:
                                 if x < self.size * self.size * self.size]
                 piece_in_cube = np.full( self.size * self.size * self.size, 0)
                 for h in filled_holes:
+                    if '#' in piece:
+                        piece = piece.split('#')[0]
                     piece_in_cube[int(h)] = ord(piece) - ord('A') + 1
                 piece_in_cube = piece_in_cube.reshape( self.size, self.size, self.size)
                 solution.append( piece_in_cube)

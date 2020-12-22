@@ -3,6 +3,7 @@
 # Helper funcs for 3D tiling puzzles
 # AHN, Dec 2020
 
+import json
 import numpy as np
 import hashlib
 
@@ -26,6 +27,19 @@ def hash_piece_image_3d( image):
     for rot in rotations3D( image):
         h = max( h, hhash( repr(rot)))
     return h
+
+#-----------------------------
+def parse_puzzle( fname):
+    ' Read a puzzle definition (any number os dimensions) from json '
+    with open( fname) as f:
+        puzzle = json.load(f)
+    dims = puzzle['dims']
+    piece_counts = puzzle['piece_counts']
+    piece_names = list(puzzle['pieces'].keys())
+    pieces = []
+    for p in puzzle['pieces']:
+        pieces.append( np.array( puzzle['pieces'][p]))
+    return pieces, piece_names, piece_counts, dims, puzzle.get( 'one_sided', False)
 
 #---------------------
 def trim_array( a):

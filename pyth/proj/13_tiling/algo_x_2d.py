@@ -7,9 +7,9 @@ from pdb import set_trace as BP
 import sys,os,json
 import argparse
 import numpy as np
-#from algox import AlgoX
-#from algox1 import AlgoX
-from algox_assaf import AlgoX # This is twice as fast
+from algox_assaf import AlgoX
+from tiling_helpers import parse_puzzle
+import tiling_helpers as helpers
 
 g_pieces = {
     '3x3':
@@ -476,23 +476,18 @@ def main():
     if args.case:
         solver = AlgoX2D( g_pieces[args.case])
     else:
-        pieces, piece_names, piece_counts, dims = parse_puzzle( args.json)
-        solver = AlgoX2D( pieces, piece_names, piece_counts, dims)
-    solver.solve()
-    if args.print:
-        solver.print_solutions()
+        pieces, piece_names, piece_counts, dims, one_sided = parse_puzzle( args.json)
+        solver = AlgoX2D( pieces, piece_names, piece_counts, dims, one_sided)
+    solver.solve( args.print)
     print( '\nFound %d solutions' % len( solver.solutions))
 
-def parse_puzzle( fname):
-    with open( fname) as f:
-        puzzle = json.load(f)
-    dims = puzzle['dims']
-    piece_counts = puzzle['piece_counts']
-    piece_names = list(puzzle['pieces'].keys())
-    pieces = []
-    for p in puzzle['pieces']:
-        pieces.append( np.array( puzzle['pieces'][p]))
-    return pieces, piece_names, piece_counts, dims
+    dups = solver.find_duplicate_solutions()
+    for d in dups:
+        n = len(dups[d])
+        if n == 1: continue
+        print('Set of %d dups:' % n)
+        for i in range(n):
+            solver.print_solution( i, dups[d][i])
 
 #----------------
 def unittest():
@@ -511,7 +506,7 @@ class AlgoX2D:
     We don't do the dancing links (DLX), just use dicts of sets.
     A shifted rotated instance of a piece is called an image.
     '''
-    def __init__( self, pieces, piece_names=None, piece_counts=None, dims=None):
+    def __init__( self, pieces, piece_names=None, piece_counts=None, dims=None, one_sided=False):
         '''
         Build a matrix with a column per gridpoint plus a column per piece.
         The rows are the images (rot + trans) of the pieces that fit in the grid.
@@ -523,24 +518,32 @@ class AlgoX2D:
             self.dims = (size, size)
 
         if piece_counts is None:
-            self.piece_counts = [1] * len(pieces)
+            piece_counts = [1] * len(pieces)
         else:
-            self.piece_counts = piece_counts.values()
+            piece_counts = piece_counts.values()
 
         if piece_names is None:
             piece_names = [chr( ord('A') + 1 + x) for x in range( len( pieces))]
 
+        if len(pieces) != len( piece_counts):
+            print( 'ERROR: Piece counts wrong length: %d' % len(piece_counts))
+            exit(1)
+
+
         # Make multiple copies of a piece explicit
         newpieces = []
         piece_ids = []
-        for idx,c in enumerate( self.piece_counts):
+        for idx,c in enumerate( piece_counts):
             newpieces.extend( [pieces[idx]] * c)
             piece_ids.extend( [piece_names[idx] + '#' + str(x) for x in range(c)])
-        pieces= newpieces
+        pieces = newpieces
         self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
+        if self.nholes != np.prod( self.dims):
+            print( 'ERROR: Pieces do not cover grid: %d of %d covered' % (self.nholes, np.prod(self.dims)))
+            exit(1)
 
-        rownames = []
-        rowclasses = []
+        rownames = [] # Multiple copies of a piece are different
+        rowclasses = [] # Multiple copies of a piece are the same
         #piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
 
         colnames = [str(x) for x in range( self.nholes)] + piece_ids
@@ -564,7 +567,7 @@ class AlgoX2D:
         # Add all images
         worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
         for pidx,p in enumerate( pieces):
-            rots = AlgoX2D.rotations2D( p)
+            rots = AlgoX2D.rotations2D( p, one_sided)
             piece_id = piece_ids[pidx]
             img_id = -1
             for rotidx,img in enumerate( rots):
@@ -608,11 +611,23 @@ class AlgoX2D:
             residx = pidx
         return residx
 
-    def solve( self):
+    def solve( self, print_flag):
         self.solutions = []
         for idx, s in enumerate( self.solver.solve()):
-            #self.print_solution( idx, s)
+            if print_flag:
+                self.print_solution( idx, s)
             self.solutions.append(s)
+
+    def find_duplicate_solutions( self):
+        ' Count frequency of each solution '
+        counts = {}
+        for s in self.solutions:
+            hhash = self.hash_solution( s)
+            if not hhash in counts:
+                counts[hhash] = [s]
+            else:
+                counts[hhash].append( s)
+        return counts
 
     def print_solutions( self):
         for idx,s in enumerate( self.solutions):
@@ -623,7 +638,7 @@ class AlgoX2D:
         print()
         print( 'Solution %d:' % (idx+1))
         print( '=============')
-        # s is a list of row names like 'H_23'
+        # s is a list of row names like 'L#0_41'
         for rowname in s:
             piece = rowname.split('_')[0]
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
@@ -637,6 +652,59 @@ class AlgoX2D:
             print()
         print()
 
+    def gridify_solution( self, s):
+        ' Turn a solution from AlgoX into a 2D array '
+        grid = np.full( self.dims[0] * self.dims[1], 'xxx')
+        # s is a list of row names like 'L#0_41'
+        for rowname in s:
+            filled_holes = [x for x in self.solver.get_col_idxs( rowname)
+                            if x < self.dims[0] * self.dims[1]]
+            for h in filled_holes:
+                grid[int(h)] = rowname
+        grid = grid.reshape( self.dims[0], self.dims[1])
+        return grid
+
+    def hash_solution( self, s):
+        grid = self.gridify_solution( s)
+        rots = AlgoX2D.rotations2D( grid)
+        res = ''
+        for r in rots:
+            r = AlgoX2D.number_grid( r)
+            hhash = helpers.hhash( repr(r))
+            if hhash > res:
+                res = hhash
+        return res
+
+    def solutions_eq( self, s1, s2, one_sided=False):
+        ' Check solutions for equality '
+        grid1 = self.gridify_solution( s1)
+        grid1 = AlgoX2D.number_grid( grid1)
+        repr_grid1 = repr(grid1)
+        grid2 = self.gridify_solution( s2)
+        rots = AlgoX2D.rotations2D( grid2, one_sided)
+        for r in rots:
+            r = AlgoX2D.number_grid( r)
+            if repr(r) == repr_grid1:
+                return True
+        return False
+
+    @staticmethod
+    def number_grid( grid):
+        '''
+        Take a grid of rownames, number the pieces top left to bottom right
+        '''
+        ids = {}
+        res = np.zeros( shape=grid.shape, dtype=int)
+        maxid = 0
+        for r in range( grid.shape[0]):
+            for c in range( grid.shape[1]):
+                mark = grid[r,c]
+                if not mark in ids:
+                    maxid += 1
+                    ids[mark] = maxid
+                res[r,c] = ids[mark]
+        return res
+
     @staticmethod
     def print_colored_letter( letter):
         ' Print a letter. Color depends on what letter it is. '
@@ -645,7 +713,7 @@ class AlgoX2D:
         print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
 
     @staticmethod
-    def rotations2D(grid):
+    def rotations2D( grid, one_sided=False):
         ' Return a list with all 8 rotations/mirrors of a grid '
         h = grid.shape[0]
         w = grid.shape[1]
@@ -656,11 +724,12 @@ class AlgoX2D:
             if not repr(grid) in strs: res.append( grid)
             strs.add(repr(grid))
             grid = AlgoX2D.rot( grid)
-        grid = AlgoX2D.mirror( grid)
-        for i in range(4):
-            if not repr(grid) in strs: res.append( grid)
-            strs.add(repr(grid))
-            grid = AlgoX2D.rot( grid)
+        if not one_sided:
+            grid = AlgoX2D.mirror( grid)
+            for i in range(4):
+                if not repr(grid) in strs: res.append( grid)
+                strs.add(repr(grid))
+                grid = AlgoX2D.rot( grid)
         return res
 
     @staticmethod
