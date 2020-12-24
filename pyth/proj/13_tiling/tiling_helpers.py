@@ -105,10 +105,15 @@ def rotations3D( brick):
 
     return res
 
-#-------------------------------------
-def add_window( arr, window, r, c, l):
+#-----------------------------------------
+def add_window_3D( arr, window, r, c, l):
     ' Add window to arr at position r,c,l for left upper corner of win in arr '
     arr[ r:r+window.shape[0], c:c+window.shape[1], l:l+window.shape[2] ] += window
+
+#-----------------------------------------
+def add_window_2D( arr, window, r, c):
+    ' Add window to arr at position r,c for left upper corner of win in arr '
+    arr[ r:r+window.shape[0], c:c+window.shape[1] ] += window
 
 #---------------------------
 def rot_top( brick):
@@ -124,6 +129,76 @@ def rot_front( brick):
 def rot_left( brick):
     ' Rotate a brick clockwise viewed from left '
     return np.rot90( brick,1,(0,1))
+
+#------------------------------------------
+def rotations2D( grid, one_sided=False):
+    ' Return a list with all 8 rotations/mirrors of a grid '
+    h = grid.shape[0]
+    w = grid.shape[1]
+    res = []
+    strs = set()
+
+    for i in range(4):
+        if not repr(grid) in strs: res.append( grid)
+        strs.add(repr(grid))
+        grid = rot( grid)
+    if not one_sided:
+        grid = mirror( grid)
+        for i in range(4):
+            if not repr(grid) in strs: res.append( grid)
+            strs.add(repr(grid))
+            grid = rot( grid)
+    return res
+
+#-------------------------------------
+def one_rot_per_shape_2D( p, dims):
+    '''
+    Get a copy of this piece for each rotation where the grid w,h changes.
+    For a square, this is trivial and just gets one instance. Relevant
+    if w!= h .
+    '''
+    grid = np.zeros( dims)
+    res = {}
+    for i in range(4):
+        grid = rot( grid)
+        p = rot( p)
+        res[grid.shape] = p
+    return res.values()
+
+#-----------------
+def rot( grid):
+    ' Rotate a 2d grid clockwise '
+    return np.rot90( grid,1,(1,0))
+
+#---------------------
+def mirror( grid):
+    ' Mirrors a 2d grid left to right'
+    return np.flip( grid,1)
+
+#---------------------------
+def number_grid( grid):
+    '''
+    Take a grid of rownames, number the pieces top left to bottom right.
+    This helps detect identical configurations even if the names differ.
+    '''
+    ids = {}
+    res = np.zeros( shape=grid.shape, dtype=int)
+    maxid = 0
+    for r in range( grid.shape[0]):
+        for c in range( grid.shape[1]):
+            mark = grid[r,c]
+            if not mark in ids:
+                maxid += 1
+                ids[mark] = maxid
+            res[r,c] = ids[mark]
+    return res
+
+#-----------------------------------
+def print_colored_letter( letter):
+    ' Print a letter. Color depends on what letter it is. '
+    color = ord(letter) - ord('A')
+    color %= 16
+    print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
 
 #---------------------------
 def isnumeric(s):

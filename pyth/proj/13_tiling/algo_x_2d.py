@@ -529,7 +529,6 @@ class AlgoX2D:
             print( 'ERROR: Piece counts wrong length: %d' % len(piece_counts))
             exit(1)
 
-
         # Make multiple copies of a piece explicit
         newpieces = []
         piece_ids = []
@@ -558,7 +557,7 @@ class AlgoX2D:
             rowidx = len( rownames) - 1
             entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
             grid = np.zeros( (self.dims[0], self.dims[1]))
-            AlgoX2D.add_window( grid, img, row, col)
+            helpers.add_window_2D( grid, img, row, col)
             filled_holes = set( np.flatnonzero( grid))
             for h in filled_holes: # Image fills these holes
                 colidx = colnames.index( str(h))
@@ -567,12 +566,13 @@ class AlgoX2D:
         # Add all images
         worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
         for pidx,p in enumerate( pieces):
-            rots = AlgoX2D.rotations2D( p, one_sided)
+            if pidx == worst_piece_idx:
+                rots = helpers.one_rot_per_shape_2D( p, self.dims)
+            else:
+                rots = helpers.rotations2D( p, one_sided)
             piece_id = piece_ids[pidx]
             img_id = -1
             for rotidx,img in enumerate( rots):
-                if pidx == worst_piece_idx and rotidx > 0: # Restrict worst piece to eliminate syms
-                    break
                 for row in range( self.dims[0] - img.shape[0] + 1):
                     for col in range( self.dims[1] - img.shape[1] + 1):
                         img_id += 1
@@ -583,7 +583,7 @@ class AlgoX2D:
         ' Find the piece with most symmetries and positions '
         maxpositions = maxrots = maxidx = -1
         for pidx,p in enumerate( pieces):
-            rots = AlgoX2D.rotations2D( p)
+            rots = helpers.rotations2D( p)
             if len(rots) <= maxrots: continue
             if len(rots) > maxrots: maxpositions = 0
             maxrots = len(rots)
@@ -601,7 +601,7 @@ class AlgoX2D:
         maxrots = residx = -1
         minpositions = int(1E9)
         for pidx,p in enumerate( pieces):
-            rots = AlgoX2D.rotations2D( p)
+            rots = helpers.rotations2D( p)
             if len(rots) <= maxrots: continue
             if len(rots) > maxrots: minpositions = int(1E9)
             maxrots = len(rots)
@@ -648,7 +648,7 @@ class AlgoX2D:
         pic = pic.reshape( self.dims[0], self.dims[1])
         for r in range( self.dims[0]):
             for c in range( self.dims[1]):
-                AlgoX2D.print_colored_letter( pic[r,c])
+                helpers.print_colored_letter( pic[r,c])
             print()
         print()
 
@@ -666,10 +666,10 @@ class AlgoX2D:
 
     def hash_solution( self, s):
         grid = self.gridify_solution( s)
-        rots = AlgoX2D.rotations2D( grid)
+        rots = helpers.rotations2D( grid)
         res = ''
         for r in rots:
-            r = AlgoX2D.number_grid( r)
+            r = helpers.number_grid( r)
             hhash = helpers.hhash( repr(r))
             if hhash > res:
                 res = hhash
@@ -681,78 +681,13 @@ class AlgoX2D:
         grid1 = AlgoX2D.number_grid( grid1)
         repr_grid1 = repr(grid1)
         grid2 = self.gridify_solution( s2)
-        rots = AlgoX2D.rotations2D( grid2, one_sided)
+        rots = helpers.rotations2D( grid2, one_sided)
         for r in rots:
             r = AlgoX2D.number_grid( r)
             if repr(r) == repr_grid1:
                 return True
         return False
 
-    @staticmethod
-    def number_grid( grid):
-        '''
-        Take a grid of rownames, number the pieces top left to bottom right
-        '''
-        ids = {}
-        res = np.zeros( shape=grid.shape, dtype=int)
-        maxid = 0
-        for r in range( grid.shape[0]):
-            for c in range( grid.shape[1]):
-                mark = grid[r,c]
-                if not mark in ids:
-                    maxid += 1
-                    ids[mark] = maxid
-                res[r,c] = ids[mark]
-        return res
 
-    @staticmethod
-    def print_colored_letter( letter):
-        ' Print a letter. Color depends on what letter it is. '
-        color = ord(letter) - ord('A')
-        color %= 16
-        print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
-
-    @staticmethod
-    def rotations2D( grid, one_sided=False):
-        ' Return a list with all 8 rotations/mirrors of a grid '
-        h = grid.shape[0]
-        w = grid.shape[1]
-        res = []
-        strs = set()
-
-        for i in range(4):
-            if not repr(grid) in strs: res.append( grid)
-            strs.add(repr(grid))
-            grid = AlgoX2D.rot( grid)
-        if not one_sided:
-            grid = AlgoX2D.mirror( grid)
-            for i in range(4):
-                if not repr(grid) in strs: res.append( grid)
-                strs.add(repr(grid))
-                grid = AlgoX2D.rot( grid)
-        return res
-
-    @staticmethod
-    def add_window( arr, window, r, c):
-        ' Add window to arr at position r,c for left upper corner of win in arr '
-        arr[ r:r+window.shape[0], c:c+window.shape[1] ] += window
-
-    @staticmethod
-    def rot( grid):
-        ' Rotate a 2d grid clockwise '
-        return np.rot90( grid,1,(1,0))
-
-    @staticmethod
-    def mirror( grid):
-        ' Mirrors a 2d grid left to right'
-        return np.flip( grid,1)
-
-    @staticmethod
-    def isnumeric(s):
-        try:
-            res = float( s)
-            return True
-        except ValueError:
-            return False
 
 main()

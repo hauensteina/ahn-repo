@@ -340,7 +340,7 @@ class AlgoX3D:
             rowidx = len( rownames) - 1
             entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
             cube = np.zeros( (self.size, self.size, self.size))
-            helpers.add_window( cube, img, row, col, layer)
+            helpers.add_window_3D( cube, img, row, col, layer)
             filled_holes = set( np.flatnonzero( cube))
             for h in filled_holes: # Image fills these holes
                 colidx = colnames.index( str(h))
