@@ -282,6 +282,14 @@ def main():
     solver.solve()
     print( '\nFound %d solutions' % len( solver.solutions))
 
+    dups = solver.find_duplicate_solutions()
+    for d in dups:
+        n = len(dups[d])
+        if n == 1: continue
+        sols = [x['idx'] for x in dups[d]]
+        print('Sols %s are the same!' % str(sols))
+
+
 #=================================================================================
 class AlgoX3D:
     '''
@@ -403,5 +411,41 @@ class AlgoX3D:
             solutions.append( solution)
         with open( OUTFILE, 'wb') as f:
             pickle.dump( solutions, f)
+
+    def find_duplicate_solutions( self):
+        ' Count frequency of each solution '
+        dups = {}
+        for idx,s in enumerate( self.solutions):
+            hhash = self.hash_solution( s)
+            elt = {'solution':s, 'idx':idx+1}
+            if not hhash in dups:
+                dups[hhash] = [elt]
+            else:
+                dups[hhash].append( elt)
+        return dups
+
+    def hash_solution( self, s):
+        grid = self.gridify_solution( s)
+        rots = helpers.rotations3D( grid)
+        res = ''
+        for r in rots:
+            r = helpers.number_grid( r)
+            hhash = helpers.hhash( repr(r))
+            if hhash > res:
+                res = hhash
+        return res
+
+    def gridify_solution( self, s):
+        ' Turn a solution from AlgoX into a 3D array '
+        grid = np.full( self.dims[0] * self.dims[1] * self.dims[2], 'xxx')
+        # s is a list of rownames like 'L#0_41'
+        for rowname in s:
+            filled_holes = [x for x in self.solver.get_col_idxs( rowname)
+                            if x < self.dims[0] * self.dims[1] * self.dims[2]]
+            for h in filled_holes:
+                grid[int(h)] = rowname
+        grid = grid.reshape( self.dims[0], self.dims[1], self.dims[2])
+        return grid
+
 
 main()

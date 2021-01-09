@@ -6,6 +6,7 @@
 import json
 import numpy as np
 import hashlib
+from pdb import set_trace as BP
 
 #-----------------
 def hhash( sstr):
@@ -176,28 +177,51 @@ def mirror( grid):
     return np.flip( grid,1)
 
 #---------------------------
-def number_grid( grid):
+# def number_grid( grid):
+#     '''
+#     Take a grid of rownames, number the pieces top left to bottom right.
+#     This helps detect identical configurations even if the names differ.
+#     '''
+#     ids = {}
+#     res = np.zeros( shape=grid.shape, dtype=int)
+#     maxid = 0
+#     for r in range( grid.shape[0]):
+#         for c in range( grid.shape[1]):
+#             mark = grid[r,c]
+#             if not mark in ids:
+#                 maxid += 1
+#                 ids[mark] = maxid
+#             res[r,c] = ids[mark]
+#     return res
+
+#---------------------------
+def number_grid( arr):
     '''
-    Take a grid of rownames, number the pieces top left to bottom right.
+    Take a array(2D or 3D) of rownames, number the pieces top left to bottom right.
     This helps detect identical configurations even if the names differ.
     '''
     ids = {}
-    res = np.zeros( shape=grid.shape, dtype=int)
+    shape = arr.shape
+    res = np.zeros( shape=shape, dtype=int)
+    res = res.flatten()
+    arr = arr.flatten()
     maxid = 0
-    for r in range( grid.shape[0]):
-        for c in range( grid.shape[1]):
-            mark = grid[r,c]
-            if not mark in ids:
-                maxid += 1
-                ids[mark] = maxid
-            res[r,c] = ids[mark]
+    for idx in range( len(res)):
+        mark = arr[idx]
+        if not mark in ids:
+            maxid += 1
+            ids[mark] = maxid
+        res[idx] = ids[mark]
+    res = res.reshape( shape)
     return res
 
-#-----------------------------------
-def print_colored_letter( letter):
+#------------------------------------------
+def print_colored_letter( piece_and_num): # A#1
     ' Print a letter. Color depends on what letter it is. '
-    color = ord(letter) - ord('A')
-    color %= 16
+    letter = piece_and_num[0]
+    color = hash( piece_and_num) % 16
+    #color = ord(letter) - ord('A')
+    #color %= 16
     print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
 
 #---------------------------

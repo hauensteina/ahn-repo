@@ -439,12 +439,16 @@ def usage( printmsg=False):
     name = os.path.basename( __file__)
     msg = '''
 
-    Description:
+    Name:
       %s: Solve 2D nxn tiling puzzles.
     Synopsis:
-      %s --case <case_id> [--print]
+      %s --case <case_id> [--print] [--mode basic|nopieces]
       %s --json <file> [--print]
       %s --test
+    Description:
+      --mode nopieces
+      Run without adding columns for the pieces.
+      This only works if one piece repeats many times.
     Examples:
       %s --case 6x6 --print
       %s --json simple.json --print
@@ -466,6 +470,7 @@ def main():
     parser.add_argument( "--json")
     parser.add_argument( "--test", action='store_true')
     parser.add_argument( "--print", action='store_true')
+    parser.add_argument( "--mode", choices=['basic','nopieces'])
     args = parser.parse_args()
 
     if args.test:
@@ -477,7 +482,7 @@ def main():
         solver = AlgoX2D( g_pieces[args.case])
     else:
         pieces, piece_names, piece_counts, dims, one_sided = parse_puzzle( args.json)
-        solver = AlgoX2D( pieces, piece_names, piece_counts, dims, one_sided)
+        solver = AlgoX2D( pieces, piece_names, piece_counts, dims, one_sided, mode=args.mode)
     solver.solve( args.print)
     print( '\nFound %d solutions' % len( solver.solutions))
 
@@ -506,12 +511,13 @@ class AlgoX2D:
     We don't do the dancing links (DLX), just use dicts of sets.
     A shifted rotated instance of a piece is called an image.
     '''
-    def __init__( self, pieces, piece_names=None, piece_counts=None, dims=None, one_sided=False):
+    def __init__( self, pieces, piece_names=None, piece_counts=None, dims=None, one_sided=False, mode='basic'):
         '''
         Build a matrix with a column per gridpoint plus a column per piece.
         The rows are the images (rot + trans) of the pieces that fit in the grid.
         '''
         self.dims = dims
+        self.mode = mode
         if dims is None:
             self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
             size = int(np.sqrt( self.nholes))
@@ -529,6 +535,12 @@ class AlgoX2D:
             print( 'ERROR: Piece counts wrong length: %d' % len(piece_counts))
             exit(1)
 
+        if self.mode == 'nopieces':
+            if len(pieces) != 1:
+                print( 'ERROR: nopieces mode only works with one repeating piece')
+                exit(1)
+            piece_counts = [1]
+
         # Make multiple copies of a piece explicit
         newpieces = []
         piece_ids = []
@@ -536,8 +548,9 @@ class AlgoX2D:
             newpieces.extend( [pieces[idx]] * c)
             piece_ids.extend( [piece_names[idx] + '#' + str(x) for x in range(c)])
         pieces = newpieces
-        self.nholes = sum( [np.sum( np.sign(p)) for p in pieces])
-        if self.nholes != np.prod( self.dims):
+
+        self.nholes = np.prod( self.dims)
+        if self.mode != 'nopieces' and sum( [np.sum( np.sign(p)) for p in pieces]) != np.prod( self.dims):
             print( 'ERROR: Pieces do not cover grid: %d of %d covered' % (self.nholes, np.prod(self.dims)))
             exit(1)
 
@@ -545,17 +558,21 @@ class AlgoX2D:
         rowclasses = [] # Multiple copies of a piece are the same
         #piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
 
-        colnames = [str(x) for x in range( self.nholes)] + piece_ids
+        colnames = [str(x) for x in range( self.nholes)]
+        if self.mode != 'nopieces':
+            colnames += piece_ids
         entries = set() # Pairs (rowidx, colidx)
 
         def add_image( piece_id, img_id, img, row, col):
             ' Add an image to the set of images to try '
             rowname = piece_id + '_' + str(img_id) # A#0_1
-            rowclass = piece_id.split('#')[0] + '#' + str(img_id) # A#1
+            #rowclass = piece_id.split('#')[0] + '#' + str(img_id) # A#1
+            rowclass = ( piece_id.split('#')[0], int(piece_id.split('#')[1]) ) # ('A',0)
             rownames.append( rowname)
             rowclasses.append( rowclass)
             rowidx = len( rownames) - 1
-            entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
+            if self.mode != 'nopieces':
+                entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
             grid = np.zeros( (self.dims[0], self.dims[1]))
             helpers.add_window_2D( grid, img, row, col)
             filled_holes = set( np.flatnonzero( grid))
@@ -565,6 +582,7 @@ class AlgoX2D:
 
         # Add all images
         worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
+        if self.mode == 'nopieces': worst_piece_idx = -1
         for pidx,p in enumerate( pieces):
             if pidx == worst_piece_idx:
                 rots = helpers.one_rot_per_shape_2D( p, self.dims)
@@ -613,7 +631,7 @@ class AlgoX2D:
 
     def solve( self, print_flag):
         self.solutions = []
-        for idx, s in enumerate( self.solver.solve()):
+        for idx, s in enumerate( self.solver.solve(mode=self.mode)):
             if print_flag:
                 self.print_solution( idx, s)
             self.solutions.append(s)
@@ -634,13 +652,15 @@ class AlgoX2D:
             self.print_solution( idx, s)
 
     def print_solution( self, idx, s):
-        pic = np.full( self.dims[0] * self.dims[1], 'A')
+        pic = np.full( self.dims[0] * self.dims[1], ' ' * 10)
         print()
         print( 'Solution %d:' % (idx+1))
         print( '=============')
         # s is a list of row names like 'L#0_41'
         for rowname in s:
             piece = rowname.split('_')[0]
+            if self.mode == 'nopieces': piece = rowname.split('_')[1]
+
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
                             if x < self.dims[0] * self.dims[1]]
             for h in filled_holes:
@@ -654,9 +674,11 @@ class AlgoX2D:
 
     def gridify_solution( self, s):
         ' Turn a solution from AlgoX into a 2D array '
-        grid = np.full( self.dims[0] * self.dims[1], 'xxx')
+        grid = np.full( self.dims[0] * self.dims[1], ' ' * 10)
         # s is a list of row names like 'L#0_41'
         for rowname in s:
+            piece = rowname.split('_')[0]
+            if self.mode == 'nopieces': piece = rowname.split('_')[1]
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
                             if x < self.dims[0] * self.dims[1]]
             for h in filled_holes:
@@ -675,18 +697,18 @@ class AlgoX2D:
                 res = hhash
         return res
 
-    def solutions_eq( self, s1, s2, one_sided=False):
-        ' Check solutions for equality '
-        grid1 = self.gridify_solution( s1)
-        grid1 = AlgoX2D.number_grid( grid1)
-        repr_grid1 = repr(grid1)
-        grid2 = self.gridify_solution( s2)
-        rots = helpers.rotations2D( grid2, one_sided)
-        for r in rots:
-            r = AlgoX2D.number_grid( r)
-            if repr(r) == repr_grid1:
-                return True
-        return False
+    # def solutions_eq( self, s1, s2, one_sided=False):
+    #     ' Check solutions for equality '
+    #     grid1 = self.gridify_solution( s1)
+    #     grid1 = AlgoX2D.number_grid( grid1)
+    #     repr_grid1 = repr(grid1)
+    #     grid2 = self.gridify_solution( s2)
+    #     rots = helpers.rotations2D( grid2, one_sided)
+    #     for r in rots:
+    #         r = AlgoX2D.number_grid( r)
+    #         if repr(r) == repr_grid1:
+    #             return True
+    #     return False
 
 
 
