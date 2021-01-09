@@ -69,6 +69,7 @@ class AlgoX:
             return self.solve_queue()
 
     def print_state( self, colidx):
+        return
         X = self.X
         print( '>>>>>>>>>> chose column %s' % self.colnames[colidx])
         print( 'columns: %s' % (list(zip( [self.colnames[c] for c in X], [ [ r for r in self.X[c] if self.row_active[r]] for c in X] ))))
@@ -77,21 +78,20 @@ class AlgoX:
 
     def solve_basic( self, solution=[], depth=0):
         ''' No frills clean implementation '''
-        print( 'Enter depth %d' % depth)
+        #print( 'Enter depth %d' % depth)
         self.ncalls += 1
         if self.max_solutions and (self.n_solutions == self.max_solutions): return
         if not self.X:
             self.n_solutions += 1
+            print( 'Found solution %d' % self.n_solutions)
             yield list(solution)
         else:
             colidx = min( self.X, key=lambda c: len( self.X[c]))
             self.print_state( colidx)
             rows = list(self.X[colidx])
             for ridx,r in enumerate( rows):
-                if depth == 0:
-                    print( 'Working on row %d/%d' % (ridx+1, len(rows)))
-                elif depth == 1:
-                    print( '    Working on row %d/%d' % (ridx+1, len(rows)))
+                if depth in range(10):
+                    print( ('  ' * depth) + 'Working on row %d/%d' % (ridx+1, len(rows)))
 
                 solution.append( self.rownames[r])
                 cols = self.select_( r)
