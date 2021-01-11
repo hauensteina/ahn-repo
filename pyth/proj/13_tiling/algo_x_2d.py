@@ -484,15 +484,7 @@ def main():
         pieces, piece_names, piece_counts, dims, one_sided = parse_puzzle( args.json)
         solver = AlgoX2D( pieces, piece_names, piece_counts, dims, one_sided, mode=args.mode)
     solver.solve( args.print)
-    print( '\nFound %d solutions' % len( solver.solutions))
 
-    dups = solver.find_duplicate_solutions()
-    for d in dups:
-        n = len(dups[d])
-        if n == 1: continue
-        print('Set of %d dups:' % n)
-        for i in range(n):
-            solver.print_solution( i, dups[d][i])
 
 #----------------
 def unittest():
@@ -635,6 +627,21 @@ class AlgoX2D:
             if print_flag:
                 self.print_solution( idx, s)
             self.solutions.append(s)
+        # Remove dups
+        dups = {}
+        for s in self.solutions:
+            hhash = self.hash_solution( s)
+            if not hhash in dups:
+                dups[hhash] = [s]
+            else:
+                dups[hhash].append( s)
+        ndups = sum( [ len(x) - 1 for x in dups.values() if len(x) > 1 ] )
+        unique = [ x[0] for x in dups.values() ]
+
+        print( 'Found %d solutions with %d dups, %d unique' % ( len(self.solutions), ndups, len(unique)))
+        print( 'Printing %d unique solutions' % min( 100, len(unique)))
+        self.print_solutions( unique)
+
 
     def find_duplicate_solutions( self):
         ' Count frequency of each solution '
@@ -647,8 +654,9 @@ class AlgoX2D:
                 counts[hhash].append( s)
         return counts
 
-    def print_solutions( self):
-        for idx,s in enumerate( self.solutions):
+    def print_solutions( self, sols=None):
+        if not sols: sols = self.solutions
+        for idx,s in enumerate( sols):
             self.print_solution( idx, s)
 
     def print_solution( self, idx, s):
@@ -659,7 +667,11 @@ class AlgoX2D:
         # s is a list of row names like 'L#0_41'
         for rowname in s:
             piece = rowname.split('_')[0]
-            if self.mode == 'nopieces': piece = rowname.split('_')[1]
+            try:
+                if self.mode == 'nopieces': piece = rowname.split('_')[1]
+            except:
+                BP()
+                tt=42
 
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
                             if x < self.dims[0] * self.dims[1]]
