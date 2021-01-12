@@ -449,6 +449,9 @@ def usage( printmsg=False):
       --mode nopieces
       Run without adding columns for the pieces.
       This only works if one piece repeats many times.
+      --print
+      Print each solution immediately when found.
+      At the end, solutions are printed even without --print.
     Examples:
       %s --case 6x6 --print
       %s --json simple.json --print
@@ -601,7 +604,7 @@ class AlgoX2D:
 
     def solve( self, print_flag):
         self.solutions = []
-        for idx, s in enumerate( self.solver.solve(mode=self.mode)):
+        for idx, s in enumerate( self.solver.solve()):
             if print_flag:
                 self.print_solution( idx, s)
             self.solutions.append(s)
