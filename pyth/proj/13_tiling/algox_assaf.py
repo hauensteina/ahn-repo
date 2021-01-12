@@ -2,6 +2,8 @@
 
 from pdb import set_trace as BP
 
+LOGGING_ON = False
+
 '''
 If solving pentomino puzzles, we need to deal with more than one instance per piece.
 It there are several F pieces, those are called the representatives (aka reprs) of F .
@@ -22,34 +24,34 @@ class AlgoX:
     Knuth's Algorithm X, as implemented at
     https://www.cs.mcgill.ca/~aassaf9/python/algorithm_x.html
     '''
-    def __init__( self, rownames, rowclasses, colnames, entries, max_solutions=0):
+    def __init__( self, rownames, colnames, colcounts, entries, max_solutions=0):
         '''
         Entries is a set of (rowidx, colidx)
         '''
         self.max_solutions = max_solutions
         self.rownames = rownames
-        self.rowclasses = rowclasses
+        #self.rowclasses = rowclasses
         self.colnames = colnames
+        self.colcounts = colcounts
         self.n_solutions = 0
         self.ncalls = 0
         #self.seen_classes = set()
-
         # Build the row dictionary Y:dict(int:list(int))
         #self.Y = { y:[] for y in range( len(rowclasses)) }
         self.Y = { y:[] for y in range( len(rownames)) }
-        classes = { x[0] for x in rowclasses }
-        self.reprs = { x:[] for x in classes }
+        #classes = { x[0] for x in rowclasses }
+        #self.reprs = { x:[] for x in classes }
 
-        self.row_active = [ False for _ in range( len(rownames)) ]
+        #self.row_active = [ False for _ in range( len(rownames)) ]
         for e in entries:
             row,col = e[0],e[1]
 
             # Shenanigans to efficiently deal with multiple instances of a piece
-            piece = rowclasses[row][0] # 'F'
-            if not rowclasses[row] in self.reprs[piece]:
-                self.reprs[piece].append( rowclasses[row]) # reprs = [('F',0), ('F',1), ... ]
-            if rowclasses[row] == self.reprs[piece][0]:
-	            self.row_active[row] = True
+            #piece = rowclasses[row][0] # 'F'
+            #if not rowclasses[row] in self.reprs[piece]:
+            #    self.reprs[piece].append( rowclasses[row]) # reprs = [('F',0), ('F',1), ... ]
+            #if rowclasses[row] == self.reprs[piece][0]:
+	        #    self.row_active[row] = True
 
             self.Y[row].append( col)
 
@@ -68,13 +70,16 @@ class AlgoX:
         elif mode == 'queue':
             return self.solve_queue()
 
-    def print_state( self, colidx):
-        return
+    def print_state( self, depth, colidx):
+        if not LOGGING_ON: return
         X = self.X
-        print( '>>>>>>>>>> chose column %s' % self.colnames[colidx])
-        print( 'columns: %s' % (list(zip( [self.colnames[c] for c in X], [ [ r for r in self.X[c] if self.row_active[r]] for c in X] ))))
-        print( 'rows: %s' % (list(zip( [r for r in self.Y if self.row_active[r]], [self.rownames[r] for r in self.Y if self.row_active[r]]))))
-        print( 'counts: %s' % (list(zip( [self.colnames[c] for c in X], [len(self.X[c]) for c in X]))))
+        print( (' ' * depth) + '>>>>>>>>>> depth %d chose column %s' % (depth, self.colnames[colidx]))
+        print( 'columns: %s' %
+               (list(zip( [self.colnames[c] for c in X], [ [ r for r in self.X[c] ] for c in X] ))))
+        print( 'rows: %s' %
+               (list(zip( [r for r in self.Y], [self.rownames[r] for r in self.Y ]))))
+        print( 'counts: %s' %
+               (list(zip( [self.colnames[c] for c in X], [len(self.X[c]) for c in X]))))
 
     def solve_basic( self, solution=[], depth=0):
         ''' No frills clean implementation '''
@@ -87,7 +92,7 @@ class AlgoX:
             yield list(solution)
         else:
             colidx = min( self.X, key=lambda c: len( self.X[c]))
-            self.print_state( colidx)
+            self.print_state( depth, colidx)
             rows = list(self.X[colidx])
             for ridx,r in enumerate( rows):
                 if depth in range(10):
@@ -214,20 +219,32 @@ class AlgoX:
     def select_( self, r):
         cols = []
         for col1 in self.Y[r]:
+            self.colcounts[col1] -= 1
+            #print( 'decr col %s to %d' % (self.colnames[col1], self.colcounts[col1]))
+            if self.colcounts[col1] > 0:
+                #print( 'Not removing col %s' % self.colnames[col1])
+                continue
+            if self.colcounts[col1] < 0:
+                print( 'ERROR: colcount below 0')
+                exit(1)
             for row in self.X[col1]:
                 for col2 in self.Y[row]:
                     if col2 != col1:
-                        self.X[col2].remove(row)
-            cols.append( self.X.pop(col1))
+                        self.X[col2].remove( row)
+            cols.append( self.X.pop( col1))
         return cols
 
     def deselect_( self, r, cols):
-        for j in reversed( self.Y[r]):
-            self.X[j] = cols.pop()
-            for i in self.X[j]:
-                for k in self.Y[i]:
-                    if k != j:
-                        self.X[k].add(i)
+        for col1 in reversed( self.Y[r]):
+            self.colcounts[col1] += 1
+            #print( 'incr col %s to %d' % (self.colnames[col1],self.colcounts[col1]))
+            if self.colcounts[col1] == 1:
+                #print( 'popping col %s' % self.colnames[col1])
+                self.X[col1] = cols.pop()
+            for row in self.X[col1]:
+                for col2 in self.Y[row]:
+                    if col2 != col1:
+                        self.X[col2].add( row)
 
 
 def main():

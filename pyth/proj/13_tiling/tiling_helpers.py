@@ -177,24 +177,6 @@ def mirror( grid):
     return np.flip( grid,1)
 
 #---------------------------
-# def number_grid( grid):
-#     '''
-#     Take a grid of rownames, number the pieces top left to bottom right.
-#     This helps detect identical configurations even if the names differ.
-#     '''
-#     ids = {}
-#     res = np.zeros( shape=grid.shape, dtype=int)
-#     maxid = 0
-#     for r in range( grid.shape[0]):
-#         for c in range( grid.shape[1]):
-#             mark = grid[r,c]
-#             if not mark in ids:
-#                 maxid += 1
-#                 ids[mark] = maxid
-#             res[r,c] = ids[mark]
-#     return res
-
-#---------------------------
 def number_grid( arr):
     '''
     Take a array(2D or 3D) of rownames, number the pieces top left to bottom right.
@@ -216,13 +198,17 @@ def number_grid( arr):
     return res
 
 #------------------------------------------
-def print_colored_letter( piece_and_num): # A#1
-    ' Print a letter. Color depends on what letter it is. '
-    letter = piece_and_num[0]
-    color = hash( piece_and_num) % 16
-    #color = ord(letter) - ord('A')
-    #color %= 16
+def print_colored_letter( rowname): # rowname like A_0
+    ' Print a letter. Color rotates. '
+    if not rowname in print_colored_letter.colors:
+        print_colored_letter.colors[rowname] = print_colored_letter.color
+        print_colored_letter.color += 1
+    color = print_colored_letter.colors[rowname] % 16
+    letter = rowname[0]
     print( '\x1b[48;5;%dm%s \x1b[0m' % (color, letter), end='')
+
+print_colored_letter.colors = {}
+print_colored_letter.color = 0
 
 #---------------------------
 def isnumeric(s):

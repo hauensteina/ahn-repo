@@ -470,7 +470,7 @@ def main():
     parser.add_argument( "--json")
     parser.add_argument( "--test", action='store_true')
     parser.add_argument( "--print", action='store_true')
-    parser.add_argument( "--mode", choices=['basic','nopieces'])
+    parser.add_argument( "--mode", choices=['basic','nopieces'], default='basic')
     args = parser.parse_args()
 
     if args.test:
@@ -489,7 +489,7 @@ def main():
 #----------------
 def unittest():
     solver = AlgoX2D( g_pieces['5x5'])
-    solver.solve()
+    solver.solve( print_flag=False)
     if len(solver.solutions) == 74:
         print( 'Unit test passed')
     else:
@@ -518,7 +518,7 @@ class AlgoX2D:
         if piece_counts is None:
             piece_counts = [1] * len(pieces)
         else:
-            piece_counts = piece_counts.values()
+            piece_counts = list(piece_counts.values())
 
         if piece_names is None:
             piece_names = [chr( ord('A') + 1 + x) for x in range( len( pieces))]
@@ -533,35 +533,26 @@ class AlgoX2D:
                 exit(1)
             piece_counts = [1]
 
-        # Make multiple copies of a piece explicit
-        newpieces = []
-        piece_ids = []
-        for idx,c in enumerate( piece_counts):
-            newpieces.extend( [pieces[idx]] * c)
-            piece_ids.extend( [piece_names[idx] + '#' + str(x) for x in range(c)])
-        pieces = newpieces
-
         self.nholes = np.prod( self.dims)
-        if self.mode != 'nopieces' and sum( [np.sum( np.sign(p)) for p in pieces]) != np.prod( self.dims):
+        if self.mode != 'nopieces' and sum(
+                [piece_counts[idx] * np.sum( np.sign(p)) for idx,p in enumerate(pieces)]) != np.prod( self.dims):
             print( 'ERROR: Pieces do not cover grid: %d of %d covered' % (self.nholes, np.prod(self.dims)))
             exit(1)
 
-        rownames = [] # Multiple copies of a piece are different
-        rowclasses = [] # Multiple copies of a piece are the same
-        #piece_ids = [chr( ord('A') + x) for x in range( len(pieces))]
+        rownames = []
 
         colnames = [str(x) for x in range( self.nholes)]
+        colcounts = [1] * len(colnames)
         if self.mode != 'nopieces':
-            colnames += piece_ids
+            #colnames += piece_ids
+            colnames += piece_names
+            colcounts += piece_counts
         entries = set() # Pairs (rowidx, colidx)
 
         def add_image( piece_id, img_id, img, row, col):
             ' Add an image to the set of images to try '
             rowname = piece_id + '_' + str(img_id) # A#0_1
-            #rowclass = piece_id.split('#')[0] + '#' + str(img_id) # A#1
-            rowclass = ( piece_id.split('#')[0], int(piece_id.split('#')[1]) ) # ('A',0)
             rownames.append( rowname)
-            rowclasses.append( rowclass)
             rowidx = len( rownames) - 1
             if self.mode != 'nopieces':
                 entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
@@ -573,44 +564,31 @@ class AlgoX2D:
                 entries.add( (rowidx, colidx) )
 
         # Add all images
-        worst_piece_idx = self.get_worst_piece_idx( pieces) # most symmetries, positions
+        worst_piece_idx = self.get_worst_piece_idx( pieces, piece_counts) # freeze this into one symmetry
         if self.mode == 'nopieces': worst_piece_idx = -1
         for pidx,p in enumerate( pieces):
             if pidx == worst_piece_idx:
                 rots = helpers.one_rot_per_shape_2D( p, self.dims)
             else:
                 rots = helpers.rotations2D( p, one_sided)
-            piece_id = piece_ids[pidx]
+            #piece_id = piece_ids[pidx]
+            piece_id = piece_names[pidx]
             img_id = -1
             for rotidx,img in enumerate( rots):
                 for row in range( self.dims[0] - img.shape[0] + 1):
                     for col in range( self.dims[1] - img.shape[1] + 1):
                         img_id += 1
                         add_image( piece_id, img_id, img, row, col)
-        self.solver = AlgoX( rownames, rowclasses, colnames, entries)
+        self.solver = AlgoX( rownames, colnames, colcounts, entries)
 
-    def get_worst_piece_old( self, pieces):
-        ' Find the piece with most symmetries and positions '
-        maxpositions = maxrots = maxidx = -1
-        for pidx,p in enumerate( pieces):
-            rots = helpers.rotations2D( p)
-            if len(rots) <= maxrots: continue
-            if len(rots) > maxrots: maxpositions = 0
-            maxrots = len(rots)
-            npositions = (self.size - p.shape[0] + 1) * (self.size - p.shape[1] + 1)
-            if npositions <= maxpositions: continue
-            maxpositions = npositions
-            maxidx = pidx
-        return maxidx
-
-    def get_worst_piece_idx( self, pieces):
+    def get_worst_piece_idx( self, pieces, piece_counts):
         '''
         Find the piece with most symmetries and least positions.
-        Actually, this is not noticeably faster than the old version.
         '''
         maxrots = residx = -1
         minpositions = int(1E9)
         for pidx,p in enumerate( pieces):
+            if piece_counts[pidx] > 1: continue
             rots = helpers.rotations2D( p)
             if len(rots) <= maxrots: continue
             if len(rots) > maxrots: minpositions = int(1E9)
@@ -666,17 +644,11 @@ class AlgoX2D:
         print( '=============')
         # s is a list of row names like 'L#0_41'
         for rowname in s:
-            piece = rowname.split('_')[0]
-            try:
-                if self.mode == 'nopieces': piece = rowname.split('_')[1]
-            except:
-                BP()
-                tt=42
 
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
                             if x < self.dims[0] * self.dims[1]]
             for h in filled_holes:
-                pic[int(h)] = piece
+                pic[int(h)] = rowname
         pic = pic.reshape( self.dims[0], self.dims[1])
         for r in range( self.dims[0]):
             for c in range( self.dims[1]):
@@ -689,8 +661,6 @@ class AlgoX2D:
         grid = np.full( self.dims[0] * self.dims[1], ' ' * 10)
         # s is a list of row names like 'L#0_41'
         for rowname in s:
-            piece = rowname.split('_')[0]
-            if self.mode == 'nopieces': piece = rowname.split('_')[1]
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
                             if x < self.dims[0] * self.dims[1]]
             for h in filled_holes:
@@ -708,20 +678,5 @@ class AlgoX2D:
             if hhash > res:
                 res = hhash
         return res
-
-    # def solutions_eq( self, s1, s2, one_sided=False):
-    #     ' Check solutions for equality '
-    #     grid1 = self.gridify_solution( s1)
-    #     grid1 = AlgoX2D.number_grid( grid1)
-    #     repr_grid1 = repr(grid1)
-    #     grid2 = self.gridify_solution( s2)
-    #     rots = helpers.rotations2D( grid2, one_sided)
-    #     for r in rots:
-    #         r = AlgoX2D.number_grid( r)
-    #         if repr(r) == repr_grid1:
-    #             return True
-    #     return False
-
-
 
 main()
