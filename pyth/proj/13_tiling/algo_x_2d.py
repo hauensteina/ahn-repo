@@ -623,18 +623,6 @@ class AlgoX2D:
         print( 'Printing %d unique solutions' % min( 100, len(unique)))
         self.print_solutions( unique)
 
-
-    # def find_duplicate_solutions( self):
-    #     ' Count frequency of each solution '
-    #     counts = {}
-    #     for s in self.solutions:
-    #         hhash = self.hash_solution( s)
-    #         if not hhash in counts:
-    #             counts[hhash] = [s]
-    #         else:
-    #             counts[hhash].append( s)
-    #     return counts
-
     def print_solutions( self, sols=None):
         if not sols: sols = self.solutions
         for idx,s in enumerate( sols):

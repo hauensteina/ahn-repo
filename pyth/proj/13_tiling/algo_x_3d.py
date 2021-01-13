@@ -461,18 +461,6 @@ class AlgoX3D:
         with open( OUTFILE, 'wb') as f:
             pickle.dump( solutions, f)
 
-    # def find_duplicate_solutions( self):
-    #     ' Count frequency of each solution '
-    #     dups = {}
-    #     for idx,s in enumerate( self.solutions):
-    #         hhash = self.hash_solution( s)
-    #         elt = {'solution':s, 'idx':idx+1}
-    #         if not hhash in dups:
-    #             dups[hhash] = [elt]
-    #         else:
-    #             dups[hhash].append( elt)
-    #     return dups
-
     def hash_solution( self, s):
         grid = self.gridify_solution( s)
         rots = helpers.rotations3D( grid)
