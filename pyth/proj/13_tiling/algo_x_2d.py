@@ -488,7 +488,6 @@ def main():
         solver = AlgoX2D( pieces, piece_names, piece_counts, dims, one_sided, mode=args.mode)
     solver.solve( args.print)
 
-
 #----------------
 def unittest():
     solver = AlgoX2D( g_pieces['5x5'])
@@ -538,8 +537,8 @@ class AlgoX2D:
 
         self.nholes = np.prod( self.dims)
         if self.mode != 'nopieces' and sum(
-                [piece_counts[idx] * np.sum( np.sign(p)) for idx,p in enumerate(pieces)]) != np.prod( self.dims):
-            print( 'ERROR: Pieces do not cover grid: %d of %d covered' % (self.nholes, np.prod(self.dims)))
+                [piece_counts[idx] * np.sum( np.sign(p)) for idx,p in enumerate(pieces)]) != self.nholes:
+            print( 'ERROR: Pieces do not cover grid: %d of %d covered' % (self.nholes, self.nholes))
             exit(1)
 
         rownames = []
@@ -547,7 +546,6 @@ class AlgoX2D:
         colnames = [str(x) for x in range( self.nholes)]
         colcounts = [1] * len(colnames)
         if self.mode != 'nopieces':
-            #colnames += piece_ids
             colnames += piece_names
             colcounts += piece_counts
         entries = set() # Pairs (rowidx, colidx)
@@ -567,14 +565,15 @@ class AlgoX2D:
                 entries.add( (rowidx, colidx) )
 
         # Add all images
-        worst_piece_idx = self.get_worst_piece_idx( pieces, piece_counts) # freeze this into one symmetry
+        worst_piece_idx = self.get_worst_piece_idx( pieces, piece_counts) # freeze this piece into one symmetry
         if self.mode == 'nopieces': worst_piece_idx = -1
+
         for pidx,p in enumerate( pieces):
             if pidx == worst_piece_idx:
                 rots = helpers.one_rot_per_shape_2D( p, self.dims)
             else:
                 rots = helpers.rotations2D( p, one_sided)
-            #piece_id = piece_ids[pidx]
+
             piece_id = piece_names[pidx]
             img_id = -1
             for rotidx,img in enumerate( rots):
@@ -608,6 +607,7 @@ class AlgoX2D:
             if print_flag:
                 self.print_solution( idx, s)
             self.solutions.append(s)
+
         # Remove dups
         dups = {}
         for s in self.solutions:
@@ -624,16 +624,16 @@ class AlgoX2D:
         self.print_solutions( unique)
 
 
-    def find_duplicate_solutions( self):
-        ' Count frequency of each solution '
-        counts = {}
-        for s in self.solutions:
-            hhash = self.hash_solution( s)
-            if not hhash in counts:
-                counts[hhash] = [s]
-            else:
-                counts[hhash].append( s)
-        return counts
+    # def find_duplicate_solutions( self):
+    #     ' Count frequency of each solution '
+    #     counts = {}
+    #     for s in self.solutions:
+    #         hhash = self.hash_solution( s)
+    #         if not hhash in counts:
+    #             counts[hhash] = [s]
+    #         else:
+    #             counts[hhash].append( s)
+    #     return counts
 
     def print_solutions( self, sols=None):
         if not sols: sols = self.solutions

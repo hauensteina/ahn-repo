@@ -166,6 +166,22 @@ def one_rot_per_shape_2D( p, dims):
         res[grid.shape] = p
     return res.values()
 
+#-------------------------------------
+def one_rot_per_shape_3D( p, dims):
+    '''
+    Get a copy of this piece for each rotation where the grid w,h,d changes.
+    For a cube, this is trivial and just gets one instance. Relevant
+    if not w == h == d
+    '''
+    block = np.zeros( dims)
+    res = {}
+    brots = rotations3D( block)
+    prots = rotations3D( p)
+    for idx, brot in enumerate(brots):
+        prot = prots[idx]
+        res[brot.shape] = prot
+    return res.values()
+
 #-----------------
 def rot( grid):
     ' Rotate a 2d grid clockwise '
