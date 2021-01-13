@@ -10,7 +10,7 @@ from pdb import set_trace as BP
 
 #-----------------
 def hhash( sstr):
-    ' Produce a reproducible hash from a string'
+    ' Hash a string'
     sstr = sstr.encode('utf8')
     m = hashlib.sha256()
     m.update( sstr)

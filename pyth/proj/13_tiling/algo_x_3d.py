@@ -290,7 +290,7 @@ def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( "--case")
     parser.add_argument( "--json")
-    parser.add_argument( "--max_solutions", type=int)
+    parser.add_argument( "--max_solutions", type=int, default=0)
     parser.add_argument( "--mode", choices=['basic','nopieces'], default='basic')
 
     args = parser.parse_args()
@@ -305,16 +305,6 @@ def main():
         solver = AlgoX3D( pieces, piece_names, piece_counts, dims, mode=args.mode, max_solutions=args.max_solutions)
 
     solver.solve()
-
-    # print( '\nFound %d solutions' % len( solver.solutions))
-
-    # dups = solver.find_duplicate_solutions()
-    # for d in dups:
-    #     n = len(dups[d])
-    #     if n == 1: continue
-    #     sols = [x['idx'] for x in dups[d]]
-    #     print('Sols %s are the same!' % str(sols))
-
 
 #=================================================================================
 class AlgoX3D:
@@ -377,7 +367,6 @@ class AlgoX3D:
             rowidx = len( rownames) - 1
             if self.mode != 'nopieces':
                 entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
-            entries.add( (rowidx, colnames.index(piece_id))) # Image is instance of this piece
             block = np.zeros( (self.dims[0], self.dims[1], self.dims[2]))
             helpers.add_window_3D( block, img, row, col, layer)
             filled_holes = set( np.flatnonzero( block))
@@ -429,6 +418,7 @@ class AlgoX3D:
         dups = {}
         for s in self.solutions:
             hhash = self.hash_solution( s)
+            print(hhash)
             if not hhash in dups:
                 dups[hhash] = [s]
             else:
@@ -463,7 +453,10 @@ class AlgoX3D:
 
     def hash_solution( self, s):
         grid = self.gridify_solution( s)
+        #grid = helpers.number_grid( grid)
+        print(grid)
         rots = helpers.rotations3D( grid)
+        #BP()
         res = ''
         for r in rots:
             r = helpers.number_grid( r)
