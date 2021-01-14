@@ -375,7 +375,7 @@ class AlgoX3D:
                 entries.add( (rowidx, colidx) )
 
         # Add all images
-        worst_piece_idx = self.get_worst_piece_idx( pieces) # freeze this piece into one symmetry
+        worst_piece_idx = self.get_worst_piece_idx( pieces, piece_counts) # freeze this piece into one symmetry
         if self.mode == 'nopieces': worst_piece_idx = -1
 
         for pidx,p in enumerate( pieces):
@@ -394,18 +394,24 @@ class AlgoX3D:
                             add_image( piece_id, img_id, img, row, col, layer)
         self.solver = AlgoX( rownames, colnames, colcounts, entries, max_solutions)
 
-    def get_worst_piece_idx( self, pieces):
+    def get_worst_piece_idx( self, pieces, piece_counts):
         '''
         Find the piece with most symmetries and least positions.
         '''
         maxrots = residx = -1
         minpositions = int(1E9)
         for pidx,p in enumerate( pieces):
+            # Do not freeze a piece if it has several instances
+            if piece_counts[pidx] > 1: continue
             rots = helpers.rotations3D( p)
             if len(rots) <= maxrots: continue
             if len(rots) > maxrots: minpositions = int(1E9)
             maxrots = len(rots)
-            npositions = (self.dims[0] - p.shape[0] + 1) * (self.dims[1] - p.shape[1] + 1)* (self.dims[2] - p.shape[2] + 1)
+            npositions = (
+                (self.dims[0] - p.shape[0] + 1) *
+                (self.dims[1] - p.shape[1] + 1) *
+                (self.dims[2] - p.shape[2] + 1)
+            )
             if npositions >= minpositions: continue
             minpositions = npositions
             residx = pidx
@@ -418,7 +424,7 @@ class AlgoX3D:
         dups = {}
         for s in self.solutions:
             hhash = self.hash_solution( s)
-            print(hhash)
+            #print(hhash)
             if not hhash in dups:
                 dups[hhash] = [s]
             else:
@@ -452,12 +458,10 @@ class AlgoX3D:
             pickle.dump( solutions, f)
 
     def hash_solution( self, s):
-        print(s)
+        #print(s)
         grid = self.gridify_solution( s)
-        #grid = helpers.number_grid( grid)
-        print(grid)
+        #print(grid)
         rots = helpers.rotations3D( grid)
-        #BP()
         res = ''
         for r in rots:
             r = helpers.number_grid( r)

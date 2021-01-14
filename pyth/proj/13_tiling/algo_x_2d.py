@@ -590,6 +590,7 @@ class AlgoX2D:
         maxrots = residx = -1
         minpositions = int(1E9)
         for pidx,p in enumerate( pieces):
+            # Do not freeze a piece if it has several instances
             if piece_counts[pidx] > 1: continue
             rots = helpers.rotations2D( p)
             if len(rots) <= maxrots: continue
