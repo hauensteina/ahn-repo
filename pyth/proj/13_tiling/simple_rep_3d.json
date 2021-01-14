@@ -1,0 +1,14 @@
+
+{
+  "name": "simple_rep_3d"
+  ,"dims":[2,2,2]
+  ,"pieces":{
+    "A":
+    [
+      [
+	[1,1]
+      ]
+    ]
+  }
+  ,"piece_counts": { "A":4 }
+}
