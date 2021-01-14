@@ -119,7 +119,7 @@ def main():
     colnames = [0,1,2,3,4,5,6]
     colcounts = [1] * len(colnames)
 
-    solvgen = AlgoX( rownames, colnames, colcounts, entries).solve()
+    solvgen = AlgoX( rownames, colnames, colcounts, - toughentries).solve()
     for s in solvgen:
         print( s) # Should be ['A', 'G'] and ['B', 'D', 'F']
 

@@ -344,9 +344,9 @@ class AlgoX3D:
             piece_counts = [1]
 
         self.nholes = np.prod( self.dims)
-        if self.mode != 'nopieces' and sum(
-                [piece_counts[idx] * np.sum( np.sign(p)) for idx,p in enumerate(pieces)]) != self.nholes:
-            print( 'ERROR: Pieces do not cover block: %d of %d covered' % (self.nholes, self.nholes))
+        psum = sum([piece_counts[idx] * np.sum( np.sign(p)) for idx,p in enumerate(pieces)])
+        if self.mode != 'nopieces' and psum != self.nholes:
+            print( 'ERROR: Pieces do not cover block: %d of %d covered' % (psum, self.nholes))
             exit(1)
 
         rownames = []
