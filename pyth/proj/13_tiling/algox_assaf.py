@@ -4,21 +4,6 @@ from pdb import set_trace as BP
 
 LOGGING_ON = False
 
-'''
-If solving pentomino puzzles, we need to deal with more than one instance per piece.
-It there are several F pieces, those are called the representatives (aka reprs) of F .
-Each repr(F) can occur in many orientations and positions.
-These are called *images*. So there is a two level hierarchy, where a piece
-has several representatives, and each representative has several images.
-The current representative of F is reprs[F][0].
-rowname: F#0_3 is the third image of repr 0 of F. We do not parse this.
-colname: Either a numeric string (eg '1'), or repr names like F#1. We do not parse this.
-rowclass: (F,0) is the class of all rows like F#0_N
-reprs[piece]: A list of remaining reprs of piece. reprs['F'] = [('F',0), ('F',1), ... ]
-X contains the columns as a dict where the keys are ints
-Y contains the rows as a dict where the keys are ints
-'''
-
 class AlgoX:
     '''
     Knuth's Algorithm X, as implemented at

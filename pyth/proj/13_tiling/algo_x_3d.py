@@ -452,6 +452,7 @@ class AlgoX3D:
             pickle.dump( solutions, f)
 
     def hash_solution( self, s):
+        print(s)
         grid = self.gridify_solution( s)
         #grid = helpers.number_grid( grid)
         print(grid)
@@ -467,7 +468,7 @@ class AlgoX3D:
 
     def gridify_solution( self, s):
         ' Turn a solution from AlgoX into a 3D array '
-        grid = np.full( self.dims[0] * self.dims[1] * self.dims[2], 'xxx')
+        grid = np.full( self.dims[0] * self.dims[1] * self.dims[2], ' ' * 10)
         # s is a list of rownames like 'L#0_41'
         for rowname in s:
             filled_holes = [x for x in self.solver.get_col_idxs( rowname)
