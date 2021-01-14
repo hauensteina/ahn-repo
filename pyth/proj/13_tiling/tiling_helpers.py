@@ -31,16 +31,20 @@ def hash_piece_image_3d( image):
 
 #-----------------------------
 def parse_puzzle( fname):
-    ' Read a puzzle definition (any number os dimensions) from json '
+    ' Read a puzzle definition (any number of dimensions) from json '
     with open( fname) as f:
         puzzle = json.load(f)
     dims = puzzle['dims']
+    # Skip pieces where count is zero
     piece_counts = puzzle['piece_counts']
-    piece_names = list(puzzle['pieces'].keys())
-    pieces = []
-    for p in puzzle['pieces']:
-        pieces.append( np.array( puzzle['pieces'][p]))
-    return pieces, piece_names, piece_counts, dims, puzzle.get( 'one_sided', False)
+    piece_counts = { k:piece_counts[k] for k in piece_counts if piece_counts[k] > 0 }
+    pieces = puzzle['pieces']
+    pieces = { k:pieces[k] for k in pieces if k in piece_counts }
+    piece_names = list(pieces.keys())
+    pieces_out = []
+    for p in pieces:
+        pieces_out.append( np.array( puzzle['pieces'][p]))
+    return pieces_out, piece_names, piece_counts, dims, puzzle.get( 'one_sided', False)
 
 #---------------------
 def trim_array( a):
