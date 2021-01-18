@@ -1,0 +1,18 @@
+
+{
+  "comment": "Sizes as number of amino acids",
+  "core_size": 400,
+  "chain_sizes": [400, 600],
+  "comment": "Halflives in seconds",
+  "chain_halflives": [1E8, 1E8],
+  "comment": "Set break_halflives to -1 if there are no breaking points",
+  "break_halflives": [604800, 604800],
+  "comment": "Histogram bucket borders for size of decayed pieces containing a core",
+  "buckets":[401, 801, 1001],
+  "comment": "Length of one time step in seconds",
+  "dt": 600,
+  "comment": "Total duration of simulated time in seconds",
+  "T": 604800,
+  "comment": "Number of simulated molecules",
+  "N": 1000
+}
