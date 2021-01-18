@@ -72,6 +72,10 @@ def main():
 
     parms = json.load( open( args.json))
     simparms = { k:parms[k] for k in ['core_size', 'chain_sizes', 'chain_halflives', 'break_halflives', 'dt', 'T', 'N'] }
+    print()
+    print( 'Simulation parameters:')
+    print( simparms)
+    print()
     decay_products = simulate( **simparms)
     weights = [ sum( x['chain_sizes']) + x['core_size'] for x in decay_products ]
     bins = parms['buckets']
@@ -91,6 +95,7 @@ def print_histo( histo):
 #----------------------------------------------------------------------------------
 def simulate( core_size, chain_sizes, chain_halflives, break_halflives, dt, T, N):
     print( 'Letting %d molecules decay for %d seconds in %d second increments' % (N,T,dt))
+    print()
     n_chains = len( chain_sizes)
     chain_survival_probs = [ 0.5 ** ( dt / ch ) if ch > 0 else 1.0 for ch in chain_halflives ]
     break_survival_probs = [ 0.5 ** ( dt / bh ) if bh > 0 else 1.0 for bh in break_halflives ]
