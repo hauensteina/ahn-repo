@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+'''
+Simulate decay of a T-cell engager with attached protein chains.
+AHN, Jan 2021
+'''
+
 from pdb import set_trace as BP
 import sys,os,json
 import argparse
@@ -12,7 +17,7 @@ def usage( printmsg=False):
     msg = '''
 
     Name:
-      %s: Simulate the decay of a protein where chains are attched to a core
+      %s: Simulate the decay of a protein where chains are attached to a core
     Synopsis:
       %s --json <file>
       %s --test
@@ -91,7 +96,7 @@ def print_histo( histo):
     total = sum(counts)
     print()
     for idx,c in enumerate( counts):
-        print( 'Found %7d molecules\t (%.2f pct) with count >= %d and < %d' % (c, c / total, bins[idx], bins[idx+1]))
+        print( 'Found %7d molecules\t (%.2f pct) with count >= %d and < %d' % (c, 100 * c / total, bins[idx], bins[idx+1]))
 
 #----------------------------------------------------------------------------------
 def simulate( core_size, chain_sizes, chain_halflives, break_halflives, dt, T, N):
