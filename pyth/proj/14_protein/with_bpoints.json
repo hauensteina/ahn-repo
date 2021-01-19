@@ -10,9 +10,9 @@
   "comment": "Histogram bucket borders for size of decayed pieces containing a core",
   "buckets":[401, 801, 1001],
   "comment": "Length of one time step in seconds",
-  "dt": 600,
+  "dt": 302400,
   "comment": "Total duration of simulated time in seconds",
   "T": 604800,
   "comment": "Number of simulated molecules",
-  "N": 1000
+  "N": 100000
 }

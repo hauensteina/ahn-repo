@@ -25,21 +25,21 @@ def usage( printmsg=False):
       Example json:
 
         {
-        "comment": "Sizes as number of amino acids",
-        "core_size": 400,
-        "chain_sizes": [400, 600],
-        "comment": "Halflives in seconds",
-        "chain_halflives": [1E8, 1E8],
-        "comment": "Set break_halflives to -1 if there are no breaking points",
-        "break_halflives": [604800, 604800],
-        "comment": "Histogram bucket borders for size of decayed pieces containing a core",
-        "buckets":[401, 801, 1001],
-        "comment": "Length of one time step in seconds",
-        "dt": 600,
-        "comment": "Total duration of simulated time in seconds",
-        "T": 604800,
-        "comment": "Number of simulated molecules",
-        "N": 10000
+          "comment": "Sizes as number of amino acids",
+          "core_size": 400,
+          "chain_sizes": [400, 600],
+          "comment": "Halflives in seconds",
+          "chain_halflives": [1E8, 1E8],
+          "comment": "Set break_halflives to -1 if there are no breaking points",
+          "break_halflives": [604800, 604800],
+          "comment": "Histogram bucket borders for size of decayed pieces containing a core",
+          "buckets":[401, 801, 1001],
+          "comment": "Length of one time step in seconds",
+          "dt": 302400,
+          "comment": "Total duration of simulated time in seconds",
+          "T": 604800,
+          "comment": "Number of simulated molecules",
+          "N": 100000
         }
 
     Examples:
@@ -88,9 +88,10 @@ def main():
 def print_histo( histo):
     bins = histo[1]
     counts = histo[0]
+    total = sum(counts)
     print()
     for idx,c in enumerate( counts):
-        print( 'Found %d molecules with count >= %d and < %d' % (c, bins[idx], bins[idx+1]))
+        print( 'Found %7d molecules\t (%.2f pct) with count >= %d and < %d' % (c, c / total, bins[idx], bins[idx+1]))
 
 #----------------------------------------------------------------------------------
 def simulate( core_size, chain_sizes, chain_halflives, break_halflives, dt, T, N):
