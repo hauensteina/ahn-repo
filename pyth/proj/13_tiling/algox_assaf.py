@@ -57,7 +57,7 @@ class AlgoX:
             self.print_state( depth, colidx)
             rows = list(self.X[colidx])
             for ridx,r in enumerate( rows):
-                if depth in range(10):
+                if depth in range(3):
                     print( ('  ' * depth) + 'Working on row %d/%d' % (ridx+1, len(rows)))
 
                 solution.append( self.rownames[r])
