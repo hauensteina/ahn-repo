@@ -1,4 +1,5 @@
 DerivedData
 .DS_Store
 *.xcuserstate
+__pycache__
 
