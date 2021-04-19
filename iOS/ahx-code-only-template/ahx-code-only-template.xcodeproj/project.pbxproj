@@ -16,6 +16,8 @@
 		AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134702262B8DEC001F1451 /* FirstVC.swift */; };
 		AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134705262B8E0C001F1451 /* SecondVC.swift */; };
 		AC134709262B903F001F1451 /* AHXConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134708262B903F001F1451 /* AHXConstants.swift */; };
+		AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */; };
+		AC8156E4262E259800009DF9 /* BottomNavVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8156E3262E259800009DF9 /* BottomNavVC.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +32,8 @@
 		AC134702262B8DEC001F1451 /* FirstVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstVC.swift; sourceTree = "<group>"; };
 		AC134705262B8E0C001F1451 /* SecondVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondVC.swift; sourceTree = "<group>"; };
 		AC134708262B903F001F1451 /* AHXConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXConstants.swift; sourceTree = "<group>"; };
+		AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXUtils.swift; sourceTree = "<group>"; };
+		AC8156E3262E259800009DF9 /* BottomNavVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomNavVC.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				AC1346FA262B84F8001F1451 /* AHXLayout.swift */,
+				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -93,6 +98,7 @@
 		AC1346FF262B8614001F1451 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				AC8156E3262E259800009DF9 /* BottomNavVC.swift */,
 				AC134702262B8DEC001F1451 /* FirstVC.swift */,
 				AC134705262B8E0C001F1451 /* SecondVC.swift */,
 			);
@@ -177,12 +183,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */,
+				AC8156E4262E259800009DF9 /* BottomNavVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,
 				AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
 				AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */,
 				AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */,
 				AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */,
+				AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */,
 				AC1346F8262B83B7001F1451 /* AHXMain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

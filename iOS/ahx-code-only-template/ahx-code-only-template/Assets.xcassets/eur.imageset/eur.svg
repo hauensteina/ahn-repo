@@ -1,0 +1,10 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <title>Layer 1</title>
+  <g id="main_group">
+    <rect id="background_rect" fill="#003194" x="0px" y="0px" width="200px" height="200px"></rect>
+  </g>
+  <text fill="#ffffff" stroke="#000" stroke-width="0" x="30.16667" y="164" id="svg_1" font-size="175" font-family="sans-serif" text-anchor="start" xml:space="preserve">€</text>
+ </g>
+
+</svg>

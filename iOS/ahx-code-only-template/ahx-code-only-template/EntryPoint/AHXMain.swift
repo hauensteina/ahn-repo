@@ -20,7 +20,8 @@ class AHXMain {
         navVC.setNavigationBarHidden( true, animated:false)
         VCs = [
             "FirstVC": FirstVC(),
-            "SecondVC": SecondVC()
+            "SecondVC": SecondVC(),
+            "BottomNavVC": BottomNavVC()
         ]
         pushVC( "FirstVC")
     } // main()
