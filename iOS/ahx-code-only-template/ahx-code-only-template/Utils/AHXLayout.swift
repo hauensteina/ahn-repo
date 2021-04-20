@@ -15,19 +15,19 @@ class AHXLayout
 {
     // Set the width of a view
     //-------------------------------------------
-    class func width(_ v:UIView, x:CGFloat) {
+    class func width(_ v:UIView, _ x:CGFloat) {
         v.frame.size = CGSize( width:x, height:v.frame.height)
     } // hsz()
 
     // Set the height of a view
     //---------------------------------------------
-    class func height(_ v:UIView, y:CGFloat) {
+    class func height(_ v:UIView, _ y:CGFloat) {
         v.frame.size = CGSize( width:v.frame.width, height:y)
     } // height()
 
     // Left align a view
     //-------------------------------------------------------------------------
-    class func left(_ v:UIView, x:CGFloat=0)
+    class func left(_ v:UIView, _ x:CGFloat)
     {
         let left = x
         v.frame.origin = CGPoint( x: left, y: v.frame.minY)
@@ -35,7 +35,7 @@ class AHXLayout
 
     // Right align a view
     //-------------------------------------------------------------------------
-    class func right(_ v:UIView, x:CGFloat=0)
+    class func right(_ v:UIView, _ x:CGFloat)
     {
         let left = x - (v.frame.width - 1)
         v.frame.origin = CGPoint( x: left, y: v.frame.minY)
@@ -43,7 +43,7 @@ class AHXLayout
 
     // Center a view
     //-------------------------------------------------------------------------
-    class func center(_ v:UIView, x:CGFloat=0)
+    class func center(_ v:UIView, _ x:CGFloat)
     {
         let left = x - v.frame.width / 2
         v.frame.origin = CGPoint( x: left, y: v.frame.minY)
@@ -51,7 +51,7 @@ class AHXLayout
     
     // Align view top
     //---------------------------------------------------
-    class func top( _ v:UIView, y:CGFloat=0)
+    class func top( _ v:UIView, _ y:CGFloat)
     {
         let top = y
         v.frame.origin = CGPoint( x: v.frame.minX, y: top)
@@ -59,7 +59,7 @@ class AHXLayout
 
     // Align view middle
     //---------------------------------------------------
-    class func middle( _ v:UIView, y:CGFloat=0)
+    class func middle( _ v:UIView, _ y:CGFloat)
     {
         let top = y - v.frame.height / 2
         v.frame.origin = CGPoint( x: v.frame.minX, y: top)
@@ -67,7 +67,7 @@ class AHXLayout
 
     // Align view bottom
     //---------------------------------------------------
-    class func bottom( _ v:UIView, y:CGFloat=0)
+    class func bottom( _ v:UIView, _ y:CGFloat)
     {
         let top = y - (v.frame.height - 1)
         v.frame.origin = CGPoint( x: v.frame.minX, y: top)

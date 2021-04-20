@@ -13,21 +13,20 @@ import UIKit
 class AHXUtils {
     
     // Add a shared view (like a burger menu) to a ViewController.
-    // Call sth like AHXUtils.addSharedView( self, BurgerVC) from viewDidAppear()
-    // of any VC. BurgerVC must have BurgerVC.shared instantiated.
+    // Call sth like AHXUtils.addSharedView( self, BurgerVC.shared)
+    // from viewDidAppear() of any VC.
     //--------------------------------------------------------------------------------------
     class func addSharedView(_ container:UIViewController!, _ shared:UIViewController! ) {
         var found = false
         for s in container.view.subviews {
-            if s === shared.view) {
+            if s === shared.view {
                 found = true
                 break
-                
             }
         }
         if !found {
-            conainer.view.insertSubview( shared.view, at: 0)
+            container.view.insertSubview( shared.view, at: 0)
         }
-        container.view.bringSubview(toFront: shared.view)
+        container.view.bringSubviewToFront( shared.view)
     } // addSharedView()
 } // AHXUtils

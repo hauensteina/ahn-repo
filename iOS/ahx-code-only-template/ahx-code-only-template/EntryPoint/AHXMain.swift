@@ -10,12 +10,15 @@ import UIKit
 //=====================
 class AHXMain {
     static let shared = AHXMain()
+    static var app = UIApplication.shared.delegate as! AppDelegate
+    static var scene = SceneDelegate.shared!
     var navVC:UINavigationController!
     var VCs = [String:UIViewController]()
     
     // Entry Point to App, called from SceneDelegate
     //------------------------------------------------
     func main( navVC:UINavigationController) {
+        
         self.navVC = navVC
         navVC.setNavigationBarHidden( true, animated:false)
         VCs = [
@@ -23,7 +26,11 @@ class AHXMain {
             "SecondVC": SecondVC(),
             "BottomNavVC": BottomNavVC()
         ]
+        // Force instantiation
+        let _ = VCs["BottomNavVC"]!.view
+        
         pushVC( "FirstVC")
+        //AHXMain.scene = VCs["FirstVC"]!.view.window!.windowScene!.delegate
     } // main()
     
     // Push a VC by name

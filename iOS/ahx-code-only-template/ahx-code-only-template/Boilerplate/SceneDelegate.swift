@@ -8,22 +8,22 @@
 import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
+    static var shared:SceneDelegate!
     var window: UIWindow?
-
+    var win:UIWindow!
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // This is what used to be AppDelegate.didFinishLaunchingWithOptions
+        SceneDelegate.shared = self
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        let window = UIWindow( windowScene: windowScene)
-        
+        window = UIWindow( windowScene: windowScene)
+        win = window!
         // The mother of all ViewControllers
         let rootVC = ViewController()
         // Navigation
         let navVC = UINavigationController( rootViewController: rootVC)
-        window.rootViewController = navVC
-        self.window = window
-        window.makeKeyAndVisible()
+        win.rootViewController = navVC
+        win.makeKeyAndVisible()
         // Now forget all this XCode stuff and call our entry point
         AHXMain.shared.main( navVC:navVC)
     }
