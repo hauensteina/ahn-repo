@@ -18,16 +18,22 @@ class AHXMain {
     // Entry Point to App, called from SceneDelegate
     //------------------------------------------------
     func main( navVC:UINavigationController) {
+        // Some globally useful constants
+        let inset = AHXMain.scene.win.safeAreaInsets
+        let w = UIScreen.main.bounds.width
+        let h = UIScreen.main.bounds.height - inset.top - inset.bottom
+        let bottom = UIScreen.main.bounds.height - inset.bottom
         
         self.navVC = navVC
         navVC.setNavigationBarHidden( true, animated:false)
         VCs = [
             "FirstVC": FirstVC(),
-            "SecondVC": SecondVC(),
-            "BottomNavVC": BottomNavVC()
+            "SecondVC": SecondVC()
+            //"BottomNavVC": BottomNavVC(),
+            //"ContainerVC": ContainerVC()
         ]
         // Force instantiation
-        let _ = VCs["BottomNavVC"]!.view
+        //let _ = VCs["BottomNavVC"]!.view
         
         pushVC( "FirstVC")
         //AHXMain.scene = VCs["FirstVC"]!.view.window!.windowScene!.delegate
@@ -37,8 +43,16 @@ class AHXMain {
     //-------------------------------
     func pushVC( _ vcName:String) {
         let vc = VCs[vcName]!
+        let _ = vc.view // Make sure it's instantiated
         self.navVC.pushViewController( vc, animated: true)
     } // pushCV()
+
+    // Pop top VC
+    //----------------
+    func popVC() {
+        //let vc = VCs[vcName]!
+        self.navVC.popViewController(animated: true)
+    } // popCV()
 
     // Replace top VC
     //-------------------------------

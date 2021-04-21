@@ -27,10 +27,4 @@ class SecondVC: UIViewController {
         self.view.addSubview( v)
     } // viewDidLoad()
     
-    //------------------------------------------------
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear( animated)
-        AHXUtils.addSharedView( self, BottomNavVC.shared)
-    }
-    
 } // class SecondVC

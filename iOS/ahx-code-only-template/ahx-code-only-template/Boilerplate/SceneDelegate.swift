@@ -19,13 +19,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow( windowScene: windowScene)
         win = window!
         // The mother of all ViewControllers
-        let rootVC = ViewController()
+        let rootVC = ContainerVC()
+        _ = rootVC.view // force instantiation
         // Navigation
-        let navVC = UINavigationController( rootViewController: rootVC)
-        win.rootViewController = navVC
+        //let navVC = UINavigationController( rootViewController: rootVC)
+        win.rootViewController = rootVC
         win.makeKeyAndVisible()
         // Now forget all this XCode stuff and call our entry point
-        AHXMain.shared.main( navVC:navVC)
+        AHXMain.shared.main( navVC: rootVC.middleVC.nav)
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
