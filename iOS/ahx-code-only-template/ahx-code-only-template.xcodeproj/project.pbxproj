@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2D5CF5586BAAA5A094587A79 /* Pods_ahx_code_only_template.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */; };
 		AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E1262B7D04001F1451 /* AppDelegate.swift */; };
 		AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E3262B7D04001F1451 /* SceneDelegate.swift */; };
 		AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E5262B7D04001F1451 /* ViewController.swift */; };
@@ -25,6 +26,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		31501B7D08E23C742093C125 /* Pods-ahx-code-only-template.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ahx-code-only-template.debug.xcconfig"; path = "Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template.debug.xcconfig"; sourceTree = "<group>"; };
+		96532B2A2EF2335E333E6673 /* Pods-ahx-code-only-template.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ahx-code-only-template.release.xcconfig"; path = "Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template.release.xcconfig"; sourceTree = "<group>"; };
 		AC1346DE262B7D03001F1451 /* ahx-code-only-template.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ahx-code-only-template.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC1346E1262B7D04001F1451 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		AC1346E3262B7D04001F1451 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -42,6 +45,7 @@
 		AC86D6B126308946001790E4 /* TopVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopVC.swift; sourceTree = "<group>"; };
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
+		F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_code_only_template.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,17 +53,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D5CF5586BAAA5A094587A79 /* Pods_ahx_code_only_template.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		15A6F9FFE0B3CA4AE0A1E066 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		AC1346D5262B7D03001F1451 = {
 			isa = PBXGroup;
 			children = (
 				AC1346E0262B7D04001F1451 /* ahx-code-only-template */,
 				AC1346DF262B7D03001F1451 /* Products */,
+				C5ABD50E2E96E15498F21F42 /* Pods */,
+				15A6F9FFE0B3CA4AE0A1E066 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -126,6 +141,16 @@
 			path = EntryPoint;
 			sourceTree = "<group>";
 		};
+		C5ABD50E2E96E15498F21F42 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				31501B7D08E23C742093C125 /* Pods-ahx-code-only-template.debug.xcconfig */,
+				96532B2A2EF2335E333E6673 /* Pods-ahx-code-only-template.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -133,9 +158,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AC1346F2262B7D0A001F1451 /* Build configuration list for PBXNativeTarget "ahx-code-only-template" */;
 			buildPhases = (
+				995962D3D60E33236BE7A852 /* [CP] Check Pods Manifest.lock */,
 				AC1346DA262B7D03001F1451 /* Sources */,
 				AC1346DB262B7D03001F1451 /* Frameworks */,
 				AC1346DC262B7D03001F1451 /* Resources */,
+				13439AE8CBD13496A31C7152 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -188,6 +215,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		13439AE8CBD13496A31C7152 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		995962D3D60E33236BE7A852 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ahx-code-only-template-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		AC1346DA262B7D03001F1451 /* Sources */ = {
@@ -332,6 +401,7 @@
 		};
 		AC1346F3262B7D0A001F1451 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 31501B7D08E23C742093C125 /* Pods-ahx-code-only-template.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -351,6 +421,7 @@
 		};
 		AC1346F4262B7D0A001F1451 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 96532B2A2EF2335E333E6673 /* Pods-ahx-code-only-template.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
