@@ -9,26 +9,28 @@
 
 import UIKit
 
+// Add an overrideable layout func to all View Controllers
+//==========================================================
+@objc extension UIViewController {
+    func layout() {}
+}
+
 //===================
 class AHXUtils {
+    // Make a view controller the child of another
+    //---------------------------------------------------------------------------
+    class func vcContains( parent:UIViewController, child: UIViewController) {
+        parent.addChild( child)
+        parent.view.addSubview( child.view)
+        child.layout()
+        child.didMove( toParent: parent)
+    } // vcContains()
     
-    // Add a shared view (like a burger menu) to a ViewController.
-    // Call sth like AHXUtils.addSharedView( self, BurgerVC.shared)
-    // from viewDidAppear() of any VC.
-    //--------------------------------------------------------------------------------------
-    class func addSharedView(_ container:UIViewController!, _ shared:UIViewController! ) {
-        var found = false
-        for s in container.view.subviews {
-            if s === shared.view {
-                found = true
-                break
-            }
-        }
-        if !found {
-            container.view.insertSubview( shared.view, at: 0)
-        }
-        container.view.bringSubviewToFront( shared.view)
-    } // addSharedView()
+    //-------------------------------------------------------------------------------------------------
+    class func RGB( _ red:CGFloat, _ green:CGFloat, _ blue:CGFloat, alpha:CGFloat = 1.0) -> UIColor {
+        return UIColor(red: red, green: green, blue: blue, alpha: alpha)
+    } // RGB()
 } // AHXUtils
 
+typealias AHU = AHXUtils
 

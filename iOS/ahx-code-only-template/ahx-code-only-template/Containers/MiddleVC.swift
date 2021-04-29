@@ -5,7 +5,7 @@
 //  Created by Andreas Hauenstein on 2021-04-21.
 //
 
-// Content occupying most of my app screen
+// Parent VC for content occupying most of app screen
 
 import UIKit
 
@@ -21,21 +21,15 @@ class MiddleVC: UIViewController {
         super.viewDidLoad()
         let rootVC = UIViewController() // This never gets popped off
         nav = UINavigationController( rootViewController: rootVC)
-        self.addChild( nav)
-        view.addSubview( nav.view)
-        //nav.layout()
-        nav.didMove( toParent: self)
-        // Layout root frame
-        let inset = AHXMain.scene.win.safeAreaInsets
-        let w = UIScreen.main.bounds.width
-        let h = UIScreen.main.bounds.height - inset.top - inset.bottom
-        let bottom = UIScreen.main.bounds.height - inset.bottom
-        let top = inset.top
+        AHU.vcContains(parent: self, child: nav)
+
+        // Main area dimensions
         let v = self.view!
-        AHXLayout.width( v, w)
-        AHXLayout.height( v, h - 2 * 0.1 * h)
-        AHXLayout.left( v, 0)
-        AHXLayout.top( v, top + 0.1 * h)
+        AHL.width( v, AHC.w)
+        AHL.height( v, AHC.main_height)
+        AHL.left( v, 0)
+        AHL.top( v, AHC.main_top)
     } // viewDidLoad()
+    
 } // class MiddleVC
 

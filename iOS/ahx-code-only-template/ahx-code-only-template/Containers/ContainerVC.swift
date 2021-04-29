@@ -26,27 +26,18 @@ class ContainerVC: UIViewController {
     // Insert all subviews. The middle one is a navigation VC.
     //------------------------------------------------------------
     func setup() {
-        
+        view.backgroundColor = AHC.bgcol
+
         topVC = TopVC()
-        addChild( topVC)
-        view.addSubview( topVC.view)
-        topVC.layout()
-        topVC.didMove( toParent: self)
-        AHXLayout.border( topVC.view, .red)
+        AHU.vcContains(parent: self, child: topVC)
+        AHL.border( topVC.view, .red)
         
         middleVC = MiddleVC()
-        addChild( middleVC)
-        view.addSubview( middleVC.view)
-        //middleVC.layout()
-        middleVC.didMove( toParent: self)
-        AHXLayout.border( middleVC.view, .green)
+        AHU.vcContains(parent: self, child: middleVC)
+        AHL.border( middleVC.view, .green)
 
         bottomVC = BottomVC()
-        addChild( bottomVC)
-        view.addSubview( bottomVC.view)
-        bottomVC.layout()
-        bottomVC.didMove( toParent: self)
-        AHXLayout.border( middleVC.view, .blue)
-
+        AHU.vcContains(parent: self, child: bottomVC)
+        AHL.border( bottomVC.view, .blue)
     } // setup()
 } // class ContainerVC

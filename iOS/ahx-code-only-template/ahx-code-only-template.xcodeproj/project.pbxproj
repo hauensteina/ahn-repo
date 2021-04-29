@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -18,7 +18,6 @@
 		AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134705262B8E0C001F1451 /* SecondVC.swift */; };
 		AC134709262B903F001F1451 /* AHXConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134708262B903F001F1451 /* AHXConstants.swift */; };
 		AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */; };
-		AC8156E4262E259800009DF9 /* BottomNavVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8156E3262E259800009DF9 /* BottomNavVC.swift */; };
 		AC86D6AE26308745001790E4 /* ContainerVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6AD26308745001790E4 /* ContainerVC.swift */; };
 		AC86D6B226308946001790E4 /* TopVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B126308946001790E4 /* TopVC.swift */; };
 		AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B426308D1E001790E4 /* MiddleVC.swift */; };
@@ -40,7 +39,6 @@
 		AC134705262B8E0C001F1451 /* SecondVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondVC.swift; sourceTree = "<group>"; };
 		AC134708262B903F001F1451 /* AHXConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXConstants.swift; sourceTree = "<group>"; };
 		AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXUtils.swift; sourceTree = "<group>"; };
-		AC8156E3262E259800009DF9 /* BottomNavVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomNavVC.swift; sourceTree = "<group>"; };
 		AC86D6AD26308745001790E4 /* ContainerVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerVC.swift; sourceTree = "<group>"; };
 		AC86D6B126308946001790E4 /* TopVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopVC.swift; sourceTree = "<group>"; };
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
@@ -89,6 +87,7 @@
 		AC1346E0262B7D04001F1451 /* ahx-code-only-template */ = {
 			isa = PBXGroup;
 			children = (
+				AC4B3A4D263B5DD300AF0147 /* Containers */,
 				AC134700262B866E001F1451 /* EntryPoint */,
 				AC1346FF262B8614001F1451 /* ViewControllers */,
 				AC1346FE262B85F8001F1451 /* Utils */,
@@ -112,6 +111,7 @@
 		AC1346FE262B85F8001F1451 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				AC134708262B903F001F1451 /* AHXConstants.swift */,
 				AC1346FA262B84F8001F1451 /* AHXLayout.swift */,
 				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
 			);
@@ -121,13 +121,8 @@
 		AC1346FF262B8614001F1451 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
-				AC8156E3262E259800009DF9 /* BottomNavVC.swift */,
-				AC86D6AD26308745001790E4 /* ContainerVC.swift */,
 				AC134702262B8DEC001F1451 /* FirstVC.swift */,
 				AC134705262B8E0C001F1451 /* SecondVC.swift */,
-				AC86D6B126308946001790E4 /* TopVC.swift */,
-				AC86D6B426308D1E001790E4 /* MiddleVC.swift */,
-				AC86D6B72630921D001790E4 /* BottomVC.swift */,
 			);
 			path = ViewControllers;
 			sourceTree = "<group>";
@@ -135,10 +130,20 @@
 		AC134700262B866E001F1451 /* EntryPoint */ = {
 			isa = PBXGroup;
 			children = (
-				AC134708262B903F001F1451 /* AHXConstants.swift */,
 				AC1346F7262B83B7001F1451 /* AHXMain.swift */,
 			);
 			path = EntryPoint;
+			sourceTree = "<group>";
+		};
+		AC4B3A4D263B5DD300AF0147 /* Containers */ = {
+			isa = PBXGroup;
+			children = (
+				AC86D6AD26308745001790E4 /* ContainerVC.swift */,
+				AC86D6B126308946001790E4 /* TopVC.swift */,
+				AC86D6B426308D1E001790E4 /* MiddleVC.swift */,
+				AC86D6B72630921D001790E4 /* BottomVC.swift */,
+			);
+			path = Containers;
 			sourceTree = "<group>";
 		};
 		C5ABD50E2E96E15498F21F42 /* Pods */ = {
@@ -147,7 +152,6 @@
 				31501B7D08E23C742093C125 /* Pods-ahx-code-only-template.debug.xcconfig */,
 				96532B2A2EF2335E333E6673 /* Pods-ahx-code-only-template.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -265,7 +269,6 @@
 			files = (
 				AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */,
 				AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */,
-				AC8156E4262E259800009DF9 /* BottomNavVC.swift in Sources */,
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,
 				AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */,

@@ -24,20 +24,14 @@ class TopVC: UIViewController {
         layout()
     } // viewWillAppear()
     
-    //-----------------
-    func layout() {
-        let inset = AHXMain.scene.win.safeAreaInsets
-        let w = UIScreen.main.bounds.width
-        let h = UIScreen.main.bounds.height - inset.top - inset.bottom
-        let bottom = UIScreen.main.bounds.height - inset.bottom
-        let top = inset.top
-        
+    //--------------------------
+    override func layout() {
         // Layout root frame
         var v = self.view!
-        AHXLayout.width( v, w)
-        AHXLayout.height( v, 0.1 * h)
+        AHXLayout.width( v, AHC.w)
+        AHXLayout.height( v, AHC.top_nav_height)
         AHXLayout.left( v, 0)
-        AHXLayout.top( v, top)
+        AHXLayout.top( v, AHC.top)
         
         // Layout view components
         btnBack = UIButton( type: .system,
@@ -48,7 +42,7 @@ class TopVC: UIViewController {
         self.view.addSubview( v)
         AHXLayout.width( v, v.intrinsicContentSize.width)
         AHXLayout.height( v, view.frame.height)
-        AHXLayout.left( v, 0.05 * w)
+        AHXLayout.left( v, AHC.lmarg)
         AHXLayout.middle( v, view.frame.height / 2)
         //AHXLayout.border( v, .blue)
     } // layout()
