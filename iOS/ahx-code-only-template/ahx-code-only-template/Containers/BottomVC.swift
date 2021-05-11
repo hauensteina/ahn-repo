@@ -40,34 +40,38 @@ class BottomVC: UIViewController {
         
         // Currency Button
         btnOne = UIButton( type: .custom,
-//                           primaryAction: UIAction(
-//                            title: "C",
-//                            image: UIImage( named:"dollar_green"),
-//                            handler: { _ in
                            primaryAction: UIAction() { _ in
-                           //primaryAction: UIAction(title: "C", handler: { _ in
-                            // do nothing
+                            if !self.btnOne.isSelected {
+                                AHXMain.shared.topVC( "FirstVC")
+                            }
                            })
-        //btnOne.tintColor = .clear
-        btnOne.setImage( UIImage( named:"dollar_gray"), for: .normal)
-        btnOne.setImage( UIImage( named:"dollar_green"), for: .selected)
         var btn = btnOne!
+        var nimg = UIImage( named:"dollar_gray")!
+        var simg = UIImage( named:"dollar_green")!
+        btn.setImage( nimg, for: .normal)
+        btn.setImage( simg, for: .selected)
         view.addSubview( btn)
-        AHL.width( btn, btnw)
         AHL.height( btn, view.frame.height)
+        AHL.scaleWidth( btn, likeImage: nimg)
         AHL.left( btn, marg)
         AHL.top( btn, 0)
         AHL.border( btn)
         
         // Image Button
-        btnTwo = UIButton( type: .system,
-                           primaryAction: UIAction(title: "I", handler: { _ in
-                            // do nothing
-                           }))
+        btnTwo = UIButton( type: .custom,
+                           primaryAction: UIAction() { _ in
+                            if !self.btnTwo.isSelected {
+                                AHXMain.shared.topVC( "SecondVC")
+                            }
+                           })
         btn = btnTwo!
+        nimg = UIImage( named:"pic_gray")!
+        simg = UIImage( named:"pic_black")!
+        btn.setImage( nimg, for: .normal)
+        btn.setImage( simg, for: .selected)
         view.addSubview( btn)
-        AHL.width( btn, btnw)
         AHL.height( btn, view.frame.height)
+        AHL.scaleWidth( btn, likeImage: nimg)
         AHL.left( btn, btnw + 2 * marg )
         AHL.top( btn, 0)
         AHL.border( btn)

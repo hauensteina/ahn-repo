@@ -115,6 +115,22 @@ class AHXLayout
         AHXLayout.bottom( v, other.frame.maxY)
     } // bottom()
 
+    // Preserve height, change width to no distort the Image
+    //-------------------------------------------------------
+    class func scaleWidth( _ v:UIView, likeImage:UIImage)
+    {
+        let rat = likeImage.size.width / likeImage.size.height
+        AHL.width( v, rat * v.frame.height)
+    } // scaleWidth()
+
+    // Preserve width, change height to no distort the Image
+    //-------------------------------------------------------
+    class func scaleHeight( _ v:UIView, likeImage:UIImage)
+    {
+        let rat = likeImage.size.height / likeImage.size.width
+        AHL.height( v, rat * v.frame.width)
+    } // scaleHeight()
+
     // Give a view a color border
     //------------------------------------------------------------
     class func border( _ v:UIView, _ col:UIColor=UIColor.red)
