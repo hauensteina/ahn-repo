@@ -39,10 +39,18 @@ class BottomVC: UIViewController {
         let btnw = (AHC.w - 3 * marg) / 2
         
         // Currency Button
-        btnOne = UIButton( type: .system,
-                           primaryAction: UIAction(title: "C", handler: { _ in
+        btnOne = UIButton( type: .custom,
+//                           primaryAction: UIAction(
+//                            title: "C",
+//                            image: UIImage( named:"dollar_green"),
+//                            handler: { _ in
+                           primaryAction: UIAction() { _ in
+                           //primaryAction: UIAction(title: "C", handler: { _ in
                             // do nothing
-                           }))
+                           })
+        //btnOne.tintColor = .clear
+        btnOne.setImage( UIImage( named:"dollar_gray"), for: .normal)
+        btnOne.setImage( UIImage( named:"dollar_green"), for: .selected)
         var btn = btnOne!
         view.addSubview( btn)
         AHL.width( btn, btnw)
@@ -64,4 +72,16 @@ class BottomVC: UIViewController {
         AHL.top( btn, 0)
         AHL.border( btn)
     } // layout()
+    
+    //-------------------------------------
+    func selectButton( _ btnIdx:Int) {
+        if btnIdx == 0 {
+            btnOne.isSelected = true
+            btnTwo.isSelected = false
+        }
+        else {
+            btnOne.isSelected = false
+            btnTwo.isSelected = true
+        }
+    } // selectButton()
 } // class BottomVC

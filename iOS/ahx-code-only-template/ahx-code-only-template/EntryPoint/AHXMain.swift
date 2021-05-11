@@ -14,6 +14,7 @@ class AHXMain {
     static var scene = SceneDelegate.shared!
     var navVC:UINavigationController!
     var VCs = [String:UIViewController]()
+    var orderedVCs = [String]()
     
     // Entry Point to App, called from SceneDelegate
     //------------------------------------------------
@@ -24,6 +25,7 @@ class AHXMain {
             "FirstVC": FirstVC(),
             "SecondVC": SecondVC()
         ]
+        orderedVCs = [ "FirstVC", "SecondVC"]
         pushVC( "FirstVC")
     } // main()
     
@@ -33,6 +35,7 @@ class AHXMain {
         let vc = VCs[vcName]!
         let _ = vc.view // Make sure it's instantiated
         self.navVC.pushViewController( vc, animated: true)
+        ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
     } // pushCV()
 
     // Pop top VC
@@ -48,6 +51,7 @@ class AHXMain {
         let _ = vc.view // Make sure it's instantiated
         self.navVC.popViewController( animated:true)
         self.navVC.pushViewController( vc, animated: true)
+        ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
     } // topVC()
     
 } // class AHXMain
