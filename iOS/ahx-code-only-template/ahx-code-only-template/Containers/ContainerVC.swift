@@ -30,17 +30,17 @@ class ContainerVC: UIViewController {
 
         topVC = TopVC()
         _ = topVC.view
-        AHU.vcContains(parent: self, child: topVC)
+        AHU.vcAppend(parent: self, child: topVC)
         AHL.border( topVC.view, .red)
         
         middleVC = MiddleVC()
         _ = middleVC.view
-        AHU.vcContains(parent: self, child: middleVC)
+        AHU.vcAppend(parent: self, child: middleVC)
         AHL.border( middleVC.view, .green)
 
         bottomVC = BottomVC()
         _ = bottomVC.view
-        AHU.vcContains(parent: self, child: bottomVC)
+        AHU.vcAppend(parent: self, child: bottomVC)
         AHL.border( bottomVC.view, .blue)
         
         ContainerVC.shared = self

@@ -21,7 +21,7 @@ class MiddleVC: UIViewController {
         super.viewDidLoad()
         let rootVC = UIViewController() // This never gets popped off
         nav = UINavigationController( rootViewController: rootVC)
-        AHU.vcContains(parent: self, child: nav)
+        AHU.vcAppend(parent: self, child: nav)
 
         // Main area dimensions
         let v = self.view!

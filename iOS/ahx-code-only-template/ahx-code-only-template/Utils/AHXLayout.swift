@@ -13,6 +13,8 @@ import UIKit
 //=========================================================
 class AHXLayout
 {
+    // View size
+    //================
     // Set the width of a view
     //-------------------------------------------
     class func width(_ v:UIView, _ x:CGFloat) {
@@ -25,6 +27,8 @@ class AHXLayout
         v.frame.size = CGSize( width:v.frame.width, height:y)
     } // height()
 
+    // View Position
+    //===================
     // Left align a view to an x value
     //------------------------------------------
     class func left(_ v:UIView, _ x:CGFloat)
@@ -115,6 +119,8 @@ class AHXLayout
         AHXLayout.bottom( v, other.frame.maxY)
     } // bottom()
 
+    // Scale Images
+    //================
     // Preserve height, change width to no distort the Image
     //-------------------------------------------------------
     class func scaleWidth( _ v:UIView, likeImage:UIImage)
@@ -123,7 +129,7 @@ class AHXLayout
         AHL.width( v, rat * v.frame.height)
     } // scaleWidth()
 
-    // Preserve width, change height to no distort the Image
+    // Preserve width, change height to not distort the Image
     //-------------------------------------------------------
     class func scaleHeight( _ v:UIView, likeImage:UIImage)
     {
@@ -131,6 +137,66 @@ class AHXLayout
         AHL.height( v, rat * v.frame.width)
     } // scaleHeight()
 
+    // Flex layout views
+    //=======================
+    
+    // Vertically layout subviews inside container.
+    // The subviews are made subviews here automatically.
+    // points: Array with height for each subview. If a view has a nil points
+    //   value, dynamically take an equal share of whatever space is left.
+    // topmarg: Margin before the top view, in points
+    // botmarg: Margin after the last view, in points
+    // space: Space between subviews, in points
+    // minheight: Minimum height of a dynamic (nil points) subview, in points
+    //----------------------------------------------------------------------------
+    class func vShare( container:UIView, subviews:[UIView], points_:[CGFloat?],
+                       topmarg_:CGFloat?=nil, botmarg_:CGFloat?=nil, space_:CGFloat?=nil,
+                       minheight_:CGFloat?=nil) {
+        
+        // Make them suvbviews
+        for v in subviews {
+            if !v.isDescendant(of: container) {
+                container.addSubview( v)
+            }
+        } // for
+        
+        let ch = container.frame.height
+        let topmarg = topmarg_ ?? ch * 0.05
+        let botmarg = botmarg_ ?? ch * 0.05
+        let space = space_ ?? ch * 0.05
+        let minheight = minheight_ ?? ch * 0.05
+        let usable_points = (ch - topmarg - botmarg) - space * (CGFloat(subviews.count) - 1.0)
+        
+        let used_points = AHU.nonNils( points_).reduce( 0,+) // sum non nil ones
+        let ndyn = points_.count - AHU.nonNils( points_).count
+        let dynh = max( minheight, (usable_points - used_points) / CGFloat(ndyn) )
+
+        // How many vertical points do we need
+        var points = [CGFloat]()
+        for p in points_ {
+            if p != nil { points.append( p!); continue }
+            points.append( dynh)
+        } // for
+        
+        let total_points = points.reduce( 0,+)
+        // Deal with needing more points than we got
+        if total_points > usable_points {
+            let shrink = usable_points / total_points
+            points = points.map( { $0 * shrink })
+        }
+        // Position and size the subviews vertically.
+        // Leave x and width unchanged.
+        var pos = topmarg
+        for (i,v) in subviews.enumerated() {
+            AHL.height( v, points[i])
+            v.frame.origin = CGPoint( x:v.frame.minX, y:pos)
+            pos += points[i]
+            pos += space
+        } // for
+    } // vShare()
+    
+    // Misc
+    //=========
     // Give a view a color border
     //------------------------------------------------------------
     class func border( _ v:UIView, _ col:UIColor=UIColor.red)
