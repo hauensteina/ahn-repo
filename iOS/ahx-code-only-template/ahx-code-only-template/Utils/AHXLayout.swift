@@ -189,7 +189,7 @@ class AHXLayout
         var pos = topmarg
         for (i,v) in subviews.enumerated() {
             AHL.height( v, points[i])
-            v.frame.origin = CGPoint( x:v.frame.minX, y:pos)
+            AHL.top( v, pos)
             pos += points[i]
             pos += space
         } // for
