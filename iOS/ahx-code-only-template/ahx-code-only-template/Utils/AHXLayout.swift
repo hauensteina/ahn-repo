@@ -31,115 +31,160 @@ class AHXLayout
     //===================
     // Left align a view to an x value
     //------------------------------------------
-    class func left(_ v:UIView, _ x:CGFloat)
-    {
+    class func left(_ v:UIView, _ x:CGFloat) {
         let left = x
         v.frame.origin = CGPoint( x: left, y: v.frame.minY)
-    } // left
+    } // left()
     
     // Left align a view to another view
     //--------------------------------------------
-    class func left(_ v:UIView, _ other:UIView)
-    {
+    class func left(_ v:UIView, _ other:UIView) {
         AHXLayout.left( v, other.frame.minX)
-    } // left
+    } // left()
+
+    // Make view a subview, then left align
+    //------------------------------------------------------
+    class func subleft(_ v:UIView, _ container:UIView) {
+        AHL.addSubview( container, v)
+        AHXLayout.left( v, 0)
+    } // subleft()
 
     // Right align a view to an x value
     //-------------------------------------------
-    class func right(_ v:UIView, _ x:CGFloat)
-    {
+    class func right(_ v:UIView, _ x:CGFloat) {
         let left = x - (v.frame.width - 1)
         v.frame.origin = CGPoint( x: left, y: v.frame.minY)
-    } // right
+    } // right()
     
     // Right align a view to another view
     //----------------------------------------------
-    class func right(_ v:UIView, _ other:UIView)
-    {
+    class func right(_ v:UIView, _ other:UIView) {
         AHXLayout.right( v, other.frame.maxX)
-    } // right
+    } // right()
+
+    // Make view a subview, then right align
+    //------------------------------------------------------
+    class func subright(_ v:UIView, _ container:UIView) {
+        AHL.addSubview( container, v)
+        AHXLayout.right( v, container.frame.width)
+    } // subright()
 
     // Center a view to an x value
     //---------------------------------------------
-    class func center(_ v:UIView, _ x:CGFloat)
-    {
+    class func center(_ v:UIView, _ x:CGFloat) {
         let left = x - v.frame.width / 2
         v.frame.origin = CGPoint( x: left, y: v.frame.minY)
-    } // center
+    } // center()
     
     // Center a view to another view
     //-----------------------------------------------
-    class func center(_ v:UIView, _ other:UIView)
-    {
+    class func center(_ v:UIView, _ other:UIView) {
         AHXLayout.center( v, other.frame.midX)
-    } // center
-    
+    } // center()
+
+    // Make view a subview, then center
+    //------------------------------------------------------
+    class func subcenter(_ v:UIView, _ container:UIView) {
+        AHL.addSubview( container, v)
+        let left = (container.frame.width - v.frame.width) / 2.0
+        AHXLayout.left( v, left)
+    } // subcenter()
+
     // Align view top to a y value
     //------------------------------------------
-    class func top( _ v:UIView, _ y:CGFloat)
-    {
+    class func top( _ v:UIView, _ y:CGFloat) {
         let top = y
         v.frame.origin = CGPoint( x: v.frame.minX, y: top)
     } // top()
 
     // Align view top to another view
     //----------------------------------------------
-    class func top( _ v:UIView, _ other:UIView)
-    {
+    class func top( _ v:UIView, _ other:UIView) {
         AHXLayout.top( v, other.frame.minY)
     } // top()
+    
+    // Make view a subview, then top align
+    //------------------------------------------------------
+    class func subtop(_ v:UIView, _ container:UIView) {
+        AHL.addSubview( container, v)
+        AHXLayout.top( v, 0)
+    } // subtop()
 
     // Align view middle to a y value
     //--------------------------------------------
-    class func middle( _ v:UIView, _ y:CGFloat)
-    {
+    class func middle( _ v:UIView, _ y:CGFloat) {
         let top = y - v.frame.height / 2
         v.frame.origin = CGPoint( x: v.frame.minX, y: top)
     } // middle()
 
     // Align view middle to another view
     //------------------------------------------------
-    class func middle( _ v:UIView, _ other:UIView)
-    {
+    class func middle( _ v:UIView, _ other:UIView) {
         AHXLayout.middle( v, other.frame.midY)
     } // middle()
 
+    // Make view a subview, then vert center
+    //------------------------------------------------------
+    class func submiddle(_ v:UIView, _ container:UIView) {
+        AHL.addSubview( container, v)
+        AHXLayout.middle( v, container.frame.height / 2.0)
+    } // submiddle()
+
     // Align view bottom to a y value
     //--------------------------------------------
-    class func bottom( _ v:UIView, _ y:CGFloat)
-    {
+    class func bottom( _ v:UIView, _ y:CGFloat) {
         let top = y - (v.frame.height - 1)
         v.frame.origin = CGPoint( x: v.frame.minX, y: top)
     } // bottom()
         
     // Align view bottom to another view
     //-------------------------------------------------
-    class func bottom( _ v:UIView, _ other:UIView)
-    {
+    class func bottom( _ v:UIView, _ other:UIView) {
         AHXLayout.bottom( v, other.frame.maxY)
     } // bottom()
+    
+    // Make view a subview, then align bottom
+    //------------------------------------------------------
+    class func subbottom(_ v:UIView, _ container:UIView) {
+        AHL.addSubview( container, v)
+        AHXLayout.bottom( v, container.frame.height)
+    } // subbottom()
 
     // Scale Images
     //================
     // Preserve height, change width to no distort the Image
     //-------------------------------------------------------
-    class func scaleWidth( _ v:UIView, likeImage:UIImage)
-    {
+    class func scaleWidth( _ v:UIView, likeImage:UIImage) {
         let rat = likeImage.size.width / likeImage.size.height
         AHL.width( v, rat * v.frame.height)
     } // scaleWidth()
 
     // Preserve width, change height to not distort the Image
     //-------------------------------------------------------
-    class func scaleHeight( _ v:UIView, likeImage:UIImage)
-    {
+    class func scaleHeight( _ v:UIView, likeImage:UIImage) {
         let rat = likeImage.size.height / likeImage.size.width
         AHL.height( v, rat * v.frame.width)
     } // scaleHeight()
 
     // Flex layout views
     //=======================
+
+    // Add subviews to container, if not already there
+    //----------------------------------------------------------------
+    class func addSubviews( _ container:UIView, _ subviews:[UIView]) {
+        for v in subviews {
+            AHL.addSubview( container, v)
+        } // for
+    } // addSubViews()
     
+    // Add subview to container, if not already there
+    //----------------------------------------------------------------
+    class func addSubview( _ container:UIView, _ subview:UIView) {
+            if !subview.isDescendant(of: container) {
+                container.addSubview( subview)
+            }
+    } // addSubView()
+
     // Vertically layout subviews inside container.
     // The subviews are made subviews here automatically.
     // points: Array with height for each subview. If a view has a nil points
@@ -148,17 +193,12 @@ class AHXLayout
     // botmarg: Margin after the last view, in points
     // space: Space between subviews, in points
     // minheight: Minimum height of a dynamic (nil points) subview, in points
-    //----------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------
     class func vShare( container:UIView, subviews:[UIView], points_:[CGFloat?],
                        topmarg_:CGFloat?=nil, botmarg_:CGFloat?=nil, space_:CGFloat?=nil,
                        minheight_:CGFloat?=nil) {
-        
-        // Make them suvbviews
-        for v in subviews {
-            if !v.isDescendant(of: container) {
-                container.addSubview( v)
-            }
-        } // for
+
+        AHL.addSubviews( container, subviews)
         
         let ch = container.frame.height
         let topmarg = topmarg_ ?? ch * 0.05
@@ -171,15 +211,15 @@ class AHXLayout
         let ndyn = points_.count - AHU.nonNils( points_).count
         let dynh = max( minheight, (usable_points - used_points) / CGFloat(ndyn) )
 
-        // How many vertical points do we need
+        // Fill in the dynamic heights
         var points = [CGFloat]()
         for p in points_ {
             if p != nil { points.append( p!); continue }
             points.append( dynh)
         } // for
-        
-        let total_points = points.reduce( 0,+)
+
         // Deal with needing more points than we got
+        let total_points = points.reduce( 0,+)
         if total_points > usable_points {
             let shrink = usable_points / total_points
             points = points.map( { $0 * shrink })
@@ -194,13 +234,62 @@ class AHXLayout
             pos += space
         } // for
     } // vShare()
-    
+
+    // Horizontally layout subviews inside container.
+    // The subviews are made subviews here automatically.
+    // points: Array with width for each subview. If a view has a nil points
+    //   value, dynamically take an equal share of whatever space is left.
+    // leftmarg: Margin before the leftmost view, in points
+    // rightmarg: Margin to the very right, in points
+    // space: Space between subviews, in points
+    // minwidth: Minimum width of a dynamic (nil points) subview, in points
+    //----------------------------------------------------------------------------------------
+    class func hShare( container:UIView, subviews:[UIView], points_:[CGFloat?],
+                       leftmarg_:CGFloat?=nil, rightmarg_:CGFloat?=nil, space_:CGFloat?=nil,
+                       minwidth_:CGFloat?=nil) {
+
+        AHL.addSubviews( container, subviews)
+        
+        let cw = container.frame.width
+        let leftmarg = leftmarg_ ?? cw * 0.05
+        let rightmarg = rightmarg_ ?? cw * 0.05
+        let space = space_ ?? cw * 0.05
+        let minwidth = minwidth_ ?? cw * 0.05
+        let usable_points = (cw - leftmarg - rightmarg) - space * (CGFloat(subviews.count) - 1.0)
+        
+        let used_points = AHU.nonNils( points_).reduce( 0,+) // sum non nil ones
+        let ndyn = points_.count - AHU.nonNils( points_).count
+        let dynw = max( minwidth, (usable_points - used_points) / CGFloat(ndyn) )
+
+        // Fill in the dynamic widths
+        var points = [CGFloat]()
+        for p in points_ {
+            if p != nil { points.append( p!); continue }
+            points.append( dynw)
+        } // for
+        
+        // Deal with needing more points than we got
+        let total_points = points.reduce( 0,+)
+        if total_points > usable_points {
+            let shrink = usable_points / total_points
+            points = points.map( { $0 * shrink })
+        }
+        // Position and size the subviews horizontally.
+        // Leave y and height unchanged.
+        var pos = leftmarg
+        for (i,v) in subviews.enumerated() {
+            AHL.width( v, points[i])
+            AHL.left( v, pos)
+            pos += points[i]
+            pos += space
+        } // for
+    } // hShare()
+
     // Misc
     //=========
     // Give a view a color border
     //------------------------------------------------------------
-    class func border( _ v:UIView, _ col:UIColor=UIColor.red)
-    {
+    class func border( _ v:UIView, _ col:UIColor=UIColor.red) {
         v.layer.borderWidth = 1; v.layer.borderColor = col.cgColor
     } // border
 
