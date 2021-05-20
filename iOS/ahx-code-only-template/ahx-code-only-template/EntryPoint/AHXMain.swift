@@ -6,6 +6,7 @@
 //
 
 /*
+ 
  The SceneDelegate has a ContainerVC as root.
  ContainerVC has three VCs as children:
  (1) TopVC
@@ -16,14 +17,19 @@
  different parts of the app.
  - MiddleVC is the Main window. It has the Navigation Controller.
  
- At startup, the SceneDelegate calls
+ After startup, the SceneDelegate calls
  AHXMain.shared.main( navVC: rootVC.middleVC.nav) .
  This creates all view controllers for the main screen. They are immediately
  instantiated and layed out. They live in a dictionary AHXMain.shared.VCs .
  AHXMain.shared provides methods pushVC(), popVC(), topVC() to present
  ViewControllers from the VCs dictionary by name.
  
- Add your own VCs to the VCs dictionary to build your app.
+ The methods pushVC(), popVC(), topVC() are typically called when the user
+ clicks something in BottomVC or TopVC. Depending on your app logic, actions
+ in a presented VC (subVC of MiddleVC) might also call these methods.
+ 
+ Implement your own VCs and add them to the VCs dictionary to build your app.
+ That's all you have to do. 
  
  */
  
