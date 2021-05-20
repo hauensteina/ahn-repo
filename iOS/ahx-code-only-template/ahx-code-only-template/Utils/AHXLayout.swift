@@ -194,12 +194,16 @@ class AHXLayout
     // space: Space between subviews, in points
     // minheight: Minimum height of a dynamic (nil points) subview, in points
     //---------------------------------------------------------------------------------------
-    class func vShare( container:UIView, subviews:[UIView], points_:[CGFloat?],
+    class func vShare( container:UIView, subviews:[UIView], heights_:[CGFloat?]?=nil,
                        topmarg_:CGFloat?=nil, botmarg_:CGFloat?=nil, space_:CGFloat?=nil,
                        minheight_:CGFloat?=nil) {
 
         AHL.addSubviews( container, subviews)
-        
+
+        var heights = [CGFloat?].init(repeating: nil, count: subviews.count)
+        if heights_ != nil {
+            heights = heights_!
+        }
         let ch = container.frame.height
         let topmarg = topmarg_ ?? ch * 0.05
         let botmarg = botmarg_ ?? ch * 0.05
@@ -207,13 +211,13 @@ class AHXLayout
         let minheight = minheight_ ?? ch * 0.05
         let usable_points = (ch - topmarg - botmarg) - space * (CGFloat(subviews.count) - 1.0)
         
-        let used_points = AHU.nonNils( points_).reduce( 0,+) // sum non nil ones
-        let ndyn = points_.count - AHU.nonNils( points_).count
+        let used_points = AHU.nonNils( heights).reduce( 0,+) // sum non nil ones
+        let ndyn = heights.count - AHU.nonNils( heights).count
         let dynh = max( minheight, (usable_points - used_points) / CGFloat(ndyn) )
 
         // Fill in the dynamic heights
         var points = [CGFloat]()
-        for p in points_ {
+        for p in heights {
             if p != nil { points.append( p!); continue }
             points.append( dynh)
         } // for
@@ -229,6 +233,7 @@ class AHXLayout
         var pos = topmarg
         for (i,v) in subviews.enumerated() {
             AHL.height( v, points[i])
+            AHL.width( v, container.frame.width)
             AHL.top( v, pos)
             pos += points[i]
             pos += space
@@ -244,12 +249,17 @@ class AHXLayout
     // space: Space between subviews, in points
     // minwidth: Minimum width of a dynamic (nil points) subview, in points
     //----------------------------------------------------------------------------------------
-    class func hShare( container:UIView, subviews:[UIView], points_:[CGFloat?],
+    class func hShare( container:UIView, subviews:[UIView], widths_:[CGFloat?]?=nil,
                        leftmarg_:CGFloat?=nil, rightmarg_:CGFloat?=nil, space_:CGFloat?=nil,
                        minwidth_:CGFloat?=nil) {
 
         AHL.addSubviews( container, subviews)
-        
+
+        var widths = [CGFloat?].init(repeating: nil, count: subviews.count)
+        if widths_ != nil {
+            widths = widths_!
+        }
+
         let cw = container.frame.width
         let leftmarg = leftmarg_ ?? cw * 0.05
         let rightmarg = rightmarg_ ?? cw * 0.05
@@ -257,13 +267,13 @@ class AHXLayout
         let minwidth = minwidth_ ?? cw * 0.05
         let usable_points = (cw - leftmarg - rightmarg) - space * (CGFloat(subviews.count) - 1.0)
         
-        let used_points = AHU.nonNils( points_).reduce( 0,+) // sum non nil ones
-        let ndyn = points_.count - AHU.nonNils( points_).count
+        let used_points = AHU.nonNils( widths).reduce( 0,+) // sum non nil ones
+        let ndyn = widths.count - AHU.nonNils( widths).count
         let dynw = max( minwidth, (usable_points - used_points) / CGFloat(ndyn) )
 
         // Fill in the dynamic widths
         var points = [CGFloat]()
-        for p in points_ {
+        for p in widths {
             if p != nil { points.append( p!); continue }
             points.append( dynw)
         } // for
@@ -279,6 +289,7 @@ class AHXLayout
         var pos = leftmarg
         for (i,v) in subviews.enumerated() {
             AHL.width( v, points[i])
+            AHL.height( v, container.frame.height)
             AHL.left( v, pos)
             pos += points[i]
             pos += space
