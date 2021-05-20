@@ -6,6 +6,8 @@
 //
 
 /*
+ This is the main entry point for the app. Add all functionality here.
+ How it works:
  
  The SceneDelegate has a ContainerVC as root.
  ContainerVC has three VCs as children:
@@ -29,7 +31,9 @@
  in a presented VC (subVC of MiddleVC) might also call these methods.
  
  Implement your own VCs and add them to the VCs dictionary to build your app.
- That's all you have to do. 
+ Look at FirstVC and SecondVC to get a hang of how to write VCs.
+ After that, it's all monkey see monkey do. Start by writing a ThirdVC and see
+ if you can get it to show up and do something.
  
  */
  
