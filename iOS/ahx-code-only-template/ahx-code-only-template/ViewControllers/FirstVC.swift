@@ -24,7 +24,6 @@ class FirstVC: UIViewController {
         // Container for bottom line
         hcont2 = UIView()
         self.view.addSubview( vcont)
-        layout()
     } // viewDidLoad()
     
     //------------------------
@@ -32,10 +31,11 @@ class FirstVC: UIViewController {
         // Container for two lines
         AHL.width( vcont, AHC.w * 0.9)
         AHL.height( vcont, AHC.h * 0.33 )
-        AHL.center( vcont, self.view)
-        AHL.middle( vcont, self.view)
+        AHL.subcenter( vcont, self.view)
+        AHL.submiddle( vcont, self.view)
+        //AHL.subbottom( vcont, self.view)
         AHL.border( vcont, .blue)
-        
+        return
         // Container for top line
         AHL.width( hcont1, vcont.frame.width * 0.9)
         AHL.border( hcont1)
