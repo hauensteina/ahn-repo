@@ -23,6 +23,7 @@
 		AC86D6B226308946001790E4 /* TopVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B126308946001790E4 /* TopVC.swift */; };
 		AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B426308D1E001790E4 /* MiddleVC.swift */; };
 		AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B72630921D001790E4 /* BottomVC.swift */; };
+		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +46,7 @@
 		AC86D6B126308946001790E4 /* TopVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopVC.swift; sourceTree = "<group>"; };
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
+		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
 		F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_code_only_template.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -89,12 +91,13 @@
 		AC1346E0262B7D04001F1451 /* ahx-code-only-template */ = {
 			isa = PBXGroup;
 			children = (
-				AC68B15A264320B60059016A /* LaunchScreen.storyboard */,
+				AC1346FD262B85B9001F1451 /* Boilerplate */,
 				AC4B3A4D263B5DD300AF0147 /* Containers */,
 				AC134700262B866E001F1451 /* EntryPoint */,
-				AC1346FF262B8614001F1451 /* ViewControllers */,
-				AC1346FE262B85F8001F1451 /* Utils */,
-				AC1346FD262B85B9001F1451 /* Boilerplate */,
+				AC1346FE262B85F8001F1451 /* Misc */,
+				AC1346FF262B8614001F1451 /* App Screens */,
+				ACE40436265843EF00C63140 /* Widgets */,
+				AC68B15A264320B60059016A /* LaunchScreen.storyboard */,
 				AC1346EA262B7D0A001F1451 /* Assets.xcassets */,
 				AC1346EF262B7D0A001F1451 /* Info.plist */,
 			);
@@ -111,23 +114,23 @@
 			path = Boilerplate;
 			sourceTree = "<group>";
 		};
-		AC1346FE262B85F8001F1451 /* Utils */ = {
+		AC1346FE262B85F8001F1451 /* Misc */ = {
 			isa = PBXGroup;
 			children = (
 				AC134708262B903F001F1451 /* AHXConstants.swift */,
 				AC1346FA262B84F8001F1451 /* AHXLayout.swift */,
 				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
 			);
-			path = Utils;
+			path = Misc;
 			sourceTree = "<group>";
 		};
-		AC1346FF262B8614001F1451 /* ViewControllers */ = {
+		AC1346FF262B8614001F1451 /* App Screens */ = {
 			isa = PBXGroup;
 			children = (
 				AC134702262B8DEC001F1451 /* FirstVC.swift */,
 				AC134705262B8E0C001F1451 /* SecondVC.swift */,
 			);
-			path = ViewControllers;
+			path = "App Screens";
 			sourceTree = "<group>";
 		};
 		AC134700262B866E001F1451 /* EntryPoint */ = {
@@ -147,6 +150,14 @@
 				AC86D6B72630921D001790E4 /* BottomVC.swift */,
 			);
 			path = Containers;
+			sourceTree = "<group>";
+		};
+		ACE40436265843EF00C63140 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				ACE404372658445400C63140 /* AHXPicker.swift */,
+			);
+			path = Widgets;
 			sourceTree = "<group>";
 		};
 		C5ABD50E2E96E15498F21F42 /* Pods */ = {
@@ -276,6 +287,7 @@
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,
 				AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */,
+				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
 				AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */,
 				AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */,

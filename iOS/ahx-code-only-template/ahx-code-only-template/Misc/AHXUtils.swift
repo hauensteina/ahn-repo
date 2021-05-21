@@ -17,6 +17,9 @@ import UIKit
 
 //===================
 class AHXUtils {
+    
+    // ViewControllers, Views, etc
+    //===============================
     // Make a view controller the child of another
     //---------------------------------------------------------------------------
     class func vcAppend( parent:UIViewController, child: UIViewController) {
@@ -26,6 +29,21 @@ class AHXUtils {
         child.didMove( toParent: parent)
     } // vcAppend()
     
+    // Get View Controller from a view
+    //----------------------------------------------------
+    class func myVC(_ v:UIView)  -> UIViewController {
+        var v:UIResponder? = v.next
+        while( v != nil) {
+            if let res = v as? UIViewController {
+                return res
+            }
+            v = v!.next
+        } // while
+        return UIViewController()
+    } // myVC()
+    
+    // Misc Utils
+    //=============
     // Conveniently get a UIColor from RGB
     //---------------------------------------------------------------
     class func RGB( _ red:CGFloat, _ green:CGFloat, _ blue:CGFloat,

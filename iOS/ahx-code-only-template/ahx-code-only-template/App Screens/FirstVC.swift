@@ -13,6 +13,7 @@ class FirstVC: UIViewController {
     var hcont1:UIView!
     var hcont2:UIView!
     var hcont3:UIView!
+    var fromPicker:AHXPicker!
 
     //-------------------------------
     override func viewDidLoad() {
@@ -34,7 +35,6 @@ class FirstVC: UIViewController {
         AHL.height( vcont, AHC.h * 0.33 )
         AHL.subcenter( vcont, self.view)
         AHL.submiddle( vcont, self.view)
-        //AHL.subbottom( vcont, self.view)
         AHL.border( vcont, .blue)
         
         // Add the line containers
@@ -45,10 +45,12 @@ class FirstVC: UIViewController {
         let lbFrom = UILabel()
         lbFrom.text = "from:"
         AHL.border( lbFrom)
-        let ddFromCur = UILabel()
-        ddFromCur.text = "USD"
-        AHL.border( ddFromCur)
-        AHL.hShare( container: hcont1, subviews: [lbFrom, ddFromCur])
+        let tfFromCur = AHXPickerTf()
+        let curs = ["USD","EUR","CHF"]
+        tfFromCur.text = curs[0]
+        fromPicker = AHXPicker(tf: tfFromCur, choices: curs) { (idx:Int) in }
+        AHL.border( tfFromCur)
+        AHL.hShare( container: hcont1, subviews: [lbFrom, tfFromCur])
         
         // Container for second line (to currency)
         AHL.border( hcont2)
