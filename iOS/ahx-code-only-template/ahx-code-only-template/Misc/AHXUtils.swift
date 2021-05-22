@@ -46,9 +46,12 @@ class AHXUtils {
     //=============
     // Conveniently get a UIColor from RGB
     //---------------------------------------------------------------
-    class func RGB( _ red:CGFloat, _ green:CGFloat, _ blue:CGFloat,
+    class func RGB( _ red:Int, _ green:Int, _ blue:Int,
                     alpha:CGFloat = 1.0) -> UIColor {
-        return UIColor(red: red, green: green, blue: blue, alpha: alpha)
+        return UIColor(red: CGFloat(red) / 256.0,
+                       green: CGFloat(green) / 256.0,
+                       blue: CGFloat(blue) / 256.0,
+                       alpha: alpha)
     } // RGB()
     
     // Return nonil elements of arr

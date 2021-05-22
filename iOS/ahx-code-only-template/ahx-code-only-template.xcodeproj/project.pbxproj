@@ -24,6 +24,7 @@
 		AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B426308D1E001790E4 /* MiddleVC.swift */; };
 		AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B72630921D001790E4 /* BottomVC.swift */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
+		ACED1F2326598AAE00C40A07 /* ActionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* ActionClosure.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
+		ACED1F2226598AAE00C40A07 /* ActionClosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionClosure.swift; sourceTree = "<group>"; };
 		F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_code_only_template.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -156,6 +158,7 @@
 			isa = PBXGroup;
 			children = (
 				ACE404372658445400C63140 /* AHXPicker.swift */,
+				ACED1F2226598AAE00C40A07 /* ActionClosure.swift */,
 			);
 			path = Widgets;
 			sourceTree = "<group>";
@@ -282,6 +285,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACED1F2326598AAE00C40A07 /* ActionClosure.swift in Sources */,
 				AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */,
 				AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */,
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,

@@ -31,7 +31,7 @@ class AHXConstants {
     static let tmarg = 0.05 * h
     
     // Colors
-    static let bgcol = AHU.RGB( 120,120,120)
+    static let bgcol = AHU.RGB( 200,200,200 )
     
 } // class AHXConstants
 

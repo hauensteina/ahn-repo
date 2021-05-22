@@ -22,14 +22,17 @@ class AHXPicker: NSObject, UIPickerViewDelegate, UIPickerViewDataSource
     var onCancel: ()->()
     var onDone: (_ idx:Int)->()
     let picker = UIPickerView()
-    private var choiceIdx:Int = 0
+    private var choiceIdx:Int!
     
-    //-----------------------------------------------------------------------------------
-    init( tf:UITextField, choices:[String], completion: @escaping (_ idx:Int)->() ) {
+    //-----------------------------------------------------------------------------------------------
+    init( tf:UITextField, choices:[String], defaultChoice:Int=0,
+          completion: @escaping (_ idx:Int)->() ) {
         self.tf = tf
+        self.tf.text = choices[defaultChoice]
         self.choices = choices
         self.onCancel = { () in } // Set this if you reallly need it
         self.onDone = completion
+        self.choiceIdx = defaultChoice
         super.init()
         picker.delegate = self
         tf.tintColor = .clear // no cursor
@@ -47,6 +50,9 @@ class AHXPicker: NSObject, UIPickerViewDelegate, UIPickerViewDataSource
         tf.inputAccessoryView = toolbar
         tf.inputView = picker
     } // init()
+    
+    //--------------------------------------------
+    func getChoice() -> Int { return choiceIdx }
     
     //---------------------
     @objc func cancel() {
