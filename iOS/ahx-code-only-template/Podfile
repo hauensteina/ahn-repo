@@ -4,6 +4,7 @@ use_frameworks!
 
 target 'ahx-code-only-template' do
   pod 'Alamofire'
+  pod 'SwiftyJSON'
   pod 'Firebase/Crashlytics'
   pod 'Firebase/Analytics'
 end

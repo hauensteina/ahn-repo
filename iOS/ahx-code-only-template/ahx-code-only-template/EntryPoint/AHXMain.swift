@@ -101,4 +101,10 @@ class AHXMain {
         ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
     } // topVC()
     
+    // Get the currently active VC
+    //----------------------------------------------
+    class func currentVC() -> UIViewController {
+        return self.shared.navVC.topViewController!
+    } // currentVC()
+    
 } // class AHXMain

@@ -8,6 +8,7 @@
 // Misc helper functions
 
 import UIKit
+import Alamofire
 
 // Add an overrideable layout func to all View Controllers
 //==========================================================
@@ -41,6 +42,50 @@ class AHXUtils {
         } // while
         return UIViewController()
     } // myVC()
+    
+    // JSON
+    //===========
+    
+    //-----------------------------------------------------
+    class func dict2jsonData( d:[String:Any]) -> Data? {
+        var jsonData:Data? = nil
+        do {
+            jsonData = try JSONSerialization.data( withJSONObject: d,
+                                                   options: .prettyPrinted)
+        } catch {
+            print( error.localizedDescription)
+        }
+        return jsonData
+    } // dict2jsonData
+    
+    //------------------------------------------------------
+    class func dict2jsonStr( d:[String:Any]) -> String? {
+        let jsonData = AHU.dict2jsonData(d: d)
+        if jsonData == nil { return nil }
+        let res = String( data: jsonData!, encoding: .utf8)
+        return res
+    } // dict2jsonStr()
+    
+//    class func getURL<T:Decodable>( url:String, params:[String:String]) -> (T?, String?) {
+//        var res:T? = nil
+//        var err:String? = nil
+//        AF.request( url, method: .get, parameters: params, encoding: URLEncoding.queryString, headers: nil)
+//          .validate()
+//          .responseJSON { response in
+//             switch (response.result) {
+//                 case .success( _):
+//                 do {
+//                    res = try JSONDecoder().decode([T].self, from: response.data!)
+//                 } catch let error as NSError {
+//                    err = "Failed to load: \(error.localizedDescription)"
+//                 }
+//             case .failure(let error):
+//                err = "Request error: \(error.localizedDescription)"
+//             }
+//          }
+//            return res, err
+//      } // getURL()
+    
     
     // Misc Utils
     //=============

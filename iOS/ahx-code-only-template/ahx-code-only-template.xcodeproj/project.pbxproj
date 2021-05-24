@@ -25,6 +25,9 @@
 		AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B72630921D001790E4 /* BottomVC.swift */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
 		ACED1F2326598AAE00C40A07 /* ActionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* ActionClosure.swift */; };
+		ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */; };
+		ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F26265AE47C00C40A07 /* AHXPopups.swift */; };
+		ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +52,9 @@
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
 		ACED1F2226598AAE00C40A07 /* ActionClosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionClosure.swift; sourceTree = "<group>"; };
+		ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXRestFuncs.swift; sourceTree = "<group>"; };
+		ACED1F26265AE47C00C40A07 /* AHXPopups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPopups.swift; sourceTree = "<group>"; };
+		ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXGlobFuncs.swift; sourceTree = "<group>"; };
 		F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_code_only_template.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -121,7 +127,10 @@
 			children = (
 				AC134708262B903F001F1451 /* AHXConstants.swift */,
 				AC1346FA262B84F8001F1451 /* AHXLayout.swift */,
+				ACED1F26265AE47C00C40A07 /* AHXPopups.swift */,
+				ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */,
 				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
+				ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */,
 			);
 			path = Misc;
 			sourceTree = "<group>";
@@ -291,11 +300,14 @@
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,
 				AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */,
+				ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */,
 				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
 				AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */,
 				AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */,
 				AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */,
+				ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */,
+				ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */,
 				AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */,
 				AC1346F8262B83B7001F1451 /* AHXMain.swift in Sources */,
 				AC86D6B226308946001790E4 /* TopVC.swift in Sources */,

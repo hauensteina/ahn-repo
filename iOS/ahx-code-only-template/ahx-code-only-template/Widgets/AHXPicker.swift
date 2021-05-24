@@ -24,7 +24,7 @@ class AHXPicker: NSObject, UIPickerViewDelegate, UIPickerViewDataSource
     let picker = UIPickerView()
     private var choiceIdx:Int!
     
-    //-----------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------
     init( tf:UITextField, choices:[String], defaultChoice:Int=0,
           completion: @escaping (_ idx:Int)->() ) {
         self.tf = tf
