@@ -126,11 +126,11 @@
 			isa = PBXGroup;
 			children = (
 				AC134708262B903F001F1451 /* AHXConstants.swift */,
+				ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */,
 				AC1346FA262B84F8001F1451 /* AHXLayout.swift */,
 				ACED1F26265AE47C00C40A07 /* AHXPopups.swift */,
 				ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */,
 				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
-				ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */,
 			);
 			path = Misc;
 			sourceTree = "<group>";

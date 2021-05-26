@@ -120,3 +120,5 @@ class AHXPopups {
     } // cancelPopup()
     
 } // class AHXPopups
+
+typealias AHP = AHXPopups

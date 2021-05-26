@@ -7,6 +7,7 @@
 
 import UIKit
 import Alamofire
+import SwiftyJSON
 
 //=================================
 class FirstVC: UIViewController {
@@ -78,53 +79,38 @@ class FirstVC: UIViewController {
         AHL.hShare( container: resCont, subviews: [lbRes])
         convert()
     } // layout()
-
-    /*
-    //=============================================
-    class ConversionResult: Codable {
-        var rate: Double
-
-//        enum CodingKeys: String, CodingKey {
-//            case name
-//            case email
-//            case token
-//        }
-
-        public required init(from decoder: Decoder) throws {
-            let container = try decoder.unkeyedContainer()
-            let tt = 42
-//            let container = try decoder.container(keyedBy: CodingKeys.self)
-//            self.name = try container.decode(String.self, forKey: .name)
-//            self.email = try container.decode(String.self, forKey: .email)
-//            self.token = try container.decode(String.self, forKey: .token)
-            rate = 1.0
-        }
-    } // class ConversionResult
-    */
     
-    func convert() {
-        let api_key = "c37b6a0c288bf10ed187"
-        let fromCur = "USD" // curs[fromPicker.getChoice()]
-        let toCur = "EUR" // curs[toPicker.getChoice()]
+    // Swift type to parse and hold conversion API result
+    //=======================================================
+    class ConversionResult {
+        var rate:Double = 0.0
         
-        AF.request( "https://free.currconv.com/api/v7/convert",
-                    method: .get,
-                    parameters: ["q":fromCur + "_" + toCur,
-                                 "compact":"ultra",
-                                 "apiKey":api_key])
-            .validate(statusCode: 200..<300)
-            .responseJSON { response in
-                switch response.result {
-                case .success( let JSON):
-                    let res = JSON as! [String:Any]
-                    var tt = 42
-                    var xx:Any = tt
-                    var zz = xx as! String
-                case .failure(let error):
-                     print("Request failed with error: \(error)")
-                 }
+        //------------------------------------------
+        init( json:JSON, query:String) {
+            self.rate = json[query].doubleValue
+            if self.rate <= 0 {
+                AHP.errPopup(message: "ConversionResult.init(): could not find rate")
             }
-    }
+        } // init(json)
+    } // class ConversionResult
     
-
+    // Hit rest API to convert currencies
+    //--------------------------------------
+    func convert() {
+        let fromCur = curs[fromPicker.getChoice()]
+        let toCur = curs[toPicker.getChoice()]
+        let query = "\(fromCur)_\(toCur)"
+        let parms = [
+            "apiKey":"c37b6a0c288bf10ed187",
+            "q":query,
+            "compact":"ultra"
+        ]
+        AHR.getURL( "https://free.currconv.com/api/v7/convert", parms: parms)
+        { (json_:JSON?, err:String?) -> () in
+            guard let json = json_ else { return }
+            let res = ConversionResult( json: json, query:query)
+            self.lbRes.text = String( format: "%.2f", res.rate)
+        }
+    } // convert()
+    
 } // class FirstVC
