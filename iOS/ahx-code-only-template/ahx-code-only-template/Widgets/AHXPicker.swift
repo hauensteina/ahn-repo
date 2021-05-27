@@ -5,8 +5,9 @@
 // Copyright © 2018 PROTXX, INC. All rights reserved.
 //
 
-// A utility class to add a pickerview to a textfield
-/* Example usage:
+/*
+A utility class to add a pickerview to a textfield
+Example usage:
  let myTextField = AHXPickerTf()
  let picker = AHXPicker( tf:myTextField,
                         choices: ["one","two"]) { (idx:Int) in  let choice = idx }

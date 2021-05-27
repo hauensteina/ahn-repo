@@ -187,7 +187,7 @@ class AHXLayout
 
     // Vertically layout subviews inside container.
     // The subviews are made subviews here automatically.
-    // points: Array with height for each subview. If a view has a nil points
+    // points: Array with height for each subview. If a view has a nil height
     //   value, dynamically take an equal share of whatever space is left.
     // topmarg: Margin before the top view, in points
     // botmarg: Margin after the last view, in points
