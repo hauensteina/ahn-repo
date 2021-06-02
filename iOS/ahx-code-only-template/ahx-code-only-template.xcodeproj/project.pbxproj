@@ -29,6 +29,7 @@
 		ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */; };
 		ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F26265AE47C00C40A07 /* AHXPopups.swift */; };
 		ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */; };
+		ACFA106B2668136700B021F4 /* PassThruView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFA106A2668136700B021F4 /* PassThruView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 		ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXRestFuncs.swift; sourceTree = "<group>"; };
 		ACED1F26265AE47C00C40A07 /* AHXPopups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPopups.swift; sourceTree = "<group>"; };
 		ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXGlobFuncs.swift; sourceTree = "<group>"; };
+		ACFA106A2668136700B021F4 /* PassThruView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassThruView.swift; sourceTree = "<group>"; };
 		F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_code_only_template.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -170,6 +172,7 @@
 			isa = PBXGroup;
 			children = (
 				ACED1F2226598AAE00C40A07 /* ActionClosure.swift */,
+				ACFA106A2668136700B021F4 /* PassThruView.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -311,6 +314,7 @@
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,
 				AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */,
+				ACFA106B2668136700B021F4 /* PassThruView.swift in Sources */,
 				ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */,
 				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,

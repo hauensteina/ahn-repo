@@ -17,13 +17,19 @@ class TopVC: UIViewController {
     var burgerMenu:AHXSlideMenu!
     var menuItems = ["One","Two"]
     var menuActions = [
-        { ()->() in AHP.popup( title: "Menu", message: "One") },
-        { ()->() in AHP.popup( title: "Menu", message: "Two") }
+        { ()->() in
+            AHP.popup( title: "Menu", message: "One") },
+        { ()->() in
+            AHP.popup( title: "Menu", message: "Two") }
     ]
     
     //-------------------------------
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Let taps through to children outside the frame.
+        // In particular, the burger menu must be tappable.
+        self.view = PassThruView()
+        
         TopVC.shared = self
         btnBack = UIButton( type: .system,
                             primaryAction: UIAction(title: "Back", handler: { _ in

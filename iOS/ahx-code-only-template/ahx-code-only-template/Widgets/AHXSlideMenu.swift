@@ -69,8 +69,17 @@ class AHXSlideMenu:UIView
         heights.append( nil)
         // Layout the menu items
         AHL.vShare( container: self, subviews: itemViews, heights_: heights)
+        
+        //let gesture = UITapGestureRecognizer( target: self, action:  #selector (self.tapped (_:)))
+        //self.addGestureRecognizer( gesture)
+                
     } // init()
-    
+
+//    //------------------------------------------------------
+//    @objc func tapped(_ sender:UITapGestureRecognizer) {
+//        print(42)
+//    } // tapped()
+
     //----------------
     func show() {
         showing = true
@@ -100,6 +109,23 @@ class AHXSlideMenu:UIView
                             self.frame.origin.x = targetx },
                         completion: nil )
     } // hide()
+    
+//    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+//        return super.point(inside: point, with: event)
+//    }
+//    
+//    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+//        if !self.clipsToBounds && !self.isHidden && self.alpha > 0.0 {
+//            let subviews = self.subviews.reversed()
+//            for member in subviews {
+//                let subPoint = member.convert(point, from: self)
+//                if let result: UIView = member.hitTest(subPoint, with:event) {
+//                    return result
+//                }
+//            }
+//        }
+//        return super.hitTest(point, with: event)
+//    }
     
     //---------------------------------
     required init?( coder: NSCoder) {
