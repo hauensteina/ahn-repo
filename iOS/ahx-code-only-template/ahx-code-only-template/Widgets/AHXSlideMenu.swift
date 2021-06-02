@@ -42,6 +42,8 @@ class AHXSlideMenu:UIView
         let frame = CGRect( x: hideX, y: 0, width: width, height: UIScreen.main.bounds.height)
         super.init( frame:frame)
 
+        self.backgroundColor = .red
+
         // Build the menu items
         var heights = [CGFloat?]()
         var itemViews = [UIView]()

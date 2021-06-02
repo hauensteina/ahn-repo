@@ -26,12 +26,9 @@ class ContainerVC: UIViewController {
     // Insert all subviews. The middle one is a navigation VC.
     //------------------------------------------------------------
     func setup() {
+        ContainerVC.shared = self
         view.backgroundColor = AHC.bgcol
 
-        topVC = TopVC()
-        _ = topVC.view
-        AHU.vcAppend(parent: self, child: topVC)
-        AHL.border( topVC.view, .red)
         
         middleVC = MiddleVC()
         _ = middleVC.view
@@ -43,6 +40,10 @@ class ContainerVC: UIViewController {
         AHU.vcAppend(parent: self, child: bottomVC)
         AHL.border( bottomVC.view, .blue)
         
-        ContainerVC.shared = self
+        // Must be last so it is on top, for the burger menu to show
+        topVC = TopVC()
+        _ = topVC.view
+        AHU.vcAppend(parent: self, child: topVC)
+        AHL.border( topVC.view, .red)
     } // setup()
 } // class ContainerVC
