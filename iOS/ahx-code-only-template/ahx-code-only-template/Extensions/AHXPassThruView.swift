@@ -1,5 +1,5 @@
 //
-//  PassThruView.swift
+//  AHXPassThruView.swift
 //  ahx-code-only-template
 //
 //  Created by Andreas Hauenstein on 2021-06-02.
@@ -12,7 +12,9 @@
 import UIKit
 
 //=============================
-class PassThruView: UIView {
+class AHXPassThruView: UIView {
+        
+    //------------------------------------------------------------------------------
     override func point( inside point: CGPoint, with event: UIEvent?) -> Bool {
         for subview in subviews as [UIView] {
             if !subview.isHidden && subview.alpha > 0 && subview.isUserInteractionEnabled &&
@@ -22,5 +24,6 @@ class PassThruView: UIView {
         }
         return false
     } // point()
-} // class PassThruView
+
+} // class AHXPassThruView
 

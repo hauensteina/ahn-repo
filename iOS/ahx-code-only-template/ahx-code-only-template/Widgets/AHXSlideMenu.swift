@@ -7,8 +7,9 @@
 
 /*
  A view with menu items that can slide in and out.
- Make this a subview of a viewcontroller spanning the whole screen.
+ Make this a subview of a viewcontroller spanning the whole screen width.
  Example usage:
+ myVC.view = PassThruView() // in case it's not high enough
  let menu = AHXSlideMenu( ["One","Two"],
                           [
                              { () -> () in AHP.popup(title: "Menu", message: "One") },
@@ -27,6 +28,7 @@ class AHXSlideMenu:UIView
     var showing = false
     var showX:CGFloat = 0.0
     var hideX:CGFloat = 0.0
+    var touchAction:AHXOnAnyTouch!
     
     //----------------------------------------------------------------------
     init( items:[String], actions:[()->()],
@@ -35,9 +37,9 @@ class AHXSlideMenu:UIView
           bgcol:UIColor = AHU.RGB( 120,120,120, alpha: 0.8),
           rightorleft:String = "right")
     {
-        showX = UIScreen.main.bounds.width - width
+        self.showX = UIScreen.main.bounds.width - width
         if side == "left" { showX = 0 }
-        hideX = UIScreen.main.bounds.width
+        self.hideX = UIScreen.main.bounds.width
         if side == "left" { hideX = -width }
         let frame = CGRect( x: hideX, y: 0, width: width, height: UIScreen.main.bounds.height)
         super.init( frame:frame)
@@ -57,7 +59,7 @@ class AHXSlideMenu:UIView
                 heights.append( sepHeight)
             } else {
                 let v = UIButton()
-                v.addAction( actions[idx])
+                v.AHXAddAction( { () -> () in self.hide();  actions[idx]() } )
                 v.setTitle( txt, for:.normal)
                 itemViews.append( v)
                 heights.append( itemHeight)
@@ -70,15 +72,11 @@ class AHXSlideMenu:UIView
         // Layout the menu items
         AHL.vShare( container: self, subviews: itemViews, heights_: heights)
         
-        //let gesture = UITapGestureRecognizer( target: self, action:  #selector (self.tapped (_:)))
-        //self.addGestureRecognizer( gesture)
-                
+        // Hide on any tap
+        self.touchAction = AHXOnAnyTouch() { (x:CGFloat, y:CGFloat) in
+            if self.showing { self.hide() }
+        }
     } // init()
-
-//    //------------------------------------------------------
-//    @objc func tapped(_ sender:UITapGestureRecognizer) {
-//        print(42)
-//    } // tapped()
 
     //----------------
     func show() {
@@ -109,23 +107,6 @@ class AHXSlideMenu:UIView
                             self.frame.origin.x = targetx },
                         completion: nil )
     } // hide()
-    
-//    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
-//        return super.point(inside: point, with: event)
-//    }
-//    
-//    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-//        if !self.clipsToBounds && !self.isHidden && self.alpha > 0.0 {
-//            let subviews = self.subviews.reversed()
-//            for member in subviews {
-//                let subPoint = member.convert(point, from: self)
-//                if let result: UIView = member.hitTest(subPoint, with:event) {
-//                    return result
-//                }
-//            }
-//        }
-//        return super.hitTest(point, with: event)
-//    }
     
     //---------------------------------
     required init?( coder: NSCoder) {

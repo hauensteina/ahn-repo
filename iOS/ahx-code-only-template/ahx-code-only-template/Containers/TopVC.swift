@@ -28,7 +28,7 @@ class TopVC: UIViewController {
         super.viewDidLoad()
         // Let taps through to children outside the frame.
         // In particular, the burger menu must be tappable.
-        self.view = PassThruView()
+        self.view = AHXPassThruView()
         
         TopVC.shared = self
         btnBack = UIButton( type: .system,
@@ -47,6 +47,13 @@ class TopVC: UIViewController {
         self.view.addSubview( burgerMenu)
     } // viewDidLoad()
     
+//    //------------------------------------------------------------------------------------
+//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+//        let touch = touches.first
+//        var tt=42
+//        //onTouch( touch!)
+//    } // touchesBegan()
+
     //-------------------------------------------------
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)

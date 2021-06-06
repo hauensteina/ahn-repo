@@ -72,7 +72,7 @@ class FirstVC: UIViewController {
         let btnConv = UIButton(type: .system)
         AHL.border( btnConv, .magenta)
         btnConv.setTitle( "Convert", for: .normal)
-        btnConv.addAction { self.convert() }
+        btnConv.AHXAddAction { self.convert() }
         AHL.hShare( container: btnCont, subviews: [btnConv])
         
         // Conversion result. convert() fills this.

@@ -25,11 +25,12 @@
 		AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B426308D1E001790E4 /* MiddleVC.swift */; };
 		AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B72630921D001790E4 /* BottomVC.swift */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
-		ACED1F2326598AAE00C40A07 /* ActionClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* ActionClosure.swift */; };
+		ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */; };
 		ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */; };
 		ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F26265AE47C00C40A07 /* AHXPopups.swift */; };
 		ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */; };
-		ACFA106B2668136700B021F4 /* PassThruView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFA106A2668136700B021F4 /* PassThruView.swift */; };
+		ACF4CD22266D49070049C1D9 /* AHXOnAnyTouch.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */; };
+		ACFA106B2668136700B021F4 /* AHXPassThruView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFA106A2668136700B021F4 /* AHXPassThruView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,11 +55,12 @@
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
-		ACED1F2226598AAE00C40A07 /* ActionClosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionClosure.swift; sourceTree = "<group>"; };
+		ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXAddAction.swift; sourceTree = "<group>"; };
 		ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXRestFuncs.swift; sourceTree = "<group>"; };
 		ACED1F26265AE47C00C40A07 /* AHXPopups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPopups.swift; sourceTree = "<group>"; };
 		ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXGlobFuncs.swift; sourceTree = "<group>"; };
-		ACFA106A2668136700B021F4 /* PassThruView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassThruView.swift; sourceTree = "<group>"; };
+		ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXOnAnyTouch.swift; sourceTree = "<group>"; };
+		ACFA106A2668136700B021F4 /* AHXPassThruView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPassThruView.swift; sourceTree = "<group>"; };
 		F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_code_only_template.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -171,8 +173,8 @@
 		AC865EFE266013830028109E /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
-				ACED1F2226598AAE00C40A07 /* ActionClosure.swift */,
-				ACFA106A2668136700B021F4 /* PassThruView.swift */,
+				ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */,
+				ACFA106A2668136700B021F4 /* AHXPassThruView.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -182,6 +184,7 @@
 			children = (
 				ACE404372658445400C63140 /* AHXPicker.swift */,
 				AC865EFF266013B20028109E /* AHXSlideMenu.swift */,
+				ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */,
 			);
 			path = Widgets;
 			sourceTree = "<group>";
@@ -308,13 +311,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ACED1F2326598AAE00C40A07 /* ActionClosure.swift in Sources */,
+				ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */,
 				AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */,
 				AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */,
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,
 				AC134706262B8E0C001F1451 /* SecondVC.swift in Sources */,
-				ACFA106B2668136700B021F4 /* PassThruView.swift in Sources */,
+				ACFA106B2668136700B021F4 /* AHXPassThruView.swift in Sources */,
+				ACF4CD22266D49070049C1D9 /* AHXOnAnyTouch.swift in Sources */,
 				ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */,
 				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
