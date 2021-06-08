@@ -152,15 +152,15 @@ class AHXLayout
 
     // Scale Images
     //================
-    // Preserve height, change width to no distort the Image
-    //-------------------------------------------------------
+    // Preserve height, change width to not distort the Image
+    //---------------------------------------------------------
     class func scaleWidth( _ v:UIView, likeImage:UIImage) {
         let rat = likeImage.size.width / likeImage.size.height
         AHL.width( v, rat * v.frame.height)
     } // scaleWidth()
 
     // Preserve width, change height to not distort the Image
-    //-------------------------------------------------------
+    //---------------------------------------------------------
     class func scaleHeight( _ v:UIView, likeImage:UIImage) {
         let rat = likeImage.size.height / likeImage.size.width
         AHL.height( v, rat * v.frame.width)

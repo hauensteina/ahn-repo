@@ -84,7 +84,7 @@ class AHXPicker: NSObject, UIPickerViewDelegate, UIPickerViewDataSource
     }
 } // class AHXPicker
 
-// A subclass uf UITextfield with editing disabled
+// A subclass of UITextfield with editing disabled
 //===================================================
 class AHXPickerTf: UITextField {
     open override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {

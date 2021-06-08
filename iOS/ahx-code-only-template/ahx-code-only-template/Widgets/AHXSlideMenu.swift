@@ -6,7 +6,7 @@
 //
 
 /*
- A view with menu items that can slide in and out.
+ A view with menu items that  can slide in and out.
  Make this a subview of a viewcontroller spanning the whole screen width.
  Example usage:
  myVC.view = PassThruView() // in case it's not high enough

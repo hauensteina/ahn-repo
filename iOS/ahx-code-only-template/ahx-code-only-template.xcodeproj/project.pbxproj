@@ -24,6 +24,7 @@
 		AC86D6B226308946001790E4 /* TopVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B126308946001790E4 /* TopVC.swift */; };
 		AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B426308D1E001790E4 /* MiddleVC.swift */; };
 		AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B72630921D001790E4 /* BottomVC.swift */; };
+		AC968900266EF36900870D3B /* AHXTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9688FF266EF36900870D3B /* AHXTableView.swift */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
 		ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */; };
 		ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */; };
@@ -54,6 +55,7 @@
 		AC86D6B126308946001790E4 /* TopVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopVC.swift; sourceTree = "<group>"; };
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
+		AC9688FF266EF36900870D3B /* AHXTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXTableView.swift; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
 		ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXAddAction.swift; sourceTree = "<group>"; };
 		ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXRestFuncs.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 				ACE404372658445400C63140 /* AHXPicker.swift */,
 				AC865EFF266013B20028109E /* AHXSlideMenu.swift */,
 				ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */,
+				AC9688FF266EF36900870D3B /* AHXTableView.swift */,
 			);
 			path = Widgets;
 			sourceTree = "<group>";
@@ -322,6 +325,7 @@
 				ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */,
 				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
+				AC968900266EF36900870D3B /* AHXTableView.swift in Sources */,
 				AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */,
 				AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */,
 				AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */,
