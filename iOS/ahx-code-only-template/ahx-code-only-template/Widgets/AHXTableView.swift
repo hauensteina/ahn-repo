@@ -7,7 +7,7 @@
 
 /*
  A less annoying way to define a tableview. Just pass it a bunch of views, and the space between
- them. The views should have buttons etc and react approproately.
+ them. The views should have buttons etc and react appropriately.
  
  Example usage:
  override func viewDidLoad() {
