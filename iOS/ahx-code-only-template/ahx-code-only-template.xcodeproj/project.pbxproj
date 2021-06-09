@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2D5CF5586BAAA5A094587A79 /* Pods_ahx_code_only_template.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F2719142288EDBFDFDA93764 /* Pods_ahx_code_only_template.framework */; };
+		AC08F83826715D2C004EE898 /* AHXActionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC08F83726715D2C004EE898 /* AHXActionView.swift */; };
 		AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E1262B7D04001F1451 /* AppDelegate.swift */; };
 		AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E3262B7D04001F1451 /* SceneDelegate.swift */; };
 		AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E5262B7D04001F1451 /* ViewController.swift */; };
@@ -37,6 +38,7 @@
 /* Begin PBXFileReference section */
 		31501B7D08E23C742093C125 /* Pods-ahx-code-only-template.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ahx-code-only-template.debug.xcconfig"; path = "Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template.debug.xcconfig"; sourceTree = "<group>"; };
 		96532B2A2EF2335E333E6673 /* Pods-ahx-code-only-template.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ahx-code-only-template.release.xcconfig"; path = "Target Support Files/Pods-ahx-code-only-template/Pods-ahx-code-only-template.release.xcconfig"; sourceTree = "<group>"; };
+		AC08F83726715D2C004EE898 /* AHXActionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXActionView.swift; sourceTree = "<group>"; };
 		AC1346DE262B7D03001F1451 /* ahx-code-only-template.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ahx-code-only-template.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AC1346E1262B7D04001F1451 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		AC1346E3262B7D04001F1451 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -188,6 +190,7 @@
 				AC865EFF266013B20028109E /* AHXSlideMenu.swift */,
 				ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */,
 				AC9688FF266EF36900870D3B /* AHXTableView.swift */,
+				AC08F83726715D2C004EE898 /* AHXActionView.swift */,
 			);
 			path = Widgets;
 			sourceTree = "<group>";
@@ -316,6 +319,7 @@
 			files = (
 				ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */,
 				AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */,
+				AC08F83826715D2C004EE898 /* AHXActionView.swift in Sources */,
 				AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */,
 				AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */,
 				AC134703262B8DEC001F1451 /* FirstVC.swift in Sources */,

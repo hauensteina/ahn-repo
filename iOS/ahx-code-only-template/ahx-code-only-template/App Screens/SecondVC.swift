@@ -7,6 +7,8 @@
 
 import UIKit
 
+// View Controller displaying some images in a tableview
+//========================================================
 class SecondVC: UIViewController {
     var images = [UIImage]()
     var views = [UIView]()
@@ -32,7 +34,7 @@ class SecondVC: UIViewController {
         AHL.height( self.tbv, self.tbvHeight)
     } // layout()
     
-    // Load Images into our imges array
+    // Load Images into our images array
     //-------------------------------------
     func loadImages() {
         for idx in 1...5 {
@@ -47,7 +49,7 @@ class SecondVC: UIViewController {
         let viewHeight = AHC.h / 3.0
         let imgWidth = tbvWidth * 0.95
         let imgHeight = viewHeight * 0.95
-        for (_,img) in images.enumerated() {
+        for (idx,img) in images.enumerated() {
             let iv = UIImageView( image: img)
             AHL.height( iv, imgHeight)
             AHL.scaleWidth( iv, likeImage: img)
@@ -56,11 +58,14 @@ class SecondVC: UIViewController {
                 AHL.scaleHeight( iv, likeImage: img)
             }
             // Container for the image
-            let v = UIView()
+            let v = AHXActionView()
             AHL.width( v, tbvWidth)
             AHL.height( v, iv.frame.height * 1.05)
             AHL.submiddle( iv, v)
             AHL.subcenter( iv, v)
+            v.setAction {
+                AHP.popup( title: "Info", message:String( format:"Image %d clicked", idx))
+            }
             self.views.append( v)
         } // for
     } // createViews()
