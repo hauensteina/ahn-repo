@@ -55,9 +55,10 @@ class AHXMain {
         navVC.setNavigationBarHidden( true, animated:false)
         VCs = [
             "FirstVC": FirstVC(),
-            "SecondVC": SecondVC()
+            "SecondVC": SecondVC(),
+            "FontVC": FontVC()
         ]
-        orderedVCs = [ "FirstVC", "SecondVC"]
+        orderedVCs = [ "FirstVC", "SecondVC", "FontVC"]
         layoutVCs()
         pushVC( "FirstVC")
     } // main()
@@ -80,9 +81,8 @@ class AHXMain {
     //-------------------------------
     func pushVC( _ vcName:String) {
         let vc = VCs[vcName]!
-        //let _ = vc.view // Make sure it's instantiated
         self.navVC.pushViewController( vc, animated: true)
-        ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
+        //ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
     } // pushCV()
 
     // Pop top VC
@@ -95,10 +95,9 @@ class AHXMain {
     //-------------------------------
     func topVC( _ vcName:String) {
         let vc = VCs[vcName]!
-        //let _ = vc.view // Make sure it's instantiated
         self.navVC.popViewController( animated:true)
         self.navVC.pushViewController( vc, animated: true)
-        ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
+        //ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
     } // topVC()
     
     // Get the currently active VC

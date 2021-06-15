@@ -249,31 +249,31 @@ class AHXLayout
     // space: Space between subviews, in points
     // minwidth: Minimum width of a dynamic (nil points) subview, in points
     //----------------------------------------------------------------------------------------
-    class func hShare( container:UIView, subviews:[UIView], widths_:[CGFloat?]?=nil,
-                       leftmarg_:CGFloat?=nil, rightmarg_:CGFloat?=nil, space_:CGFloat?=nil,
-                       minwidth_:CGFloat?=nil) {
+    class func hShare( container:UIView, subviews:[UIView], widths:[CGFloat?]?=nil,
+                       leftmarg:CGFloat?=nil, rightmarg:CGFloat?=nil, space:CGFloat?=nil,
+                       minwidth:CGFloat?=nil) {
 
         AHL.addSubviews( container, subviews)
 
-        var widths = [CGFloat?].init(repeating: nil, count: subviews.count)
-        if widths_ != nil {
-            widths = widths_!
+        var wwidths = [CGFloat?].init(repeating: nil, count: subviews.count)
+        if widths != nil {
+            wwidths = widths!
         }
 
         let cw = container.frame.width
-        let leftmarg = leftmarg_ ?? cw * 0.05
-        let rightmarg = rightmarg_ ?? cw * 0.05
-        let space = space_ ?? cw * 0.05
-        let minwidth = minwidth_ ?? cw * 0.05
-        let usable_points = (cw - leftmarg - rightmarg) - space * (CGFloat(subviews.count) - 1.0)
+        let lleftmarg = leftmarg ?? cw * 0.05
+        let rrightmarg = rightmarg ?? cw * 0.05
+        let sspace = space ?? cw * 0.05
+        let mminwidth = minwidth ?? cw * 0.05
+        let usable_points = (cw - lleftmarg - rrightmarg) - sspace * (CGFloat(subviews.count) - 1.0)
         
-        let used_points = AHU.nonNils( widths).reduce( 0,+) // sum non nil ones
-        let ndyn = widths.count - AHU.nonNils( widths).count
-        let dynw = max( minwidth, (usable_points - used_points) / CGFloat(ndyn) )
+        let used_points = AHU.nonNils( wwidths).reduce( 0,+) // sum non nil ones
+        let ndyn = wwidths.count - AHU.nonNils( wwidths).count
+        let dynw = max( mminwidth, (usable_points - used_points) / CGFloat(ndyn) )
 
         // Fill in the dynamic widths
         var points = [CGFloat]()
-        for p in widths {
+        for p in wwidths {
             if p != nil { points.append( p!); continue }
             points.append( dynw)
         } // for
@@ -286,16 +286,77 @@ class AHXLayout
         }
         // Position and size the subviews horizontally.
         // Leave y and height unchanged.
-        var pos = leftmarg
+        var pos = lleftmarg
         for (i,v) in subviews.enumerated() {
             AHL.width( v, points[i])
             AHL.height( v, container.frame.height)
             AHL.left( v, pos)
             pos += points[i]
-            pos += space
+            pos += sspace
         } // for
     } // hShare()
+    
+    // Fonts
+    //===========
+    
+    //----------------------------------------------------
+    class func smallFont() -> UIFont {
+        struct statics { static var res:UIFont? = nil }
+        if statics.res == nil { statics.res = getSystemFont( linesPerScreen: 60) }
+        return statics.res!
+    } // smallFont()
 
+    //----------------------------------------------------
+    class func mediumFont() -> UIFont {
+        struct statics { static var res:UIFont? = nil }
+        if statics.res == nil { statics.res = getSystemFont( linesPerScreen: 40) }
+        return statics.res!
+    } // mediumFont()
+
+    //----------------------------------------------------
+    class func largeFont() -> UIFont {
+        struct statics { static var res:UIFont? = nil }
+        if statics.res == nil { statics.res = getSystemFont( linesPerScreen: 20) }
+        return statics.res!
+    } // largeFont()
+
+    // Get a system font of a size such that n lines will fit the screen
+    //----------------------------------------------------------------------
+    class func getSystemFont( linesPerScreen:Int) -> UIFont {
+        let w = UIScreen.main.bounds.width
+        let h = UIScreen.main.bounds.height
+        let text = String(repeating: "line\n", count: linesPerScreen)
+        let font = UIFont.systemFont( ofSize: 100)
+        let bestFont = AHL.bestFittingFont( text: text, width:w, height:h, font: font)
+        return bestFont
+    } // getSystemFont()
+    
+    // For a given font, fond the largest size that fits in width,height
+    //--------------------------------------------------------------------------------------------------------
+    class func bestFittingFont( text: String, width:CGFloat, height: CGFloat, font: UIFont) -> UIFont {
+        let fontDescriptor = font.fontDescriptor
+        let constrainingDimension = min( width, height)
+        let properBounds = CGRect(x: 0, y: 0, width: width, height: height)
+        var attributes = [NSAttributedString.Key:Any]()
+         
+        let infiniteBounds = CGSize(width: CGFloat.infinity, height: CGFloat.infinity)
+        var bestFontSize: CGFloat = constrainingDimension
+         
+        for fontSize in stride( from: bestFontSize, through: 0, by: -1) {
+            let newFont = UIFont(descriptor: fontDescriptor, size: fontSize)
+            attributes[.font] = newFont
+             
+            let currentFrame = text.boundingRect( with: infiniteBounds, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: attributes, context: nil)
+             
+            if properBounds.contains(currentFrame) {
+                bestFontSize = fontSize
+                break
+            }
+        } // for fontSize
+        let bestFont = UIFont( descriptor: fontDescriptor, size: bestFontSize)
+        return bestFont
+     } // bestFittingFont()
+    
     // Misc
     //=========
     // Give a view a color border
