@@ -9,7 +9,7 @@ import UIKit
 
 // View Controller displaying some images in a tableview
 //========================================================
-class SecondVC: UIViewController {
+class SecondVC: AHXVC {
     var images = [UIImage]()
     var views = [UIView]()
     var tbv:AHXTableView!

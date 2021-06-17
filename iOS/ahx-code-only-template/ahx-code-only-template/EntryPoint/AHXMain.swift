@@ -60,7 +60,7 @@ class AHXMain {
         ]
         orderedVCs = [ "FirstVC", "SecondVC", "FontVC"]
         layoutVCs()
-        pushVC( "FirstVC")
+        pushVC( "FirstVC") {}
     } // main()
     
     // Make sure our VCs are instantiated, have correct size, and are layed out
@@ -78,11 +78,15 @@ class AHXMain {
     } // layoutVCs()
     
     // Push a VC by name
-    //-------------------------------
-    func pushVC( _ vcName:String) {
-        let vc = VCs[vcName]!
-        self.navVC.pushViewController( vc, animated: true)
-        //ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
+    //---------------------------------------------------------------
+    func pushVC( _ vcName:String, completion: @escaping ()->()) {
+        if AHXVC.navBusy { return }
+        AHXVC.navBusy = true
+        DispatchQueue.main.async {
+            let vc = self.VCs[vcName]!
+            self.navVC.pushViewController( vc, animated: true)
+            completion()
+        }
     } // pushCV()
 
     // Pop top VC
@@ -92,12 +96,16 @@ class AHXMain {
     } // popCV()
 
     // Replace top VC by name
-    //-------------------------------
-    func topVC( _ vcName:String) {
-        let vc = VCs[vcName]!
-        self.navVC.popViewController( animated:true)
-        self.navVC.pushViewController( vc, animated: true)
-        //ContainerVC.shared.bottomVC.selectButton( orderedVCs.firstIndex( of:vcName) ?? 0 )
+    //---------------------------------------------------------------
+    func topVC( _ vcName:String, completion: @escaping ()->()) {
+        if AHXVC.navBusy { return }
+        AHXVC.navBusy = true
+        DispatchQueue.main.async {
+            let vc = self.VCs[vcName]!
+            self.navVC.popViewController(animated: false)
+            self.navVC.pushViewController( vc, animated: true)
+            completion()
+        }
     } // topVC()
     
     // Get the currently active VC

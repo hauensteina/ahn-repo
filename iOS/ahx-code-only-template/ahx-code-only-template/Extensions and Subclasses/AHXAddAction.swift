@@ -34,7 +34,7 @@ extension UIControl {
         @objc class ClosureSleeve: NSObject {
             let closure:()->()
             init(_ closure: @escaping()->()) { self.closure = closure }
-            @objc func invoke() { closure() }
+            @objc func invoke() {  DispatchQueue.main.async { self.closure() } }
         }
         let sleeve = ClosureSleeve(closure)
         addTarget(sleeve, action: #selector(ClosureSleeve.invoke), for: controlEvents)

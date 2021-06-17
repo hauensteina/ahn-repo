@@ -12,7 +12,7 @@ import UIKit
 //=================================
 class BottomVC: UIViewController {
     var buttons:[UIButton]!
-    var flex = UIView()
+    var rubber = UIView()
 
     //-------------------------------
     override func viewDidLoad() {
@@ -21,23 +21,17 @@ class BottomVC: UIViewController {
         // Currency Button
         self.buttons.append( UIButton( type: .custom,
                                        primaryAction: UIAction() { _ in
-                                        if self.buttons[0].isSelected { return }
-                                        self.selectButton( 0)
-                                        AHXMain.shared.topVC( "FirstVC")
+                                        AHXMain.shared.topVC( "FirstVC") { self.selectButton( 0) }
                                        }))
         // Image Button
         self.buttons.append( UIButton( type: .custom,
                                        primaryAction: UIAction() { _ in
-                                        if self.buttons[1].isSelected { return }
-                                        self.selectButton( 1)
-                                        AHXMain.shared.topVC( "SecondVC")
+                                        AHXMain.shared.topVC( "SecondVC") { self.selectButton( 1) }
                                        }))
         // T Button
         self.buttons.append( UIButton( type: .custom,
                                        primaryAction: UIAction() { _ in
-                                        if self.buttons[2].isSelected { return }
-                                        self.selectButton( 2)
-                                        AHXMain.shared.topVC( "FontVC")
+                                        AHXMain.shared.topVC( "FontVC") { self.selectButton( 2) }
                                        }))
     } // viewDidLoad()
     
@@ -45,6 +39,7 @@ class BottomVC: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         layout()
+        self.selectButton( 0)
     } // viewWillAppear()
     
     //-------------------------
@@ -55,10 +50,8 @@ class BottomVC: UIViewController {
         AHL.height( v, AHC.bottom_nav_height)
         AHL.left( v, 0)
         AHL.bottom( v, AHC.bottom)
-        
-        // Layout view components
-        let marg = 0.2 * AHC.w
-        //let btnw = (AHC.w - 3 * marg) / 2
+                
+        let btnwidth = min( self.view.frame.width * 0.25, self.view.frame.height)
         
         // Currency Button
         var btn = self.buttons[0]
@@ -66,40 +59,34 @@ class BottomVC: UIViewController {
         var simg = UIImage( named:"dollar_green")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.height( btn, view.frame.height)
-        AHL.scaleWidth( btn, likeImage: nimg)
-        //AHL.left( btn, marg)
-        //AHL.top( btn, 0)
+        AHL.width( btn, btnwidth)
+        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
         
         // Image Button
         btn = self.buttons[1]
         nimg = UIImage( named:"pic_gray")!
-        simg = UIImage( named:"pic_black")!
+        simg = UIImage( named:"pic_blue")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.height( btn, view.frame.height)
-        AHL.scaleWidth( btn, likeImage: nimg)
-        //AHL.left( btn, btnw + 2 * marg )
-        //AHL.top( btn, 0)
+        AHL.width( btn, btnwidth)
+        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
         
         // T Button
         btn = self.buttons[2]
-        nimg = UIImage( named:"letter_t")!
-        simg = UIImage( named:"letter_t")!
+        nimg = UIImage( named:"letter_t_gray")!
+        simg = UIImage( named:"letter_t_red")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.height( btn, view.frame.height)
-        AHL.scaleWidth( btn, likeImage: nimg)
-        //AHL.left( btn, btnw + 2 * marg )
-        //AHL.top( btn, 0)
+        AHL.width( btn, btnwidth)
+        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
         
         AHL.hShare( container: self.view,
-                    subviews: [flex, buttons[0], buttons[1], buttons[2], flex],
-                    widths: [nil, buttons[0].frame.width, buttons[1].frame.width, buttons[2].frame.width, nil],
-                    leftmarg:0, rightmarg:0 )
+                    subviews: [rubber, buttons[0], rubber, buttons[1], rubber, buttons[2], rubber],
+                    widths: [nil, buttons[0].frame.width, nil, buttons[1].frame.width, nil, buttons[2].frame.width, nil],
+                    leftmarg:0, rightmarg:0, space:0 )
 
     } // layout()
     

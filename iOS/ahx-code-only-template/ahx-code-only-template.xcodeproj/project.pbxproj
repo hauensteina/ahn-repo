@@ -26,6 +26,7 @@
 		AC86D6B526308D1E001790E4 /* MiddleVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B426308D1E001790E4 /* MiddleVC.swift */; };
 		AC86D6B82630921D001790E4 /* BottomVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC86D6B72630921D001790E4 /* BottomVC.swift */; };
 		AC876B62267814BE009D7D30 /* FontVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC876B61267814BE009D7D30 /* FontVC.swift */; };
+		AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC876B65267AC8D5009D7D30 /* AHXVC.swift */; };
 		AC968900266EF36900870D3B /* AHXTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9688FF266EF36900870D3B /* AHXTableView.swift */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
 		ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */; };
@@ -59,6 +60,7 @@
 		AC86D6B426308D1E001790E4 /* MiddleVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiddleVC.swift; sourceTree = "<group>"; };
 		AC86D6B72630921D001790E4 /* BottomVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomVC.swift; sourceTree = "<group>"; };
 		AC876B61267814BE009D7D30 /* FontVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontVC.swift; sourceTree = "<group>"; };
+		AC876B65267AC8D5009D7D30 /* AHXVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXVC.swift; sourceTree = "<group>"; };
 		AC9688FF266EF36900870D3B /* AHXTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXTableView.swift; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
 		ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXAddAction.swift; sourceTree = "<group>"; };
@@ -111,7 +113,7 @@
 		AC1346E0262B7D04001F1451 /* ahx-code-only-template */ = {
 			isa = PBXGroup;
 			children = (
-				AC865EFE266013830028109E /* Extensions */,
+				AC865EFE266013830028109E /* Extensions and Subclasses */,
 				AC1346FD262B85B9001F1451 /* Boilerplate */,
 				AC4B3A4D263B5DD300AF0147 /* Containers */,
 				AC134700262B866E001F1451 /* EntryPoint */,
@@ -177,13 +179,14 @@
 			path = Containers;
 			sourceTree = "<group>";
 		};
-		AC865EFE266013830028109E /* Extensions */ = {
+		AC865EFE266013830028109E /* Extensions and Subclasses */ = {
 			isa = PBXGroup;
 			children = (
 				ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */,
 				ACFA106A2668136700B021F4 /* AHXPassThruView.swift */,
+				AC876B65267AC8D5009D7D30 /* AHXVC.swift */,
 			);
-			path = Extensions;
+			path = "Extensions and Subclasses";
 			sourceTree = "<group>";
 		};
 		ACE40436265843EF00C63140 /* Widgets */ = {
@@ -336,6 +339,7 @@
 				AC1346E6262B7D04001F1451 /* ViewController.swift in Sources */,
 				AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */,
 				AC876B62267814BE009D7D30 /* FontVC.swift in Sources */,
+				AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */,
 				AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */,
 				ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */,
 				ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */,

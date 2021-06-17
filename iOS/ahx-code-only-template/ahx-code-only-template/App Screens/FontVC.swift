@@ -12,7 +12,7 @@ import UIKit
 
 // View Controller displaying some images in a tableview
 //========================================================
-class FontVC: UIViewController {
+class FontVC: AHXVC {
     let lorem = """
     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
     """

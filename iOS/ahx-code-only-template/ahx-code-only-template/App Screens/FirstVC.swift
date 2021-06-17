@@ -10,7 +10,7 @@ import Alamofire
 import SwiftyJSON
 
 //=================================
-class FirstVC: UIViewController {
+class FirstVC: AHXVC {
     let curs = ["USD","EUR","CHF"]
     // Vert container for all lines
     let vcont = UIView()
@@ -42,7 +42,6 @@ class FirstVC: UIViewController {
         AHL.border( toCont)
         AHL.border( btnCont)
         
-
         // Add the line containers
         AHL.vShare( container: vcont, subviews: [fromCont, toCont, btnCont, resCont])
 
@@ -55,6 +54,8 @@ class FirstVC: UIViewController {
         tfFromCur.text = curs[0]
         fromPicker = AHXPicker(tf: tfFromCur, choices: curs) { (idx:Int) in }
         AHL.border( tfFromCur)
+        AHL.height( lbFrom, fromCont)
+        AHL.height( tfFromCur, fromCont)
         AHL.hShare( container: fromCont, subviews: [lbFrom, tfFromCur])
         
         // To currency
@@ -66,6 +67,8 @@ class FirstVC: UIViewController {
         tfToCur.text = curs[1]
         toPicker = AHXPicker(tf: tfToCur, choices: curs, defaultChoice:1) { (idx:Int) in }
         AHL.border( tfToCur)
+        AHL.height( lbTo, toCont)
+        AHL.height( tfToCur, toCont)
         AHL.hShare( container: toCont, subviews: [lbTo, tfToCur])
         
         // Convert button
@@ -73,9 +76,11 @@ class FirstVC: UIViewController {
         AHL.border( btnConv, .magenta)
         btnConv.setTitle( "Convert", for: .normal)
         btnConv.AHXAddAction { self.convert() }
+        AHL.height( btnConv, btnCont)
         AHL.hShare( container: btnCont, subviews: [btnConv])
         
         // Conversion result. convert() fills this.
+        AHL.height( lbRes, resCont)
         AHL.hShare( container: resCont, subviews: [lbRes])
         convert()
     } // layout()

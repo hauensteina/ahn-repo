@@ -19,12 +19,20 @@ class AHXLayout
     //-------------------------------------------
     class func width(_ v:UIView, _ x:CGFloat) {
         v.frame.size = CGSize( width:x, height:v.frame.height)
-    } // hsz()
+    } // width()
+    //-------------------------------------------
+    class func width(_ v:UIView, _ other:UIView) {
+        AHL.width( v, other.frame.width)
+    } // width()
 
     // Set the height of a view
     //---------------------------------------------
     class func height(_ v:UIView, _ y:CGFloat) {
         v.frame.size = CGSize( width:v.frame.width, height:y)
+    } // height()
+    //-----------------------------------------------
+    class func height(_ v:UIView, _ other:UIView) {
+        AHL.height( v, other.frame.height)
     } // height()
 
     // View Position
@@ -285,11 +293,10 @@ class AHXLayout
             points = points.map( { $0 * shrink })
         }
         // Position and size the subviews horizontally.
-        // Leave y and height unchanged.
         var pos = lleftmarg
         for (i,v) in subviews.enumerated() {
             AHL.width( v, points[i])
-            AHL.height( v, container.frame.height)
+            AHL.submiddle( v, container)
             AHL.left( v, pos)
             pos += points[i]
             pos += sspace
