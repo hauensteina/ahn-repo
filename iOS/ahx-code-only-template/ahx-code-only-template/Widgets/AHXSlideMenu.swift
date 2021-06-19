@@ -70,7 +70,7 @@ class AHXSlideMenu:UIView
         itemViews.append( spacer)
         heights.append( nil)
         // Layout the menu items
-        AHL.vShare( container: self, subviews: itemViews, heights_: heights)
+        AHL.vShare( container: self, subviews: itemViews, heights: heights)
         
         // Hide on any tap
         self.touchAction = AHXOnAnyTouch() { (x:CGFloat, y:CGFloat) in

@@ -85,8 +85,7 @@ class BottomVC: UIViewController {
         
         AHL.hShare( container: self.view,
                     subviews: [rubber, buttons[0], rubber, buttons[1], rubber, buttons[2], rubber],
-                    widths: [nil, buttons[0].frame.width, nil, buttons[1].frame.width, nil, buttons[2].frame.width, nil],
-                    leftmarg:0, rightmarg:0, space:0 )
+                    widths: [nil, buttons[0].frame.width, nil, buttons[1].frame.width, nil, buttons[2].frame.width, nil])
 
     } // layout()
     
