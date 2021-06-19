@@ -28,6 +28,7 @@
 		AC876B62267814BE009D7D30 /* FontVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC876B61267814BE009D7D30 /* FontVC.swift */; };
 		AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC876B65267AC8D5009D7D30 /* AHXVC.swift */; };
 		AC968900266EF36900870D3B /* AHXTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9688FF266EF36900870D3B /* AHXTableView.swift */; };
+		ACD8F149267E72AF0049B812 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
 		ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */; };
 		ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */; };
@@ -62,6 +63,7 @@
 		AC876B61267814BE009D7D30 /* FontVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontVC.swift; sourceTree = "<group>"; };
 		AC876B65267AC8D5009D7D30 /* AHXVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXVC.swift; sourceTree = "<group>"; };
 		AC9688FF266EF36900870D3B /* AHXTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXTableView.swift; sourceTree = "<group>"; };
+		ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
 		ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXAddAction.swift; sourceTree = "<group>"; };
 		ACED1F24265AD47000C40A07 /* AHXRestFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXRestFuncs.swift; sourceTree = "<group>"; };
@@ -123,6 +125,7 @@
 				AC68B15A264320B60059016A /* LaunchScreen.storyboard */,
 				AC1346EA262B7D0A001F1451 /* Assets.xcassets */,
 				AC1346EF262B7D0A001F1451 /* Info.plist */,
+				ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */,
 			);
 			path = "ahx-code-only-template";
 			sourceTree = "<group>";
@@ -271,6 +274,7 @@
 			files = (
 				AC1346EB262B7D0A001F1451 /* Assets.xcassets in Resources */,
 				AC68B15B264320B60059016A /* LaunchScreen.storyboard in Resources */,
+				ACD8F149267E72AF0049B812 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -477,6 +481,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = J26TJ8F6WP;
 				INFOPLIST_FILE = "ahx-code-only-template/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -497,6 +503,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = J26TJ8F6WP;
 				INFOPLIST_FILE = "ahx-code-only-template/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (

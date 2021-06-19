@@ -65,28 +65,7 @@ class AHXUtils {
         let res = String( data: jsonData!, encoding: .utf8)
         return res
     } // dict2jsonStr()
-    
-//    class func getURL<T:Decodable>( url:String, params:[String:String]) -> (T?, String?) {
-//        var res:T? = nil
-//        var err:String? = nil
-//        AF.request( url, method: .get, parameters: params, encoding: URLEncoding.queryString, headers: nil)
-//          .validate()
-//          .responseJSON { response in
-//             switch (response.result) {
-//                 case .success( _):
-//                 do {
-//                    res = try JSONDecoder().decode([T].self, from: response.data!)
-//                 } catch let error as NSError {
-//                    err = "Failed to load: \(error.localizedDescription)"
-//                 }
-//             case .failure(let error):
-//                err = "Request error: \(error.localizedDescription)"
-//             }
-//          }
-//            return res, err
-//      } // getURL()
-    
-    
+        
     // Misc Utils
     //=============
     // Conveniently get a UIColor from RGB
