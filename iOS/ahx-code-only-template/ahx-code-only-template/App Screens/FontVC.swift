@@ -10,7 +10,6 @@
 
 import UIKit
 
-// View Controller displaying some images in a tableview
 //========================================================
 class FontVC: AHXVC {
     let lorem = """
@@ -51,4 +50,4 @@ class FontVC: AHXVC {
         lblarge.text = lorem
     } // layout()
     
-} // class SecondVC
+} // class FontVC

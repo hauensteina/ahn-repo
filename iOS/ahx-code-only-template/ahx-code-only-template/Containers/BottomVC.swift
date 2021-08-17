@@ -33,6 +33,11 @@ class BottomVC: UIViewController {
                                        primaryAction: UIAction() { _ in
                                         AHXMain.shared.topVC( "FontVC") { self.selectButton( 2) }
                                        }))
+        // W Button
+        self.buttons.append( UIButton( type: .custom,
+                                       primaryAction: UIAction() { _ in
+                                        AHXMain.shared.topVC( "WebVC") { self.selectButton( 3) }
+                                       }))
     } // viewDidLoad()
     
     //-------------------------------------------------
@@ -51,7 +56,7 @@ class BottomVC: UIViewController {
         AHL.left( v, 0)
         AHL.bottom( v, AHC.bottom)
                 
-        let btnwidth = min( self.view.frame.width * 0.25, self.view.frame.height)
+        let btnwidth = min( self.view.frame.width * 0.20, self.view.frame.height)
         
         // Currency Button
         var btn = self.buttons[0]
@@ -82,10 +87,20 @@ class BottomVC: UIViewController {
         AHL.width( btn, btnwidth)
         AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
-        
+
+        // W Button
+        btn = self.buttons[3]
+        nimg = UIImage( named:"letter_w_gray")!
+        simg = UIImage( named:"letter_w_red")!
+        btn.setImage( nimg, for: .normal)
+        btn.setImage( simg, for: .selected)
+        AHL.width( btn, btnwidth)
+        AHL.scaleHeight( btn, likeImage: nimg)
+        AHL.border( btn)
+
         AHL.hShare( container: self.view,
-                    subviews: [rubber, buttons[0], rubber, buttons[1], rubber, buttons[2], rubber],
-                    widths: [nil, buttons[0].frame.width, nil, buttons[1].frame.width, nil, buttons[2].frame.width, nil])
+                    subviews: [rubber, buttons[0], rubber, buttons[1], rubber, buttons[2], rubber, buttons[3], rubber],
+                    widths: [nil, buttons[0].frame.width, nil, buttons[1].frame.width, nil, buttons[2].frame.width, nil, buttons[3].frame.width, nil])
 
     } // layout()
     

@@ -5,11 +5,15 @@
 //  Created by Andreas Hauenstein on 2021-04-17.
 //
 
+/*
+ Convert currencies by hitting an API
+ */
+
 import UIKit
 import Alamofire
 import SwiftyJSON
 
-//=================================
+//=========================================
 class FirstVC: AHXVC {
     let curs = ["USD","EUR","CHF"]
     // Vert container for all lines

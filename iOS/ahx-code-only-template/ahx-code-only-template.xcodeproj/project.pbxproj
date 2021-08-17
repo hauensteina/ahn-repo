@@ -28,6 +28,7 @@
 		AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC876B65267AC8D5009D7D30 /* AHXVC.swift */; };
 		AC968900266EF36900870D3B /* AHXTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9688FF266EF36900870D3B /* AHXTableView.swift */; };
 		ACBE402026CC3D5600449E10 /* AHXCrashlytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBE401F26CC3D5600449E10 /* AHXCrashlytics.swift */; };
+		ACBE402226CC4CF000449E10 /* WebVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBE402126CC4CF000449E10 /* WebVC.swift */; };
 		ACD8F149267E72AF0049B812 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */; };
 		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
 		ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */; };
@@ -63,6 +64,7 @@
 		AC876B65267AC8D5009D7D30 /* AHXVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXVC.swift; sourceTree = "<group>"; };
 		AC9688FF266EF36900870D3B /* AHXTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXTableView.swift; sourceTree = "<group>"; };
 		ACBE401F26CC3D5600449E10 /* AHXCrashlytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXCrashlytics.swift; sourceTree = "<group>"; };
+		ACBE402126CC4CF000449E10 /* WebVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebVC.swift; sourceTree = "<group>"; };
 		ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
 		ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXAddAction.swift; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 				AC134702262B8DEC001F1451 /* FirstVC.swift */,
 				AC876B61267814BE009D7D30 /* FontVC.swift */,
 				AC134705262B8E0C001F1451 /* SecondVC.swift */,
+				ACBE402126CC4CF000449E10 /* WebVC.swift */,
 			);
 			path = "App Screens";
 			sourceTree = "<group>";
@@ -346,6 +349,7 @@
 				AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */,
 				AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */,
 				ACED1F25265AD47000C40A07 /* AHXRestFuncs.swift in Sources */,
+				ACBE402226CC4CF000449E10 /* WebVC.swift in Sources */,
 				ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */,
 				AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */,
 				AC865F00266013B20028109E /* AHXSlideMenu.swift in Sources */,

@@ -5,9 +5,12 @@
 //  Created by Andreas Hauenstein on 2021-04-17.
 //
 
+/*
+ Display some images in a table view
+ */
+
 import UIKit
 
-// View Controller displaying some images in a tableview
 //========================================================
 class SecondVC: AHXVC {
     var images = [UIImage]()
