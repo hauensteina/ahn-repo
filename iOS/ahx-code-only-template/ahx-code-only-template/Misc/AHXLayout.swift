@@ -331,7 +331,7 @@ class AHXLayout
         return bestFont
     } // getSystemFont()
     
-    // For a given font, fond the largest size that fits in width,height
+    // For a given font, find the largest size that fits in width,height
     //--------------------------------------------------------------------------------------------------------
     class func bestFittingFont( text: String, width:CGFloat, height: CGFloat, font: UIFont) -> UIFont {
         let fontDescriptor = font.fontDescriptor

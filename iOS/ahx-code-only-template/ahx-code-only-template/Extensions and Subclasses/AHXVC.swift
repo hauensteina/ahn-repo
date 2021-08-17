@@ -6,10 +6,16 @@
 //
 
 /*
- A View controller subclass that makes navigatio easier
+ A View controller subclass that makes navigation easier
  */
 
 import UIKit
+
+// Add an overrideable layout func to all View Controllers
+//==========================================================
+@objc extension UIViewController {
+    func layout() {}
+}
 
 //=========================================
 class AHXVC: UIViewController {

@@ -10,11 +10,7 @@
 import UIKit
 import Alamofire
 
-// Add an overrideable layout func to all View Controllers
-//==========================================================
-@objc extension UIViewController {
-    func layout() {}
-}
+
 
 //===================
 class AHXUtils {

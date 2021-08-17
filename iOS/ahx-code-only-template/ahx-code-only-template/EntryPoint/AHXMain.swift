@@ -98,6 +98,7 @@ class AHXMain {
     // Replace top VC by name
     //---------------------------------------------------------------
     func topVC( _ vcName:String, completion: @escaping ()->()) {
+        ACL.clef()
         if AHXVC.navBusy { return }
         AHXVC.navBusy = true
         DispatchQueue.main.async {
