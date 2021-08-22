@@ -2,7 +2,7 @@
 //  WebVC.swift
 //  ahx-code-only-template
 //
-//  Created by Andreas Hauenstein on 2021-06-14.
+//  Created by Andreas Hauenstein on 2021-08-19.
 //
 /*
  Display some HTML in a WKWebView.

@@ -57,9 +57,10 @@ class AHXMain {
             "FirstVC": FirstVC(),
             "SecondVC": SecondVC(),
             "FontVC": FontVC(),
-            "WebVC": WebVC()
+            "WebVC": WebVC(),
+            "BackEndVC": BackEndVC()
         ]
-        orderedVCs = [ "FirstVC", "SecondVC", "FontVC", "WebVC" ]
+        orderedVCs = [ "FirstVC", "SecondVC", "FontVC", "WebVC", "BackEndVC" ]
         layoutVCs()
         pushVC( "FirstVC") {}
     } // main()

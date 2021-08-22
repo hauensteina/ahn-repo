@@ -38,6 +38,11 @@ class BottomVC: UIViewController {
                                        primaryAction: UIAction() { _ in
                                         AHXMain.shared.topVC( "WebVC") { self.selectButton( 3) }
                                        }))
+        // B Button
+        self.buttons.append( UIButton( type: .custom,
+                                       primaryAction: UIAction() { _ in
+                                        AHXMain.shared.topVC( "BackEndVC") { self.selectButton( 4) }
+                                       }))
     } // viewDidLoad()
     
     //-------------------------------------------------
@@ -55,17 +60,13 @@ class BottomVC: UIViewController {
         AHL.height( v, AHC.bottom_nav_height)
         AHL.left( v, 0)
         AHL.bottom( v, AHC.bottom)
-                
-        let btnwidth = min( self.view.frame.width * 0.20, self.view.frame.height)
-        
+                        
         // Currency Button
         var btn = self.buttons[0]
         var nimg = UIImage( named:"dollar_gray")!
         var simg = UIImage( named:"dollar_green")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.width( btn, btnwidth)
-        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
         
         // Image Button
@@ -74,8 +75,6 @@ class BottomVC: UIViewController {
         simg = UIImage( named:"pic_blue")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.width( btn, btnwidth)
-        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
         
         // T Button
@@ -84,8 +83,6 @@ class BottomVC: UIViewController {
         simg = UIImage( named:"letter_t_red")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.width( btn, btnwidth)
-        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
 
         // W Button
@@ -94,13 +91,30 @@ class BottomVC: UIViewController {
         simg = UIImage( named:"letter_w_red")!
         btn.setImage( nimg, for: .normal)
         btn.setImage( simg, for: .selected)
-        AHL.width( btn, btnwidth)
-        AHL.scaleHeight( btn, likeImage: nimg)
         AHL.border( btn)
 
+        // B Button
+        btn = self.buttons[4]
+        nimg = UIImage( named:"letter_b_gray")!
+        simg = UIImage( named:"letter_b_red")!
+        btn.setImage( nimg, for: .normal)
+        btn.setImage( simg, for: .selected)
+        AHL.border( btn)
+
+        var subviews = [rubber]
+        var widths:[CGFloat?] = [nil]
+        let btnwidth = AHC.w / CGFloat(self.buttons.count + 1)
+        for b in self.buttons {
+            AHL.width( b, btnwidth)
+            AHL.scaleHeight( b, likeImage: btn.image( for: .selected)!)
+            subviews.append( b)
+            subviews.append( rubber)
+            widths.append( b.frame.width)
+            widths.append( nil)
+        }
         AHL.hShare( container: self.view,
-                    subviews: [rubber, buttons[0], rubber, buttons[1], rubber, buttons[2], rubber, buttons[3], rubber],
-                    widths: [nil, buttons[0].frame.width, nil, buttons[1].frame.width, nil, buttons[2].frame.width, nil, buttons[3].frame.width, nil])
+                    subviews: subviews,
+                    widths: widths)
 
     } // layout()
     

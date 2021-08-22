@@ -16,14 +16,24 @@ import SwiftyJSON
 class AHXRestFuncs {
 
     // Hit a GET endpoint with parameters, convert result to JSON
-    //-----------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------
     class func getURL( _ url:String, parms: [String:Any],
+                       user:String? = nil, passwd:String? = nil,
                        completion: @escaping (_ json:JSON?, _ err:String?) -> ())
     {
-        AF.request( url,
-                    method: .get,
-                    parameters: parms)
-            .validate(statusCode: 200..<300)
+//        let user = ***
+//            let password = ***
+//            let credentialData = "\(user):\(password)".data(using: String.Encoding.utf8)!
+//            let base64Credentials = credentialData.base64EncodedString(options: [])
+//            let headers = ["Authorization": "Basic \(base64Credentials)"]
+
+        var request = AF.request( url,
+                                 method: .get,
+                                 parameters: parms)
+        if user != nil && passwd != nil {
+            request = request.authenticate( username: user!, password: passwd!)
+        }
+        request.validate(statusCode: 200..<300)
             .responseJSON { response in
                 switch response.result {
                 case .success(_):
