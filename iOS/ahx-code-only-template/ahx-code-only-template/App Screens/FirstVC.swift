@@ -114,7 +114,7 @@ class FirstVC: AHXVC {
             "q":query,
             "compact":"ultra"
         ]
-        AHR.getURL( "https://free.currconv.com/api/v7/convert", parms: parms)
+        AHR.hitURL( "https://free.currconv.com/api/v7/convert", parms: parms)
         { (json_:JSON?, err:String?) -> () in
             guard let json = json_ else { return }
             let res = ConversionResult( json: json, query:query)
