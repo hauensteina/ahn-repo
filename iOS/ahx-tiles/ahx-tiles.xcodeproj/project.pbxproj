@@ -1,0 +1,516 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 51;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		8AE2241352E498301F293D86 /* Pods_ahx_tiles.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C2439DB6D3F057CBD06B1F9D /* Pods_ahx_tiles.framework */; };
+		AC08F83826715D2C004EE898 /* AHXActionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC08F83726715D2C004EE898 /* AHXActionView.swift */; };
+		AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E1262B7D04001F1451 /* AppDelegate.swift */; };
+		AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346E3262B7D04001F1451 /* SceneDelegate.swift */; };
+		AC1346EB262B7D0A001F1451 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC1346EA262B7D0A001F1451 /* Assets.xcassets */; };
+		AC1346F8262B83B7001F1451 /* AHXMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346F7262B83B7001F1451 /* AHXMain.swift */; };
+		AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1346FA262B84F8001F1451 /* AHXLayout.swift */; };
+		AC134703262B8DEC001F1451 /* TilesVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134702262B8DEC001F1451 /* TilesVC.swift */; };
+		AC134709262B903F001F1451 /* AHXConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134708262B903F001F1451 /* AHXConstants.swift */; };
+		AC447DAF26F173CB005E3D18 /* ContainerVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC447DAE26F173CB005E3D18 /* ContainerVC.swift */; };
+		AC447DB126F1742A005E3D18 /* NavVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC447DB026F1742A005E3D18 /* NavVC.swift */; };
+		AC68B15B264320B60059016A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AC68B15A264320B60059016A /* LaunchScreen.storyboard */; };
+		AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */; };
+		AC865F00266013B20028109E /* AHXSlideMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC865EFF266013B20028109E /* AHXSlideMenu.swift */; };
+		AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC876B65267AC8D5009D7D30 /* AHXVC.swift */; };
+		AC968900266EF36900870D3B /* AHXTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC9688FF266EF36900870D3B /* AHXTableView.swift */; };
+		ACBE402026CC3D5600449E10 /* AHXCrashlytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBE401F26CC3D5600449E10 /* AHXCrashlytics.swift */; };
+		ACD8F149267E72AF0049B812 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */; };
+		ACE404382658445400C63140 /* AHXPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE404372658445400C63140 /* AHXPicker.swift */; };
+		ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */; };
+		ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F26265AE47C00C40A07 /* AHXPopups.swift */; };
+		ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */; };
+		ACF4CD22266D49070049C1D9 /* AHXOnAnyTouch.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */; };
+		ACFA106B2668136700B021F4 /* AHXPassThruView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFA106A2668136700B021F4 /* AHXPassThruView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		31501B7D08E23C742093C125 /* Pods-ahx-tiles.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ahx-tiles.debug.xcconfig"; path = "Target Support Files/Pods-ahx-tiles/Pods-ahx-tiles.debug.xcconfig"; sourceTree = "<group>"; };
+		96532B2A2EF2335E333E6673 /* Pods-ahx-tiles.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ahx-tiles.release.xcconfig"; path = "Target Support Files/Pods-ahx-tiles/Pods-ahx-tiles.release.xcconfig"; sourceTree = "<group>"; };
+		AC08F83726715D2C004EE898 /* AHXActionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXActionView.swift; sourceTree = "<group>"; };
+		AC1346DE262B7D03001F1451 /* ahx-tiles.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ahx-tiles.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC1346E1262B7D04001F1451 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		AC1346E3262B7D04001F1451 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		AC1346EA262B7D0A001F1451 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AC1346EF262B7D0A001F1451 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AC1346F7262B83B7001F1451 /* AHXMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXMain.swift; sourceTree = "<group>"; };
+		AC1346FA262B84F8001F1451 /* AHXLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXLayout.swift; sourceTree = "<group>"; };
+		AC134702262B8DEC001F1451 /* TilesVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TilesVC.swift; sourceTree = "<group>"; };
+		AC134708262B903F001F1451 /* AHXConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXConstants.swift; sourceTree = "<group>"; };
+		AC447DAE26F173CB005E3D18 /* ContainerVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerVC.swift; sourceTree = "<group>"; };
+		AC447DB026F1742A005E3D18 /* NavVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavVC.swift; sourceTree = "<group>"; };
+		AC68B15A264320B60059016A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXUtils.swift; sourceTree = "<group>"; };
+		AC865EFF266013B20028109E /* AHXSlideMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXSlideMenu.swift; sourceTree = "<group>"; };
+		AC876B65267AC8D5009D7D30 /* AHXVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXVC.swift; sourceTree = "<group>"; };
+		AC9688FF266EF36900870D3B /* AHXTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXTableView.swift; sourceTree = "<group>"; };
+		ACBE401F26CC3D5600449E10 /* AHXCrashlytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXCrashlytics.swift; sourceTree = "<group>"; };
+		ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		ACE404372658445400C63140 /* AHXPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPicker.swift; sourceTree = "<group>"; };
+		ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXAddAction.swift; sourceTree = "<group>"; };
+		ACED1F26265AE47C00C40A07 /* AHXPopups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPopups.swift; sourceTree = "<group>"; };
+		ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXGlobFuncs.swift; sourceTree = "<group>"; };
+		ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXOnAnyTouch.swift; sourceTree = "<group>"; };
+		ACFA106A2668136700B021F4 /* AHXPassThruView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXPassThruView.swift; sourceTree = "<group>"; };
+		C2439DB6D3F057CBD06B1F9D /* Pods_ahx_tiles.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ahx_tiles.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AC1346DB262B7D03001F1451 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8AE2241352E498301F293D86 /* Pods_ahx_tiles.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		15A6F9FFE0B3CA4AE0A1E066 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C2439DB6D3F057CBD06B1F9D /* Pods_ahx_tiles.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		AC1346D5262B7D03001F1451 = {
+			isa = PBXGroup;
+			children = (
+				AC1346E0262B7D04001F1451 /* ahx-tiles */,
+				AC1346DF262B7D03001F1451 /* Products */,
+				C5ABD50E2E96E15498F21F42 /* Pods */,
+				15A6F9FFE0B3CA4AE0A1E066 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		AC1346DF262B7D03001F1451 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AC1346DE262B7D03001F1451 /* ahx-tiles.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC1346E0262B7D04001F1451 /* ahx-tiles */ = {
+			isa = PBXGroup;
+			children = (
+				AC865EFE266013830028109E /* Extensions and Subclasses */,
+				AC1346FD262B85B9001F1451 /* Boilerplate */,
+				AC134700262B866E001F1451 /* EntryPoint */,
+				AC1346FE262B85F8001F1451 /* Misc */,
+				AC1346FF262B8614001F1451 /* App Screens */,
+				ACE40436265843EF00C63140 /* Widgets */,
+				AC68B15A264320B60059016A /* LaunchScreen.storyboard */,
+				AC1346EA262B7D0A001F1451 /* Assets.xcassets */,
+				AC1346EF262B7D0A001F1451 /* Info.plist */,
+				ACD8F148267E72AF0049B812 /* GoogleService-Info.plist */,
+			);
+			path = "ahx-tiles";
+			sourceTree = "<group>";
+		};
+		AC1346FD262B85B9001F1451 /* Boilerplate */ = {
+			isa = PBXGroup;
+			children = (
+				AC1346E1262B7D04001F1451 /* AppDelegate.swift */,
+				AC1346E3262B7D04001F1451 /* SceneDelegate.swift */,
+				AC447DAE26F173CB005E3D18 /* ContainerVC.swift */,
+				AC447DB026F1742A005E3D18 /* NavVC.swift */,
+			);
+			path = Boilerplate;
+			sourceTree = "<group>";
+		};
+		AC1346FE262B85F8001F1451 /* Misc */ = {
+			isa = PBXGroup;
+			children = (
+				AC134708262B903F001F1451 /* AHXConstants.swift */,
+				ACED1F28265AE5BB00C40A07 /* AHXGlobFuncs.swift */,
+				AC1346FA262B84F8001F1451 /* AHXLayout.swift */,
+				ACED1F26265AE47C00C40A07 /* AHXPopups.swift */,
+				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
+				ACBE401F26CC3D5600449E10 /* AHXCrashlytics.swift */,
+			);
+			path = Misc;
+			sourceTree = "<group>";
+		};
+		AC1346FF262B8614001F1451 /* App Screens */ = {
+			isa = PBXGroup;
+			children = (
+				AC134702262B8DEC001F1451 /* TilesVC.swift */,
+			);
+			path = "App Screens";
+			sourceTree = "<group>";
+		};
+		AC134700262B866E001F1451 /* EntryPoint */ = {
+			isa = PBXGroup;
+			children = (
+				AC1346F7262B83B7001F1451 /* AHXMain.swift */,
+			);
+			path = EntryPoint;
+			sourceTree = "<group>";
+		};
+		AC865EFE266013830028109E /* Extensions and Subclasses */ = {
+			isa = PBXGroup;
+			children = (
+				ACED1F2226598AAE00C40A07 /* AHXAddAction.swift */,
+				ACFA106A2668136700B021F4 /* AHXPassThruView.swift */,
+				AC876B65267AC8D5009D7D30 /* AHXVC.swift */,
+			);
+			path = "Extensions and Subclasses";
+			sourceTree = "<group>";
+		};
+		ACE40436265843EF00C63140 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				ACE404372658445400C63140 /* AHXPicker.swift */,
+				AC865EFF266013B20028109E /* AHXSlideMenu.swift */,
+				ACF4CD21266D49070049C1D9 /* AHXOnAnyTouch.swift */,
+				AC9688FF266EF36900870D3B /* AHXTableView.swift */,
+				AC08F83726715D2C004EE898 /* AHXActionView.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		C5ABD50E2E96E15498F21F42 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				31501B7D08E23C742093C125 /* Pods-ahx-tiles.debug.xcconfig */,
+				96532B2A2EF2335E333E6673 /* Pods-ahx-tiles.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AC1346DD262B7D03001F1451 /* ahx-tiles */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AC1346F2262B7D0A001F1451 /* Build configuration list for PBXNativeTarget "ahx-tiles" */;
+			buildPhases = (
+				995962D3D60E33236BE7A852 /* [CP] Check Pods Manifest.lock */,
+				AC1346DA262B7D03001F1451 /* Sources */,
+				AC1346DB262B7D03001F1451 /* Frameworks */,
+				AC1346DC262B7D03001F1451 /* Resources */,
+				13439AE8CBD13496A31C7152 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "ahx-tiles";
+			productName = "ahx-tiles";
+			productReference = AC1346DE262B7D03001F1451 /* ahx-tiles.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AC1346D6262B7D03001F1451 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1240;
+				LastUpgradeCheck = 1240;
+				TargetAttributes = {
+					AC1346DD262B7D03001F1451 = {
+						CreatedOnToolsVersion = 12.4;
+					};
+				};
+			};
+			buildConfigurationList = AC1346D9262B7D03001F1451 /* Build configuration list for PBXProject "ahx-tiles" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AC1346D5262B7D03001F1451;
+			productRefGroup = AC1346DF262B7D03001F1451 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AC1346DD262B7D03001F1451 /* ahx-tiles */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AC1346DC262B7D03001F1451 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC1346EB262B7D0A001F1451 /* Assets.xcassets in Resources */,
+				AC68B15B264320B60059016A /* LaunchScreen.storyboard in Resources */,
+				ACD8F149267E72AF0049B812 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		13439AE8CBD13496A31C7152 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ahx-tiles/Pods-ahx-tiles-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ahx-tiles/Pods-ahx-tiles-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ahx-tiles/Pods-ahx-tiles-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		995962D3D60E33236BE7A852 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ahx-tiles-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AC1346DA262B7D03001F1451 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACED1F2326598AAE00C40A07 /* AHXAddAction.swift in Sources */,
+				ACBE402026CC3D5600449E10 /* AHXCrashlytics.swift in Sources */,
+				AC08F83826715D2C004EE898 /* AHXActionView.swift in Sources */,
+				AC1346FB262B84F8001F1451 /* AHXLayout.swift in Sources */,
+				AC134703262B8DEC001F1451 /* TilesVC.swift in Sources */,
+				AC447DAF26F173CB005E3D18 /* ContainerVC.swift in Sources */,
+				ACFA106B2668136700B021F4 /* AHXPassThruView.swift in Sources */,
+				ACF4CD22266D49070049C1D9 /* AHXOnAnyTouch.swift in Sources */,
+				ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */,
+				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
+				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
+				AC968900266EF36900870D3B /* AHXTableView.swift in Sources */,
+				AC1346E2262B7D04001F1451 /* AppDelegate.swift in Sources */,
+				AC876B66267AC8D5009D7D30 /* AHXVC.swift in Sources */,
+				AC1346E4262B7D04001F1451 /* SceneDelegate.swift in Sources */,
+				ACED1F29265AE5BB00C40A07 /* AHXGlobFuncs.swift in Sources */,
+				AC447DB126F1742A005E3D18 /* NavVC.swift in Sources */,
+				AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */,
+				AC865F00266013B20028109E /* AHXSlideMenu.swift in Sources */,
+				AC1346F8262B83B7001F1451 /* AHXMain.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AC1346F0262B7D0A001F1451 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AC1346F1262B7D0A001F1451 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AC1346F3262B7D0A001F1451 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 31501B7D08E23C742093C125 /* Pods-ahx-tiles.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = J26TJ8F6WP;
+				INFOPLIST_FILE = "ahx-tiles/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ahn.ahx-tiles";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AC1346F4262B7D0A001F1451 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 96532B2A2EF2335E333E6673 /* Pods-ahx-tiles.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = J26TJ8F6WP;
+				INFOPLIST_FILE = "ahx-tiles/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ahn.ahx-tiles";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AC1346D9262B7D03001F1451 /* Build configuration list for PBXProject "ahx-tiles" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC1346F0262B7D0A001F1451 /* Debug */,
+				AC1346F1262B7D0A001F1451 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AC1346F2262B7D0A001F1451 /* Build configuration list for PBXNativeTarget "ahx-tiles" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC1346F3262B7D0A001F1451 /* Debug */,
+				AC1346F4262B7D0A001F1451 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AC1346D6262B7D03001F1451 /* Project object */;
+}

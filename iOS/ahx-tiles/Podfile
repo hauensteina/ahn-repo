@@ -1,0 +1,10 @@
+# Uncomment the next line to define a global platform for your project
+platform :ios, '14.0'
+use_frameworks!
+
+target 'ahx-tiles' do
+  pod 'Alamofire'
+  pod 'SwiftyJSON'
+  pod 'Firebase/Crashlytics'
+  pod 'Firebase/Analytics'
+end
