@@ -15,7 +15,7 @@ import UIKit
 
 //=========================================
 class TilesVC: AHXVC {
-    var dlayout = Dictionary<String,Any>()
+    var dlayout = Array<Dictionary<String,Any>>()
     var vw1 = UIView()
     var vw2 = UIView()
     var vw3 = UIView()
@@ -28,40 +28,64 @@ class TilesVC: AHXVC {
     //-------------------------------
     override func viewDidLoad() {
         super.viewDidLoad()
-        dlayout =
-            [
+        dlayout = [
+            [ // The Main Column
                 "width":"100pct",
                 "rows":
                     [
+                        // row 1
                         [ "height":"20pct",
-                          "columns": [ [ "width":"60pct", "leaf":vw1 ],
-                                       [ "width":"40pct", "leaf":vw2 ]
-                          ]
-                        ],
-                        [ "height":"60pct",
-                          "columns": [ [ "width":"40pct",
-                                         "rows": [ [ "height":"30pct", "leaf":vw3 ],
-                                                   [ "height":"30pct", "leaf":vw5 ]
-                                         ]
-                          ],
-                          [ "width":"60pct",
-                            "rows": [ [ "height":"20pct", "leaf":vw4 ],
-                                      [ "height":"40pct", "leaf":vw6 ]
+                          "columns":
+                            [
+                                [ "width":"60pct", "leaf":vw1 ],
+                                [ "width":"40pct", "leaf":vw2 ]
                             ]
-                          ]
-                          ]
                         ],
+                        // row 2
+                        [ "height":"60pct",
+                          "columns":
+                            [
+                                // col 21
+                                [ "width":"40pct",
+                                  "rows":
+                                    [
+                                        [ "height":"30pct", "leaf":vw3 ],
+                                        [ "height":"30pct", "leaf":vw5 ]
+                                    ]
+                                ],
+                                // col 22
+                                [ "width":"60pct",
+                                  "rows":
+                                    [
+                                        [ "height":"20pct", "leaf":vw4 ],
+                                        [ "height":"40pct", "leaf":vw6 ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        // row 3
                         [ "height":"20pct",
-                          "columns": [ [ "width":"60pct", "leaf":vw7 ],
-                                       [ "width":"40pct", "leaf":vw8 ]
+                          "columns": [
+                            [ "width":"60pct", "leaf":vw7 ],
+                            [ "width":"40pct", "leaf":vw8 ]
                           ]
                         ]
-                    ]
-            ] // dlayout
+                    ] // rows
+            ] // The Main Column
+        ] // dlayout
     } // viewDidLoad()
+
+    //-----------------------------------------------
+    override func viewDidAppear(_ animated: Bool) {
+        layout()
+    } // viewDidAppear()
     
     //------------------------
     override func layout() {
+        let errStr = AHXViewPos.layout( rootView: self.view, layout: dlayout, border:true)
+        if errStr != "ok" {
+            AHXPopups.errPopup( "TilesVC.layout(): \(errStr)")
+        }
     } // layout()
     
     

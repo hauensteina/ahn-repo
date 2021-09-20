@@ -24,7 +24,7 @@ class AHXPopups {
     
     // Display error popup
     //---------------------------------------------
-    class func errPopup( message: String)->Void {
+    class func errPopup(_ message: String)->Void {
         if AHXMain.currentVC().presentedViewController != nil {
             AHXLog("errPopup(): already presenting")
             return

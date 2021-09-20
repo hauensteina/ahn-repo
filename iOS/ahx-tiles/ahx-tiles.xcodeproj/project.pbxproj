@@ -18,6 +18,7 @@
 		AC134709262B903F001F1451 /* AHXConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC134708262B903F001F1451 /* AHXConstants.swift */; };
 		AC447DAF26F173CB005E3D18 /* ContainerVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC447DAE26F173CB005E3D18 /* ContainerVC.swift */; };
 		AC447DB126F1742A005E3D18 /* NavVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC447DB026F1742A005E3D18 /* NavVC.swift */; };
+		AC447DB326F7EFB9005E3D18 /* AHXViewPos.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC447DB226F7EFB9005E3D18 /* AHXViewPos.swift */; };
 		AC68B15B264320B60059016A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AC68B15A264320B60059016A /* LaunchScreen.storyboard */; };
 		AC6CEAEF262E223D00A2A647 /* AHXUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */; };
 		AC865F00266013B20028109E /* AHXSlideMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC865EFF266013B20028109E /* AHXSlideMenu.swift */; };
@@ -48,6 +49,7 @@
 		AC134708262B903F001F1451 /* AHXConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXConstants.swift; sourceTree = "<group>"; };
 		AC447DAE26F173CB005E3D18 /* ContainerVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerVC.swift; sourceTree = "<group>"; };
 		AC447DB026F1742A005E3D18 /* NavVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavVC.swift; sourceTree = "<group>"; };
+		AC447DB226F7EFB9005E3D18 /* AHXViewPos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXViewPos.swift; sourceTree = "<group>"; };
 		AC68B15A264320B60059016A /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXUtils.swift; sourceTree = "<group>"; };
 		AC865EFF266013B20028109E /* AHXSlideMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AHXSlideMenu.swift; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 				ACED1F26265AE47C00C40A07 /* AHXPopups.swift */,
 				AC6CEAEE262E223D00A2A647 /* AHXUtils.swift */,
 				ACBE401F26CC3D5600449E10 /* AHXCrashlytics.swift */,
+				AC447DB226F7EFB9005E3D18 /* AHXViewPos.swift */,
 			);
 			path = Misc;
 			sourceTree = "<group>";
@@ -313,6 +316,7 @@
 				ACFA106B2668136700B021F4 /* AHXPassThruView.swift in Sources */,
 				ACF4CD22266D49070049C1D9 /* AHXOnAnyTouch.swift in Sources */,
 				ACED1F27265AE47C00C40A07 /* AHXPopups.swift in Sources */,
+				AC447DB326F7EFB9005E3D18 /* AHXViewPos.swift in Sources */,
 				ACE404382658445400C63140 /* AHXPicker.swift in Sources */,
 				AC134709262B903F001F1451 /* AHXConstants.swift in Sources */,
 				AC968900266EF36900870D3B /* AHXTableView.swift in Sources */,

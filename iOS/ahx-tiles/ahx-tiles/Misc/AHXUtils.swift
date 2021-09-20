@@ -39,6 +39,14 @@ class AHXUtils {
         return UIViewController()
     } // myVC()
     
+    // Remove all subviews from a view
+    //------------------------------------------
+    class func removeSubviews( _ v:UIView) {
+        for x in v.subviews {
+            x.removeFromSuperview()
+        }
+    } // removeSubviews()
+    
     // JSON
     //===========
     
