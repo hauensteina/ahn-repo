@@ -29,6 +29,11 @@ class TilesVC: AHXVC {
     override func viewDidLoad() {
         super.viewDidLoad()
         dlayout = [
+            [ "width":"40pct", "leaf":vw1, "lpad":"10pct" ],
+            [ "width":"60pct", "leaf":vw2, "rpad":"10pct" ]
+        ]
+        /*
+        dlayout = [
             [ // The Main Column
                 "width":"100pct",
                 "rows":
@@ -73,6 +78,7 @@ class TilesVC: AHXVC {
                     ] // rows
             ] // The Main Column
         ] // dlayout
+ */
     } // viewDidLoad()
 
     //-----------------------------------------------
