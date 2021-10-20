@@ -12,6 +12,7 @@ import argparse
 
 GOODFOLDER = 'rename_imgs_converted'
 BADFOLDER  = 'rename_imgs_failed'
+QUALITY = '80'
 
 #-----------------------------
 def usage( printmsg=False):
@@ -93,7 +94,7 @@ def main():
         base,ext = os.path.splitext( fname)
         if ext.lower() == '.heic': # ios format to jpg
             print( 'Converting %s to jpg' % fname)
-            os.system( 'mogrify -monitor -format jpg %s' % new_fname)
+            os.system( 'mogrify -monitor -quality %s -format jpg %s' % (QUALITY, new_fname))
             os.remove( new_fname)
 
 if __name__ == '__main__':

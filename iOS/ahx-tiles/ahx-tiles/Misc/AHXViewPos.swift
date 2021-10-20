@@ -33,6 +33,7 @@ class AHXViewPos {
         }
     } // layout()
     
+    // TODO: implement flex column width
     //---------------------------------------------------------------------------------------------------
     private class func layoutCols( parent: UIView, columns: Array<Dictionary<String,Any>>,
                                    border:Bool) -> String
@@ -76,8 +77,8 @@ class AHXViewPos {
     } // layoutRows()
     
     //-----------------------------------------------------------------------------------------------------------
-    private class func parseSize(_ sizeStr:Any?, _ ddefault:String = "0pct") -> (type:String, val:CGFloat, err:String?) {
-        let size = sizeStr != nil ? sizeStr as! String : ddefault
+    private class func parseSize(_ sizeStr:Any?, _ ddefault:String = "") -> (type:String, val:CGFloat, err:String?) {
+        let size = ( sizeStr != nil ? sizeStr as! String : ddefault )
         if size.hasSuffix( "pct") {
             guard let val = Double( size.components(separatedBy: "p")[0])
             else { return (type:"err", val:0.0, err:"ERROR: size not numeric") }
