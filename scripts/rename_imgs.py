@@ -12,7 +12,7 @@ import argparse
 
 GOODFOLDER = 'rename_imgs_converted'
 BADFOLDER  = 'rename_imgs_failed'
-QUALITY = '80'
+QUALITY = '100'
 
 #-----------------------------
 def usage( printmsg=False):
