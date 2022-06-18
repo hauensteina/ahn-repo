@@ -45,7 +45,7 @@ def main():
                 dst = pikepdf.Pdf.new()
                 dst.pages.append(page)
                 outfn = '%s_%04d.pdf' % (os.path.splitext(fname)[0],args.page)
-                dst.save( '%s_%04d.pdf' % (outfn, args.page))
+                dst.save(outfn)
                 break
 
 if __name__ == '__main__':
