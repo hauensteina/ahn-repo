@@ -6,16 +6,23 @@ AHN, Jan 2022
 
 from pdb import set_trace as BP
 from datetime import datetime
+import os
+import argparse
 from fpdf import FPDF
 
-rows = [
-    { 'DESCRIPTION': 'Kickoff', 'DATE':'2023-01-02', 'RATE':'USD 1400', 'QUANTITY':0.5 }
-    ,{ 'DESCRIPTION': 'Work', 'DATE':'2023-01-03', 'RATE':'USD 1400', 'QUANTITY':1.0 }
-    ,{ 'DESCRIPTION': 'Finish', 'DATE':'2023-01-04', 'RATE':'USD 1400', 'QUANTITY':0.5 }
-]
-rows = rows * 15
+CUSTOMER_ADDRESS = {
+    'D1': 'D ONE\nSihlfeldstrasse 58\n8003 Zurich\nSwitzerland'
+    ,'PROTXX': 'John Ralston\nPROTXX, INC.\n369 La Cuesta Drive\nPortola Valley, CA 94028'
+}
 
-NCOLS = 4
+COL_WIDTH = {
+    'DESCRIPTION':100
+    ,'DATE':20
+    ,'RATE':20
+    ,'QUANTITY':20
+    ,'AMOUNT':20
+}
+
 WHITE = (255,255,255)
 GRAY = (220,220,220)
 DARK = (90,90,90)
@@ -24,11 +31,18 @@ RED = (0xE0,0x0A,0x1A)
 FONTSIZE = 8
 
 class PDF(FPDF):
+    def __init__( self, rows, customer_addr, invoice_no, terms):
+        FPDF.__init__(self)
+        self.rows = rows
+        self.customer_addr = customer_addr
+        self.invoice_no = invoice_no
+        self.terms = terms
+
     def header(self):
-        if self.page_no() == 1: self.front_header()
+        if self.page_no() == 1: self.front_header( self.customer_addr, self.invoice_no, self.terms)
         self.table_header()
      
-    def front_header(self, customer='D ONE\nSihlfeldstrasse 58\n8003 Zurich\nSwitzerland', invoice_no=42, terms='on receipt'):
+    def front_header(self, customer_addr, invoice_no, terms):
         self.set_font('Helvetica', size=30)
         self.set_text_color(*DARK)
         # Heading
@@ -56,7 +70,7 @@ class PDF(FPDF):
         self.set_fill_color( *GRAY)
         self.cell( 50, spacing, 'BILL TO:', align='L', new_x='LEFT', new_y='NEXT', fill=True, border=0)
         self.set_text_color(*RED)
-        self.multi_cell( 0, spacing, customer, align='L', new_x='RIGHT', new_y='NEXT', border=0)
+        self.multi_cell( 0, spacing, customer_addr, align='L', new_x='RIGHT', new_y='NEXT', border=0)
         
         self.ln(5)
         self.set_text_color(*BLACK)
@@ -64,10 +78,10 @@ class PDF(FPDF):
     def table_header(self):
         self.set_font('Helvetica', size=FONTSIZE)
         line_height = self.font_size * 2.0
-        col_width = self.epw / NCOLS       
         self.set_font(style='B')
         self.set_fill_color( *GRAY)
-        for col in rows[0]:
+        for col in self.rows[0]:
+            col_width = COL_WIDTH[col]
             self.multi_cell( col_width, line_height, col, border=1,
                             new_x='RIGHT', new_y='TOP', max_line_height=self.font_size, fill=True, align='C')
         self.ln( line_height)
@@ -89,27 +103,115 @@ class PDF(FPDF):
         self.set_y(-35)
         self.multi_cell( 0, 3.7, txt, align='L', new_x='RIGHT', new_y='NEXT', border=0)
         self.ln(10)
-        
+  
+#--------------
+def usage():
+    name = os.path.basename( __file__)
+    msg = f'''
+    Description:
+      {name}: Generate an AHAUX invoice from time sheet csv
+
+    Synopsis:
+      {name} --timesheet <fname>.csv --customer [D1|PROTXX] --invoice_no <int> [--terms <str>]
+
+    Example:
+      python {name} --timesheet timesheet.csv --customer PROTXX --invoice_no 13 --terms '30 days'
+
+    Default for terms is 'on receipt'
+    Output goes to files <fname>.pdf .
+
+''' 
+    msg += '\n '
+    return msg 
+
+#-------------
 def main():
-    pdf = PDF()
+    parser = argparse.ArgumentParser( usage=usage())
+    parser.add_argument( '--timesheet', required=True)
+    parser.add_argument( '--customer', required=True)
+    parser.add_argument( '--invoice_no', type=int, required=True)
+    parser.add_argument( '--terms', default='on receipt')
+    args = parser.parse_args()
+    with open(args.timesheet) as inf: csvstr = inf.read()
+    rows, colnames = csv2dict( csvstr)
+    total_amount = 0.0
+    total_quantity = 0.0
+    for r in rows: 
+        currency, rate = r['RATE'].split()
+        quantity = float(r["QUANTITY"])
+        amount = float(rate) * quantity
+        total_quantity += quantity
+        total_amount += amount
+        amount = int(amount + 0.5)
+        r['AMOUNT'] = f'{amount}'
+    customer_addr = CUSTOMER_ADDRESS[args.customer]
+    outfname = os.path.splitext( args.timesheet)[0] + '.pdf'
+    
+    run( rows, customer_addr, args.invoice_no, args.terms, total_quantity, total_amount, outfname)
+
+#-------------------------------------------------------------
+def run( rows, customer_addr, invoice_no, terms, total_quantity, total_amount, outfname):
+    pdf = PDF(rows, customer_addr, invoice_no, terms)
     pdf.set_margins( left=15, top=10, right=15)
     pdf.add_page()
     pdf.set_font('Helvetica', size=FONTSIZE)
     pdf.set_auto_page_break( True, margin=20)
     line_height = pdf.font_size * 2.0
-    col_width = pdf.epw / NCOLS
+
+    # Itemized rows
     for rnum,row in enumerate(rows):
         pdf.set_font(style='')
         pdf.set_fill_color( 255,255,255)
         for col in row:
+            col_width = COL_WIDTH[col]
             align = 'R'
             if col == 'DATE': align = 'C'
             elif col == 'DESCRIPTION': align = 'L'
-            pdf.multi_cell( col_width, line_height, ' ' + str(row[col]) + ' ', border=1,
-                           new_x='RIGHT', new_y='TOP', max_line_height=pdf.font_size, fill=True, align=align)
+            pdf.multi_cell( col_width, line_height, str(row[col]), border=1,
+                            new_x='RIGHT', new_y='TOP', max_line_height=pdf.font_size, fill=True, align=align)
         pdf.ln( line_height)
 
-    pdf.output('invoice.pdf')
+    # The total row
+    currency = rows[0]['RATE'].split()[0]
+    pdf.set_font(style='B')
+    pdf.multi_cell( COL_WIDTH['DESCRIPTION'] + COL_WIDTH['DATE']+COL_WIDTH['RATE'], line_height, 'TOTAL', border=1, new_x='RIGHT', new_y='TOP', 
+                    max_line_height=pdf.font_size, fill=True, align='C')
+    pdf.multi_cell( COL_WIDTH['QUANTITY'], line_height, f'{total_quantity:.1f}', border=1, new_x='RIGHT', new_y='TOP', 
+                    max_line_height=pdf.font_size, fill=True, align='R')
+    pdf.multi_cell( COL_WIDTH['AMOUNT'], line_height, f'{currency} {total_amount:.0f}', border=1, new_x='RIGHT', new_y='TOP', 
+                    max_line_height=pdf.font_size, fill=True, align='R')
+    pdf.set_font(style='')
 
+    pdf.output(outfname)
+
+# Transform csv format to a list of dicts
+#-------------------------------------------
+def csv2dict( csvstr):
+    lines = csvstr.split('\n')
+    colnames = []
+    res = []
+    for idx, line in enumerate( lines):
+        line = line.strip()
+        if len(line) == 0: continue
+        if line[0] == '#': continue
+        words = line.split(',')
+        words = [w.strip() for w in words]
+        words = [w.strip('"') for w in words]
+        words = [w.strip("'") for w in words]
+        if not colnames:
+            colnames = words
+            continue
+        ddict = { col:number(words[idx]) for idx,col in enumerate(colnames) }
+        res.append(ddict)
+    return res, colnames
+
+# Convert a string to a float, if it is a number
+#--------------------------------------------------
+def number( tstr):
+    try:
+        res = float( tstr)
+        return res
+    except ValueError:
+        return tstr
 
 main()
