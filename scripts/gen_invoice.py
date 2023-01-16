@@ -112,10 +112,10 @@ def usage():
       {name}: Generate an AHAUX invoice from time sheet csv
 
     Synopsis:
-      {name} --timesheet <fname>.csv --customer [D1|PROTXX] --invoice_no <int> [--terms <str>]
+      {name} --timesheet <fname>.csv --customer [D1|PROTXX] [--terms <str>]
 
     Example:
-      python {name} --timesheet timesheet.csv --customer PROTXX --invoice_no 13 --terms '30 days'
+      python {name} --timesheet timesheet.csv --customer PROTXX --terms '30 days'
 
     Default for terms is 'on receipt'
     Output goes to files <fname>.pdf .
@@ -129,11 +129,11 @@ def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--timesheet', required=True)
     parser.add_argument( '--customer', required=True)
-    parser.add_argument( '--invoice_no', type=int, required=True)
     parser.add_argument( '--terms', default='on receipt')
     args = parser.parse_args()
     with open(args.timesheet) as inf: csvstr = inf.read()
     rows, colnames = csv2dict( csvstr)
+    invoice_no = int(rows[0]['invoice_no'])
     total_amount = 0.0
     total_quantity = 0.0
     newrows = []
@@ -155,7 +155,7 @@ def main():
     customer_addr = CUSTOMER_ADDRESS[args.customer]
     outfname = os.path.splitext( args.timesheet)[0] + '.pdf'
     
-    run( rows, customer_addr, args.invoice_no, args.terms, total_quantity, total_amount, outfname)
+    run( rows, customer_addr, invoice_no, args.terms, total_quantity, total_amount, outfname)
 
 #-------------------------------------------------------------
 def run( rows, customer_addr, invoice_no, terms, total_quantity, total_amount, outfname):

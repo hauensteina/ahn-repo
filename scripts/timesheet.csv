@@ -1,0 +1,6 @@
+DESCRIPTION,DATE,RATE,rate_num,QUANTITY,amount,bill_sum,billed,invoice_no,posted,amount_paid,delta
+New UDIDs and power computation question,2022-07-01,USD 1200,1200,0.25,300,300,,34,,,
+Back end maintenance (Heroku redis; heroku-22),2022-07-05,USD 1200,1200,0.5625,672,972,,,,,
+Increase query limit for clinic app; new profile Sep 2023,2022-09-19,USD 1200,1200,0.25,300,1272,,,,,
+New UDIDs; xcode and ios version changes,2022-09-19,USD 1200,1200,0.25,300,1572,,,,,
+New UDIDs; xcode and ios version changes,2022-11-08,USD 1200,1200,0.25,300,1872,,,,,
