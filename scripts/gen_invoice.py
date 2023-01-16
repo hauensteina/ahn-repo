@@ -136,6 +136,7 @@ def main():
     rows, colnames = csv2dict( csvstr)
     total_amount = 0.0
     total_quantity = 0.0
+    newrows = []
     for r in rows: 
         currency, rate = r['RATE'].split()
         quantity = float(r["QUANTITY"])
@@ -146,6 +147,11 @@ def main():
         amount = int(amount + 0.5)
         r['AMOUNT'] = f'{amount}'
         r['QUANTITY'] = f'{quantity:.2f}'
+        # Only keep uppercase columns
+        r = { k:v for k,v in r.items() if k == k.upper() }
+        newrows.append(r)
+
+    rows = newrows    
     customer_addr = CUSTOMER_ADDRESS[args.customer]
     outfname = os.path.splitext( args.timesheet)[0] + '.pdf'
     
