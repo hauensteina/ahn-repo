@@ -139,11 +139,13 @@ def main():
     for r in rows: 
         currency, rate = r['RATE'].split()
         quantity = float(r["QUANTITY"])
+        quantity = float(f'{quantity:.2f}')
         amount = float(rate) * quantity
         total_quantity += quantity
         total_amount += amount
         amount = int(amount + 0.5)
         r['AMOUNT'] = f'{amount}'
+        r['QUANTITY'] = f'{quantity:.2f}'
     customer_addr = CUSTOMER_ADDRESS[args.customer]
     outfname = os.path.splitext( args.timesheet)[0] + '.pdf'
     
@@ -176,7 +178,7 @@ def run( rows, customer_addr, invoice_no, terms, total_quantity, total_amount, o
     pdf.set_font(style='B')
     pdf.multi_cell( COL_WIDTH['DESCRIPTION'] + COL_WIDTH['DATE']+COL_WIDTH['RATE'], line_height, 'TOTAL', border=1, new_x='RIGHT', new_y='TOP', 
                     max_line_height=pdf.font_size, fill=True, align='C')
-    pdf.multi_cell( COL_WIDTH['QUANTITY'], line_height, f'{total_quantity:.1f}', border=1, new_x='RIGHT', new_y='TOP', 
+    pdf.multi_cell( COL_WIDTH['QUANTITY'], line_height, f'{total_quantity:.2f}', border=1, new_x='RIGHT', new_y='TOP', 
                     max_line_height=pdf.font_size, fill=True, align='R')
     pdf.multi_cell( COL_WIDTH['AMOUNT'], line_height, f'{currency} {total_amount:.0f}', border=1, new_x='RIGHT', new_y='TOP', 
                     max_line_height=pdf.font_size, fill=True, align='R')
