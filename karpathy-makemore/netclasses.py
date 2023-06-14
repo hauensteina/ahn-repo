@@ -7,7 +7,7 @@ from torch import tensor
 class Linear:
 
     def __init__(self, fan_in, fan_out, bias=True):
-        self.weight = torch.randn((fan_in, fan_out), generator=G) / fan_in ** 0.5
+        self.weight = torch.randn((fan_in, fan_out)) / fan_in ** 0.5
         self.bias = torch.zeros(fan_out) if bias else None
 
     def __call__(self, x):
