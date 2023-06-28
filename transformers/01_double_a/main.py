@@ -1,5 +1,6 @@
 
-import re
+import argparse
+import os,re
 import torch 
 from torch import tensor
 import torch.nn as nn
@@ -8,21 +9,57 @@ from transformer import TransformerModel
 #from transformer import BLOCK_SZ, EMBED_SZ, BATCH_SZ
 from tokenizer import Tokenizer
 
-BLOCK_SZ = 16
-EMBED_SZ = 4
-BATCH_SZ = 2
-NUM_LAYERS = 1
-NUM_HEADS = 1
-DROPOUT = 0.2
-DEVICE = 'cpu'
+def usage():
+    name = os.path.basename( __file__)
+    msg = f'''
+    Name:
+      {name}: Train a transformer to rewrite character sequences
 
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-LEARNING_RATE = 3e-4
-EVAL_INTERVAL = 100
-N_EPOCHS = 3000
+    Synopsis:
+      {name} [--block_sz <int>] [--embed_sz <int>] [--batch_sz <int>] [--num_layers <int>] [--num_heads <int>] [--dropout <float>] [--device <cpu|cuda>] [--learning_rate <float>] [--eval_interval <int>] [--num_epochs <int>] infile
 
-def read_data():
-    with open('input_0.txt', 'r', encoding='utf-8') as f:
+    Description:
+        Train a transformer to rewrite character sequences. 
+        The input file should contain one input output pair per line.  Lines can be commented with #.
+        For example, the following is a valid input file:
+
+        # Minimal training data to get off the ground
+        AB,AAB
+        ABCAB,AABCAAB
+        AB,AAB
+        ABCAB,AABCAAB
+        AB,AAB
+        ABCAB,AABCAAB
+
+    Example:
+      python {name} --block_sz 32 --embed_sz 16 --batch_sz 64 --num_layers 1 --num_heads 2 --num_epochs 1000 input_0.txt
+
+'''
+    msg += '\n '
+    return msg
+
+#-------------
+def main():
+    torch.manual_seed(1337)
+    parser = argparse.ArgumentParser( usage=usage())
+    parser.add_argument('infile', type=str)
+    parser.add_argument( '--block_sz', type=int, default=32)
+    parser.add_argument( '--embed_sz', type=int, default=16)
+    parser.add_argument( '--batch_sz', type=int, default=64)
+    parser.add_argument( '--num_layers', type=int, default=1)
+    parser.add_argument( '--num_heads', type=int, default=2)
+    parser.add_argument( '--dropout', type=float, default=0.2)
+    parser.add_argument( '--device', type=str, default='cpu')
+    parser.add_argument( '--learning_rate', type=float, default=3e-4)
+    parser.add_argument( '--eval_interval', type=int, default=100)
+    parser.add_argument( '--num_epochs', type=int, default=1000)
+    args = parser.parse_args()
+    args = args.__dict__
+    run(**args)
+
+
+def read_data(fname):
+    with open(fname, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     lines = [l.strip() for l in lines]
     lines = ['{' + l + '}' for l in lines if len(l) > 0 and not l.startswith('#')]
@@ -37,7 +74,7 @@ def split_train_val(samps):
     val_data = samps[n:] 
     return train_data, val_data
 
-def get_batch(tok,samps):
+def get_batch(tok,samps,batch_sz,block_sz):
     def get_y(x):
         """ 
         Replace anything between { up to and including , with 0 
@@ -53,13 +90,13 @@ def get_batch(tok,samps):
 
     batchx = [] # A list of lists
     batchy = [] 
-    while len(batchx) < BATCH_SZ:
+    while len(batchx) < batch_sz:
         batchelx = []
-        while len(batchelx) < BLOCK_SZ + 1:
+        while len(batchelx) < block_sz + 1:
             idx = torch.randint(0, len(samps), (1,))
             batchelx += (samps[idx])
-        batchely = get_y(batchelx[:BLOCK_SZ+1])
-        batchelx = batchelx[:BLOCK_SZ]
+        batchely = get_y(batchelx[:block_sz+1])
+        batchelx = batchelx[:block_sz]
         batchx.append(batchelx)
         batchy.append(batchely)
 
@@ -68,16 +105,15 @@ def get_batch(tok,samps):
     return batchx, batchy # (B,T)
 
 @torch.no_grad()
-def estimate_loss(m,toksamps):
+def estimate_loss(m,train_data,val_data,batch_sz,block_sz):
     """ Runs a few batches through the model and returns the average train and val loss"""
-    trainsamps, valsamps = split_train_val(toksamps)
     n_batches = 100
     losses = [0.0, 0.0]
-    m.eval()
-    for split,samps in enumerate([trainsamps,valsamps]):
+    m.eval() 
+    for split,samps in enumerate([train_data,val_data]):
         losses = torch.zeros(n_batches)
         for k in range(n_batches):
-            x,y = get_batch( m.tok, samps)
+            x,y = get_batch( m.tok, samps,batch_sz,block_sz)
             logits, loss = m(x,y)
             losses[k] = loss.item()
         losses[split] = losses.mean()
@@ -89,19 +125,18 @@ def generate(model,prompt):
                             stoptoken=model.tok.encode('}'), 
                             max_new_tokens=20)
 
-def main():
-    torch.manual_seed(1337)
-    samples = read_data()
+def run( block_sz,embed_sz,batch_sz,num_layers,num_heads,dropout,
+        device,learning_rate,eval_interval,num_epochs,infile):
+    samples = read_data(infile)
     tok = Tokenizer(samples)
     toksamps = [tok.encode(s) for s in samples]
     print(toksamps[:3])   
     train_data, val_data = split_train_val(toksamps)
 
-    xb, yb = get_batch(tok, train_data)
+    xb, yb = get_batch(tok, train_data, batch_sz, block_sz)
 
-    model = TransformerModel(tok, embed_sz=EMBED_SZ, num_layers=NUM_LAYERS, num_heads=NUM_HEADS, 
-                             block_sz=BLOCK_SZ, dropout=DROPOUT, device=DEVICE)
-    m = model.to(DEVICE)
+    model = TransformerModel( tok, embed_sz, num_layers, num_heads, block_sz, dropout)
+    m = model.to(device)
 
     logits, loss = m(xb, yb)
     print(logits.shape)
@@ -109,13 +144,13 @@ def main():
 
     print( generate(model,'{A,'))
 
-    optimizer = torch.optim.Adam( m.parameters(), lr=LEARNING_RATE) # 3e-4 for larger nets
+    optimizer = torch.optim.Adam( m.parameters(), lr=learning_rate) 
     
-    for iter in range(N_EPOCHS):
-        if iter % EVAL_INTERVAL == 0:
-            losses = estimate_loss(m,toksamps)
+    for iter in range(num_epochs):
+        if iter % eval_interval == 0:
+            losses = estimate_loss(m,train_data,val_data,batch_sz,block_sz)
             print(f"step {iter}: train loss {losses[0]:.4f}, val loss {losses[1]:.4f}")
-        xb,yb = get_batch(tok,train_data)
+        xb,yb = get_batch(tok,train_data,batch_sz,block_sz)
         logits,loss = m(xb,yb)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()

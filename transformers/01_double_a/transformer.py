@@ -10,8 +10,7 @@ C: Channel dimension, which is the embedding length or in general, the number of
 """
 
 class TransformerModel(nn.Module):
-    def __init__(self, tokenizer, embed_sz, num_layers, num_heads, block_sz,  
-                 dropout=0.2, device='cpu'):
+    def __init__(self, tokenizer, embed_sz, num_layers, num_heads, block_sz, dropout):
         super().__init__()
         self.tok = tokenizer
         self.embed_sz = embed_sz
@@ -19,7 +18,6 @@ class TransformerModel(nn.Module):
         self.num_heads = num_heads
         self.block_sz = block_sz
         self.dropout = dropout
-        self.device = device
         # For each char, store the probs of the next char
         self.token_embedding_table = nn.Embedding(tokenizer.vocab_sz, self.embed_sz)
         self.position_embedding_table = nn.Embedding(block_sz, self.embed_sz)
@@ -33,7 +31,7 @@ class TransformerModel(nn.Module):
         """ nn.Module.__call__() calls forward(). """
         B,T = inp.shape
         tok_emb = self.token_embedding_table( inp) # (B,T,C)
-        pos_emb = self.position_embedding_table( torch.arange( T, device=self.device)) # (T,C)
+        pos_emb = self.position_embedding_table( torch.arange( T)) # (T,C)
         x = tok_emb + pos_emb # (B,T,C)
         x = self.blocks(x) # (B,T,C)
         x = self.ln_f(x) # (B,T,C)
@@ -54,15 +52,12 @@ class TransformerModel(nn.Module):
     def generate(self, prompt, stoptoken=None, max_new_tokens=100):
         """ Generate from a prompt """
         # Add a fake batch dimension
-        prompt = torch.tensor(prompt, dtype=torch.long, device=self.device).unsqueeze(0)
+        prompt = torch.tensor(prompt, dtype=torch.long).unsqueeze(0)
 
         for _ in range(max_new_tokens):
             # get the predictions
-            inp = prompt[:, -self.block_sz:] # (B,block_sz) limit input to block_sz
-            try:
-                logits, loss = self(inp)
-            except Exception as e:
-                tt=42
+            prompt = prompt[:, -self.block_sz:] # (B,block_sz) limit input to block_sz
+            logits, loss = self(prompt)
             logits = logits[:,-1,:] # B,C because we only take the last token
             probs = F.softmax(logits, dim=-1)
             next = torch.multinomial(probs, num_samples=1)
