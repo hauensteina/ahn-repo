@@ -49,6 +49,7 @@ class TransformerModel(nn.Module):
             loss = F.cross_entropy(logits, targets)
             return logits, loss
     
+    @torch.no_grad()
     def generate(self, prompt, stoptoken=None, max_new_tokens=100):
         """ Generate from a prompt """
         # Add a fake batch dimension
