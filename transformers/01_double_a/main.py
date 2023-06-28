@@ -156,7 +156,6 @@ def run( block_sz,embed_sz,batch_sz,num_layers,num_heads,dropout,
         loss.backward()
         optimizer.step()
     
-    print(loss.item())
     print(generate(model,'{AB,'))
     print(generate(model,'{ABCAB,'))
 

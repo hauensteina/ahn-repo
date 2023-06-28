@@ -60,7 +60,9 @@ class TransformerModel(nn.Module):
             logits, loss = self(prompt)
             logits = logits[:,-1,:] # B,C because we only take the last token
             probs = F.softmax(logits, dim=-1)
-            next = torch.multinomial(probs, num_samples=1)
+            #next = torch.multinomial(probs, num_samples=1)
+            _,next = torch.max(probs, dim=1)
+            next = next.unsqueeze(-1)
             prompt = torch.cat([prompt, next], dim=1)
             if next[0].tolist() == stoptoken:
                 break
@@ -88,9 +90,8 @@ class Head(nn.Module):
         # Decoders only look into the past, so we mask the future
         wei = wei.masked_fill(self.tril[:T,:T] == 0, float('-inf')) # (B, T,T)
 
-        # This is the wrong order. Softmax should be after dropout.
         wei = F.softmax(wei, dim=-1) # (B,T,T)
-        wei = self.dropout(wei)
+        wei = self.dropout(wei) # maybe apply this to wei @ v instead?
 
         out = wei @ v # (B,T,T) @ (B,T,head_sz) --> (B,T,head_sz)
         return out
@@ -105,7 +106,8 @@ class MultiHead(nn.Module):
 
     def forward(self,x):
         out = torch.cat([head(x) for head in self.heads], dim=-1)
-        out = self.dropout(self.proj(out))
+        out = self.proj(out)
+        out = self.dropout(out)
         return out
 
 class FeedForward(nn.Module):
