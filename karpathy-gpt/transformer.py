@@ -10,7 +10,11 @@ C: Channel dimension, which is the embedding length or in general, the number of
 """
 # Model hyperparameters
 BATCH_SZ = 64
-BLOCK_SZ = 256 # context length
+
+# context length; this is just an upper limit because the tril matrix needs allocating.
+# You can feed in shorter sequences, see generate()
+BLOCK_SZ = 256 
+
 EMBED_SZ = 384
 NUM_HEADS = 6
 NUM_LAYERS = 6

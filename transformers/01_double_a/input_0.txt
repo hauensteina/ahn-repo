@@ -1,0 +1,24 @@
+# A simple input just to get off the ground. 
+# A sample starts at a random line and has BLOCK_SZ length.
+# A batch has BATCH_SZ samples of length BLOCK_SZ.
+# Try BLOCK_SZ = 16 and BATCH_SZ = 2 for starters.
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
+AB,AAB
+ABCAB,AABCAAB
