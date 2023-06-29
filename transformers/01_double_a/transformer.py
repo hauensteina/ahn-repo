@@ -7,7 +7,7 @@ from torch import tensor
 Transformer as suggested in "Let's build GPT from scratch" by Andrej Karpathy.
 https://www.youtube.com/watch?v=kCc8FmEb1nY
 B: Batch element dimension
-T: Time dimension, range(BLACK_SZ), which is the context length
+T: Time dimension, range(BLOCK_SZ), which is the context length
 C: Channel dimension, which is the embedding length or in general, the number of output logits of a layer
 """
 
@@ -81,14 +81,14 @@ class TransformerModel(nn.Module):
     def save(self, fname, infodict={}):
         """ Save the model plus optimizer state so we can resume training later """
         hyper_parameters = {
-            # How many stacked transformer blocks
+            # How many stacked transformer blocks.
             'num_layers': self.num_layers,
-            # Each block takes and produces vectors of this size
+            # Each block takes and produces vectors of this size.
             'embed_sz': self.embed_sz,
             # Number of parallel heads in each layer.
             # Concat head outputs to get back to embed_sz.
             'num_heads': self.num_heads,
-            # T = block_sz during training (aka context length) 
+            # T = block_sz (aka context length) during training .
             # During inference, block_sz is just an upper limit on T.
             'block_sz': self.block_sz,
             'dropout': self.dropout,

@@ -191,7 +191,7 @@ def generate(model, tok, prompt):
 
 def newest_checkpoint(checkpoint_base):
     """
-    Given a checkpoint file base name, find the most recent checkpoint file in the same directory.
+    Given a checkpoint file base name, find the most recent checkpoint file.
     """
     files = os.listdir('.')
     files = [f for f in files if f.startswith(checkpoint_base + '_')]
