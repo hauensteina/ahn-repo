@@ -4,6 +4,8 @@ from torch.nn import functional as F
 from torch import tensor
 
 """
+Transformer as suggested in "Let's build GPT from scratch" by Andrej Karpathy.
+https://www.youtube.com/watch?v=kCc8FmEb1nY
 B: Batch element dimension
 T: Time dimension, range(BLACK_SZ), which is the context length
 C: Channel dimension, which is the embedding length or in general, the number of output logits of a layer
@@ -12,20 +14,24 @@ C: Channel dimension, which is the embedding length or in general, the number of
 class TransformerModel(nn.Module):
     def __init__(self, tokenizer, embed_sz, num_layers, num_heads, block_sz, dropout):
         super().__init__()
-        self.tok = tokenizer
+        self.tokenizer = tokenizer
         self.embed_sz = embed_sz
         self.num_layers = num_layers
         self.num_heads = num_heads
         self.block_sz = block_sz
         self.dropout = dropout
         # For each char, store the probs of the next char
-        self.token_embedding_table = nn.Embedding(tokenizer.vocab_sz, self.embed_sz)
+        self.token_embedding_table = nn.Embedding(self.tokenizer.vocab_sz, self.embed_sz)
         self.position_embedding_table = nn.Embedding(block_sz, self.embed_sz)
         head_sz = self.embed_sz//self.num_heads
         self.blocks = nn.Sequential(
             *[Block(num_heads, embed_sz , block_sz, head_sz, dropout) for _ in range(num_layers)])
         self.ln_f = nn.LayerNorm(self.embed_sz,elementwise_affine=True)
-        self.lm_head = nn.Linear(self.embed_sz, tokenizer.vocab_sz)
+        self.lm_head = nn.Linear(self.embed_sz, self.tokenizer.vocab_sz)
+
+    def add_optimizer(self, lr):
+        self.learning_rate = lr
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
     def forward(self, inp, targets=None):
         """ nn.Module.__call__() calls forward(). """
@@ -52,6 +58,8 @@ class TransformerModel(nn.Module):
     @torch.no_grad()
     def generate(self, prompt, stoptoken=None, max_new_tokens=100):
         """ Generate from a prompt """
+
+        prompt = self.tokenizer.encode(prompt)
         # Add a fake batch dimension
         prompt = torch.tensor(prompt, dtype=torch.long).unsqueeze(0)
 
@@ -61,16 +69,53 @@ class TransformerModel(nn.Module):
             logits, loss = self(prompt)
             logits = logits[:,-1,:] # B,C because we only take the last token
             probs = F.softmax(logits, dim=-1)
-            #next = torch.multinomial(probs, num_samples=1)
-            _,next = torch.max(probs, dim=1)
+            #next = torch.multinomial(probs, num_samples=1) # pull from distribution
+            _,next = torch.max(probs, dim=1) # Just take the most likely
             next = next.unsqueeze(-1)
             prompt = torch.cat([prompt, next], dim=1)
             if next[0].tolist() == stoptoken:
                 break
-        out = self.tok.decode(prompt[0].tolist())
+        out = self.tokenizer.decode(prompt[0].tolist())
         return out
-
     
+    def save(self, fname, infodict={}):
+        """ Save the model plus optimizer state so we can resume training later """
+        hyper_parameters = {
+            # How many stacked transformer blocks
+            'num_layers': self.num_layers,
+            # Each block takes and produces vectors of this size
+            'embed_sz': self.embed_sz,
+            # Number of parallel heads in each layer.
+            # Concat head outputs to get back to embed_sz.
+            'num_heads': self.num_heads,
+            # T = block_sz during training (aka context length) 
+            # During inference, block_sz is just an upper limit on T.
+            'block_sz': self.block_sz,
+            'dropout': self.dropout,
+            }
+        optimizer_parameters = { 
+            'lr': self.learning_rate,
+            }
+        torch.save({
+            'infodict': infodict,
+            'hyper_parameters': hyper_parameters,
+            'optimizer_parameters': optimizer_parameters,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'tokenizer_dict': self.tokenizer.ddict(),
+            }, fname)
+        
+    @classmethod 
+    def load(cls, tokenizer, fname):
+        """ Load the model,optimizer,tokenizer from a checkpoint file """
+        checkpoint = torch.load(fname)
+        tokenizer.load_dict(checkpoint['tokenizer_dict'])
+        model = cls(tokenizer, **checkpoint['hyper_parameters'])
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.add_optimizer(**checkpoint['optimizer_parameters'])    
+        model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        return model
+
 class Head(nn.Module):
     """ One head of self attention """
     def __init__(self,embed_sz,block_sz,head_sz, dropout):
