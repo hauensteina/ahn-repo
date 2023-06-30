@@ -78,6 +78,7 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
     else: # load from file
         tok = Tokenizer([])
         checkpoint_file = newest_checkpoint(checkpoint_base)
+        print(f'Loading model from {checkpoint_file}')
         model = TransformerModel.load(tok, checkpoint_file)
     m = model.to(device)
 
@@ -105,7 +106,9 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
         m.optimizer.step()
 
     if checkpoint_base:
-        m.save( next_checkpoint(checkpoint_base) )
+        fname = next_checkpoint(checkpoint_base)
+        print(f'Saving model to {fname}')
+        m.save(fname)
 
     # Test on selected prompts
     print(generate(model, tok, '{AB,'))
@@ -208,7 +211,7 @@ def next_checkpoint(checkpoint_base):
     if not latest: return checkpoint_base + '_0000.pt'
     latest = os.path.splitext(latest)[0]
     num = int(latest.split('_')[-1]) + 1
-    out = latest.split('_')[:-1] + [f'''_{num:04d}''']
+    out = latest.split('_')[:-1] + [f'''{num:04d}''']
     out = '_'.join(out) + '.pt'
     return out
 
