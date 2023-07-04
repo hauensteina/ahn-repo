@@ -26,24 +26,9 @@ def usage():
         Data are taken from iris_data/iris.data.
         A line looks like
             5.1,3.5,1.4,0.2,Iris-setosa
-        The input file should contain one input output pair per line.  Lines can be commented with #.
-        For example, the following is a valid input file:
-
-        # Minimal training data to get off the ground
-        AB,AAB
-        ABCAB,AABCAAB
-        AB,AAB
-        ABCAB,AABCAAB
-        AB,AAB
-        ABCAB,AABCAAB
-
-        The model will be loaded from a numbered checkpoint file if it exists.  If you give 'cp' as a checkpoint_base,
-        files cp_0001.pt, cp_0002.pt, etc. will be used to load and save the model.
-
-        Training data are taken from <infile>_train.txt, validation data from <infile>_val.txt.  
 
     Example:
-      python {name} --num_epochs 10
+      python {name} --num_epochs 1000
 
     '''
     msg += '\n '

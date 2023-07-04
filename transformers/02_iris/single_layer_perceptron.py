@@ -31,7 +31,6 @@ class SingleLayerPerceptron(nn.Module):
             loss = None
             return logits, loss
         else:
-            sm = nn.Softmax(dim=1)(logits)
             loss = F.cross_entropy(logits, y)
             return logits, loss
         
