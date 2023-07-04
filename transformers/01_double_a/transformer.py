@@ -59,23 +59,23 @@ class TransformerModel(nn.Module):
     def generate(self, prompt, stoptoken=None, max_new_tokens=100):
         """ Generate from a prompt """
 
-        prompt = self.tokenizer.encode(prompt)
+        lprompt = self.tokenizer.encode(prompt)
         # Add a fake batch dimension
-        prompt = torch.tensor(prompt, dtype=torch.long).unsqueeze(0)
+        lprompt = torch.tensor(lprompt, dtype=torch.long).unsqueeze(0)
 
         for _ in range(max_new_tokens):
             # get the predictions
-            prompt = prompt[:, -self.block_sz:] # (B,block_sz) limit input to block_sz
-            logits, loss = self(prompt)
+            lprompt = lprompt[:, -self.block_sz:] # (B,block_sz) limit input to block_sz
+            logits, loss = self(lprompt)
             logits = logits[:,-1,:] # B,C because we only take the last token
             probs = F.softmax(logits, dim=-1)
             #next = torch.multinomial(probs, num_samples=1) # pull from distribution
             _,next = torch.max(probs, dim=1) # Just take the most likely
             next = next.unsqueeze(-1)
-            prompt = torch.cat([prompt, next], dim=1)
+            lprompt = torch.cat([lprompt, next], dim=1)
             if next[0].tolist() == stoptoken:
                 break
-        out = self.tokenizer.decode(prompt[0].tolist())
+        out = self.tokenizer.decode(lprompt[0].tolist())
         return out
     
     def save(self, fname, infodict={}):

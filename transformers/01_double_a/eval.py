@@ -13,30 +13,16 @@ def usage():
     name = os.path.basename(__file__)
     msg = f'''
     Name:
-      {name}: Train a transformer to rewrite character sequences
+      {name}: Evaluate a transformer model on a given dataset.
 
     Synopsis:
-      {name} [--block_sz <int>] [--embed_sz <int>] [--batch_sz <int>] [--num_layers <int>] [--num_heads <int>] [--dropout <float>] 
-      [--device <cpu|cuda>] [--learning_rate <float>] [--eval_interval <int>] [--num_epochs <int>] [--checkpoint_base <str>] infile
+      {name} --model <model.pt> --dataset <dataset.txt>
 
     Description:
-        Train a transformer to rewrite character sequences. 
-        The input file should contain one input output pair per line.  Lines can be commented with #.
-        For example, the following is a valid input file:
-
-        # Minimal training data to get off the ground
-        AB,AAB
-        ABCAB,AABCAAB
-        AB,AAB
-        ABCAB,AABCAAB
-        AB,AAB
-        ABCAB,AABCAAB
-
-        The model will be loaded from a numbered checkpoint file if it exists.  If you give 'cp' as a checkpoint_base,
-        files cp_0001.pt, cp_0002.pt, etc. will be used to load and save the model.
+        Runs the model on the dataset and prints loss and accuracy.
 
     Example:
-      python {name} --block_sz 32 --embed_sz 16 --batch_sz 64 --num_layers 1 --num_heads 2 --num_epochs 1000 --checkpoint_base cp input_0.txt
+      python {name} --model cp_0010.pt --dataset samples_da_val.txt
 
     '''
     msg += '\n '
@@ -47,18 +33,8 @@ def usage():
 def main():
     torch.manual_seed(1337)
     parser = argparse.ArgumentParser(usage=usage())
-    parser.add_argument('infile', type=str)
-    parser.add_argument('--block_sz', type=int, default=32)
-    parser.add_argument('--embed_sz', type=int, default=16)
-    parser.add_argument('--batch_sz', type=int, default=64)
-    parser.add_argument('--num_layers', type=int, default=1)
-    parser.add_argument('--num_heads', type=int, default=2)
-    parser.add_argument('--dropout', type=float, default=0.2)
-    parser.add_argument('--device', type=str, default='cpu')
-    parser.add_argument('--learning_rate', type=float, default=3e-4)
-    parser.add_argument('--eval_interval', type=int, default=100)
-    parser.add_argument('--num_epochs', type=int, default=1000)
-    parser.add_argument('--checkpoint_base', type=str)
+    parser.add_argument('--model', type=str, required=True)
+    parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     args = args.__dict__
     model = run(**args)

@@ -26,8 +26,10 @@ class Tokenizer:
         self.load_chars(chars)
 
     def encode(self, x):    
+        """ Encode one string into a list of tokens """
         return [self.stoi[ch] for ch in x]
     
     def decode(self, x):
+        """ Decode a list of tokens """
         return ''.join([self.itos[i] for i in x])
     
