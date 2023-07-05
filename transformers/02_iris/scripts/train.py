@@ -8,7 +8,8 @@ import torch.nn.functional as F
 from single_layer_perceptron import SingleLayerPerceptron
 
 CHECKPOINT_BASE = 'cp_iris'
-DATA_FILE = 'iris_data/iris.data'
+DATA_FILE = 'iris.data'
+DATA_FOLDER = 'iris_data'
 LEARNING_RATE = 3E-4
 #LEARNING_RATE = 0.01
 
@@ -19,13 +20,15 @@ def usage():
       {name}: Train a perceptron on the Iris dataset
 
     Synopsis:
-      {name} --num_epochs <int>] 
+      {name} --num_epochs <int> [--sagemaker <int> --train <folder> --validation <folder> ]
 
     Description:
         Train a perceptron on the Iris dataset.
         Data are taken from iris_data/iris.data.
         A line looks like
             5.1,3.5,1.4,0.2,Iris-setosa
+
+        If --sagemaker > 0, the script was called via pytorch_estimator.fit( fit_parms) by sagemaker_train.py.
 
     Example:
       python {name} --num_epochs 1000
@@ -39,30 +42,46 @@ def usage():
 def main():
     torch.manual_seed(1337)
     parser = argparse.ArgumentParser(usage=usage())
-    parser.add_argument('--num_epochs', type=int, default=1000)
+    parser.add_argument('--num_epochs', type=int, default=1000) # -> s.environ['SM_HP_NUM_EPOCHS']
+    parser.add_argument('--sagemaker', type=int, default=0) # -> s.environ['SM_HP_SAGEMAKER']
     args = parser.parse_args()
     args = args.__dict__
-    model = run(**args)
+    #print(os.environ)
+    #exit(0)
+    if args['sagemaker'] > 0:
+        run_sagemaker( args['num_epochs'], data_folder=os.environ['SM_CHANNEL_TRAIN'], data_file=DATA_FILE)
+    else:
+        run( args['num_epochs'], data_folder=DATA_FOLDER, data_file=DATA_FILE)
 
-def run(num_epochs):
-    # Read all data into memory    
-    train_datax, train_datay, val_datax, val_datay, c2i, i2c = read_data(DATA_FILE)
+def run_sagemaker(num_epochs, data_folder, data_file):
+    data_file = os.path.join( data_folder, data_file)
+    train_datax, train_datay, val_datax, val_datay, c2i, i2c = read_data(data_file)
+    model = SingleLayerPerceptron( n_in=len(train_datax[0]), n_hidden=10, n_classes=len(c2i))
+    model.add_optimizer(LEARNING_RATE)
+    train(model, train_datax, train_datay, val_datax, val_datay, num_epochs)
+
+def run(num_epochs, data_folder, data_file):
+    data_file = os.path.join(data_folder, data_file)
+    train_datax, train_datay, val_datax, val_datay, c2i, i2c = read_data(data_file)
     #train_datax = train_datax[:2]
     #train_datay = train_datay[:2]
     
     model = SingleLayerPerceptron( n_in=len(train_datax[0]), n_hidden=10, n_classes=len(c2i))
     model.add_optimizer(LEARNING_RATE)
     logits, loss = model.forward(train_datax, train_datay)
+    train(model, train_datax, train_datay, val_datax, val_datay, num_epochs)
 
-    # Train 
+def train(model, train_datax, train_datay, val_datax, val_datay, num_epochs):
     for iter in range(num_epochs):
-        train_logits, train_loss = model.forward(train_datax, train_datay)
-        val_logits, val_loss = model.forward(val_datax, val_datay)
-        train_acc = accuracy(model, train_datax, train_datay)
-        val_acc = accuracy(model, val_datax, val_datay)
+        model.eval() # switch mode to eval
+        train_logits, train_loss = model.forward( train_datax, train_datay)
+        val_logits, val_loss = model.forward( val_datax, val_datay)
+        train_acc = accuracy( model, train_datax, train_datay)
+        val_acc = accuracy( model, val_datax, val_datay)
         print( f"epoch {iter}: train loss {train_loss:.4f}, val loss {val_loss:.4f}, train acc {train_acc:.4f}, val acc {val_acc:.4f}" )
-        logits, loss = model(train_datax, train_datay)
+        model.train() # switch mode to train
         model.optimizer.zero_grad(set_to_none=True)
+        logits, loss = model( train_datax, train_datay)
         loss.backward()
         model.optimizer.step()
 
@@ -115,4 +134,5 @@ def read_data(fname):
 
     return train_datax, train_datay, val_datax, val_datay, c2i, i2c
 
-main()
+if __name__ == '__main__':
+    main()  
