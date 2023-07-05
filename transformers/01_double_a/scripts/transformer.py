@@ -63,6 +63,7 @@ class TransformerModel(nn.Module):
         lprompt = self.tokenizer.encode(prompt)
         # Add a fake batch dimension
         lprompt = torch.tensor(lprompt, dtype=torch.long).unsqueeze(0)
+        lprompt = lprompt.to(self.device)
 
         for _ in range(max_new_tokens):
             # get the predictions
@@ -113,9 +114,10 @@ class TransformerModel(nn.Module):
         tokenizer.load_dict(checkpoint['tokenizer_dict'])
         model = cls( device, tokenizer, **checkpoint['hyper_parameters'])
         model.load_state_dict(checkpoint['model_state_dict'])
-        model.add_optimizer(**checkpoint['optimizer_parameters'])    
-        model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        return model
+        m = model.to(device)
+        m.add_optimizer(**checkpoint['optimizer_parameters'])    
+        m.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        return m
 
 class Head(nn.Module):
     """ One head of self attention """

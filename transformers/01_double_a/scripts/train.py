@@ -1,4 +1,4 @@
-
+from pdb import set_trace as BP
 import argparse
 import os
 import re
@@ -43,7 +43,7 @@ def usage():
         Training data are taken from <infile>_train.txt, validation data from <infile>_val.txt.  
 
     Example:
-      python {name} --block_sz 32 --embed_sz 16 --batch_sz 64 --num_layers 1 --num_heads 2 --num_epochs 1000 --infile samples_cp_small
+      python {name} --block_sz 32 --embed_sz 16 --batch_sz 64 --num_layers 1 --num_heads 2 --num_epochs 2 --infile samples_cp_small
 
     '''
     msg += '\n '
@@ -86,15 +86,16 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
         tok = Tokenizer(train_data)
         model = TransformerModel( DEVICE, tok, embed_sz, num_layers,
                                 num_heads, block_sz, dropout)
-        model.add_optimizer(learning_rate)
+        m = model.to(DEVICE)
+        m.add_optimizer(learning_rate)
     else: # load from file
         tok = Tokenizer([])
         checkpoint_file = newest_checkpoint(checkpoint_base)
         print(f'>>>> Loading model from {checkpoint_file}')
-        model = TransformerModel.load( DEVICE, tok, checkpoint_file)
+        m = TransformerModel.load( DEVICE, tok, checkpoint_file)
 
     print(f'>>>> Using device {DEVICE}')
-    m = model.to(DEVICE)
+    #m = model.to(DEVICE)
 
     train_data = [ tok.encode(x) for x in train_data ]
     val_data = [ tok.encode(x) for x in val_data]
@@ -106,17 +107,18 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
     logits, loss = m(xb, yb)
     print(f'Output logits shape (batch_sz*block_sz, alphabet_sz): {logits.shape}')
     print(f'Initial loss: {loss}')
-    print(f'Generate something: {generate(model, tok, "{A,")}')
+    print(f'Generate something: {generate(m, tok, "{A,")}')
 
     print('\n>>>> Start training')
     batches_per_epoch = len(train_data) // batch_sz
+
     # Train 
     for epoch_num in range(num_epochs):
 
         if epoch_num % eval_interval == 0:
 
             # Log the loss and run test cases
-            if epoch_num: testcases(model, tok, val_data)
+            if epoch_num: testcases(m, tok, val_data)
             losses = estimate_loss(m, tok, train_data, val_data, batch_sz, block_sz)
             print( f"\nBefore epoch {epoch_num}: train loss {losses[0]:.4f}, val loss {losses[1]:.4f}")
             print('First x,y in batch:')
