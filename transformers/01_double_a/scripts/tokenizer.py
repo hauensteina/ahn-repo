@@ -13,7 +13,7 @@ class Tokenizer:
     def load_chars(self,chars):
         self.vocab_sz = len(chars)
         print(f'''alphabet:{''.join(chars)}''')
-        print(f'''size:{self.vocab_sz}''')
+        print(f'''alphabet size:{self.vocab_sz}''')
         self.chars = chars
         self.stoi = {ch: i for i, ch in enumerate(chars)}
         self.itos = {i: ch for i, ch in enumerate(chars)}
