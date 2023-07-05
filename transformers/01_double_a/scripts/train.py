@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from transformer import TransformerModel
 from tokenizer import Tokenizer
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 MODEL_DIR = 'models'
 if 'SM_MODEL_DIR' in os.environ:
     MODEL_DIR = os.environ['SM_MODEL_DIR']
@@ -73,7 +74,7 @@ def main():
     model = run(**args)
 
 def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
-        device, learning_rate, eval_interval, num_epochs, infile):
+        learning_rate, eval_interval, num_epochs, infile):
     
     checkpoint_base = os.path.join(MODEL_DIR, os.path.split(infile)[-1])
     # Read all data into memory    
@@ -92,9 +93,8 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
         print(f'>>>> Loading model from {checkpoint_file}')
         model = TransformerModel.load(tok, checkpoint_file)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'>>>> Using device {device}')
-    m = model.to(device)
+    print(f'>>>> Using device {DEVICE}')
+    m = model.to(DEVICE)
 
     train_data = [ tok.encode(x) for x in train_data ]
     val_data = [ tok.encode(x) for x in val_data]
@@ -188,6 +188,7 @@ def get_batch(tok, samps, batch_sz, block_sz):
 
     batchx = torch.tensor(batchx)
     batchy = torch.tensor(batchy)
+    batchx,batchy = batchx.to(DEVICE), batchy.to(DEVICE)
     return batchx, batchy  # (B,T)
 
 @torch.no_grad()
