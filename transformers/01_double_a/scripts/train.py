@@ -84,14 +84,14 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
     if not newest_checkpoint(checkpoint_base): # new model
         print(f'>>>> Fresh model')
         tok = Tokenizer(train_data)
-        model = TransformerModel(tok, embed_sz, num_layers,
+        model = TransformerModel( DEVICE, tok, embed_sz, num_layers,
                                 num_heads, block_sz, dropout)
         model.add_optimizer(learning_rate)
     else: # load from file
         tok = Tokenizer([])
         checkpoint_file = newest_checkpoint(checkpoint_base)
         print(f'>>>> Loading model from {checkpoint_file}')
-        model = TransformerModel.load(tok, checkpoint_file)
+        model = TransformerModel.load( DEVICE, tok, checkpoint_file)
 
     print(f'>>>> Using device {DEVICE}')
     m = model.to(DEVICE)

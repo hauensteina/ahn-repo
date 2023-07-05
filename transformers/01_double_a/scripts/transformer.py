@@ -12,9 +12,10 @@ C: Channel dimension, which is the embedding length or in general, the number of
 """
 
 class TransformerModel(nn.Module):
-    def __init__(self, tokenizer, embed_sz, num_layers, num_heads, block_sz, dropout):
+    def __init__(self, device, tokenizer, embed_sz, num_layers, num_heads, block_sz, dropout):
         super().__init__()
         self.tokenizer = tokenizer
+        self.device = device
         self.embed_sz = embed_sz
         self.num_layers = num_layers
         self.num_heads = num_heads
@@ -37,7 +38,7 @@ class TransformerModel(nn.Module):
         """ nn.Module.__call__() calls forward(). """
         B,T = inp.shape
         tok_emb = self.token_embedding_table( inp) # (B,T,C)
-        pos_emb = self.position_embedding_table( torch.arange( T)) # (T,C)
+        pos_emb = self.position_embedding_table( torch.arange( T, device=self.device))  # (T,C)
         x = tok_emb + pos_emb # (B,T,C)
         x = self.blocks(x) # (B,T,C)
         x = self.ln_f(x) # (B,T,C)
@@ -106,11 +107,11 @@ class TransformerModel(nn.Module):
             }, fname)
         
     @classmethod 
-    def load(cls, tokenizer, fname):
+    def load(cls, device, tokenizer, fname):
         """ Load the model,optimizer,tokenizer from a checkpoint file """
         checkpoint = torch.load(fname)
         tokenizer.load_dict(checkpoint['tokenizer_dict'])
-        model = cls(tokenizer, **checkpoint['hyper_parameters'])
+        model = cls( device, tokenizer, **checkpoint['hyper_parameters'])
         model.load_state_dict(checkpoint['model_state_dict'])
         model.add_optimizer(**checkpoint['optimizer_parameters'])    
         model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
