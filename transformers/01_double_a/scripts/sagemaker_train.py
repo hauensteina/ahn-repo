@@ -26,9 +26,9 @@ hyperparameters = {
     'num_layers': 1,
     'num_heads': 2,
     'dropout': 0.0,
-    'learning_rate': 3e-4,
-    'eval_interval': 1, # estimate loss and save model every eval_interval epochs
-    'num_epochs': 10,
+    'learning_rate': 3e-3, # 3e-4,
+    'eval_interval': 10, # estimate loss and save model every eval_interval epochs
+    'num_epochs': 100,
     }
 
 aws_role = 'arn:aws:iam::147785435127:role/service-role/SageMaker-ahx'
