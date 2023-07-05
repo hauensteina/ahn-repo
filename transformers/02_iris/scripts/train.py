@@ -20,7 +20,7 @@ def usage():
       {name}: Train a perceptron on the Iris dataset
 
     Synopsis:
-      {name} --num_epochs <int> [--sagemaker <int> --train <folder> --validation <folder> ]
+      {name} --num_epochs <int> [--sagemaker <int>]
 
     Description:
         Train a perceptron on the Iris dataset.
@@ -37,7 +37,7 @@ def usage():
     msg += '\n '
     return msg
 
-# -------------
+# ------------- 
 
 def main():
     torch.manual_seed(1337)

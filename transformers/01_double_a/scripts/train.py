@@ -64,6 +64,8 @@ def main():
     parser.add_argument('--checkpoint_base', type=str)
     args = parser.parse_args()
     args = args.__dict__
+    if 'SM_CHANNEL_TRAIN' in os.environ:
+        args['infile'] = os.path.join(os.environ['SM_CHANNEL_TRAIN'], args['infile'])
     model = run(**args)
 
 def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
