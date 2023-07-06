@@ -118,7 +118,7 @@ def run(block_sz, embed_sz, batch_sz, num_layers, num_heads, dropout,
         if epoch_num % eval_interval == 0:
 
             # Log the loss and run test cases
-            if epoch_num: testcases(m, tok, val_data)
+            if epoch_num: testcases(m, tok, val_data, infile)
             losses = estimate_loss(m, tok, train_data, val_data, batch_sz, block_sz)
             print( f"\nBefore epoch {epoch_num}: train loss {losses[0]:.4f}, val loss {losses[1]:.4f}")
             print('First x,y in batch:')
@@ -209,7 +209,13 @@ def estimate_loss(m, tok, train_data, val_data, batch_sz, block_sz):
     m.train()
     return losses
 
-def testcases(m, tok, val_data):
+def testcases(m, tok, val_data, infile):
+    if '_da_' in infile:
+        testcases_da(m, tok, val_data)
+    else:   
+        testcases_cp(m, tok, val_data)
+        
+def testcases_cp(m, tok, val_data):
     print('>>>> Test cases:')
     sampsize = 10
     for s in val_data[:sampsize]:
@@ -218,6 +224,18 @@ def testcases(m, tok, val_data):
         parts = res.split(',')
         prefix = ''
         if parts[0][1:] != parts[1][:-1]:
+            prefix = 'ERROR: '
+        print(f'{prefix}Prompt -> Res: {prompt} -> {res}')
+
+def testcases_da(m, tok, val_data):
+    print('>>>> Test cases:')
+    sampsize = 10
+    for s in val_data[:sampsize]:
+        prompt = tok.decode(s).split(',')[0] + ','        
+        res = m.generate(prompt, stoptoken=tok.encode('}'), max_new_tokens=20)
+        parts = res.split(',')
+        prefix = ''
+        if parts[0][1:] != re.sub('A', 'AA', parts[1][:-1]):
             prefix = 'ERROR: '
         print(f'{prefix}Prompt -> Res: {prompt} -> {res}')
 

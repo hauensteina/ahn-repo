@@ -19,9 +19,9 @@ from sagemaker.pytorch import PyTorch
 
 # This should be called 'command_line_args_for_your_train_script' (train.py)
 hyperparameters = {
-    'infile': 'samples_cp',
-    'block_sz': 32,
-    'embed_sz': 16,
+    'infile': 'samples_da', #'samples_cp',
+    'block_sz': 32, # max context length
+    'embed_sz': 32,
     'batch_sz': 32,
     'num_layers': 1,
     'num_heads': 2,
