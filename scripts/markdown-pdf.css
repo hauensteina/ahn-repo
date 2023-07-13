@@ -1,0 +1,21 @@
+
+body {
+  font-size: 10px;
+  column-count: 2;
+  column-gap: 40px;	
+}
+
+h1 {
+  column-span: all;
+}
+
+
+/*
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p {
+    break-inside: avoid-column;
+    page-break-inside: avoid;
+}
+*/
+
+
+

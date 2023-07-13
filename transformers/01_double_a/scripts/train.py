@@ -22,7 +22,7 @@ def usage():
 
     Synopsis:
       {name} [--block_sz <int>] [--embed_sz <int>] [--batch_sz <int>] [--num_layers <int>] [--num_heads <int>] [--dropout <float>] 
-      [--learning_rate <float>] [--eval_interval <int>] [--num_epochs <int>] --infile <str>
+      [--learning_rate <float>] [--eval_interval <int>] [--num_epochs <int>]  [--min_loss <int>] [--model_in <file_path>] [--model_out <file_path>] --infile <str>
 
     Description:
         Train a transformer to rewrite character sequences. 
@@ -37,8 +37,11 @@ def usage():
         AB,AAB
         ABCAB,AABCAAB
 
-        The model will be loaded from a numbered checkpoint file if it exists.  
-        Files <infile>_0001.pt, <infile>_0002.pt, etc. will be used to load and save the model.
+        The model will be loaded from the file specified by --model_in. The file can be on S3, or local.
+        Snapshots <infile>_0001.pt, <infile>_0002.pt will be written locally to the current directory.
+        Snapshots are written every --eval_interval epochs.
+        Training ends after --num_epochs, or if the validation loss is less than --min_loss.
+        The model with the lowest validation loss will be written to --model_out.
 
         Training data are taken from <infile>_train.txt, validation data from <infile>_val.txt.  
 
@@ -64,7 +67,10 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.2)
     parser.add_argument('--learning_rate', type=float, default=3e-4)
     parser.add_argument('--eval_interval', type=int, default=1)
-    parser.add_argument('--num_epochs', type=int, default=1000)
+    parser.add_argument('--num_epochs', type=int, default=2)
+    parser.add_argument('--min_loss', type=int, default=0.04)
+    parser.add_argument('--model_in', type=str)
+    parser.add_argument('--model_out', type=str)
     args = parser.parse_args()
     args = args.__dict__
     if 'SM_CHANNEL_TRAIN' in os.environ:
