@@ -219,11 +219,7 @@ def grid_from_uuid(uuidstr, size):
     nbits = len(hashstr) * 4
     hashnum = int(hashstr, 16)
     idx0 = 0
-    idx1 = int(hashstr[0:2],16) % len(palette)
-    if idx1 == idx0: idx1 = (idx1 + 1) % len(palette)
-    idx2 = int(hashstr[2:4],16) % len(palette)
-    while idx2 == idx0 or idx2 == idx1:
-        idx2 = (idx2 + 1) % len(palette) 
+    (idx1, idx2) = random.sample(range(1, len(palette)), 2) 
     bgcol = palette[ idx0 ]
     color1 = palette[ idx1 ]
     color2 = palette[ idx2 ]
@@ -264,3 +260,85 @@ def grid_from_uuid(uuidstr, size):
     return grid
     
 main()
+
+""" in Swift:
+import Foundation
+import CryptoKit
+import UIKit
+
+func gridFromUUID(_ uuidString: String, size: Int) -> [[UIColor]] {
+    let palette: [UIColor] = [
+        UIColor(red: 255/255, green: 255/255, blue: 255/255, alpha: 1),  // White
+        UIColor(red: 0/255, green: 108/255, blue: 132/255, alpha: 1),    // Teal
+        UIColor(red: 149/255, green: 28/255, blue: 66/255, alpha: 1),    // Burgundy
+        UIColor(red: 48/255, green: 52/255, blue: 109/255, alpha: 1),    // Indigo
+        UIColor(red: 157/255, green: 224/255, blue: 173/255, alpha: 1),  // Mint
+        UIColor(red: 133/255, green: 76/255, blue: 48/255, alpha: 1),    // Brown
+        UIColor(red: 52/255, green: 101/255, blue: 36/255, alpha: 1),    // Dark Green
+        UIColor(red: 208/255, green: 70/255, blue: 72/255, alpha: 1),    // Red
+        UIColor(red: 211/255, green: 128/255, blue: 185/255, alpha: 1),  // Pink
+        UIColor(red: 89/255, green: 125/255, blue: 206/255, alpha: 1),   // Blue
+        UIColor(red: 210/255, green: 125/255, blue: 44/255, alpha: 1),   // Orange
+        UIColor(red: 133/255, green: 149/255, blue: 161/255, alpha: 1),  // Grey
+        UIColor(red: 109/255, green: 170/255, blue: 44/255, alpha: 1),   // Lime
+        UIColor(red: 210/255, green: 170/255, blue: 153/255, alpha: 1),  // Peach
+        UIColor(red: 109/255, green: 194/255, blue: 202/255, alpha: 1),  // Cyan
+        UIColor(red: 218/255, green: 212/255, blue: 94/255, alpha: 1),   // Yellow
+        UIColor(red: 114/255, green: 77/255, blue: 189/255, alpha: 1)    // Purple
+    ]
+
+    // Compute SHA256 hash of the UUID string
+    guard let data = uuidString.data(using: .utf8) else { return [[]] }
+    let hash = SHA256.hash(data: data)
+    let hashStr = hash.compactMap { String(format: "%02x", $0) }.joined()
+
+    // Select two different colors from the palette (excluding white)
+    var selectedColors = Set<Int>()
+    while selectedColors.count < 2 {
+        selectedColors.insert(Int.random(in: 1..<palette.count))
+    }
+    let colorIndices = Array(selectedColors)
+    let color1 = palette[colorIndices[0]]
+    let color2 = palette[colorIndices[1]]
+
+    // Initialize grid
+    var grid = Array(repeating: Array(repeating: palette[0], count: size), count: size)
+    
+    let halfSize = size / 2 + 1
+    var offset = 0
+    repeat {
+        var bitSum = 0
+        var zeroRows = 0
+        for row in 0..<size {
+            var rowSum = 0
+            let color = row < size / 2 ? color1 : color2
+            for col in 0..<halfSize {
+                let idx = (row * size + col + offset) % (hashStr.count * 4)
+                let charIndex = hashStr.index(hashStr.startIndex, offsetBy: idx / 4)
+                let char = hashStr[charIndex]
+                guard let hexVal = Int(String(char), radix: 16) else { continue }
+                let bitVal = (hexVal >> (3 - idx % 4)) & 1
+                if bitVal == 1 {
+                    bitSum += 1
+                    rowSum += 1
+                    grid[row][col] = color
+                    grid[row][size - col - 1] = color  // Mirror left/right
+                }
+            }
+            if rowSum == 0 { zeroRows += 1 }
+        }
+        
+        // Check if the grid looks reasonable
+        if bitSum > size * halfSize / 3 && zeroRows < 2 {
+            break
+        } else {
+            print("Weird image, retrying")
+            offset += 1
+        }
+    } while offset < 20  // Prevent infinite loop
+
+    return grid
+}
+
+
+"""
