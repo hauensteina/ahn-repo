@@ -195,8 +195,6 @@ class AHXLayout
 
     // Vertically layout subviews inside container.
     // The subviews are made subviews here automatically.
-    // points: Array with height for each subview. If a view has a nil height
-    //   value, dynamically take an equal share of whatever space is left.
     // topmarg: Margin before the top view, in points
     // botmarg: Margin after the last view, in points
     // space: Space between subviews, in points
@@ -233,7 +231,6 @@ class AHXLayout
             points = points.map( { $0 * shrink })
         }
         // Position and size the subviews vertically.
-        // Leave x and width unchanged.
         var pos = topmarg
         for (i,v) in subviews.enumerated() {
             AHL.height( v, points[i])
@@ -332,7 +329,7 @@ class AHXLayout
     } // getSystemFont()
     
     // For a given font, find the largest size that fits in width,height
-    //--------------------------------------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------
     class func bestFittingFont( text: String, width:CGFloat, height: CGFloat, font: UIFont) -> UIFont {
         let fontDescriptor = font.fontDescriptor
         let constrainingDimension = min( width, height)

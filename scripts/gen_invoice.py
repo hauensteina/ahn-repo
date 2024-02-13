@@ -8,11 +8,13 @@ from pdb import set_trace as BP
 from datetime import datetime
 import os
 import argparse
-from fpdf import FPDF
+from fpdf import FPDF # This is fpdf2, pip install fpdf2, not fpdf 
+import csv
 
 CUSTOMER_ADDRESS = {
     'D1': 'D ONE\nSihlfeldstrasse 58\n8003 Zurich\nSwitzerland'
     ,'PROTXX': 'John Ralston\nPROTXX, INC.\n369 La Cuesta Drive\nPortola Valley, CA 94028'
+    ,'Neursantys': 'Neursantys, INC.\n659 Oak Grove Ave\nMenlo Park, CA 94025'
 }
 
 COL_WIDTH = {
@@ -108,16 +110,21 @@ class PDF(FPDF):
 def usage():
     name = os.path.basename( __file__)
     msg = f'''
-    Description:
+    Name:
       {name}: Generate an AHAUX invoice from time sheet csv
 
     Synopsis:
-      {name} --timesheet <fname>.csv --customer [D1|PROTXX] [--terms <str>]
+      {name} --timesheet <fname>.csv --customer [D1|PROTXX|Neursantys] [--terms <str>] [--invoice_no <int>]
+
+    Description:
+      Generate an invoice from a csv. All upper case columns show in the output PDF.
+      Column width is set in the COL_WIDTH dict in the source code.
 
     Example:
-      python {name} --timesheet timesheet.csv --customer PROTXX --terms '30 days'
+      python {name} --timesheet timesheet.csv --customer Neursantys --invoice_no 2
 
-    Default for terms is 'on receipt'
+    Default for terms is 'on receipt'.
+    Default for invoce_no if the largest invoce_no found in the csv.
     Output goes to files <fname>.pdf .
 
 ''' 
@@ -129,24 +136,33 @@ def main():
     parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument( '--timesheet', required=True)
     parser.add_argument( '--customer', required=True)
+    parser.add_argument( '--invoice_no', type=int)
     parser.add_argument( '--terms', default='on receipt')
     args = parser.parse_args()
     with open(args.timesheet) as inf: csvstr = inf.read()
     rows, colnames = csv2dict( csvstr)
-    invoice_no = int(rows[0]['invoice_no'])
+
+    if int(args.invoice_no) > 0:
+        invoice_no = args.invoice_no
+    else:
+        invoice_no = max( [ int(r['invoice_no']) for r in rows ])
+    
+    rows = [ r for r in rows if r['invoice_no'] == invoice_no ]
     total_amount = 0.0
     total_quantity = 0.0
     newrows = []
+
     for r in rows: 
         currency, rate = r['RATE'].split()
         quantity = float(r["QUANTITY"])
-        quantity = float(f'{quantity:.2f}')
+        #quantity = float(f'{quantity:.2f}')
         amount = float(rate) * quantity
         total_quantity += quantity
-        total_amount += amount
         amount = int(amount + 0.5)
+        total_amount += amount
         r['AMOUNT'] = f'{amount}'
         r['QUANTITY'] = f'{quantity:.2f}'
+        
         # Only keep uppercase columns
         r = { k:v for k,v in r.items() if k == k.upper() }
         newrows.append(r)
@@ -195,6 +211,11 @@ def run( rows, customer_addr, invoice_no, terms, total_quantity, total_amount, o
 # Transform csv format to a list of dicts
 #-------------------------------------------
 def csv2dict( csvstr):
+
+    def split_string(s):
+        reader = csv.reader([s])
+        return next(reader)
+    
     lines = csvstr.split('\n')
     colnames = []
     res = []
@@ -202,7 +223,7 @@ def csv2dict( csvstr):
         line = line.strip()
         if len(line) == 0: continue
         if line[0] == '#': continue
-        words = line.split(',')
+        words = split_string(line)
         words = [w.strip() for w in words]
         words = [w.strip('"') for w in words]
         words = [w.strip("'") for w in words]

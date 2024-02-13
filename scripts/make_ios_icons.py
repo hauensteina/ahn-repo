@@ -19,7 +19,7 @@ usage: make_ios_icons.py <myimage>.png
 Generates all sizes of myimage needed for an iOS app icon.
 
 '''
-  print msg
+  print(msg)
   exit(1)
 
 
@@ -32,7 +32,7 @@ def main():
 
   for size in (20,29,40,58,60,76,80,87,120,152,167,180,1024) :
     cmd = 'convert %s -resize %dx%d -quality 100 Icon-%d.png' % (inf,size,size,size)
-    print cmd
+    print(cmd)
     call (["convert",inf,"-resize","%dx%d" % (size,size),"-quality","100","Icon-%d.png" % size])
 
 # Icon-80.png
