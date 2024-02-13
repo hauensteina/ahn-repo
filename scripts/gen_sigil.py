@@ -261,7 +261,7 @@ def grid_from_uuid(uuidstr, size):
     
 main()
 
-""" in Swift:
+""" in Swift, by ChatGPT:
 import Foundation
 import CryptoKit
 import UIKit
