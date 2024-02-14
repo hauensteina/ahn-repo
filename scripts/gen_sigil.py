@@ -42,7 +42,7 @@ def main():
     elif args.mode == 'uuid':
         uuid_icon(args.outfname, int(args.size))
     elif args.mode == 'sample':
-        for i in range(0, 10):
+        for i in range(0, 64):
             uuid_icon(f"{args.outfname}_{i}", int(args.size))
     else:
         print(f"Unknown mode {args.mode}")
@@ -226,7 +226,7 @@ def grid_from_uuid(uuidstr, size):
     
     offset = 0
     halfsize = size // 2 + 1
-    for _ in range(0, 20): # dont loop forever
+    for _ in range(0, 30): # dont loop forever
         bitsum = 0
         n_zero_rows = 0
         grid = np.zeros((size, size, 3))
@@ -251,7 +251,7 @@ def grid_from_uuid(uuidstr, size):
             if rowsum == 0:
                 n_zero_rows += 1        
         # Terminate if the image looks reasonable        
-        if bitsum > size * halfsize * 0.3 and n_zero_rows < 2: 
+        if bitsum > size * halfsize * 0.334 and n_zero_rows < 2: 
             break
         else:
             print(f"Weird image, retrying")
