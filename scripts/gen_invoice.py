@@ -155,7 +155,7 @@ def main():
     for r in rows: 
         currency, rate = r['RATE'].split()
         quantity = float(r["QUANTITY"])
-        #quantity = float(f'{quantity:.2f}')
+        quantity = float(f'{quantity:.2f}')
         amount = float(rate) * quantity
         total_quantity += quantity
         amount = int(amount + 0.5)
