@@ -146,7 +146,7 @@ def total_other_balances_for_transaction( transaction):
         total += transactions[-1]['balance_after']
     return total
 
-#----------------------------------------------
+#----------------------------------------------------------------
 def compute_revenue_dollars( transactions, from_date, to_date):
     """ Compute revenue by account """
     days_in_period = period_len( from_date, to_date)
@@ -168,12 +168,13 @@ def compute_revenue_dollars( transactions, from_date, to_date):
         dollars[a + '_annualized'] = dollars[a] / days_in_period * 365    
     return dollars
 
+#-------------------------
 def period_len( d1, d2):
     """ Return number of days between two date strings in iso format, plus 1. d2 is larger than d1 """
     res = (datetime.strptime( d2, '%Y-%m-%d') - datetime.strptime( d1, '%Y-%m-%d')).days + 1
     return res
     
-    
+#-----------------------------------------------------------    
 def compute_dietz_irr( transactions, from_date, to_date):
     """ Compute IRR using the modified Dietz method, by account and total """
     days_in_period = period_len( from_date, to_date)
