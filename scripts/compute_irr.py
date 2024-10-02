@@ -31,6 +31,10 @@ TRANSACTIONS =  [
     
     { 'ticker': 'VOO', 'date': '2023-09-13', 'dollars': 46542.0, 'account':'SEP', 'balance_after':46542.0 },
     { 'ticker': 'COST', 'date': '2024-09-13', 'dollars': 7203.0, 'account':'SEP', 'balance_after':67390.0 },
+
+    { 'ticker': 'VOO', 'date': '2024-09-30', 'dollars': 99674, 'account':'CMA', 'balance_after':488492.0 },
+    { 'ticker': 'dummy', 'date': '2024-09-30', 'dollars': 0.0, 'account':'SEP', 'balance_after':68409.0 },
+    
 ]
 
 # Remember transaction order for sorting
