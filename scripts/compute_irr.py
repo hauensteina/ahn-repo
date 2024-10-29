@@ -34,6 +34,11 @@ TRANSACTIONS =  [
 
     { 'ticker': 'VOO', 'date': '2024-09-30', 'dollars': 99674, 'account':'CMA', 'balance_after':488492.0 },
     { 'ticker': 'dummy', 'date': '2024-09-30', 'dollars': 0.0, 'account':'SEP', 'balance_after':68409.0 },
+    { 'ticker': 'TSLA', 'date': '2024-10-08', 'dollars': -26082.0, 'account':'CMA', 'balance_after':462410.0 },
+    { 'ticker': 'VOO', 'date': '2024-10-10', 'dollars': 28603.0, 'account':'CMA', 'balance_after':498319.0 },
+    
+    { 'ticker': 'dummy', 'date': '2024-10-29', 'dollars': 0.0, 'account':'SEP', 'balance_after':69804.0 },
+    { 'ticker': 'dummy', 'date': '2024-10-29', 'dollars': 0.0, 'account':'CMA', 'balance_after':507515.0 },
     
 ]
 
