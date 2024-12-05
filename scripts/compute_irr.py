@@ -40,6 +40,9 @@ TRANSACTIONS =  [
     { 'ticker': 'dummy', 'date': '2024-10-29', 'dollars': 0.0, 'account':'SEP', 'balance_after':69804.0 },
     { 'ticker': 'dummy', 'date': '2024-10-29', 'dollars': 0.0, 'account':'CMA', 'balance_after':507515.0 },
     
+    { 'ticker': 'dummy', 'date': '2024-12-05', 'dollars': 0.0, 'account':'SEP', 'balance_after':73242.0 },
+    { 'ticker': 'dummy', 'date': '2024-12-05', 'dollars': 0.0, 'account':'CMA', 'balance_after':529192.0 },
+    
 ]
 
 # Remember transaction order for sorting
