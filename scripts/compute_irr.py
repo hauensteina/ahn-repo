@@ -42,6 +42,11 @@ TRANSACTIONS =  [
     
     { 'ticker': 'dummy', 'date': '2024-12-05', 'dollars': 0.0, 'account':'SEP', 'balance_after':73242.0 },
     { 'ticker': 'dummy', 'date': '2024-12-05', 'dollars': 0.0, 'account':'CMA', 'balance_after':529192.0 },
+
+    { 'ticker': 'AAPL', 'date': '2024-12-09', 'dollars': 14752.0, 'account':'CMA', 'balance_after':538681.0 },
+
+    { 'ticker': 'dummy', 'date': '2025-01-06', 'dollars': 0.0, 'account':'SEP', 'balance_after':72021.0 },
+    { 'ticker': 'dummy', 'date': '2025-01-06', 'dollars': 0.0, 'account':'CMA', 'balance_after':542763.0 },
     
 ]
 
