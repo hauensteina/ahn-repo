@@ -50,6 +50,9 @@ TRANSACTIONS =  [
     
     { 'ticker': 'dummy', 'date': '2025-01-30', 'dollars': 0.0, 'account':'SEP', 'balance_after':73121.0 },
     { 'ticker': 'dummy', 'date': '2025-01-30', 'dollars': 0.0, 'account':'CMA', 'balance_after':528735.0 },
+
+    { 'ticker': 'NVDA', 'date': '2025-01-31', 'dollars': -86513.0, 'account':'CMA', 'balance_after':434271.0 },
+    { 'ticker': 'cash', 'date': '2025-01-31', 'dollars': +86513.0, 'account':'CMA', 'balance_after':520784.0 },
     
 ]
 
@@ -122,7 +125,7 @@ def main():
     for a in dietz_irr:
         if '_annualized' in a: continue
         print( f'Dietz IRR for account {a}: {dietz_irr[a]:.2f} annualized: {dietz_irr[a + "_annualized"]:.2f}')
-    print( f'Dietz IRR overall: {dietz_irr['#TOTAL']:.2f} annualized: {dietz_irr['#TOTAL_annualized']:.2f}')
+    #print( f'Dietz IRR overall: {dietz_irr['#TOTAL']:.2f} annualized: {dietz_irr['#TOTAL_annualized']:.2f}')
     print()
 
     # irr = compute_irr( transactions)
@@ -132,7 +135,7 @@ def main():
     for a in dollars:
         if '_annualized' in a: continue
         print( f'Dollars earned for account {a}: {dollars[a]:.2f} annualized: {dollars[a + "_annualized"]:.2f}')
-    print( f'Dollars earned total: {dollars["#TOTAL"]:.2f} annualized: {dollars["#TOTAL_annualized"]:.2f}')
+    #print( f'Dollars earned total: {dollars["#TOTAL"]:.2f} annualized: {dollars["#TOTAL_annualized"]:.2f}')
     print()
 
 #--------------------------------
