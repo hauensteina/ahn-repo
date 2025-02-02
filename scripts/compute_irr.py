@@ -76,7 +76,7 @@ def usage():
     Description:
       Compute IRR between the given dates, annualized and absolute. 
       Account is SEP or CMA. If not given, compute for total portfolio.
-      Use both a numeric solution for IRR and the Dietz method.
+      Use the Dietz method for IRR computation.
       Compute dollars earned in the period.
 
     Example:
@@ -85,7 +85,6 @@ def usage():
 ''' 
     msg += '\n '
     return msg 
-
 
 #-------------
 def main():
@@ -97,20 +96,11 @@ def main():
     parser.add_argument( '--to_date', default=maxdate)
     parser.add_argument( '--account', default='')
     args = parser.parse_args()
-
-    if args.account:
-        mindate = min([ t['date'] for t in TRANSACTIONS if t['account'] == args.account])
-        maxdate = max([ t['date'] for t in TRANSACTIONS if t['account'] == args.account])
         
-    args.from_date = max( args.from_date, mindate)
-    args.to_date = min( args.to_date, maxdate)
-        
-    if args.from_date < mindate:
-        args.from_date = mindate
-
     add_total_transactions()
+    minmax_dates = get_minmax_dates( args.from_date, args.to_date)
+    transactions = filter_transactions( minmax_dates)
     
-    transactions = [ t for t in TRANSACTIONS if args.from_date <= t['date'] <= args.to_date]
     if args.account:
         transactions = [ t for t in transactions if t['account'] == args.account]
 
@@ -121,26 +111,56 @@ def main():
     print()
     print("Period from", args.from_date, "to", args.to_date)
     print()
+    print("Closest Account Periods:")
+    for a in ACCOUNTS + ['#TOTAL']:
+        print( f'{a}: {minmax_dates[a][0]} to {minmax_dates[a][1]}')
+    print()
+    
     dietz_irr = compute_dietz_irr( transactions, args.from_date, args.to_date)
     for a in dietz_irr:
         if '_annualized' in a: continue
         print( f'Dietz IRR for account {a}: {dietz_irr[a]:.2f} annualized: {dietz_irr[a + "_annualized"]:.2f}')
-    #print( f'Dietz IRR overall: {dietz_irr['#TOTAL']:.2f} annualized: {dietz_irr['#TOTAL_annualized']:.2f}')
     print()
-
-    # irr = compute_irr( transactions)
-    # print( f'IRR: {irr:.2f}%')
     
     dollars = compute_revenue_dollars( transactions, args.from_date, args.to_date) # Revenue by account 
     for a in dollars:
         if '_annualized' in a: continue
         print( f'Dollars earned for account {a}: {dollars[a]:.2f} annualized: {dollars[a + "_annualized"]:.2f}')
-    #print( f'Dollars earned total: {dollars["#TOTAL"]:.2f} annualized: {dollars["#TOTAL_annualized"]:.2f}')
     print()
+    externals = compute_externals()
+    for a in externals:
+        print( f'Forever externals for account {a}: {externals[a]:.2f}')
+    print()
+    final = final_value()
+    for a in final:
+        print( f'Current value for account {a}: {final[a]:.2f}')
+    print()
+    
+#-------------------------------------------    
+def filter_transactions( minmax_dates):
+    """ Remove transactions outside the minmax_dates range """
+    res = []
+    for t in TRANSACTIONS:
+        if minmax_dates[t['account']][0] <= t['date'] <= minmax_dates[t['account']][1]:
+            res.append( t)
+    return res
+    
+#-------------------------------------------    
+def get_minmax_dates(from_date, to_date):
+    """ For each account, return earliest and latest transaction date to span the period """
+    minmax_dates = {}
+    for a in ACCOUNTS + ['#TOTAL']:
+        # Find the transaction date closest to from_date and to_date
+        account_dates = [ t['date'] for t in TRANSACTIONS if t['account'] == a]
+        closest_from_date = min( account_dates, key=lambda x: abs(datetime.strptime(x, '%Y-%m-%d') - datetime.strptime(from_date, '%Y-%m-%d')))
+        closest_to_date = min( account_dates, key=lambda x: abs(datetime.strptime(x, '%Y-%m-%d') - datetime.strptime(to_date, '%Y-%m-%d')))
+        minmax_dates[a] = (closest_from_date, closest_to_date)
 
+    return minmax_dates
+    
 #--------------------------------
 def add_total_transactions():
-    """ Add transactions for total portfolio """
+    """ Add transactions for #TOTAL portfolio """
     global TRANSACTIONS
     # Compute balance_after across all accounts for each transaction
     for idx,t in enumerate(TRANSACTIONS):
@@ -189,6 +209,26 @@ def compute_revenue_dollars( transactions, from_date, to_date):
     for a in ACCOUNTS + ['#TOTAL']:
         if not a in dollars: continue
         dollars[a + '_annualized'] = dollars[a] / days_in_period * 365    
+    return dollars
+
+#----------------------------
+def compute_externals():
+    """ Sum externals over all time """
+    externals = {}
+    for a in ACCOUNTS + ['#TOTAL']:
+        account_transactions = [ t for t in TRANSACTIONS if t['account'] == a]
+        if not account_transactions: continue
+        externals[a] = sum([ t['dollars'] for t in account_transactions])
+    return externals
+
+#--------------------
+def final_value():
+    """ Show latest value of portfolio """
+    dollars = {}
+    for a in ACCOUNTS + ['#TOTAL']:
+        account_transactions = [ t for t in TRANSACTIONS if t['account'] == a]
+        if not account_transactions: continue
+        dollars[a] = account_transactions[-1]['balance_after']
     return dollars
 
 #-------------------------
