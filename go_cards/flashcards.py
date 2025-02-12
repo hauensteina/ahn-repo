@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import argparse
 
 PAGE_WIDTH, PAGE_HEIGHT = letter  # Letter size: 8.5" x 11"
-SCALE_FACTOR = 0.75
+SCALE_FACTOR = 0.85
 
 #-------------------------------------------------------------
 def main():
@@ -56,13 +56,15 @@ def generate_flashcards(canv, svg_files, numbering_offset, total_cards):
             
     # 'double_44/0004_f_2.svg' -> '0004'
     cards = sorted(list(set([ os.path.split(x)[-1].split('_')[0] for x in svg_files ])))
+    if len(cards) % 2 != 0:
+        cards.append('xxxx')
         
     # Arrange front side (first page)
-    draw_cutting_marks(canv)
     scale_canvas(canv)
+    draw_cutting_marks(canv)
     for i, card in enumerate(cards):
-        front_dia_1 = get_first_svg([ x for x in svg_files if x.endswith(f"{card}_f_1.svg") ])
-        front_dia_2 = get_first_svg([ x for x in svg_files if x.endswith(f"{card}_f_2.svg") ])
+        front_dia_1 = get_first_svg([ x for x in svg_files if x.endswith(f"{card}_f_1.svg") ]) # top
+        front_dia_2 = get_first_svg([ x for x in svg_files if x.endswith(f"{card}_f_2.svg") ]) # bot
         row = i // 2
         col = i % 2
 
@@ -72,15 +74,15 @@ def generate_flashcards(canv, svg_files, numbering_offset, total_cards):
     canv.showPage()
 
     # Arrange back side (second page)
-    draw_cutting_marks(canv)
     scale_canvas(canv)
+    draw_cutting_marks(canv)
     for i, card in enumerate(cards):
         try:
             backcard = cards[i+1] if i%2 == 0 else cards[i-1]
         except:
-            backcard = 'xxx'
-        back_dia_1 = get_first_svg([ x for x in svg_files if x.endswith(f"{card}_b_1.svg") ])
-        back_dia_2 = get_first_svg([ x for x in svg_files if x.endswith(f"{card}_b_2.svg") ])
+            backcard = 'xxxx'
+        back_dia_1 = get_first_svg([ x for x in svg_files if x.endswith(f"{backcard}_b_1.svg") ]) # top
+        back_dia_2 = get_first_svg([ x for x in svg_files if x.endswith(f"{backcard}_b_2.svg") ]) # bot
 
         row = i // 2
         col = i % 2
@@ -129,19 +131,20 @@ def draw_svg_on_canvas(canvas, svg_file, row, col, footer = ''):
         return
     svg_width, svg_height = get_svg_dimensions(svg_file)
     card_height = PAGE_HEIGHT / 2
+    middle = PAGE_HEIGHT / 2
     card_width = PAGE_WIDTH / 2
     hgap = PAGE_WIDTH * 0.05
     vgap = card_height * 0.05
-    botmarg = card_height * 0.1
-    topmarg = card_height * 0.1
+    botmarg = card_height * 0.05
+    topmarg = card_height * 0.05
     diagram_width = (PAGE_WIDTH - 2 * hgap) / 2
     diagram_height = (card_height - botmarg - topmarg - vgap) / 2
     x = hgap / 2 + col * (diagram_width + hgap)
-    y = PAGE_HEIGHT - (row+1) * diagram_height - topmarg
-    if row >= 1: y -= vgap
-    if row >= 2: y -= botmarg + topmarg
-    if row >= 3: y -= vgap
-            
+    if row == 0: y = PAGE_HEIGHT - topmarg - diagram_height 
+    elif row == 1: y = PAGE_HEIGHT - topmarg - vgap - 2 * diagram_height
+    elif row == 2: y = middle - topmarg - diagram_height
+    else: y = middle - topmarg - vgap - 2 * diagram_height 
+                 
     #rect = (x, y, diagram_width, diagram_height)
     #draw_rect(canvas, rect)
     # Scale and center the SVG on the rectangle
@@ -154,7 +157,6 @@ def draw_svg_on_canvas(canvas, svg_file, row, col, footer = ''):
     dy = (diagram_height - svg_height*scale) / 2
     
     # Convert to png
-    #BP()
     png_file = svg_file.replace('.svg', '.png')
     
     upsample_factor = 3 # reduce pixelation
@@ -198,25 +200,54 @@ def scale_canvas(c):
     c.scale(SCALE_FACTOR, SCALE_FACTOR)    # Scale content
 
 #-------------------------------------------------------------
+def draw_cross(c,x,y):
+    MARKLEN=5
+    c.line(x - MARKLEN, y, x + MARKLEN, y)
+    c.line(x, y - MARKLEN, x, y + MARKLEN)
+
+#-------------------------------------------------------------
 def draw_cutting_marks(c):
-    hmarg = (PAGE_HEIGHT - PAGE_HEIGHT * SCALE_FACTOR) / 2
-    vmarg = (PAGE_WIDTH - PAGE_WIDTH * SCALE_FACTOR) / 2
     c.setLineWidth(0.5)
-    # marks for the vertical cut
-    c.line(hmarg, 0, hmarg, 10)
-    c.line(PAGE_WIDTH - hmarg, 0, PAGE_WIDTH - hmarg, 10)
-    c.line(hmarg, PAGE_HEIGHT, hmarg, PAGE_HEIGHT - 10)
-    c.line(PAGE_WIDTH - hmarg, PAGE_HEIGHT, PAGE_WIDTH - hmarg, PAGE_HEIGHT - 10)
-    # marks for the horizontal cut
-    c.line(0, vmarg, 10, vmarg)
-    c.line(0, PAGE_HEIGHT - vmarg, 10, PAGE_HEIGHT - vmarg)
-    c.line(PAGE_WIDTH, vmarg, PAGE_WIDTH - 10, vmarg)
-    c.line(PAGE_WIDTH, PAGE_HEIGHT - vmarg, PAGE_WIDTH - 10, PAGE_HEIGHT - vmarg)
-    # A cross in the center
-    c.line(PAGE_WIDTH/2 - 5, PAGE_HEIGHT/2, PAGE_WIDTH/2 + 5, PAGE_HEIGHT/2)
-    c.line(PAGE_WIDTH/2, PAGE_HEIGHT/2 - 5, PAGE_WIDTH/2, PAGE_HEIGHT/2 + 5)
+    hmarg = (PAGE_WIDTH - PAGE_WIDTH * SCALE_FACTOR) / 2 - 10
+    vmarg = (PAGE_HEIGHT - PAGE_HEIGHT * SCALE_FACTOR) / 2 - 10
     
+    # bottom left crosses
+    draw_cross(c, -hmarg,0)
+    draw_cross(c, 0,-vmarg)
+    draw_cross(c, 0,0)
+
+    # bottom right crosses
+    draw_cross(c, PAGE_WIDTH + hmarg,0)
+    draw_cross(c, PAGE_WIDTH, -vmarg)
+    draw_cross(c, PAGE_WIDTH, 0)
+
+    # top left crosses
+    draw_cross(c, -hmarg, PAGE_HEIGHT)
+    draw_cross(c, 0, PAGE_HEIGHT + vmarg)
+    draw_cross(c, 0, PAGE_HEIGHT)
+
+    # top right crosses
+    draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT)
+    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT + vmarg)
+    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT)
     
+    # top middle cross
+    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT + vmarg)
+    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT)
     
+    # bottom middle cross
+    draw_cross(c, PAGE_WIDTH/2, -vmarg)
+    draw_cross(c, PAGE_WIDTH/2, 0)
+    
+    # left middle cross
+    draw_cross(c, -hmarg, PAGE_HEIGHT/2)
+    draw_cross(c, 0, PAGE_HEIGHT/2)
+    
+    # right middle cross
+    draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT/2)
+    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT/2)  
+    
+    # center cross
+    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT/2)  
         
 main()
