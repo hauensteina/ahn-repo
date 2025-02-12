@@ -13,12 +13,19 @@ SCALE_FACTOR = 0.85
 def main():
     parser = argparse.ArgumentParser(description='Generate flashcards from svg files')
     parser.add_argument('--folder', type=str, help='folder containing the SVG files', required=True)
+    parser.add_argument('--title', type=str, help='title of the flashcards', required=False)
     args = parser.parse_args()
+    
+    if not args.title:
+        args.title = args.folder
     
     generate_blank_svg('blank.svg')
     svg_files = [f'{args.folder}/{f}' for f in os.listdir(args.folder) if f.endswith('.svg')]
     output_pdf = f'{args.folder}/{args.folder}_flashcards.pdf'
     canv = canvas.Canvas(output_pdf, pagesize=letter)
+    
+    print_title(canv, args.title)   
+    print_title(canv, "")
     
     cards = sorted(list(set([ os.path.split(x)[-1].split('_')[0] for x in svg_files ])))
     
@@ -35,12 +42,26 @@ def main():
         
         generate_flashcards(canv, svg_files_group, i, len(cards))
 
-
     canv.save()
     os.remove('blank.svg')
     print()
     print("Ignore any warnings")
     print(f"Flashcards generated in '{output_pdf}'")
+
+#------------------------------------------------------------------------
+def print_title(canv, title):
+    scale_canvas(canv)
+    draw_cutting_marks(canv)
+    card_height = PAGE_HEIGHT / 2
+    card_width = PAGE_WIDTH / 2
+    font = "Helvetica"
+    size = 16
+    textwidth = canv.stringWidth(title, font, size)
+    canv.setFont(font, size)
+    canv.drawString( card_width/2 - textwidth/2, 
+                    card_height/2, 
+                    title)
+    canv.showPage()
 
 #-----------------------------------------------------------------------------------------
 def generate_flashcards(canv, svg_files, numbering_offset, total_cards):
@@ -171,7 +192,7 @@ def draw_svg_on_canvas(canvas, svg_file, row, col, footer = ''):
         textwidth = canvas.stringWidth(footer, font, size)
         canvas.setFont(font, size)
         canvas.drawString(card_width * col + card_width/2 - textwidth/2, 
-                            (3 - row) / 2 * card_height + botmarg / 2, 
+                            (3 - row) / 2 * card_height + botmarg * 0.4, 
                             footer)
     
 #-------------------------------------------------------------        
