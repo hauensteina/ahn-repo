@@ -6,7 +6,7 @@ from reportlab.lib.pagesizes import letter
 import xml.etree.ElementTree as ET
 import argparse
 
-page_width, page_height = letter  # Letter size: 8.5" x 11"
+PAGE_WIDTH, PAGE_HEIGHT = letter  # Letter size: 8.5" x 11"
 
 #-------------------------------------------------------------
 def main():
@@ -24,7 +24,7 @@ def main():
     # Go through cards in groups of 4
     for i in range(0, len(cards), 4):
         print(f"Processing cards {i+1} to {i+4}")
-
+        
         # Four cards make a page
         if i+4 > len(cards):
             cards_group = cards[i:]
@@ -54,8 +54,8 @@ def generate_flashcards(canv, svg_files, numbering_offset, total_cards):
 
     def draw_cutting_lines(c):
         c.setDash(5, 3)
-        c.line(page_width/2, 0, page_width/2, page_height)
-        c.line(0, page_height/2, page_width, page_height/2)
+        c.line(PAGE_WIDTH/2, 0, PAGE_WIDTH/2, PAGE_HEIGHT)
+        c.line(0, PAGE_HEIGHT/2, PAGE_WIDTH, PAGE_HEIGHT/2)
             
     # 'double_44/0004_f_2.svg' -> '0004'
     cards = sorted(list(set([ os.path.split(x)[-1].split('_')[0] for x in svg_files ])))
@@ -68,9 +68,7 @@ def generate_flashcards(canv, svg_files, numbering_offset, total_cards):
         col = i % 2
 
         draw_svg_on_canvas(canv, front_dia_1, 2 * row, col)
-        draw_svg_on_canvas(canv, front_dia_2, 2 * row + 1, col)
-        k = i + 1 + numbering_offset
-        draw_numbering(canv, f'{k}/{total_cards}')
+        draw_svg_on_canvas(canv, front_dia_2, 2 * row + 1, col, f'{i+numbering_offset+1}/{total_cards}')
         
     draw_cutting_lines(canv)
     canv.showPage()
@@ -92,11 +90,7 @@ def generate_flashcards(canv, svg_files, numbering_offset, total_cards):
 
     draw_cutting_lines(canv)
     canv.showPage()
-    
-#-------------------------------------------------------------    
-def draw_numbering(canvas, text):
-    pass    
-    
+        
 #-------------------------------------------------------------
 def draw_rect(canvas, rect):
     x, y, width, height = rect
@@ -123,8 +117,8 @@ def convert_svg_to_png_inkscape(svg_file, png_file, width, height):
     ]
     subprocess.run(command, check=True)
     
-#-------------------------------------------------------------
-def draw_svg_on_canvas(canvas, svg_file, row, col):
+#------------------------------------------------------------------------
+def draw_svg_on_canvas(canvas, svg_file, row, col, footer = ''):
     """
     Draw an SVG file on the ReportLab canvas using svglib.
     row in (0,1,2,3) 
@@ -135,15 +129,16 @@ def draw_svg_on_canvas(canvas, svg_file, row, col):
         if not os.path.exists(svg_file):
             return
         svg_width, svg_height = get_svg_dimensions(svg_file)
-        card_height = page_height / 2
-        hgap = page_width * 0.05
+        card_height = PAGE_HEIGHT / 2
+        card_width = PAGE_WIDTH / 2
+        hgap = PAGE_WIDTH * 0.05
         vgap = card_height * 0.05
         botmarg = card_height * 0.1
         topmarg = card_height * 0.1
-        diagram_width = (page_width - 2 * hgap) / 2
+        diagram_width = (PAGE_WIDTH - 2 * hgap) / 2
         diagram_height = (card_height - botmarg - topmarg - vgap) / 2
         x = hgap / 2 + col * (diagram_width + hgap)
-        y = page_height - (row+1) * diagram_height - topmarg
+        y = PAGE_HEIGHT - (row+1) * diagram_height - topmarg
         if row >= 1: y -= vgap
         if row >= 2: y -= botmarg + topmarg
         if row >= 3: y -= vgap
@@ -166,6 +161,16 @@ def draw_svg_on_canvas(canvas, svg_file, row, col):
         convert_svg_to_png_inkscape(svg_file, png_file, width=int(10*svg_width*scale), height=int(10*svg_height*scale))
         canvas.drawImage(png_file, x + dx, y + dy, width=svg_width*scale, height=svg_height*scale)
         os.remove(png_file)
+        
+        if footer:
+            # Draw footer
+            font = "Helvetica"
+            size = 10
+            textwidth = canvas.stringWidth(footer, font, size)
+            canvas.setFont(font, size)
+            canvas.drawString(card_width * col + card_width/2 - textwidth/2, 
+                              (3 - row) / 2 * card_height + botmarg / 2, 
+                              footer)
     
     except:
         BP()
