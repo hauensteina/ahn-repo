@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 import argparse
 
 PAGE_WIDTH, PAGE_HEIGHT = letter  # Letter size: 8.5" x 11"
+PAGE_WIDTH *= 0.80
 SCALE_FACTOR = 0.85
 
 #-------------------------------------------------------------
@@ -55,7 +56,7 @@ def print_title(canv, title):
     card_height = PAGE_HEIGHT / 2
     card_width = PAGE_WIDTH / 2
     font = "Helvetica"
-    size = 16
+    size = 12
     textwidth = canv.stringWidth(title, font, size)
     canv.setFont(font, size)
     canv.drawString( card_width/2 - textwidth/2, 
