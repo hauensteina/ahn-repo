@@ -33,6 +33,7 @@ def main():
     
     # Convert SVG to PNG
     batch_convert_svgs(args.folder, args.folder, 2.0)
+        
     output_pdf = f'{args.folder}/{args.folder}_flashcards.pdf'
     canv = canvas.Canvas(output_pdf, pagesize=letter)
     
@@ -52,8 +53,10 @@ def main():
         else:
             cards_group = cards[i:i+4] 
         png_files_group = [f for f in png_files if f'{os.path.split(f)[-1].split("_")[0]}' in cards_group]      
+        svg_files_group = [f for f in svg_files if f'{os.path.split(f)[-1].split("_")[0]}' in cards_group]
+        captions_group = { f.replace('.svg', '.png'):get_caption(open(f).read()) for f in svg_files_group }
         
-        generate_flashcards(canv, png_files_group, i, len(cards), f'{args.folder}/blank.png')
+        generate_flashcards(canv, png_files_group, captions_group, i, len(cards), f'{args.folder}/blank.png')
 
     canv.save()
     os.remove(blank_svg)
@@ -76,8 +79,8 @@ def print_title(canv, title):
                     title)
     canv.showPage()
 
-#-----------------------------------------------------------------------------------------
-def generate_flashcards(canv, png_files, numbering_offset, total_cards, blank_png):
+#---------------------------------------------------------------------------------------------
+def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards, blank_png):
     """
         Draw two pages on a canvas.
         Four cards fit on a duplex sheet.
@@ -102,8 +105,10 @@ def generate_flashcards(canv, png_files, numbering_offset, total_cards, blank_pn
         row = i // 2
         col = i % 2
 
-        draw_png_on_canvas(canv, front_dia_1, 2 * row, col)
-        draw_png_on_canvas(canv, front_dia_2, 2 * row + 1, col, f'{i+numbering_offset+1}/{total_cards}')
+        draw_png_on_canvas(canv, front_dia_1, 2 * row, col, caption = captions.get(front_dia_1, ''))
+        draw_png_on_canvas(canv, front_dia_2, 2 * row + 1, col, 
+                            footer = f'{i+numbering_offset+1}/{total_cards}',
+                            caption = captions.get(front_dia_2, ''))
         
     canv.showPage()
 
@@ -121,9 +126,9 @@ def generate_flashcards(canv, png_files, numbering_offset, total_cards, blank_pn
         row = i // 2
         col = i % 2
 
-        draw_png_on_canvas(canv, back_dia_1, 2 * row, col)
-        draw_png_on_canvas(canv, back_dia_2, 2 * row + 1, col)
-
+        draw_png_on_canvas(canv, back_dia_1, 2 * row, col, caption = captions.get(back_dia_1, ''))
+        draw_png_on_canvas(canv, back_dia_2, 2 * row + 1, col, caption = captions.get(back_dia_2, ''))
+                           
     canv.showPage()
         
 #-------------------------------------------------------------
@@ -184,14 +189,16 @@ def batch_convert_svgs(svg_folder, output_folder, scale):
         # Close the browser
         browser.close()
         
-#------------------------------------------------------------------------
-def draw_png_on_canvas(canvas, png_file, row, col, footer = ''):
+#--------------------------------------------------------------------------------
+def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     """
     Position Go diagram on the ReportLab canvas.
     row in (0,1,2,3) 
     col in (0,1)
     y goes from bottom to top
     """
+    caption_height = 0
+    if caption: caption_height = 10
     png_width, png_height = get_png_size(png_file)
     card_height = PAGE_HEIGHT / 2
     middle = PAGE_HEIGHT / 2
@@ -201,12 +208,12 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = ''):
     botmarg = card_height * 0.05
     topmarg = card_height * 0.05
     diagram_width = (PAGE_WIDTH - 2 * hgap) / 2
-    diagram_height = (card_height - botmarg - topmarg - vgap) / 2
+    diagram_height = (card_height - botmarg - topmarg - vgap) / 2 - caption_height
     x = hgap / 2 + col * (diagram_width + hgap)
     if row == 0: y = PAGE_HEIGHT - topmarg - diagram_height 
-    elif row == 1: y = PAGE_HEIGHT - topmarg - vgap - 2 * diagram_height
+    elif row == 1: y = PAGE_HEIGHT - topmarg - vgap - 2 * diagram_height - caption_height
     elif row == 2: y = middle - topmarg - diagram_height
-    else: y = middle - topmarg - vgap - 2 * diagram_height 
+    else: y = middle - topmarg - vgap - 2 * diagram_height - caption_height
                  
     #rect = (x, y, diagram_width, diagram_height)
     #draw_rect(canvas, rect)
@@ -220,6 +227,7 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = ''):
     dy = (diagram_height - png_height*scale) / 2
     
     canvas.drawImage(png_file, x + dx, y + dy, width=png_width*scale, height=png_height*scale)
+    addCaption(canvas, caption, card_width, y+dy, col, caption_height)
     
     if footer:
         # Draw footer
@@ -230,6 +238,17 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = ''):
         canvas.drawString(card_width * col + card_width/2 - textwidth/2, 
                             (3 - row) / 2 * card_height + botmarg * 0.4, 
                             footer)
+
+#---------------------------------------------------------------------------
+def addCaption(canvas, caption, card_width, dia_bottom, col, caption_height):
+    if not caption: return
+    font = "Helvetica"
+    size = 10
+    textwidth = canvas.stringWidth(caption, font, size)
+    canvas.setFont(font, size)
+    canvas.drawString(card_width * col + card_width/2 - textwidth/2, 
+                        dia_bottom - caption_height, 
+                        caption)
 
 #--------------------------------    
 def get_png_size(png_file):
@@ -274,39 +293,39 @@ def draw_cutting_marks(c):
     vmarg = (PAGE_HEIGHT - PAGE_HEIGHT * SCALE_FACTOR) / 2 - 10
     
     # bottom left crosses
-    #draw_cross(c, -hmarg,0)
-    #draw_cross(c, 0,-vmarg)
+    draw_cross(c, -hmarg,0)
+    draw_cross(c, 0,-vmarg)
     draw_cross(c, 0,0)
 
     # bottom right crosses
-    #draw_cross(c, PAGE_WIDTH + hmarg,0)
-    #draw_cross(c, PAGE_WIDTH, -vmarg)
+    draw_cross(c, PAGE_WIDTH + hmarg,0)
+    draw_cross(c, PAGE_WIDTH, -vmarg)
     draw_cross(c, PAGE_WIDTH, 0)
 
     # top left crosses
-    #draw_cross(c, -hmarg, PAGE_HEIGHT)
-    #draw_cross(c, 0, PAGE_HEIGHT + vmarg)
+    draw_cross(c, -hmarg, PAGE_HEIGHT)
+    draw_cross(c, 0, PAGE_HEIGHT + vmarg)
     draw_cross(c, 0, PAGE_HEIGHT)
 
     # top right crosses
-    #draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT)
-    #draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT + vmarg)
+    draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT)
+    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT + vmarg)
     draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT)
     
     # top middle cross
-    #draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT + vmarg)
+    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT + vmarg)
     draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT)
     
     # bottom middle cross
-    #draw_cross(c, PAGE_WIDTH/2, -vmarg)
+    draw_cross(c, PAGE_WIDTH/2, -vmarg)
     draw_cross(c, PAGE_WIDTH/2, 0)
     
     # left middle cross
-    #draw_cross(c, -hmarg, PAGE_HEIGHT/2)
+    draw_cross(c, -hmarg, PAGE_HEIGHT/2)
     draw_cross(c, 0, PAGE_HEIGHT/2)
     
     # right middle cross
-    #draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT/2)
+    draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT/2)
     draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT/2)  
     
     # center cross
@@ -318,5 +337,13 @@ def svg_to_data_uri(svg_content):
     svg_base64 = base64.b64encode(svg_content.encode("utf-8")).decode("utf-8")
     return f'data:image/svg+xml;base64,{svg_base64}'
         
-        
+#-------------------------------------------------------------        
+def get_caption(txt):
+    """ Parse the text between <caption> and </caption> from txt """
+    start = txt.find('<caption>')
+    if start == -1: return ''
+    end = txt.find('</caption>')
+    if end == -1: return ''
+    return txt[start+9:end]
+    
 main()
