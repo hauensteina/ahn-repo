@@ -67,6 +67,7 @@ seaborn==0.13.2
 simplejson==3.19.3
 six==1.16.0
 svglib==1.5.1
+svgwrite==1.4.3
 tinycss2==1.4.0
 traits==7.0.2
 typing_extensions==4.12.2

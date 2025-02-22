@@ -3,8 +3,9 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import xml.etree.ElementTree as ET
 from PIL import Image
+import svgwrite
+import textwrap
 
-import subprocess
 import base64
 import os
 import argparse
@@ -26,6 +27,8 @@ def main():
     if not args.title:
         args.title = args.folder
     
+    title_svg = f'{args.folder}/0000_f_1.svg'
+    create_title_svg(args.title, title_svg, PAGE_WIDTH, PAGE_HEIGHT, 30)
     blank_svg = f'{args.folder}/blank.svg'
     generate_blank_svg(blank_svg)
     svg_files = [f'{args.folder}/{f}' for f in os.listdir(args.folder) if f.endswith('.svg')] 
@@ -37,8 +40,8 @@ def main():
     output_pdf = f'{args.folder}/{args.folder}_flashcards.pdf'
     canv = canvas.Canvas(output_pdf, pagesize=letter)
     
-    print_title(canv, args.title)   
-    print_title(canv, "")
+    #print_title(canv, args.title)   
+    #print_title(canv, "")
     
     cards = sorted(list(set([ os.path.split(x)[-1].split('_')[0] for x in svg_files ])))
     cards = [x for x in cards if not 'blank' in x]
@@ -56,7 +59,7 @@ def main():
         svg_files_group = [f for f in svg_files if f'{os.path.split(f)[-1].split("_")[0]}' in cards_group]
         captions_group = { f.replace('.svg', '.png'):get_caption(open(f).read()) for f in svg_files_group }
         
-        generate_flashcards(canv, png_files_group, captions_group, i, len(cards), f'{args.folder}/blank.png')
+        generate_flashcards(canv, png_files_group, captions_group, i, len(cards), f'{args.folder}/blank.png', args.title)
 
     canv.save()
     os.remove(blank_svg)
@@ -64,23 +67,47 @@ def main():
     print()
     print(f"Flashcards generated in '{output_pdf}'")
 
-#------------------------------------------------------------------------
-def print_title(canv, title):
-    scale_canvas(canv)
-    draw_cutting_marks(canv)
-    card_height = PAGE_HEIGHT / 2
-    card_width = PAGE_WIDTH / 2
-    font = "Helvetica"
-    size = 12
-    textwidth = canv.stringWidth(title, font, size)
-    canv.setFont(font, size)
-    canv.drawString( card_width/2 - textwidth/2, 
-                    card_height/2, 
-                    title)
-    canv.showPage()
+#----------------------------------------------------------------------------------
+def create_title_svg(title, output_path, width, height, font_size, max_chars=30):
+    # Create an SVG drawing
+    dwg = svgwrite.Drawing(output_path, size=(f"{width}", f"{height}"))
+    wrapped_lines = textwrap.wrap(title, width=max_chars)
+    line_height = font_size * 1.3  
+    total_text_height = len(wrapped_lines) * line_height
+    start_y = (height - total_text_height) / 2 + font_size 
+    
+    # Add each line to the SVG
+    for i, line in enumerate(wrapped_lines):
+        y_position = start_y + i * line_height  # Adjust y position for each line
+        text_element = dwg.text(
+            line,
+            insert=("50%", y_position),  # Centered horizontally
+            text_anchor="middle",  # Align text center
+            font_size=font_size,
+            font_family="Helvetica",
+            fill="black"
+        )
+        dwg.add(text_element)
 
-#---------------------------------------------------------------------------------------------
-def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards, blank_png):
+    # Save the SVG
+    dwg.save()
+
+    
+    # # Add text (centered)
+    # text_element = dwg.text(
+    #     title, 
+    #     insert=("50%", "50%"),  # Position at center
+    #     text_anchor="middle",  # Align text center horizontally
+    #     dominant_baseline="middle",  # Align text center vertically
+    #     font_size=font_size,
+    #     font_family="Helvetica",  # Use Helvetica font
+    #     fill="black"
+    # )
+    # dwg.add(text_element)
+    # dwg.save()
+
+#-------------------------------------------------------------------------------------------------------
+def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards, blank_png, title):
     """
         Draw two pages on a canvas.
         Four cards fit on a duplex sheet.
@@ -107,7 +134,7 @@ def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards
 
         draw_png_on_canvas(canv, front_dia_1, 2 * row, col, caption = captions.get(front_dia_1, ''))
         draw_png_on_canvas(canv, front_dia_2, 2 * row + 1, col, 
-                            footer = f'{i+numbering_offset+1}/{total_cards}',
+                            footer = f'{i+numbering_offset}/{total_cards-1}',
                             caption = captions.get(front_dia_2, ''))
         
     canv.showPage()
@@ -221,7 +248,8 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     scale_x = diagram_width / png_width
     scale_y = diagram_height / png_height
     scale = min(scale_x, scale_y)
-    scale = scale_y
+    if '0000_' in png_file: scale = max(scale_x, scale_y) # Title card
+    #scale = scale_y
     
     dx = (diagram_width - png_width*scale) / 2
     dy = (diagram_height - png_height*scale) / 2
@@ -229,7 +257,7 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     canvas.drawImage(png_file, x + dx, y + dy, width=png_width*scale, height=png_height*scale)
     addCaption(canvas, caption, card_width, y+dy, col, caption_height)
     
-    if footer:
+    if footer and not footer.startswith('0/'):
         # Draw footer
         font = "Helvetica"
         size = 10
