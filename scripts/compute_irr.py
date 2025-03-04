@@ -121,6 +121,8 @@ TRANSACTIONS =  [
     { 'ticker': 'NVDA', 'date': '2025-01-31', 'dollars': -86513.0, 'account':'CMA', 'balance_after':434271.0 },
     { 'ticker': 'FXF', 'date': '2025-02-04', 'dollars': 86586.0, 'account':'CMA', 'balance_after':521739.0 },
     
+    { 'ticker': 'dummy', 'date': '2025-03-03', 'dollars': 0.0, 'account':'SEP', 'balance_after':71483.0 },
+    { 'ticker': 'dummy', 'date': '2025-03-03', 'dollars': 0.0, 'account':'CMA', 'balance_after':515022.0 },
 ]
 
 # Remember transaction order for sorting
