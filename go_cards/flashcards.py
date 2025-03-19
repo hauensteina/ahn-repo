@@ -255,7 +255,7 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     dy = (diagram_height - png_height*scale) / 2
     
     canvas.drawImage(png_file, x + dx, y + dy, width=png_width*scale, height=png_height*scale)
-    addCaption(canvas, caption, card_width, y+dy, col, caption_height)
+    add_caption(canvas, caption, card_width, y+dy, col, caption_height)
     
     if footer and not footer.startswith('0/'):
         # Draw footer
@@ -267,8 +267,8 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
                             (3 - row) / 2 * card_height + botmarg * 0.4, 
                             footer)
 
-#---------------------------------------------------------------------------
-def addCaption(canvas, caption, card_width, dia_bottom, col, caption_height):
+#-------------------------------------------------------------------------------
+def add_caption(canvas, caption, card_width, dia_bottom, col, caption_height):
     if not caption: return
     font = "Helvetica"
     size = 10
@@ -372,6 +372,7 @@ def get_caption(txt):
     if start == -1: return ''
     end = txt.find('</caption>')
     if end == -1: return ''
-    return txt[start+9:end]
+    res = txt[start+9:end].strip()
+    return res
     
 main()
