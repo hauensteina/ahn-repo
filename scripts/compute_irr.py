@@ -72,8 +72,11 @@ import numpy as np
 from pprint import pprint
 
 # Negative prices means sold, positive means bought.
-# Account is SEP or CMA
-# Balance is *after* the transaction
+# Account is SEP or CMA.
+# Balance is *after* the transaction.
+# Balance is balance as stated by Merrill, minus cash available to invest.
+# So we are only counting money invested in the market.
+
 TRANSACTIONS =  [
     { 'ticker': 'VOO', 'date': '2022-12-09', 'dollars': 95678.0, 'account':'CMA', 'balance_after':95678.0 },
     { 'ticker': 'VOO', 'date': '2022-12-21', 'dollars': 99808.0, 'account':'CMA' , 'balance_after':198320.0 },
@@ -123,7 +126,53 @@ TRANSACTIONS =  [
     
     { 'ticker': 'dummy', 'date': '2025-03-03', 'dollars': 0.0, 'account':'SEP', 'balance_after':71483.0 },
     { 'ticker': 'dummy', 'date': '2025-03-03', 'dollars': 0.0, 'account':'CMA', 'balance_after':515022.0 },
+
+    { 'ticker': 'AAPL', 'date': '2025-03-04', 'dollars': -14517.0, 'account':'CMA', 'shares':61, 'balance_after':500505.0 },
+    { 'ticker': 'COST', 'date': '2025-03-04', 'dollars': -28233.0, 'account':'CMA', 'shares':27, 'balance_after':472272.0 },
+    { 'ticker': 'VOO', 'date': '2025-03-04', 'dollars': -189177.0, 'account':'CMA', 'shares':355, 'balance_after':283095.0 },
+        
+    # CMA    
+    { 'ticker': 'PRXCX', 'date': '2025-03-05', 'dollars': 234000.0, 'account':'CMA', 'shares':21586, 'balance_after':517095.0 },
+    
+    # SEP moving VOO and COST to PRXCX
+    # Adding special row for "cash". "balance" is cash plus money in the market
+    # "balance_after" is just money in the market
+    # Each block of transactions for one day is preceded and trailed by a cash line, because cash always fluctuates a little.
+
+    # balance = cash + money in the market 
+    { 'cash': 2436.23, 'date': '2025-03-05', 'account': 'SEP', 'balance': 60217.0 + 8365.0 + 2436.23 },
+    # balance_after = balance - cash + dollars
+    { 'ticker': 'VOO', 'date': '2025-03-05', 'dollars': -60217.0, 'account':'SEP', 'shares':113, 'balance_after':8365.0 },
+    { 'ticker': 'COST', 'date': '2025-03-05', 'dollars': -8365.0, 'account':'SEP', 'shares':8, 'balance_after':0.0 },
+    { 'ticker': 'PRXCX', 'date': '2025-03-05', 'dollars': 70999.0, 'account':'SEP', 'shares':6549, 'balance_after':70999.0 },
+    # balance = balance_after + cash 
+    { 'cash': 19.23, 'date': '2025-03-05', 'account': 'SEP', 'balance': 70999.0 + 19.23 },
+
+    # CMA moving VOO to FXF and PRXCX
+    { 'ticker': 'VOO', 'date': '2025-03-11', 'dollars': -183060.0, 'account':'CMA', 'shares':356, 'balance_after':334035.0 },
+    { 'ticker': 'FXF', 'date': '2025-03-12', 'dollars': 89907.0, 'account':'CMA', 'shares':893, 'balance_after':423942.0 },
+    { 'ticker': 'PRXCX', 'date': '2025-03-12', 'dollars': 90000.0, 'account':'CMA', 'shares':8379, 'balance_after':513942.0 },
+    
+    # Adding fields "shares" and "price"
+
+    # balance = cash + money in the market 
+    { 'cash': 3570.71, 'date': '2025-04-01', 'account': 'CMA', 'balance': 501947.64 },
+    # balance_after = balance - cash + dollars
+    { 'ticker': 'FXF', 'date': '2025-04-01', 'dollars': -110524.0, 'account':'CMA', 'shares':1100, 'price':100.48, 'balance_after':387852.93 },
+    { 'ticker': 'RNMBF', 'date': '2025-04-01', 'dollars': 19111.87, 'account':'CMA', 'shares':13, 'price':1470.14, 'balance_after':406964.80 },
+    { 'ticker': 'SAABY', 'date': '2025-04-01', 'dollars': 20199.00, 'account':'CMA', 'shares':1000, 'price':20.20, 'balance_after':427163.80 },
+    { 'ticker': 'THLLY', 'date': '2025-04-01', 'dollars': 19716.85, 'account':'CMA', 'shares':363, 'price':54.10, 'balance_after':446880.65 },
+    { 'ticker': 'BAESY', 'date': '2025-04-01', 'dollars': 19872.00, 'account':'CMA', 'shares':240, 'price':82.80, 'balance_after':466752.65 },
+    { 'ticker': 'EADSY', 'date': '2025-04-01', 'dollars': 19720.96, 'account':'CMA', 'shares':434, 'price':45.44, 'balance_after':486473.61 },
+    # balance = balance_after + cash 
+    { 'cash': 15474.03, 'date': '2025-04-01', 'account': 'CMA', 'balance': 501947.64 },
+    
 ]
+
+TRANSACTIONS = [ t for t in TRANSACTIONS if 'comment' not in t ]
+TRANSACTIONS = [ t for t in TRANSACTIONS if 'cash' not in t ]
+
+# CMA balance on 2025-03-31: 
 
 # Remember transaction order for sorting
 for idx,t in enumerate(TRANSACTIONS):
@@ -330,12 +379,13 @@ def compute_irr(transactions):
         end_date = days_with_transactions[-1]
         all_days = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
         
-        by_day = { key: defaultdict( float) for key in all_days}
+        by_day = { key: defaultdict( float) for key in all_days }
         for t in account_transactions:
             dt = datetime.strptime( t['date'], '%Y-%m-%d')
             by_day[dt]['dollars'] += t['dollars']     
             by_day[dt]['balance_after'] = t['balance_after']
-            by_day[dt]['balance_before'] = by_day[dt]['balance_after'] - t['dollars']
+            if by_day[dt]['balance_before'] == 0.0: # The first transaction of the day
+                by_day[dt]['balance_before'] = by_day[dt]['balance_after'] - t['dollars']
         
         # Coefficient for each day in the period. Most will be zero.
         by_day_list = list(by_day.items())
