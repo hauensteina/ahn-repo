@@ -6,15 +6,17 @@ from PIL import Image
 import svgwrite
 import textwrap
 import json
+import re
 
 import base64
 import os
 import argparse
 from pdb import set_trace as BP
+from pprint import pprint
 
 LETTER_WIDTH, LETTER_HEIGHT = letter  # Letter size: 8.5" x 11"
 PAGE_HEIGHT = LETTER_HEIGHT 
-PAGE_WIDTH = LETTER_WIDTH * 0.80 # Cards should be narrower than a quarter letter size
+PAGE_WIDTH = LETTER_WIDTH # * 0.80 # Cards should be narrower than a quarter letter size
 SCALE_FACTOR = 0.85 # Cards should be smaller than a quarter letter size
 
 #-------------------------------------------------------------
@@ -30,28 +32,57 @@ def main():
     
     book_folder = args.config.split('/')[-1].split('.')[0]
     os.makedirs(book_folder, exist_ok=True)
-    title_svg = f'{book_folder}/title.svg'
-    create_title_svg(title, title_svg, LETTER_WIDTH, LETTER_HEIGHT, 30)
-    blank_svg = f'{book_folder}/blank.svg'
-    generate_blank_svg(blank_svg)
-    
+
     output_pdf = f'{book_folder}/{book_folder}_book.pdf'
     canv = canvas.Canvas(output_pdf, pagesize=letter)
 
-    for chapter in chapters[:1]:
-        BP()
-        generate_chapter(chapter['folder'], chapter['title'], canv)
+    title_svg = f'{book_folder}/title.svg'
+    create_book_title_index_svg(title, chapters, title_svg)
+    batch_convert_svgs(book_folder, book_folder, 2.0)
+    title_png = f'{book_folder}/title.png' 
+    canv.drawImage(title_png, 0,0, width = PAGE_WIDTH, height = PAGE_HEIGHT)
+    canv.showPage()
 
+    blank_svg = f'{book_folder}/blank.svg'
+    generate_blank_svg(blank_svg)
+    
+    chapter_start_page = 1
+    for chapidx,chapter in enumerate(chapters):
+        chapter_pages = pages_in_chapter(chapter['folder'])
+        generate_chapter(chapidx+1, chapter_start_page, chapter_pages, chapter['folder'], chapter['title'], canv)
+        chapter_start_page += chapter_pages
     canv.save()
 
-#--------------------------------------------------------------
-def generate_chapter( chapter_folder, title, canv):
-    title_svg = f'{chapter_folder}/title.svg'
-    create_title_svg(title, title_svg, LETTER_WIDTH, LETTER_HEIGHT, 30)
+#-----------------------------------------
+def pages_in_chapter(chapter_folder):
+    """ Count the number of pages in a chapter """
+    # Count the number of SVG files in the chapter folder
+    svg_files = set(get_svgs(chapter_folder, basename_only=True))
+    # Get the four letter prefixes into a set
+    prefix_set = set([f.split('_')[0] for f in svg_files])    
+    prefix_set.add('0000') # Add the title card
+    ncards = len(prefix_set) # Number of cards
+    
+    # Four cards fill two pages
+    num_pages = ((ncards - 1) // 4 + 1) * 2 
+    return num_pages
+    
+#----------------------------------------------------    
+def get_svgs(chapter_folder, basename_only=False):
+    """ Get the list of SVG files in the chapter folder """
+    svg_files = [f for f in os.listdir(chapter_folder) if f.endswith('.svg') and re.match(r'^\d{4}_', f) is not None]
+    if not basename_only:
+        svg_files = [f'{chapter_folder}/{f}' for f in svg_files]
+    return svg_files
+    
+#------------------------------------------------------------------------------------------------
+def generate_chapter( chapnum, chapter_start_page, chapter_pages, chapter_folder, title, canv):
+    title_svg = f'{chapter_folder}/0000_f_1.svg'
+    create_chapter_title_svg(chapnum, title, title_svg, LETTER_WIDTH, LETTER_HEIGHT, 30)
     blank_svg = f'{chapter_folder}/blank.svg'
     generate_blank_svg(blank_svg)
 
-    svg_files = [f'{chapter_folder}/{f}' for f in os.listdir(chapter_folder) if f.endswith('.svg')] 
+    svg_files = get_svgs(chapter_folder)
     png_files = [ f'{x.replace(".svg", ".png")}' for x in svg_files ]
     
     # Convert SVG to PNG
@@ -67,6 +98,7 @@ def generate_chapter( chapter_folder, title, canv):
 
     # Go through cards in groups of 4
     for i in range(0, len(cards), 4):
+        pagenum = chapter_start_page + i // 2
         print(f"Processing cards {i+1} to {i+4}")
         
         # Four cards make a page
@@ -78,7 +110,7 @@ def generate_chapter( chapter_folder, title, canv):
         svg_files_group = [f for f in svg_files if f'{os.path.split(f)[-1].split("_")[0]}' in cards_group]
         captions_group = { f.replace('.svg', '.png'):get_caption(open(f).read()) for f in svg_files_group }
         
-        generate_flashcards(canv, png_files_group, captions_group, i, len(cards), f'{chapter_folder}/blank.png')
+        generate_flashcards(canv, png_files_group, captions_group, i, chapnum, title, pagenum, f'{chapter_folder}/blank.png')
 
     os.remove(blank_svg)
     for f in png_files: os.remove(f)
@@ -86,16 +118,20 @@ def generate_chapter( chapter_folder, title, canv):
     print(f"Generated chapter {title} in {chapter_folder}")
 
 #----------------------------------------------------------------------------------
-def create_title_svg(title, output_path, width, height, font_size, max_chars=30):
-    # Create an SVG drawing
+def create_chapter_title_svg(chapnum, title, output_path, width, height, font_size, max_chars=30):
+    """ Generate and svg with chapter number and title """    
     dwg = svgwrite.Drawing(output_path, size=(f"{width}", f"{height}"))
     wrapped_lines = textwrap.wrap(title, width=max_chars)
     line_height = font_size * 1.3  
     total_text_height = len(wrapped_lines) * line_height
     start_y = (height - total_text_height) / 2 + font_size 
     
+    wrapped_lines = [f'Chapter {chapnum}'] + wrapped_lines
+
     # Add each line to the SVG
     for i, line in enumerate(wrapped_lines):
+        line_height = font_size * 1.3
+        if i == 1: line_height = font_size * 1.5
         y_position = start_y + i * line_height  # Adjust y position for each line
         text_element = dwg.text(
             line,
@@ -110,8 +146,64 @@ def create_title_svg(title, output_path, width, height, font_size, max_chars=30)
     # Save the SVG
     dwg.save()
 
-#--------------------------------------------------------------------------------------------------
-def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards, blank_png):
+#--------------------------------------------------------------------------
+def create_book_title_index_svg(title, chapters, output_path):
+    """ Generate an svg for the book title and index """
+    dwg = svgwrite.Drawing(output_path, size=(f"{PAGE_WIDTH}", f"{PAGE_HEIGHT}"))
+    title_y = '10%'
+    title_elt = dwg.text(
+        title,
+        insert=("50%", title_y),  # Centered horizontally
+        text_anchor="middle",  # Align text center
+        font_size=30,
+        font_family="Helvetica",
+        fill="black"
+    )
+    dwg.add(title_elt)
+    
+    chapter_start_page = 1
+    for idx, chapter in enumerate(chapters):
+        chapter_title = chapter['title']
+        chapter_num = idx + 1
+        chapter_y = 10 + 5 + (idx) * 2
+        chapter_y = f"{chapter_y}%"
+        chapter_num_elt = dwg.text(
+            f"{chapter_num}.",
+            insert=("20%", chapter_y),  
+            text_anchor="start",  # Align text left
+            font_size=10,
+            font_family="Helvetica",
+            #font_weight="bold",
+            fill="black"
+        )
+        dwg.add(chapter_num_elt)
+        
+        chapter_title_elt = dwg.text(
+            f"{chapter_title}",
+            insert=("23%", chapter_y),  
+            text_anchor='start',
+            font_size=10,
+            font_family="Helvetica",
+            fill="#555555"
+        )
+        dwg.add(chapter_title_elt)
+    
+        chapter_pages_elt = dwg.text(
+            f"{chapter_start_page}",
+            insert=("75%", chapter_y),  
+            text_anchor="end",  # Align text right
+            font_size=10,
+            font_family="Helvetica",
+            fill="#555555"
+        )
+        dwg.add(chapter_pages_elt)
+        chapter_start_page += pages_in_chapter(chapter['folder'])
+
+    # Save the SVG
+    dwg.save()
+
+#--------------------------------------------------------------------------------------------------------------
+def generate_flashcards(canv, png_files, captions, numbering_offset, chapnum, chaptitle, pagenum, blank_png):
     """
         Draw two pages on a canvas.
         Four cards fit on a duplex sheet.
@@ -120,6 +212,15 @@ def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards
         Each side of a card has one or two diagrams.    
     """
 
+    def centered_chap_num_and_title(canvas, chapnum, chaptitle):
+        """ Center chapter number and title in one line at the top of the page """
+        font = "Helvetica"
+        size = 10
+        txt = f"Chapter {chapnum}:  {chaptitle}"
+        textwidth = canvas.stringWidth(txt, font, size)
+        canvas.setFont(font, size)
+        canvas.drawString(PAGE_WIDTH / 2 - textwidth / 2, PAGE_HEIGHT - 10, txt)
+                
     get_first_png = lambda lst: lst[0] if lst else blank_png
             
     # 'double_44/0004_f_2.svg' -> '0004'
@@ -127,38 +228,79 @@ def generate_flashcards(canv, png_files, captions, numbering_offset, total_cards
     if len(cards) % 2 != 0:
         cards.append('xxxx')
         
-    # Arrange front side (first page)
+    # Arrange front side (odd page)
+    #--------------------------------
     scale_canvas(canv)
-    draw_cutting_marks(canv)
+    
+    if numbering_offset > 0:
+        centered_chap_num_and_title(canv, chapnum, chaptitle)
+    
+    # Page num at the top right
+    font = "Helvetica"
+    size = 10
+    textwidth = canv.stringWidth(str(pagenum), font, size)
+    canv.setFont(font, size)
+    canv.drawString(PAGE_WIDTH - textwidth - 10, PAGE_HEIGHT - 10, str(pagenum))
+
     for i, card in enumerate(cards):
+        problem_num = i + numbering_offset
         front_dia_1 = get_first_png([ x for x in png_files if x.endswith(f"{card}_f_1.png") ]) # top
         front_dia_2 = get_first_png([ x for x in png_files if x.endswith(f"{card}_f_2.png") ]) # bot
         row = i // 2
         col = i % 2
 
-        draw_png_on_canvas(canv, front_dia_1, 2 * row, col, caption = captions.get(front_dia_1, ''))
+        footer1 = f'{chapnum}-{problem_num}' 
+        if 'blank.png' in front_dia_1: footer1 = ''
+        if 'blank.png' not in front_dia_2: footer1 = ''
+        if problem_num == 0: footer1 = ''
+        footer2 = f'{chapnum}-{problem_num}'
+        if 'blank.png' in front_dia_2: footer2 = ''
+        if problem_num == 0: footer2 = ''
+        draw_png_on_canvas(canv, front_dia_1, 2 * row, col, 
+                           footer= footer1,
+                           caption = captions.get(front_dia_1, ''))
         draw_png_on_canvas(canv, front_dia_2, 2 * row + 1, col, 
-                            footer = f'{i+numbering_offset}/{total_cards-1}',
+                            footer = footer2,
                             caption = captions.get(front_dia_2, ''))
         
     canv.showPage()
 
-    # Arrange back side (second page)
+    # Arrange back side (even page)
+    #--------------------------------
     scale_canvas(canv)
-    draw_cutting_marks(canv)
+    
+    centered_chap_num_and_title(canv, chapnum, chaptitle)
+    
+    # Page num at the top left
+    font = "Helvetica"
+    size = 10
+    textwidth = canv.stringWidth(str(pagenum+1), font, size)
+    canv.setFont(font, size)
+    canv.drawString(10, PAGE_HEIGHT - 10, str(pagenum+1))
+    
     for i, card in enumerate(cards):
-        try:
-            backcard = cards[i+1] if i%2 == 0 else cards[i-1]
-        except:
-            backcard = 'xxxx'
-        back_dia_1 = get_first_png([ x for x in png_files if x.endswith(f"{backcard}_b_1.png") ]) # top
-        back_dia_2 = get_first_png([ x for x in png_files if x.endswith(f"{backcard}_b_2.png") ]) # bot
+        problem_num = i + numbering_offset
+        #try:
+        #    backcard = cards[i+1] if i%2 == 0 else cards[i-1]
+        #except:
+        #    backcard = 'xxxx'
+        back_dia_1 = get_first_png([ x for x in png_files if x.endswith(f"{card}_b_1.png") ]) # top
+        back_dia_2 = get_first_png([ x for x in png_files if x.endswith(f"{card}_b_2.png") ]) # bot
 
         row = i // 2
         col = i % 2
 
-        draw_png_on_canvas(canv, back_dia_1, 2 * row, col, caption = captions.get(back_dia_1, ''))
-        draw_png_on_canvas(canv, back_dia_2, 2 * row + 1, col, caption = captions.get(back_dia_2, ''))
+        footer1 = f'{chapnum}-{problem_num}' 
+        if 'blank.png' in back_dia_1: footer1 = ''
+        if 'blank.png' not in back_dia_2: footer1 = ''
+        footer2 = f'{chapnum}-{problem_num}'
+        if 'blank.png' in back_dia_2: footer2 = ''
+        draw_png_on_canvas(canv, back_dia_1, 2 * row, col, 
+                           footer= footer1,
+                           caption = captions.get(back_dia_1, ''))
+        draw_png_on_canvas(canv, back_dia_2, 2 * row + 1, col,
+                           footer= footer2,
+                           caption = captions.get(back_dia_2, ''))
                            
     canv.showPage()
         
@@ -177,7 +319,10 @@ def draw_line(canvas, x1, y1, x2, y2):
 
 #---------------------------------------------------------------------------
 def batch_convert_svgs(svg_folder, output_folder, scale):
-    """Convert SVG files to PNG."""
+    """
+    Convert SVG files to PNG.
+    Increase scale if you want more pixels.
+    """
     
     # Ensure output directory exists
     os.makedirs(output_folder, exist_ok=True)
@@ -228,10 +373,14 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     col in (0,1)
     y goes from bottom to top
     """
-    caption_height = 0
-    if caption: caption_height = 10
+    if 'blank.png' in png_file: return
+    caption_height = 10 #0
+    footer_height = 15
+    #if caption: caption_height = 10
     png_width, png_height = get_png_size(png_file)
     card_height = PAGE_HEIGHT / 2
+    card_bottom = 0
+    if row < 2: card_bottom = PAGE_HEIGHT + card_height
     middle = PAGE_HEIGHT / 2
     card_width = PAGE_WIDTH / 2
     hgap = PAGE_WIDTH * 0.05
@@ -239,9 +388,9 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     botmarg = card_height * 0.05
     topmarg = card_height * 0.05
     diagram_width = (PAGE_WIDTH - 2 * hgap) / 2
-    diagram_height = (card_height - botmarg - topmarg - vgap) / 2 - caption_height
+    diagram_height = (card_height - botmarg - topmarg - vgap) / 2 - caption_height # reduce height by caption if caption is there
     x = hgap / 2 + col * (diagram_width + hgap)
-    if row == 0: y = PAGE_HEIGHT - topmarg - diagram_height 
+    if row == 0: y = PAGE_HEIGHT - topmarg - diagram_height - caption_height
     elif row == 1: y = PAGE_HEIGHT - topmarg - vgap - 2 * diagram_height - caption_height
     elif row == 2: y = middle - topmarg - diagram_height
     else: y = middle - topmarg - vgap - 2 * diagram_height - caption_height
@@ -257,9 +406,12 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
     
     dx = (diagram_width - png_width*scale) / 2
     dy = (diagram_height - png_height*scale) / 2
+    dia_bottom = y + dy 
+    caption_bottom = dia_bottom - caption_height
+    footer_bottom = caption_bottom - footer_height
     
-    canvas.drawImage(png_file, x + dx, y + dy, width=png_width*scale, height=png_height*scale)
-    add_caption(canvas, caption, card_width, y+dy, col, caption_height)
+    canvas.drawImage(png_file, x + dx, dia_bottom, width=png_width*scale, height=png_height*scale)
+    add_caption(canvas, caption, card_width, caption_bottom, col)
     
     if footer and not footer.startswith('0/'):
         # Draw footer
@@ -267,19 +419,21 @@ def draw_png_on_canvas(canvas, png_file, row, col, footer = '', caption = ''):
         size = 10
         textwidth = canvas.stringWidth(footer, font, size)
         canvas.setFont(font, size)
+        footer_y = y #y - 2 * caption_height
+        #if caption: footer_y -= caption_height # below the caption
         canvas.drawString(card_width * col + card_width/2 - textwidth/2, 
-                            (3 - row) / 2 * card_height + botmarg * 0.4, 
+                            footer_bottom, #(3 - row) / 2 * card_height + botmarg * 0.4, 
                             footer)
 
 #-------------------------------------------------------------------------------
-def add_caption(canvas, caption, card_width, dia_bottom, col, caption_height):
+def add_caption(canvas, caption, card_width, caption_bottom, col):
     if not caption: return
     font = "Helvetica"
     size = 10
     textwidth = canvas.stringWidth(caption, font, size)
     canvas.setFont(font, size)
     canvas.drawString(card_width * col + card_width/2 - textwidth/2, 
-                        dia_bottom - caption_height, 
+                        caption_bottom, 
                         caption)
 
 #--------------------------------    
@@ -312,57 +466,6 @@ def scale_canvas(c):
     c.translate(translate_x, translate_y)  # Move origin to center
     c.scale(SCALE_FACTOR, SCALE_FACTOR)    # Scale content
 
-#-------------------------------------------------------------
-def draw_cross(c,x,y):
-    MARKLEN=5
-    c.line(x - MARKLEN, y, x + MARKLEN, y)
-    c.line(x, y - MARKLEN, x, y + MARKLEN)
-
-#-------------------------------------------------------------
-def draw_cutting_marks(c):
-    c.setLineWidth(0.5)
-    hmarg = (PAGE_WIDTH - PAGE_WIDTH * SCALE_FACTOR) / 2 - 10
-    vmarg = (PAGE_HEIGHT - PAGE_HEIGHT * SCALE_FACTOR) / 2 - 10
-    
-    # bottom left crosses
-    draw_cross(c, -hmarg,0)
-    draw_cross(c, 0,-vmarg)
-    draw_cross(c, 0,0)
-
-    # bottom right crosses
-    draw_cross(c, PAGE_WIDTH + hmarg,0)
-    draw_cross(c, PAGE_WIDTH, -vmarg)
-    draw_cross(c, PAGE_WIDTH, 0)
-
-    # top left crosses
-    draw_cross(c, -hmarg, PAGE_HEIGHT)
-    draw_cross(c, 0, PAGE_HEIGHT + vmarg)
-    draw_cross(c, 0, PAGE_HEIGHT)
-
-    # top right crosses
-    draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT)
-    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT + vmarg)
-    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT)
-    
-    # top middle cross
-    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT + vmarg)
-    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT)
-    
-    # bottom middle cross
-    draw_cross(c, PAGE_WIDTH/2, -vmarg)
-    draw_cross(c, PAGE_WIDTH/2, 0)
-    
-    # left middle cross
-    draw_cross(c, -hmarg, PAGE_HEIGHT/2)
-    draw_cross(c, 0, PAGE_HEIGHT/2)
-    
-    # right middle cross
-    draw_cross(c, PAGE_WIDTH + hmarg, PAGE_HEIGHT/2)
-    draw_cross(c, PAGE_WIDTH, PAGE_HEIGHT/2)  
-    
-    # center cross
-    draw_cross(c, PAGE_WIDTH/2, PAGE_HEIGHT/2)  
-        
 #-------------------------------------------------------------
 def svg_to_data_uri(svg_content):
     """Convert SVG content to a base64 data URI"""
