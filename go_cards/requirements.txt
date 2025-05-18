@@ -1,0 +1,8 @@
+chardet==5.2.0
+greenlet==3.2.2
+pillow==11.2.1
+playwright==1.52.0
+pyee==13.0.0
+reportlab==4.4.1
+svgwrite==1.4.3
+typing_extensions==4.13.2
