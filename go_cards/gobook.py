@@ -21,7 +21,7 @@ SCALE_FACTOR = 0.85 # Cards should be smaller than a quarter letter size
 
 #-------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(description='Generate flashcards from svg files')
+    parser = argparse.ArgumentParser(description='Generate a Go book from svg files')
     parser.add_argument('--config', type=str, help='Json file with the chapters', required=True)
     args = parser.parse_args()
 
@@ -42,7 +42,10 @@ def main():
     title_png = f'{book_folder}/title.png' 
     canv.drawImage(title_png, 0,0, width = PAGE_WIDTH, height = PAGE_HEIGHT)
     canv.showPage()
-
+    
+    # Add an empty page (back of index)
+    canv.showPage()
+        
     blank_svg = f'{book_folder}/blank.svg'
     generate_blank_svg(blank_svg)
     
@@ -52,6 +55,9 @@ def main():
         generate_chapter(chapidx+1, chapter_start_page, chapter_pages, chapter['folder'], chapter['title'], canv)
         chapter_start_page += chapter_pages
     canv.save()
+    
+    print('Output is in ', output_pdf)
+    print('Done.')
 
 #-----------------------------------------
 def pages_in_chapter(chapter_folder):
