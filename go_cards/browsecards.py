@@ -26,7 +26,8 @@ def main():
         f'{args.folder}/{f}' for f in os.listdir(args.folder) if f.endswith('.svg')]
     cards = sorted(
         list(set([os.path.split(x)[-1].split('_')[0] for x in svg_files])))
-    cards = [x for x in cards if not 'blank' in x and not '0000' in x]
+    cards = [x for x in cards if not 'blank' in x and not '0000' in x and not 'title' in x ]
+    print(cards)
 
     svg_pairs = []
     for idx, card in enumerate(cards):
@@ -72,17 +73,17 @@ def generate_html_files(svg_pairs, folder):
         <html>
         <head>
         <meta charset="UTF-8">
-        <title>SVG Viewer</title>
+        <title>Flashcard Browser</title>
             <style>
             body { text-align: center; font-family: sans-serif; font-size: 2em;}
             figure { display: inline-block; margin: 1%%; }
-            img { width: 45vw; height: auto; border: 1px solid #ccc; }
+            img { width: 45vw; height: auto; border: none; }
             figcaption { margin-top: 0.5em; color: #444; }
         </style>
         </head>
         <body>
         <div id="heading">
-            <bold>%s</bold> (Use curser keys for navigation)
+            <bold>%s</bold>
         </div>
         <div id="image-container">
         <img src="0020_f_1.svg"><img src="0020_f_2.svg">
@@ -108,22 +109,36 @@ def generate_html_files(svg_pairs, folder):
                 <figcaption>${captionPair[1]}</figcaption>
                 </figure>`;
             document.getElementById("heading").innerHTML = `
-                <bold>${title} ${probnum}/${nprobs}</bold> (Use curser keys for navigation)`;
+                <bold>${title} ${probnum}/${nprobs}</bold>`;
                 
             }
 
             document.addEventListener("keydown", (e) => {
             if (e.key === "ArrowRight") {
-                index++;
-                index %%= svgPairs.length;
-                probnum = Math.floor(index / 2) + 1;
+                let up = function() {
+                    index++;
+                    index %%= svgPairs.length;
+                    probnum = Math.floor(index / 2) + 1;
+                }
+                up();
+                // Up again if both sides are blank
+                if (svgPairs[index][0] == "blank.svg" && svgPairs[index][1] == "blank.svg") {
+                    up();
+                }
                 render();
             } else if (e.key === "ArrowLeft") {
-                index--; 
-                if (index < 0) {
-                    index = svgPairs.length - 1;
+                let down = function() {
+                    index--; 
+                    if (index < 0) {
+                        index = svgPairs.length - 1;
+                    }
+                    probnum = Math.floor(index / 2) + 1;
                 }
-                probnum = Math.floor(index / 2) + 1;
+                down();
+                // Down again if both sides are blank
+                if (svgPairs[index][0] == "blank.svg" && svgPairs[index][1] == "blank.svg") {
+                    down();
+                }
                 render();
             }
             });
