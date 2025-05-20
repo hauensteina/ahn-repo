@@ -113,7 +113,7 @@ def generate_html_files(svg_pairs, folder):
 			<figcaption>${captionPair[1]}</figcaption>
 			</figure>`;
 		    document.getElementById("heading").innerHTML = `
-			<bold>${title} ${probnum}/${nprobs}</bold> card ${card}`;
+			<bold>${title} ${probnum}/${nprobs}</bold> (files ${card}_)`;
             } // render()
 
             document.addEventListener("keydown", (e) => {
