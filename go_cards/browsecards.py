@@ -64,9 +64,11 @@ def generate_html_files(svg_pairs, folder):
     title = os.path.split(folder)[-2]
     svg_pairs_base = [(os.path.basename(pair[0][0]),
                        os.path.basename(pair[1][0])) for pair in svg_pairs]
-    svg_pairs_base = json.dumps(svg_pairs_base)
+    svg_pairs_base_json = json.dumps(svg_pairs_base)
     caption_pairs = [(pair[0][1], pair[1][1]) for pair in svg_pairs]
     caption_pairs = json.dumps(caption_pairs)
+    cards = [ x[0] if not 'blank' in x[0] else x[1] for x in svg_pairs_base ]
+    cards = [ x.split('_')[0] for x in cards ]
     viewer = os.path.join(folder, "index.html")
     html = """
         <!DOCTYPE html>
@@ -90,6 +92,7 @@ def generate_html_files(svg_pairs, folder):
         </div>
         <script>
             const svgPairs = %s;
+            const cards = %s;
             const captionPairs = %s;
             const title = "%s";
             let index = 0;
@@ -97,21 +100,21 @@ def generate_html_files(svg_pairs, folder):
             let nprobs = svgPairs.length / 2;
 
             function render() {
-            const pair = svgPairs[index];
-            const captionPair = captionPairs[index];
-            document.getElementById("image-container").innerHTML = `
-                <figure>
-                <img src="${pair[0]}">
-                <figcaption>${captionPair[0]}</figcaption>
-                </figure>
-                <figure>
-                <img src="${pair[1]}">
-                <figcaption>${captionPair[1]}</figcaption>
-                </figure>`;
-            document.getElementById("heading").innerHTML = `
-                <bold>${title} ${probnum}/${nprobs}</bold>`;
-                
-            }
+		    const pair = svgPairs[index];
+		    const captionPair = captionPairs[index];
+                    const card = cards[index];
+		    document.getElementById("image-container").innerHTML = `
+			<figure>
+			<img src="${pair[0]}">
+			<figcaption>${captionPair[0]}</figcaption>
+			</figure>
+			<figure>
+			<img src="${pair[1]}">
+			<figcaption>${captionPair[1]}</figcaption>
+			</figure>`;
+		    document.getElementById("heading").innerHTML = `
+			<bold>${title} ${probnum}/${nprobs}</bold> card ${card}`;
+            } // render()
 
             document.addEventListener("keydown", (e) => {
             if (e.key === "ArrowRight") {
@@ -147,7 +150,7 @@ def generate_html_files(svg_pairs, folder):
         </script>
         </body>
         </html>    
-    """ % (title, svg_pairs_base, caption_pairs, title)
+    """ % (title, svg_pairs_base_json, cards, caption_pairs, title)
     with open(viewer, "w") as f:
         f.write(html)
 

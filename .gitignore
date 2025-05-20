@@ -4,5 +4,11 @@ DerivedData
 __pycache__
 .*
 venv
+Pods
+tt.*
+tt
+transformers/01_double_a/data/
+transformers/01_double_a/log.txt
+transformers/01_double_a/models/
 
 
