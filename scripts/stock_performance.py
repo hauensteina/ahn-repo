@@ -78,6 +78,47 @@ def fetch_prices(tickers, start, end):
         data = data.to_frame()
     return data.dropna(axis=1, how='all')  # Drop tickers with all-NaN data
 
+
+# Stuff below still to do. Checks for increased trade volume
+
+import yfinance as yf
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
+
+# --- Step 1: Get S&P 500 tickers ---
+def get_sp500_tickers():
+    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    soup = BeautifulSoup(requests.get(url).text, 'html.parser')
+    table = soup.find('table', {'id': 'constituents'})
+    return [row.find_all('td')[0].text.strip().replace('.', '-') for row in table.find_all('tr')[1:]]
+
+# --- Step 2: Get volume data and compute volume ratio ---
+def get_high_volume_tickers(tickers, period='30d', threshold=2.0):
+    high_volume = []
+    for batch in [tickers[i:i+50] for i in range(0, len(tickers), 50)]:
+        df = yf.download(batch, period=period, progress=False, group_by='ticker', threads=True)
+        
+        if isinstance(df.columns, pd.MultiIndex):
+            for ticker in batch:
+                try:
+                    vol = df[ticker]['Volume']
+                    avg_vol = vol[:-1].mean()
+                    last_vol = vol[-1]
+                    ratio = last_vol / avg_vol if avg_vol > 0 else 0
+                    if ratio >= threshold:
+                        high_volume.append({
+                            'Ticker': ticker,
+                            'Last Volume': int(last_vol),
+                            'Avg Volume': int(avg_vol),
+                            'Volume Ratio': round(ratio, 2)
+                        })
+                except Exception:
+                    continue
+    return pd.DataFrame(high_volume).sort_values('Volume Ratio', ascending=False)
+
+
 # Main execution
 if __name__ == '__main__':
     main()

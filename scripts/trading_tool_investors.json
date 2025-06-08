@@ -1,0 +1,69 @@
+{
+    "last_trade_date": "2025-06-06",
+    "investors": [
+        {
+            "name": "incr_5_days",
+            "parameters": {
+                "n_stocks": 4,
+                "n_days_spike": 5,
+                "criterion": "incr"
+            },
+            "portfolio_log": [
+                {
+                    "date": "2025-06-06",
+                    "cash": 100000,
+                    "stocks": {
+                    }
+                }
+            ]
+        },
+        {
+            "name": "incr_2_days",
+            "parameters": {
+                "n_stocks": 4,
+                "n_days_spike": 2,
+                "criterion": "incr"
+            },
+            "portfolio_log": [
+                {
+                    "date": "2025-06-06",
+                    "cash": 100000,
+                    "stocks": {
+                    }
+                }
+            ]
+        },
+        {
+            "name": "vol_x_incr_5_days",
+            "parameters": {
+                "n_stocks": 4,
+                "n_days_spike": 5,
+                "criterion": "vol_x_incr"
+            },
+            "portfolio_log": [
+                {
+                    "date": "2025-06-06",
+                    "cash": 100000,
+                    "stocks": {
+                    }
+                }
+            ]
+        },
+        {
+            "name": "vol_x_incr_2_days",
+            "parameters": {
+                "n_stocks": 4,
+                "n_days_spike": 2,
+                "criterion": "vol_x_incr"
+            },
+            "portfolio_log": [
+                {
+                    "date": "2025-06-06",
+                    "cash": 100000,
+                    "stocks": {
+                    }
+                }
+            ]
+        }
+    ]
+}
