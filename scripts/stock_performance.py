@@ -5,6 +5,7 @@ AHN, Jun 2025
 """
 
 import argparse
+import os
 import yfinance as yf
 import pandas as pd
 import requests
@@ -15,11 +16,28 @@ from io import StringIO
 from pdb import set_trace as BP
 
 
+#--------------
+def usage():
+    name = os.path.basename( __file__)
+    msg = f'''
+    Name:
+      {name}: Find the best N S&P 500 stocks by gains over a given period.
+
+    Synopsis:
+      {name} --days <days> --topn <topn> 
+
+    Example:
+      python {name} --days 30 --topn 10
+
+''' 
+    msg += '\n '
+    return msg 
+
 #-----------------------
 def main():
     
     # Get number of days and top N from command line arguments
-    parser = argparse.ArgumentParser(description='Find top N S&P 500 stocks by gain over a number of days')
+    parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument('--topn', type=int, default=20, help='Number of top stocks to display', required=True)
     parser.add_argument('--days', type=int, default=30, help='Number of days to calculate gains over', required=True)
     args = parser.parse_args()
@@ -27,6 +45,7 @@ def main():
     days = args.days
 
     tickers = get_sp500_tickers()
+    tickers = tickers[:2] # For testing, limit to 2 tickers
     metadata = get_sp500_metadata()
     end_date = datetime.today()
     start_date = end_date - timedelta(days=days)
@@ -36,10 +55,11 @@ def main():
     price_data = pd.DataFrame()
 
     for batch in batches:
-        df = fetch_prices(batch, start_date, end_date)
+        df = fetch_prices(batch, start_date, end_date) # end_date is exclusive. Dates when market closed are not included.
         price_data = pd.concat([price_data, df], axis=1)
 
     valid_data = price_data.dropna(axis=1)
+    BP()
     gains = calculate_gains(valid_data)
     best_gains = gains.head(N)
     best_tickers = best_gains.index.tolist()

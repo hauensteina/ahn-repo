@@ -82,7 +82,7 @@ Example initial json file for simulating four investors with different strategie
 """
 
 import argparse
-import json
+import os,json
 import yfinance as yf
 import pandas as pd
 import requests
@@ -99,25 +99,77 @@ from pdb import set_trace as BP
 
 N_DAYS_LONG = 30
 
+#--------------
+def usage():
+    name = os.path.basename( __file__)
+    msg = f'''
+    Name:
+      {name}: Simulate different trading strategies. 
+
+    Description:
+        A set of traders with different strategies, and their portfolio status, is defined in trading_tool_investors.json.  
+        The script runs in an endless loop waiting for noon (12:00 PM) New York time.
+        If the markets are open, it executes trades based on the defined strategies.
+        The current state of the portfolios is saved back to trading_tool_investors.json.
+        
+        Each investor holds n_stocks different tickers. Each day, we find the best (according to strategy) n_stocks and buy them.
+        Stocks not in the top n_stocks are sold. 
+
+    Synopsis:
+      {name} --run
+
+    Example:
+      python {name} --run
+
+''' 
+    msg += '\n '
+    return msg 
+
 #-----------------------
 def main():
     
-    parser = argparse.ArgumentParser(description='Simulate trading every day with different strategies')
+    parser = argparse.ArgumentParser( usage=usage())
     parser.add_argument('--run', action='store_true', help='Run the trading simulation', required=True)
     args = parser.parse_args()
     
     # Sleep and check occasionally whether it is 9 am and the stock market is open
     while True:
         east_coast_time = datetime.now(ZoneInfo("America/New_York"))
-        #if True or east_coast_time.hour == 12 and east_coast_time.minute == 0:
         if east_coast_time.hour == 12 and east_coast_time.minute == 0:
-            #if False and not is_market_open():
             if not is_market_open():
                 print(f"{east_coast_time} Market is closed, waiting for next trading day...")
                 continue
             print(f"{east_coast_time} It's 12 AM, starting the trading simulation...")
             trade()
         time.sleep(30)
+        
+# sort_stocks() defines the way we pick stocks.  
+#------------------------------------------------------------------------------------
+def sort_stocks(ticker_data, N_STOCKS, criterion, long_start_date, n_days_spike):
+    """
+    Sort tickers based on recent changes in price and/or volume.
+    """
+
+    avg_volume_by_ticker = ticker_data['Volume'].mean()
+    recent_volume_by_ticker = ticker_data['Volume'].iloc[-1]
+    volrat_by_ticker = recent_volume_by_ticker / avg_volume_by_ticker # yesterdays volume over avg 30 day volume
+    recent_price_increase_by_ticker = ticker_data['Close'].iloc[-1] / ticker_data['Close'].iloc[-n_days_spike] # yesterdays price over price n days ago
+
+    if criterion == 'incr':
+        crit_by_ticker = recent_price_increase_by_ticker
+    elif criterion == 'volume':
+        crit_by_ticker = recent_volume_by_ticker
+    elif criterion == 'vol_x_incr':
+        crit_by_ticker = volrat_by_ticker  * (recent_price_increase_by_ticker - 1)
+    elif criterion == 'volrat':
+        crit_by_ticker = volrat_by_ticker
+    else:
+        raise ValueError(f"Unknown criterion: {criterion}")
+
+    # Sort crit_by_ticker in descending order
+    crit_by_ticker = dict(sorted(crit_by_ticker.items(), key=lambda x: x[1], reverse=True))
+    res = crit_by_ticker
+    return res
 
 #--------------------------------------------------------
 def is_market_open():
@@ -144,8 +196,7 @@ def trade():
         return
     investors = state['investors']
 
-    # yesterdays date
-    END_DATE = datetime.now(ZoneInfo("America/New_York")) - timedelta(days=1)
+    END_DATE = datetime.now(ZoneInfo("America/New_York")) 
     LONG_START_DATE = END_DATE - timedelta(days=N_DAYS_LONG)
 
     tickers = get_sp500_tickers()
@@ -183,7 +234,7 @@ def trade_portfolio(investor, ticker_data, metadata, long_start_date):
     new_log_entry['date'] = today()
 
     # Sell stocks that are not in the top N
-    for ticker in list(my_stocks.keys()):
+    for ticker in my_stocks:
         if ticker not in top_stocks:
             print(f"Selling {ticker} from {investor['name']}'s portfolio")
             sell_ticker(investor, ticker, ticker_data, new_log_entry, last_log_entry)
@@ -200,7 +251,6 @@ def trade_portfolio(investor, ticker_data, metadata, long_start_date):
     # Update the portfolio log with the new log entry
     investor['portfolio_log'].append(new_log_entry)
     
-
 #-----------------------------------------------------------------------------------
 def buy_ticker(investor, ticker, investment_amount, ticker_data, new_log_entry):
     """
@@ -302,32 +352,7 @@ def get_sp500_metadata():
     }
     return metadata_dict
 
-#------------------------------------------------------------------------------------
-def sort_stocks(ticker_data, N_STOCKS, criterion, long_start_date, n_days_spike):
-    """
-    Sort tickers based on recent changes in price and/or volume.
-    """
 
-    avg_volume_by_ticker = ticker_data['Volume'].mean()
-    recent_volume_by_ticker = ticker_data['Volume'].iloc[-1]
-    volrat_by_ticker = recent_volume_by_ticker / avg_volume_by_ticker # todays volume over avg 30 day volume
-    recent_price_increase_by_ticker = ticker_data['Close'].iloc[-1] / ticker_data['Close'].iloc[-n_days_spike] # todays price over price n days ago
-
-    if criterion == 'incr':
-        crit_by_ticker = recent_price_increase_by_ticker
-    elif criterion == 'volume':
-        crit_by_ticker = recent_volume_by_ticker
-    elif criterion == 'vol_x_incr':
-        crit_by_ticker = volrat_by_ticker  * (recent_price_increase_by_ticker - 1)
-    elif criterion == 'volrat':
-        crit_by_ticker = volrat_by_ticker
-    else:
-        raise ValueError(f"Unknown criterion: {criterion}")
-
-    # Sort crit_by_ticker in descending order
-    crit_by_ticker = dict(sorted(crit_by_ticker.items(), key=lambda x: x[1], reverse=True))
-    res = crit_by_ticker
-    return res
 
 #---------------------------------------------------------------------------------
 def get_data(tickers, start_date, end_date):
@@ -344,11 +369,12 @@ def get_data(tickers, start_date, end_date):
     res = price_volume_data.dropna(axis=1) # Drop tickers with all-NaN data
     return res
 
-#---------------------------------------------------
-def fetch_ticker_data(tickers, start, end):
+#------------------------------------------------------
+def fetch_ticker_data(tickers, start_date, end_date):
     """ Download adjusted stock prices from yfinance """
     tickers = [clean_ticker(t) for t in tickers]
-    data = yf.download(tickers, start=start, end=end, progress=False, auto_adjust=True)
+    # end_date is exclusive. Dates when market closed are not included.
+    data = yf.download(tickers, start=start_date, end=end_date, progress=False, auto_adjust=True) 
     if isinstance(data, pd.Series):  # Single ticker case
         print('Warning: Single ticker')
         data = data.to_frame()
@@ -359,8 +385,8 @@ def clean_ticker(ticker):
     return ticker.replace('.', '-')
 
 
-# Main execution
 if __name__ == '__main__':
-    main()
+    trade()
+    #main()
     
     
