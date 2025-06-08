@@ -10,6 +10,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from io import StringIO 
 
 from pdb import set_trace as BP
 
@@ -26,6 +27,7 @@ def main():
     days = args.days
 
     tickers = get_sp500_tickers()
+    metadata = get_sp500_metadata()
     end_date = datetime.today()
     start_date = end_date - timedelta(days=days)
 
@@ -38,11 +40,11 @@ def main():
         price_data = pd.concat([price_data, df], axis=1)
 
     valid_data = price_data.dropna(axis=1)
-    gains = calculate_gains(price_data)
+    gains = calculate_gains(valid_data)
     best_gains = gains.head(N)
     best_tickers = best_gains.index.tolist()
-    best_info = [ { 'industry': yf.Ticker(t).info.get('industry', 'N/A'), 'name': yf.Ticker(t).info.get('longName', 'N/A') } for t in best_tickers ]
-    
+    best_info = [ { 'industry': metadata[t]['Industry'], 'name': metadata[t]['Company'] } for t in best_tickers ]
+
     for idx, ticker in enumerate(best_tickers):
         industry = best_info[idx]['industry']
         name = best_info[idx]['name']
@@ -58,6 +60,29 @@ def get_sp500_tickers():
     table = soup.find('table', {'id': 'constituents'})
     tickers = [row.find_all('td')[0].text.strip() for row in table.find_all('tr')[1:]]
     return tickers
+
+#------------------------------------------------------------------------------------
+def get_sp500_metadata():
+    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    table_html = soup.find('table', {'id': 'constituents'})
+    df = pd.read_html(StringIO(str(table_html)))[0]
+
+    # Clean ticker symbols (for yfinance compatibility: '.' → '-')
+    df['Symbol'] = df['Symbol'].str.replace('.', '-', regex=False)
+    df = df.rename(columns={'Symbol': 'Ticker', 'Security': 'Company', 'GICS Sector': 'Sector', 'GICS Sub-Industry': 'Industry'})
+
+    metadata_dict = {
+        row['Ticker']: {
+            'Company': row['Company'],
+            'Sector': row['Sector'],
+            'Industry': row['Industry']
+        }
+        for _, row in df.iterrows()
+    }
+    return metadata_dict
 
 #--------------------------------
 def calculate_gains(price_df):
@@ -77,46 +102,6 @@ def fetch_prices(tickers, start, end):
         print('Warning: Single ticker')
         data = data.to_frame()
     return data.dropna(axis=1, how='all')  # Drop tickers with all-NaN data
-
-
-# Stuff below still to do. Checks for increased trade volume
-
-import yfinance as yf
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
-
-# --- Step 1: Get S&P 500 tickers ---
-def get_sp500_tickers():
-    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    soup = BeautifulSoup(requests.get(url).text, 'html.parser')
-    table = soup.find('table', {'id': 'constituents'})
-    return [row.find_all('td')[0].text.strip().replace('.', '-') for row in table.find_all('tr')[1:]]
-
-# --- Step 2: Get volume data and compute volume ratio ---
-def get_high_volume_tickers(tickers, period='30d', threshold=2.0):
-    high_volume = []
-    for batch in [tickers[i:i+50] for i in range(0, len(tickers), 50)]:
-        df = yf.download(batch, period=period, progress=False, group_by='ticker', threads=True)
-        
-        if isinstance(df.columns, pd.MultiIndex):
-            for ticker in batch:
-                try:
-                    vol = df[ticker]['Volume']
-                    avg_vol = vol[:-1].mean()
-                    last_vol = vol[-1]
-                    ratio = last_vol / avg_vol if avg_vol > 0 else 0
-                    if ratio >= threshold:
-                        high_volume.append({
-                            'Ticker': ticker,
-                            'Last Volume': int(last_vol),
-                            'Avg Volume': int(avg_vol),
-                            'Volume Ratio': round(ratio, 2)
-                        })
-                except Exception:
-                    continue
-    return pd.DataFrame(high_volume).sort_values('Volume Ratio', ascending=False)
 
 
 # Main execution
