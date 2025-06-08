@@ -386,7 +386,7 @@ def clean_ticker(ticker):
 
 
 if __name__ == '__main__':
-    trade()
-    #main()
+    #trade() # test run
+    main()
     
     
