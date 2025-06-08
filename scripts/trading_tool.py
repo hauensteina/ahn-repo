@@ -109,13 +109,13 @@ def main():
     # Sleep and check occasionally whether it is 9 am and the stock market is open
     while True:
         east_coast_time = datetime.now(ZoneInfo("America/New_York"))
-        #if True or east_coast_time.hour == 9 and east_coast_time.minute == 0:
-        if east_coast_time.hour == 9 and east_coast_time.minute == 0:
+        #if True or east_coast_time.hour == 12 and east_coast_time.minute == 0:
+        if east_coast_time.hour == 12 and east_coast_time.minute == 0:
             #if False and not is_market_open():
             if not is_market_open():
                 print(f"{east_coast_time} Market is closed, waiting for next trading day...")
                 continue
-            print(f"{east_coast_time} It's 9 AM, starting the trading simulation...")
+            print(f"{east_coast_time} It's 12 AM, starting the trading simulation...")
             trade()
         time.sleep(30)
 
