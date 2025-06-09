@@ -134,13 +134,19 @@ def main():
     
     # Sleep and check occasionally whether it is 9 am and the stock market is open
     while True:
-        east_coast_time = datetime.now(ZoneInfo("America/New_York"))
-        if east_coast_time.hour == 12 and east_coast_time.minute == 7:
+        while True: # Make a block to break out of
+            state  = json.load(open('trading_tool_investors.json', 'r'))
+            if state['last_trade_date'] == today():
+                print("Already traded today. Doing nothing.")
+                break    
+            east_coast_time = datetime.now(ZoneInfo("America/New_York"))
+            if not (east_coast_time.hour >= 12 and east_coast_time.minute > 3): break
             if not is_market_open():
                 print(f"{east_coast_time} Market is closed, waiting for next trading day...")
-                continue
-            print(f"{east_coast_time} It's 12 AM, starting the trading simulation...")
-            trade()
+                break
+            print(f"{east_coast_time} It's noon, starting the trading simulation...")
+            trade(state)
+            break
         time.sleep(30)
         
 # sort_stocks() defines the way we pick stocks.  
@@ -182,18 +188,15 @@ def is_market_open():
 
     # Check if now is within a market open window
     schedule = nyse.schedule(start_date=east_coast_time.date(), end_date=east_coast_time.date())
-
+    
     # Check if today is a trading day and market is open now
-    is_open = any(schedule.iloc[0]['market_open'] <= east_coast_time <= schedule.iloc[0]['market_close']) if not schedule.empty else False
+    if schedule.empty: return False
+    is_open = schedule.iloc[0]['market_open'] <= east_coast_time <= schedule.iloc[0]['market_close']
 
     return is_open
 
 #--------------------------------------------------------
-def trade():
-    state  = json.load(open('trading_tool_investors.json', 'r'))
-    if state['last_trade_date'] == today():
-        print("Already traded today. Doing nothing.")
-        return
+def trade(state):
     investors = state['investors']
 
     END_DATE = datetime.now(ZoneInfo("America/New_York")) 
