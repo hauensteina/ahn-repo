@@ -1,0 +1,17 @@
+
+
+{
+"title":"Joseki",    
+"chapters":
+[
+    { "folder": "3-3_double_hane", "title": "3-3 Double Hane"},
+    { "folder": "3-4_2_space_high", "title": "3-4 2 Space High" },
+    { "folder": "4-4_1_space_low", "title": "4-4 1 Space Low" },
+    { "folder": "3-3_straight", "title": "3-3 Straight" },
+    { "folder": "3-4_low_keima", "title": "3-4 Low Keima" },
+    { "folder": "double_44", "title": "Double 4-4" },
+    { "folder": "3-4_1_space_low", "title": "3-4 1 Space Low" },
+    { "folder": "3-4_low_kosumi", "title": "3-4 Low Kosumi" },
+    { "folder": "kick_and_jump", "title": "Kick and Jump" }
+]
+}
