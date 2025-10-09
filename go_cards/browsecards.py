@@ -238,10 +238,10 @@ def get_caption(txt):
     """ Parse the text between <caption> and </caption> from txt """
     start = txt.find('<caption>')
     if start == -1:
-        return ''
+        return '&nbsp;'
     end = txt.find('</caption>')
     if end == -1:
-        return ''
+        return '&nbsp;'
     res = txt[start+9:end].strip()
     return res
 
