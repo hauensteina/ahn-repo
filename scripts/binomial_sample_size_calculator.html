@@ -77,7 +77,7 @@
     <div class="metric-sub">at p₁</div>
   </div>
 </div>
-<div class="metric-grid" style="grid-template-columns:1fr 1fr;">
+<div class="metric-grid" style="grid-template-columns:1fr 1fr 1fr;">
   <div class="metric">
     <div class="metric-label">Actual α (type I error)</div>
     <div class="metric-value" id="res-alpha">—</div>
@@ -85,7 +85,12 @@
   </div>
   <div class="metric">
     <div class="metric-label">Normal approx. n</div>
-    <div class="metric-value" id="res-approx">—</div>
+    <div class="metric-value" id="res-approx-raw">—</div>
+    <div class="metric-sub">for comparison</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">Normal approx. n with continuity corr</div>
+    <div class="metric-value" id="res-approx-cc">—</div>
     <div class="metric-sub">for comparison</div>
   </div>
 </div>
@@ -103,6 +108,17 @@
 </div>
 
 <script>
+  // Normal quantile (rational approximation, Abramowitz & Stegun 26.2.23)
+function normQuantile(p) {
+  var a = [2.515517, 0.802853, 0.010328];
+  var b = [1.432788, 0.189269, 0.001308];
+  var t = Math.sqrt(-2 * Math.log(p < 0.5 ? p : 1 - p));
+  var num = a[0] + t * (a[1] + t * a[2]);
+  var den = 1 + t * (b[0] + t * (b[1] + t * b[2]));
+  var z = t - num / den;
+  return p < 0.5 ? -z : z;
+}
+
 function logFactorial(n) {
   var r = 0;
   for (var i = 2; i <= n; i++) r += Math.log(i);
@@ -127,11 +143,25 @@ function findCritical(n, p0, alpha) {
   }
   return n + 1;
 }
-function normalApprox(p0, p1, alpha, power) {
-  var za = 1.6449, zb = 1.2816;
+/*
+function fleiss_sample_size(p0, p1, alpha, power) {
+  var za = normQuantile(1 - alpha);
+  var zb = normQuantile(power);
   var num = za * Math.sqrt(p0*(1-p0)) + zb * Math.sqrt(p1*(1-p1));
   return Math.ceil(num * num / ((p1-p0)*(p1-p0)));
+} */
+
+//-------------------------------------------------------
+function fleiss_sample_size(p0, p1, alpha, power) {
+  var za = normQuantile(1 - alpha);
+  var zb = normQuantile(power);
+  var num = za * Math.sqrt(p0*(1-p0)) + zb * Math.sqrt(p1*(1-p1));
+  var n_raw = Math.ceil(num * num / ((p1-p0)*(p1-p0)));
+  // Fleiss continuity correction
+  var n_cc = Math.ceil((n_raw / 4) * Math.pow(1 + Math.sqrt(1 + 2 / (n_raw * Math.abs(p1 - p0))), 2));
+  return { n_raw: n_raw, n_cc: n_cc };
 }
+
 function update() {
   var p0    = parseInt(document.getElementById('p0').value) / 100;
   var p1    = parseInt(document.getElementById('p1').value) / 100;
@@ -167,13 +197,15 @@ function update() {
   var cStar    = findCritical(nStar, p0, alpha);
   var actAlpha = upperTail(nStar, cStar, p0);
   var actPower = upperTail(nStar, cStar, p1);
-  var approx   = normalApprox(p0, p1, alpha, power);
+  var approx_cc   = fleiss_sample_size(p0, p1, alpha, power).n_cc;
+  var approx_raw   = fleiss_sample_size(p0, p1, alpha, power).n_raw;
 
   document.getElementById('res-n').textContent      = nStar;
   document.getElementById('res-c').textContent      = cStar;
   document.getElementById('res-pow').textContent    = (actPower * 100).toFixed(2) + '%';
   document.getElementById('res-alpha').textContent  = (actAlpha * 100).toFixed(3) + '%';
-  document.getElementById('res-approx').textContent = approx;
+  document.getElementById('res-approx-raw').textContent = approx_raw;
+  document.getElementById('res-approx-cc').textContent = approx_cc;
 
   var lo = Math.max(1, nStar - 5), hi = nStar + 5;
   var rows = '';
