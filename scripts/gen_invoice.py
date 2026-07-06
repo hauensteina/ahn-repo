@@ -15,6 +15,7 @@ CUSTOMER_ADDRESS = {
     'D1': 'D ONE\nSihlfeldstrasse 58\n8003 Zurich\nSwitzerland'
     ,'PROTXX': 'John Ralston\nPROTXX, INC.\n369 La Cuesta Drive\nPortola Valley, CA 94028'
     ,'Neursantys': 'Neursantys, INC.\n659 Oak Grove Ave\nMenlo Park, CA 94025'
+    ,'VIR': 'Vir Biotechnology, Inc.\n1800 Owens St. Suite 900\nSan Francisco, CA 94158'
 }
 
 COL_WIDTH = {
@@ -55,7 +56,7 @@ class PDF(FPDF):
         spacing = 3.7
         self.set_font('Helvetica', size=FONTSIZE)
         self.set_text_color(*BLACK)
-        txt = f'3040 Boyter Pl Unit 105\nSanta Clara, CA 95051\nUSA\nPhone: +1-415-706-0740\nEmail: hauensteina@gmail.com'
+        txt = f'3040 Boyter Pl Unit 105\nSanta Clara, CA 95051\nUSA\nPhone: +1-415-706-0740\nEmail: hauensteina@ahaux.com'
         self.multi_cell( 140, spacing, txt, align='L', new_x='RIGHT', new_y='TOP', border=0)
         # Middle
         txt = f'DATE:\nINVOICE NO.\nTERMS:'
@@ -63,6 +64,7 @@ class PDF(FPDF):
         # Right
         self.set_fill_color( *GRAY)
         date = datetime.today().isoformat().split('T')[0]
+        #date = '2026-06-01'
         txt = f'{date}\n[{invoice_no:05d}]\n{terms}'
         self.set_text_color(*RED)
         self.multi_cell( 0, spacing, txt, align='C', new_x='RIGHT', new_y='NEXT', fill=True, border=0)
@@ -83,6 +85,7 @@ class PDF(FPDF):
         self.set_font(style='B')
         self.set_fill_color( *GRAY)
         for col in self.rows[0]:
+            if col.strip() == '': continue
             col_width = COL_WIDTH[col]
             self.multi_cell( col_width, line_height, col, border=1,
                             new_x='RIGHT', new_y='TOP', max_line_height=self.font_size, fill=True, align='C')
@@ -114,7 +117,7 @@ def usage():
       {name}: Generate an AHAUX invoice from time sheet csv
 
     Synopsis:
-      {name} --timesheet <fname>.csv --customer [D1|PROTXX|Neursantys] [--terms <str>] [--invoice_no <int>]
+      {name} --timesheet <fname>.csv --customer [D1|PROTXX|Neursantys|VIR] [--terms <str>] [--invoice_no <int>]
 
     Description:
       Generate an invoice from a csv. All upper case columns show in the output PDF.
@@ -158,7 +161,7 @@ def main():
         quantity = float(f'{quantity:.2f}')
         amount = float(rate) * quantity
         total_quantity += quantity
-        amount = int(amount + 0.5)
+        #amount = int(amount + 0.5)
         total_amount += amount
         r['AMOUNT'] = f'{amount}'
         r['QUANTITY'] = f'{quantity:.2f}'
@@ -187,6 +190,7 @@ def run( rows, customer_addr, invoice_no, terms, total_quantity, total_amount, o
         pdf.set_font(style='')
         pdf.set_fill_color( 255,255,255)
         for col in row:
+            if col.strip() == '': continue
             col_width = COL_WIDTH[col]
             align = 'R'
             if col == 'DATE': align = 'C'
