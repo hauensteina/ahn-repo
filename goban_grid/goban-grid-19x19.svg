@@ -1,59 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="457mm" height="487.6mm" viewBox="0 0 457 487.6">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="456.8mm" height="487.4mm" viewBox="0 0 456.8 487.4">
 <title>Goban grid 19x19 — 22 x 23.7 mm</title>
 <g id="grid" fill="#000000" stroke="none" shape-rendering="crispEdges">
 <g id="vertical-lines">
-<rect x="30" y="30" width="1" height="427.6"/>
-<rect x="52" y="30" width="1" height="427.6"/>
-<rect x="74" y="30" width="1" height="427.6"/>
-<rect x="96" y="30" width="1" height="427.6"/>
-<rect x="118" y="30" width="1" height="427.6"/>
-<rect x="140" y="30" width="1" height="427.6"/>
-<rect x="162" y="30" width="1" height="427.6"/>
-<rect x="184" y="30" width="1" height="427.6"/>
-<rect x="206" y="30" width="1" height="427.6"/>
-<rect x="228" y="30" width="1" height="427.6"/>
-<rect x="250" y="30" width="1" height="427.6"/>
-<rect x="272" y="30" width="1" height="427.6"/>
-<rect x="294" y="30" width="1" height="427.6"/>
-<rect x="316" y="30" width="1" height="427.6"/>
-<rect x="338" y="30" width="1" height="427.6"/>
-<rect x="360" y="30" width="1" height="427.6"/>
-<rect x="382" y="30" width="1" height="427.6"/>
-<rect x="404" y="30" width="1" height="427.6"/>
-<rect x="426" y="30" width="1" height="427.6"/>
+<rect x="30" y="30" width="0.8" height="427.4"/>
+<rect x="52" y="30" width="0.8" height="427.4"/>
+<rect x="74" y="30" width="0.8" height="427.4"/>
+<rect x="96" y="30" width="0.8" height="427.4"/>
+<rect x="118" y="30" width="0.8" height="427.4"/>
+<rect x="140" y="30" width="0.8" height="427.4"/>
+<rect x="162" y="30" width="0.8" height="427.4"/>
+<rect x="184" y="30" width="0.8" height="427.4"/>
+<rect x="206" y="30" width="0.8" height="427.4"/>
+<rect x="228" y="30" width="0.8" height="427.4"/>
+<rect x="250" y="30" width="0.8" height="427.4"/>
+<rect x="272" y="30" width="0.8" height="427.4"/>
+<rect x="294" y="30" width="0.8" height="427.4"/>
+<rect x="316" y="30" width="0.8" height="427.4"/>
+<rect x="338" y="30" width="0.8" height="427.4"/>
+<rect x="360" y="30" width="0.8" height="427.4"/>
+<rect x="382" y="30" width="0.8" height="427.4"/>
+<rect x="404" y="30" width="0.8" height="427.4"/>
+<rect x="426" y="30" width="0.8" height="427.4"/>
 </g>
 <g id="horizontal-lines">
-<rect x="30" y="30" width="397" height="1"/>
-<rect x="30" y="53.7" width="397" height="1"/>
-<rect x="30" y="77.4" width="397" height="1"/>
-<rect x="30" y="101.1" width="397" height="1"/>
-<rect x="30" y="124.8" width="397" height="1"/>
-<rect x="30" y="148.5" width="397" height="1"/>
-<rect x="30" y="172.2" width="397" height="1"/>
-<rect x="30" y="195.9" width="397" height="1"/>
-<rect x="30" y="219.6" width="397" height="1"/>
-<rect x="30" y="243.3" width="397" height="1"/>
-<rect x="30" y="267" width="397" height="1"/>
-<rect x="30" y="290.7" width="397" height="1"/>
-<rect x="30" y="314.4" width="397" height="1"/>
-<rect x="30" y="338.1" width="397" height="1"/>
-<rect x="30" y="361.8" width="397" height="1"/>
-<rect x="30" y="385.5" width="397" height="1"/>
-<rect x="30" y="409.2" width="397" height="1"/>
-<rect x="30" y="432.9" width="397" height="1"/>
-<rect x="30" y="456.6" width="397" height="1"/>
+<rect x="30" y="30" width="396.8" height="0.8"/>
+<rect x="30" y="53.7" width="396.8" height="0.8"/>
+<rect x="30" y="77.4" width="396.8" height="0.8"/>
+<rect x="30" y="101.1" width="396.8" height="0.8"/>
+<rect x="30" y="124.8" width="396.8" height="0.8"/>
+<rect x="30" y="148.5" width="396.8" height="0.8"/>
+<rect x="30" y="172.2" width="396.8" height="0.8"/>
+<rect x="30" y="195.9" width="396.8" height="0.8"/>
+<rect x="30" y="219.6" width="396.8" height="0.8"/>
+<rect x="30" y="243.3" width="396.8" height="0.8"/>
+<rect x="30" y="267" width="396.8" height="0.8"/>
+<rect x="30" y="290.7" width="396.8" height="0.8"/>
+<rect x="30" y="314.4" width="396.8" height="0.8"/>
+<rect x="30" y="338.1" width="396.8" height="0.8"/>
+<rect x="30" y="361.8" width="396.8" height="0.8"/>
+<rect x="30" y="385.5" width="396.8" height="0.8"/>
+<rect x="30" y="409.2" width="396.8" height="0.8"/>
+<rect x="30" y="432.9" width="396.8" height="0.8"/>
+<rect x="30" y="456.6" width="396.8" height="0.8"/>
 </g>
 <g id="star-points">
-<circle cx="96.5" cy="101.6" r="2"/>
-<circle cx="96.5" cy="243.8" r="2"/>
-<circle cx="96.5" cy="386" r="2"/>
-<circle cx="228.5" cy="101.6" r="2"/>
-<circle cx="228.5" cy="243.8" r="2"/>
-<circle cx="228.5" cy="386" r="2"/>
-<circle cx="360.5" cy="101.6" r="2"/>
-<circle cx="360.5" cy="243.8" r="2"/>
-<circle cx="360.5" cy="386" r="2"/>
+<circle cx="96.4" cy="101.5" r="2"/>
+<circle cx="96.4" cy="243.7" r="2"/>
+<circle cx="96.4" cy="385.9" r="2"/>
+<circle cx="228.4" cy="101.5" r="2"/>
+<circle cx="228.4" cy="243.7" r="2"/>
+<circle cx="228.4" cy="385.9" r="2"/>
+<circle cx="360.4" cy="101.5" r="2"/>
+<circle cx="360.4" cy="243.7" r="2"/>
+<circle cx="360.4" cy="385.9" r="2"/>
 </g>
 </g>
 </svg>

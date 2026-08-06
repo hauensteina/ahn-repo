@@ -10,7 +10,7 @@ Files: `goban-grid-19x19.pdf` (open in Illustrator, then Save As `.ai`) and
 | Grid | 19 × 19 lines |
 | Line spacing, short axis (board width) | 22.0 mm |
 | Line spacing, long axis (board depth) | 23.7 mm |
-| Line width | 1.0 mm |
+| Line width | 0.8 mm |
 | Star points (hoshi) | 4.0 mm diameter, 9 total, on the 4th/10th/16th lines |
 | Image area (outer edge to outer edge of outer lines) | 397.0 × 427.6 mm |
 | Artboard | 457.0 × 487.6 mm (30 mm blank margin all round) |

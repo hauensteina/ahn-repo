@@ -16,11 +16,12 @@ from reportlab.pdfgen import canvas
 N = 19          # lines per side
 SPACING_X = 22.0    # mm, line-to-line across the board's width (short axis)
 SPACING_Y = 23.7    # mm, line-to-line along the board's depth (long axis)
-LINE_W = 1.0        # mm, line width
+LINE_W = 0.8        # mm, line width
 HOSHI_D = 4.0       # mm, star point diameter
 HOSHI_IDX = (3, 9, 15)   # 0-based: 4th, 10th, 16th lines
 MARGIN = 30.0       # mm, blank artboard margin around the grid
-OUT = "/mnt/user-data/outputs"
+#OUT = "/mnt/user-data/outputs"
+OUT = "."
 # --------------------------------------------------------------------------
 
 GRID_W = (N - 1) * SPACING_X
